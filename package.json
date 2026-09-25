@@ -1,0 +1,12 @@
+{
+  "name": "education-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-style Education Management System",
+  "scripts": {
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "backend:start": "npm --prefix backend start"
+  }
+}
