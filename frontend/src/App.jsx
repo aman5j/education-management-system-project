@@ -13,6 +13,10 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
+import AdminLayout from "./layout/AdminLayout";
+
+import Dashboard from "./pages/admin/Dashboard";
+
 import RoleHome from "./pages/dashboard/RoleHome";
 
 import { ROLES } from "./constants/roles";
@@ -53,8 +57,11 @@ const Unauthorized = () => {
 };
 
 const AppRedirect = () => {
-  const { user, isAuthenticated, loading } =
-    useAuth();
+  const {
+    user,
+    isAuthenticated,
+    loading,
+  } = useAuth();
 
   if (loading) {
     return null;
@@ -131,15 +138,55 @@ const App = () => {
       />
 
       <Route
-        path="/admin/dashboard"
+        path="/admin"
         element={
           <RoleRoute
-            allowedRoles={[ROLES.ADMIN]}
+            allowedRoles={[
+              ROLES.ADMIN,
+            ]}
           >
-            <RoleHome />
+            <AdminLayout />
           </RoleRoute>
         }
-      />
+      >
+        <Route
+          index
+          element={
+            <Navigate
+              to="/admin/dashboard"
+              replace
+            />
+          }
+        />
+
+        <Route
+          path="dashboard"
+          element={<Dashboard />}
+        />
+
+        <Route
+          path="*"
+          element={
+            <div
+              style={{
+                padding: "40px",
+                background: "#ffffff",
+                borderRadius: "14px",
+              }}
+            >
+              <h2>
+                Module coming in a later phase
+              </h2>
+
+              <p>
+                This navigation item has been
+                prepared for the next development
+                phase.
+              </p>
+            </div>
+          }
+        />
+      </Route>
 
       <Route
         path="/website-editor/dashboard"
@@ -158,7 +205,9 @@ const App = () => {
         path="/student/dashboard"
         element={
           <RoleRoute
-            allowedRoles={[ROLES.STUDENT]}
+            allowedRoles={[
+              ROLES.STUDENT,
+            ]}
           >
             <RoleHome />
           </RoleRoute>
