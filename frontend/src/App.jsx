@@ -14,6 +14,10 @@ import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
 import EditStudent from "./pages/admin/students/EditStudent";
 
+import Admissions from "./pages/admin/admissions/Admissions";
+import AddAdmission from "./pages/admin/admissions/AddAdmission";
+import EditAdmission from "./pages/admin/admissions/EditAdmission";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -141,7 +145,7 @@ const App = () => {
         element={<ResetPassword />}
       />
 
-      <Route
+      {/* <Route
         path="/admin"
         element={
           <RoleRoute
@@ -183,6 +187,32 @@ const App = () => {
           element={<EditStudent />}
         />
 
+        {/* <Route
+        path="/admin/admissions"
+        element={
+          <RoleRoute allowedRoles={["admin"]}>
+            {/* <AdminLayout /> */}
+          {/* </RoleRoute>
+        }
+      > */} */
+        <Route
+          // index
+           path="admissions"
+          element={<Admissions />}
+        />
+
+        <Route
+          path="add"
+          element={<AddAdmission />}
+        />
+
+        <Route
+          path=":id/edit"
+          element={<EditAdmission />}
+        />
+      {/* </Route> */}
+        
+
         <Route
           path="*"
           element={
@@ -204,6 +234,50 @@ const App = () => {
               </p>
             </div>
           }
+        />
+      {/* </Route> */} */
+
+      <Route
+        path="/admin"
+        element={
+          <RoleRoute allowedRoles={["admin"]}>
+            <AdminLayout />
+          </RoleRoute>
+        }
+      >
+        <Route
+          path="dashboard"
+          element={<Dashboard />}
+        />
+
+        <Route
+          path="students"
+          element={<Students />}
+        />
+
+        <Route
+          path="students/add"
+          element={<AddStudent />}
+        />
+
+        <Route
+          path="students/:id/edit"
+          element={<EditStudent />}
+        />
+
+        <Route
+          path="admissions"
+          element={<Admissions />}
+        />
+
+        <Route
+          path="admissions/add"
+          element={<AddAdmission />}
+        />
+
+        <Route
+          path="admissions/:id/edit"
+          element={<EditAdmission />}
         />
       </Route>
 

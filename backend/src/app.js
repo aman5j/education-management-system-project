@@ -10,6 +10,7 @@ import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
+import admissionRoutes from "./routes/admission.routes.js";
 
 // Setup __dirname equivalent for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -112,6 +113,11 @@ app.use(
 app.use(
   "/api/students",
   studentRoutes
+);
+
+app.use(
+  "/api/admissions",
+  admissionRoutes
 );
 
 app.use((req, res) => {
