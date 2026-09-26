@@ -4,15 +4,39 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import studentRoutes from "./routes/student.routes.js";
+
+// Setup __dirname equivalent for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// app.use(
+//   "/uploads",
+//   express.static(
+//     path.resolve(
+//       process.cwd(),
+//       "uploads"
+//     )
+//   )
+// );
+
+// app.use(
+//   helmet({
+//     crossOriginResourcePolicy: false,
+//   })
+// );
+
 app.use(
   helmet({
-    crossOriginResourcePolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded across origins
+    contentSecurityPolicy: false, // Disable if it interferes with local asset loading during development
   })
 );
 
@@ -38,6 +62,31 @@ app.use(apiLimiter);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
+// ==========================================
+// FIX: Serve Uploaded Files Correctly
+// ==========================================
+// This ensures images inside the root 'uploads' folder are publicly accessible 
+// via http://localhost:<port>/uploads/filename.jpg
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../uploads")) // Adjust "../uploads" based on where app.js is relative to your uploads folder
+);
+
+// app.use(
+//   "/uploads",
+//   express.static(
+//     path.resolve(
+//       process.cwd(),
+//       "uploads"
+//     )
+//   )
+// );
+// Serve uploaded files
+// app.use(
+//   "/uploads",
+//   express.static(path.join(__dirname, "uploads"))
+// );
 
 app.use(cookieParser());
 
@@ -54,9 +103,15 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+
 app.use(
   "/api/dashboard",
   dashboardRoutes
+);
+
+app.use(
+  "/api/students",
+  studentRoutes
 );
 
 app.use((req, res) => {

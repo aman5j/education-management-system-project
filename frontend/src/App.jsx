@@ -10,6 +10,10 @@ import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
+import Students from "./pages/admin/students/Students";
+import AddStudent from "./pages/admin/students/AddStudent";
+import EditStudent from "./pages/admin/students/EditStudent";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -162,6 +166,21 @@ const App = () => {
         <Route
           path="dashboard"
           element={<Dashboard />}
+        />
+
+        <Route
+          path="students"
+          element={<Students />}
+        />
+
+        <Route
+          path="students/add"
+          element={<AddStudent />}
+        />
+
+        <Route
+          path="students/:id/edit"
+          element={<EditStudent />}
         />
 
         <Route
