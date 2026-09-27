@@ -11,6 +11,7 @@ import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import admissionRoutes from "./routes/admission.routes.js";
+import courseRoutes from "./routes/course.routes.js";
 
 // Setup __dirname equivalent for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +70,8 @@ app.use(express.urlencoded({ extended: true }));
 // This ensures images inside the root 'uploads' folder are publicly accessible 
 // via http://localhost:<port>/uploads/filename.jpg
 
+// app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "../uploads")) // Adjust "../uploads" based on where app.js is relative to your uploads folder
@@ -119,6 +122,12 @@ app.use(
   "/api/admissions",
   admissionRoutes
 );
+
+app.use(
+  "/api/courses",
+  courseRoutes
+);
+
 
 app.use((req, res) => {
   res.status(404).json({

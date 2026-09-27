@@ -18,6 +18,11 @@ import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
 import EditAdmission from "./pages/admin/admissions/EditAdmission";
 
+import Courses from "./pages/admin/courses/Courses";
+import AddCourse from "./pages/admin/courses/AddCourse";
+import EditCourse from "./pages/admin/courses/EditCourse";
+import ViewCourse from "./pages/admin/courses/ViewCourse";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -279,7 +284,31 @@ const App = () => {
           path="admissions/:id/edit"
           element={<EditAdmission />}
         />
+
+         {/* Phase 5 */}
+          <Route
+            path="courses"
+            element={<Courses />}
+          />
+
+          <Route
+            path="courses/add"
+            element={<AddCourse />}
+          />
+
+          <Route
+            path="courses/:id"
+            element={<ViewCourse />}
+          />
+
+          <Route
+            path="courses/:id/edit"
+            element={<EditCourse />}
+          />
+
       </Route>
+
+      
 
       <Route
         path="/website-editor/dashboard"
