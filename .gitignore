@@ -38,7 +38,7 @@ tmp/
 temp/
 
 # Uploads
-uploads/
+# uploads/
 
 # Cache
 .cache/
