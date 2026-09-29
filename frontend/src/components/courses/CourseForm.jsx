@@ -4,6 +4,7 @@ import React, {
 } from "react";
 
 import { getAssetUrl } from "../../utils/assetUrl";
+import RichTextEditor from "../common/RichTextEditor";
 
 const initialState = {
   courseTitle: "",
@@ -41,6 +42,16 @@ const CourseForm = ({
 
   const [image, setImage] =
     useState(null);
+
+  const [errors, setErrors] =
+  useState({});
+
+//   const [serverError, setServerError] =
+//   useState("");
+    const [
+  serverError,
+  setServerError,
+] = useState("");
 
   // This stores the image shown in the preview.
   // It can be an existing backend image URL
@@ -160,22 +171,52 @@ const CourseForm = ({
     };
   }, [imagePreview]);
 
-  const handleChange = (event) => {
+//   const handleChange = (event) => {
+//     const {
+//       name,
+//       value,
+//       type,
+//       checked,
+//     } = event.target;
+
+//     setForm((previous) => ({
+//       ...previous,
+//       [name]:
+//         type === "checkbox"
+//           ? checked
+//           : value,
+//     }));
+//   };
+
+    const handleChange = (
+    event
+    ) => {
     const {
-      name,
-      value,
-      type,
-      checked,
+        name,
+        value,
+        type,
+        checked,
     } = event.target;
 
     setForm((previous) => ({
-      ...previous,
-      [name]:
+        ...previous,
+        [name]:
         type === "checkbox"
-          ? checked
-          : value,
+            ? checked
+            : value,
     }));
-  };
+
+    /*
+    * Clear only this field's
+    * backend validation error.
+    */
+    setErrors((previous) => ({
+        ...previous,
+        [name]: "",
+    }));
+
+    setServerError("");
+    };
 
   const handleImageChange = (event) => {
     const selectedFile =
@@ -195,34 +236,333 @@ const CourseForm = ({
     setImagePreview(previewUrl);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+//   const handleSubmit = (event) => {
+//     event.preventDefault();
 
-    const formData = new FormData();
+//     const formData = new FormData();
 
-    Object.entries(form).forEach(
-      ([key, value]) => {
-        formData.append(key, value);
+//     Object.entries(form).forEach(
+//       ([key, value]) => {
+//         formData.append(key, value);
+//       }
+//     );
+
+//     // Only append image if user selected
+//     // a new image.
+//     if (image) {
+//       formData.append(
+//         "courseImage",
+//         image
+//       );
+//     }
+
+//     onSubmit(formData);
+//   };
+
+    // const handleSubmit = async (event) => {
+    // event.preventDefault();
+
+    // setErrors({});
+    // setServerError("");
+
+    // const formData =
+    //     new FormData();
+
+    // Object.entries(form).forEach(
+    //     ([key, value]) => {
+    //     if (
+    //         value !== null &&
+    //         value !== undefined
+    //     ) {
+    //         formData.append(
+    //         key,
+    //         String(value)
+    //         );
+    //     }
+    //     }
+    // );
+
+    // if (image) {
+    //     formData.append(
+    //     "courseImage",
+    //     image
+    //     );
+    // }
+
+    // try {
+    //     await onSubmit(formData);
+    // } catch (error) {
+    // console.error(
+    //     "Course submit error:",
+    //     error
+    // );
+
+    // const response =
+    //     error?.response?.data;
+
+    // const validationErrors =
+    //     response?.errors || [];
+
+    // const fieldErrors = {};
+
+    // if (
+    //     Array.isArray(
+    //     validationErrors
+    //     )
+    // ) {
+    //     validationErrors.forEach(
+    //     (item) => {
+    //         /*
+    //         * Supports our normalized API:
+    //         * field + message
+    //         *
+    //         * AND normal express-validator:
+    //         * path + msg
+    //         */
+    //         const field =
+    //         item.field ||
+    //         item.path ||
+    //         item.param;
+
+    //         const message =
+    //         item.message ||
+    //         item.msg;
+
+    //         if (
+    //         field &&
+    //         message &&
+    //         !fieldErrors[field]
+    //         ) {
+    //         fieldErrors[
+    //             field
+    //         ] = message;
+    //         }
+    //     }
+    //     );
+    // }
+
+    // setErrors(fieldErrors);
+
+    // setServerError(
+    //     response?.message ||
+    //     "Please check the form and correct the errors."
+    // );
+
+    // window.scrollTo({
+    //     top: 0,
+    //     behavior: "smooth",
+    // });
+    // }    
+    // };
+
+    const handleSubmit = async (event) => {
+  event.preventDefault();
+
+  /*
+   * Clear previous validation errors
+   */
+  setErrors({});
+  setServerError("");
+
+  const formData =
+    new FormData();
+
+  Object.entries(form).forEach(
+    ([key, value]) => {
+      if (
+        value !== null &&
+        value !== undefined
+      ) {
+        formData.append(
+          key,
+          String(value)
+        );
       }
+    }
+  );
+
+  if (image) {
+    formData.append(
+      "courseImage",
+      image
+    );
+  }
+
+  try {
+    /*
+     * Backend validation happens here.
+     */
+    await onSubmit(formData);
+
+  } catch (error) {
+    console.error(
+      "Course submit error:",
+      error
     );
 
-    // Only append image if user selected
-    // a new image.
-    if (image) {
-      formData.append(
-        "courseImage",
-        image
+    const response =
+      error?.response?.data;
+
+    /*
+     * Backend should return:
+     *
+     * {
+     *   success: false,
+     *   message: "Validation failed",
+     *   errors: [...]
+     * }
+     */
+
+    const validationErrors =
+      response?.errors || [];
+
+    const fieldErrors = {};
+
+    /*
+     * EXPRESS-VALIDATOR ARRAY
+     */
+    if (
+      Array.isArray(
+        validationErrors
+      )
+    ) {
+      validationErrors.forEach(
+        (item) => {
+          const field =
+            item.field ||
+            item.path ||
+            item.param;
+
+          const message =
+            item.message ||
+            item.msg;
+
+          if (
+            field &&
+            message
+          ) {
+            /*
+             * Keep first error for
+             * each field.
+             */
+            if (
+              !fieldErrors[field]
+            ) {
+              fieldErrors[field] =
+                message;
+            }
+          }
+        }
       );
     }
 
-    onSubmit(formData);
-  };
+    /*
+     * ALSO SUPPORT:
+     *
+     * errors: {
+     *   courseTitle: "..."
+     * }
+     */
+    if (
+      validationErrors &&
+      !Array.isArray(
+        validationErrors
+      ) &&
+      typeof validationErrors ===
+        "object"
+    ) {
+      Object.entries(
+        validationErrors
+      ).forEach(
+        ([field, message]) => {
+          if (
+            typeof message ===
+            "string"
+          ) {
+            fieldErrors[field] =
+              message;
+          }
+        }
+      );
+    }
+
+    /*
+     * Set field-wise errors
+     */
+    setErrors(fieldErrors);
+
+    /*
+     * Only show general message
+     * at top.
+     */
+    setServerError(
+      response?.message ||
+        "Please check the highlighted fields."
+    );
+
+    /*
+     * Scroll to first error
+     */
+    const firstErrorField =
+      Object.keys(
+        fieldErrors
+      )[0];
+
+    if (firstErrorField) {
+      setTimeout(() => {
+        const element =
+          document.querySelector(
+            `[name="${firstErrorField}"]`
+          );
+
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+
+          element.focus?.();
+        } else {
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
+    } else {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+  }
+};
+
+    const fieldError = (field) => {
+        if (!errors[field]) {
+            return null;
+        }
+
+        return (
+            <div className="course-field-error">
+            {errors[field]}
+            </div>
+        );
+    };
 
   return (
     <form
       className="course-form"
       onSubmit={handleSubmit}
+      noValidate
     >
+
+        {serverError && (
+        <div className="course-form-error">
+            {serverError}
+        </div>
+        )}
+
       {/* BASIC INFORMATION */}
 
       <div className="course-form-section">
@@ -238,9 +578,11 @@ const CourseForm = ({
               name="courseTitle"
               value={form.courseTitle}
               onChange={handleChange}
-              required
+            //   required
               placeholder="Enter course title"
             />
+
+            {fieldError("courseTitle")}
           </div>
 
           <div className="course-field">
@@ -252,14 +594,16 @@ const CourseForm = ({
               name="courseType"
               value={form.courseType}
               onChange={handleChange}
-              required
+            //   required
               placeholder="e.g. Online"
             />
+
+            {fieldError("courseType")}
           </div>
 
           <div className="course-field">
             <label>
-              Certificate / Diploma
+              Certificate / Diploma *
             </label>
 
             <input
@@ -270,11 +614,13 @@ const CourseForm = ({
               onChange={handleChange}
               placeholder="Certificate"
             />
+
+            {fieldError("certificateDiploma")}
           </div>
 
           <div className="course-field">
             <label>
-              Course Category
+              Course Category *
             </label>
 
             <input
@@ -285,11 +631,12 @@ const CourseForm = ({
               onChange={handleChange}
               placeholder="Course category"
             />
+            {fieldError("courseCategory")}
           </div>
 
           <div className="course-field">
             <label>
-              Display Order
+              Display Order *
             </label>
 
             <input
@@ -301,6 +648,7 @@ const CourseForm = ({
               }
               onChange={handleChange}
             />
+            {fieldError("displayOrder")}
           </div>
         </div>
       </div>
@@ -320,8 +668,9 @@ const CourseForm = ({
               name="mrp"
               value={form.mrp}
               onChange={handleChange}
-              required
+            //   required
             />
+            {fieldError("mrp")}
           </div>
 
           <div className="course-field">
@@ -333,12 +682,14 @@ const CourseForm = ({
               name="price"
               value={form.price}
               onChange={handleChange}
-              required
+            //   required
             />
+
+            {fieldError("price")}
           </div>
 
           <div className="course-field">
-            <label>Duration</label>
+            <label>Duration *</label>
 
             <input
               type="number"
@@ -347,11 +698,12 @@ const CourseForm = ({
               value={form.duration}
               onChange={handleChange}
             />
+            {fieldError("duration")}
           </div>
 
           <div className="course-field">
             <label>
-              Duration Unit
+              Duration Unit *
             </label>
 
             <select
@@ -381,6 +733,7 @@ const CourseForm = ({
                 Hours
               </option>
             </select>
+            {fieldError("durationUnit")}
           </div>
         </div>
       </div>
@@ -424,11 +777,13 @@ const CourseForm = ({
                 </span>
               </div>
             )}
+
+            {fieldError("courseImage")}
           </div>
 
           <div className="course-field">
             <label>
-              Preview Video
+              Preview Video *
             </label>
 
             <input
@@ -439,6 +794,7 @@ const CourseForm = ({
               onChange={handleChange}
               placeholder="YouTube / video URL"
             />
+            {fieldError("previewVideo")}
           </div>
         </div>
       </div>
@@ -451,7 +807,7 @@ const CourseForm = ({
         <div className="course-form-grid">
           <div className="course-field">
             <label>
-              Total Lectures
+              Total Lectures *
             </label>
 
             <input
@@ -463,11 +819,12 @@ const CourseForm = ({
               }
               onChange={handleChange}
             />
+            {fieldError("totalLectures")}
           </div>
 
           <div className="course-field">
             <label>
-              Practical Marks
+              Practical Marks *
             </label>
 
             <input
@@ -479,11 +836,12 @@ const CourseForm = ({
               }
               onChange={handleChange}
             />
+            {fieldError("practicalMarks")}
           </div>
 
           <div className="course-field">
             <label>
-              Objective Marks
+              Objective Marks *
             </label>
 
             <input
@@ -495,11 +853,12 @@ const CourseForm = ({
               }
               onChange={handleChange}
             />
+            {fieldError("objectiveMarks")}
           </div>
 
           <div className="course-field">
             <label>
-              Certificate Subject
+              Certificate Subject *
             </label>
 
             <input
@@ -510,37 +869,58 @@ const CourseForm = ({
               onChange={handleChange}
               placeholder="Certificate subject"
             />
+            {fieldError("certificateSubject")}
           </div>
 
           <div className="course-field course-field-full">
             <label>
-              Description
+            Description *
             </label>
 
-            <textarea
-              name="description"
-              value={
-                form.description
-              }
-              onChange={handleChange}
-              rows="5"
+            <RichTextEditor
+            value={form.description}
+            onChange={(value) => {
+                setForm((previous) => ({
+                ...previous,
+                description: value,
+                }));
+
+                setErrors((previous) => ({
+                ...previous,
+                description: "",
+                }));
+            }}
+            placeholder="Write your course description here..."
             />
+
+            {fieldError("description")}
           </div>
 
           <div className="course-field course-field-full">
             <label>
-              Syllabus
+            Syllabus *
             </label>
 
-            <textarea
-              name="syllabus"
-              value={form.syllabus}
-              onChange={handleChange}
-              rows="5"
+            <RichTextEditor
+            value={form.syllabus}
+            onChange={(value) => {
+                setForm((previous) => ({
+                ...previous,
+                syllabus: value,
+                }));
+
+                setErrors((previous) => ({
+                ...previous,
+                syllabus: "",
+                }));
+            }}
+            placeholder="Write your course syllabus here..."
             />
+
+            {fieldError("syllabus")}
           </div>
 
-          <div className="course-field course-field-full">
+          {/* <div className="course-field course-field-full">
             <label>
               Eligibility
             </label>
@@ -553,7 +933,45 @@ const CourseForm = ({
               onChange={handleChange}
               rows="4"
             />
-          </div>
+            {fieldError("eligibility")}
+          </div> */}
+
+          <div className="course-field course-field-full">
+            <label>
+                Eligibility *
+            </label>
+
+            <RichTextEditor
+                value={
+                form.eligibility
+                }
+                onChange={(value) => {
+                setForm(
+                    (previous) => ({
+                    ...previous,
+                    eligibility:
+                        value,
+                    })
+                );
+
+                setErrors(
+                    (previous) => ({
+                    ...previous,
+                    eligibility: "",
+                    })
+                );
+
+                setServerError("");
+                }}
+                placeholder="Write course eligibility here..."
+            />
+
+            {fieldError(
+                "eligibility"
+            )}
+            </div>
+
+
         </div>
       </div>
 
@@ -632,6 +1050,8 @@ const CourseForm = ({
               Archived
             </option>
           </select>
+
+            {fieldError("status")}
         </div>
       </div>
 

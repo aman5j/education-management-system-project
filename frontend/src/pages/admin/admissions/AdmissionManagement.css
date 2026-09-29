@@ -1123,3 +1123,201 @@
     padding: 14px 18px;
   }
 }
+
+
+/* =========================================
+   STUDENT SEARCH
+========================================= */
+
+.student-search-select {
+  position: relative;
+  width: 100%;
+}
+
+.student-search-select > input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d9dee7;
+  border-radius: 6px;
+  outline: none;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.student-search-select > input:focus {
+  border-color: #3b82f6;
+  box-shadow:
+    0 0 0 3px
+    rgba(59, 130, 246, 0.1);
+}
+
+.student-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #d9dee7;
+  border-radius: 6px;
+  box-shadow:
+    0 8px 20px
+    rgba(0, 0, 0, 0.12);
+}
+
+.student-search-option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #f0f2f5;
+  background: #ffffff;
+  text-align: left;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.student-search-option:hover,
+.student-search-option.selected {
+  background: #f3f7ff;
+}
+
+.student-search-message {
+  padding: 14px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+
+/* =========================================
+   STUDENT SEARCH SELECT
+========================================= */
+
+.student-search-select {
+  position: relative;
+  width: 100%;
+}
+
+.student-search-input-wrapper {
+  position: relative;
+}
+
+.student-search-input-wrapper input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 105px 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+}
+
+.student-search-input-wrapper input:focus {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.08);
+}
+
+.student-search-input-wrapper input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.student-search-loader {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 11px;
+}
+
+.student-search-results {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
+  max-height: 280px;
+  overflow-y: auto;
+
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 10px 25px
+    rgba(15, 23, 42, 0.12);
+}
+
+.student-search-option {
+  width: 100%;
+  padding: 11px 13px;
+
+  display: grid;
+  grid-template-columns:
+    minmax(130px, auto)
+    1fr
+    auto;
+
+  align-items: center;
+  gap: 12px;
+
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+
+  background: #ffffff;
+
+  color: #334155;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.student-search-option:last-child {
+  border-bottom: 0;
+}
+
+.student-search-option:hover,
+.student-search-option.selected {
+  background: #eff6ff;
+}
+
+.student-search-option strong {
+  color: #2563eb;
+  font-size: 12px;
+}
+
+.student-search-option span {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.student-search-option small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.student-search-message {
+  padding: 14px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.admission-field-error {
+  display: block;
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 12px;
+}

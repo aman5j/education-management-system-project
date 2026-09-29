@@ -16,7 +16,15 @@ import {
 
 import courseUpload from "../middleware/courseUpload.middleware.js";
 
-const router = express.Router();
+import validationMiddleware from "../middleware/validationMiddleware.js";
+
+import {
+  createCourseValidation,
+  updateCourseValidation,
+} from "../validators/course.validator.js";
+
+const router =
+  express.Router();
 
 router.use(authenticate);
 
@@ -24,19 +32,33 @@ router.use(
   authorizeRoles("admin")
 );
 
-router.get("/", getCourses);
+router.get(
+  "/",
+  getCourses
+);
 
-router.get("/:id", getCourse);
+router.get(
+  "/:id",
+  getCourse
+);
 
 router.post(
   "/",
-  courseUpload.single("courseImage"),
+  courseUpload.single(
+    "courseImage"
+  ),
+  createCourseValidation,
+  validationMiddleware,
   createCourse
 );
 
 router.put(
   "/:id",
-  courseUpload.single("courseImage"),
+  courseUpload.single(
+    "courseImage"
+  ),
+  updateCourseValidation,
+  validationMiddleware,
   updateCourse
 );
 

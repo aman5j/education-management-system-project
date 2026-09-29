@@ -6,21 +6,26 @@ import { createCourse } from "../../../services/courseService";
 
 const AddCourse = () => {
   const navigate = useNavigate();
+
   const [loading, setLoading] =
     useState(false);
 
   const handleSubmit = async (formData) => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
+    try {
       await createCourse(formData);
 
       navigate("/admin/courses");
     } catch (error) {
-      console.error(
-        "Failed to create course:",
-        error
-      );
+      /*
+       * IMPORTANT:
+       * Do NOT swallow the error.
+       *
+       * CourseForm needs this error
+       * to display field-wise validation.
+       */
+      throw error;
     } finally {
       setLoading(false);
     }

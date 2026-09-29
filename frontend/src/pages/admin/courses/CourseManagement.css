@@ -509,3 +509,55 @@
   color: #6b7280;
   font-size: 12px;
 }
+
+/* =========================================
+   RICH TEXT EDITOR
+========================================= */
+
+.rich-text-editor {
+  width: 100%;
+}
+
+.rich-text-editor .ql-toolbar {
+  border: 1px solid #d9dee7;
+  border-radius: 6px 6px 0 0;
+  background: #ffffff;
+}
+
+.rich-text-editor .ql-container {
+  min-height: 160px;
+  border: 1px solid #d9dee7;
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.rich-text-editor .ql-editor {
+  min-height: 160px;
+  line-height: 1.6;
+}
+
+.rich-text-editor .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.course-field-error {
+  margin-top: 6px;
+  color: #dc3545;
+  font-size: 12px;
+}
+
+.course-form-error {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+
+  background: #fef2f2;
+
+  color: #b91c1c;
+  font-size: 13px;
+}

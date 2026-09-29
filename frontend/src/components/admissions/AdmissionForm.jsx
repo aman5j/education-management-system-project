@@ -4,6 +4,13 @@ import {
   useState,
 } from "react";
 
+import StudentSearchSelect from "./StudentSearchSelect";
+// Adjust the import path for getStudents if your service file is located elsewhere (e.g., "../../services/studentService")
+import {
+  getStudents,
+} from "../../services/studentService";
+
+
 const initialForm = {
   student: "",
   courseType: "",
@@ -36,9 +43,101 @@ const AdmissionForm = ({
   const [error, setError] =
     useState("");
 
+
+    const [
+    studentSearch,
+    setStudentSearch,
+    ] = useState("");
+
+    const [
+    fetchedStudents,
+    setFetchedStudents,
+    ] = useState([]);
+
+    const [
+    studentLoading,
+    setStudentLoading,
+    ] = useState(false);
+
+    const [
+    selectedStudent,
+    setSelectedStudent,
+    ] = useState(null);
+
+    useEffect(() => {
+    const searchValue =
+      studentSearch.trim();
+
+    if (searchValue.length < 2) {
+      setFetchedStudents([]);
+      setStudentLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const timer = setTimeout(async () => {
+      try {
+        setStudentLoading(true);
+
+        const response =
+          await getStudents({
+            search: searchValue,
+            page: 1,
+            limit: 10,
+          });
+
+        if (!active) return;
+
+        /*
+         * FIX: Robustly extract student list 
+         * whether API returns an array, { data: [...] }, or { students: [...] }
+         */
+        let studentList = [];
+
+        if (Array.isArray(response)) {
+          studentList = response;
+        } else if (Array.isArray(response?.data)) {
+          studentList = response.data;
+        } else if (Array.isArray(response?.students)) {
+          studentList = response.students;
+        } else if (
+          Array.isArray(response?.data?.data)
+        ) {
+          studentList = response.data.data;
+        } else if (
+          Array.isArray(response?.data?.students)
+        ) {
+          studentList = response.data.students;
+        }
+
+        setFetchedStudents(studentList);
+      } catch (error) {
+        console.error(
+          "Student search error:",
+          error
+        );
+
+        if (active) {
+          setFetchedStudents([]);
+        }
+      } finally {
+        if (active) {
+          setStudentLoading(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [studentSearch]);
+
   useEffect(() => {
     if (!initialData) {
       setForm(initialForm);
+      setSelectedStudent(null);
       return;
     }
 
@@ -100,6 +199,14 @@ const AdmissionForm = ({
       remark:
         initialData.remark || "",
     });
+
+    // FIX: Populate selectedStudent if initialData contains a populated student object
+    if (
+      initialData.student &&
+      typeof initialData.student === "object"
+    ) {
+      setSelectedStudent(initialData.student);
+    }
   }, [initialData]);
 
   const calculations = useMemo(() => {
@@ -296,7 +403,7 @@ const AdmissionForm = ({
               </span>
             </label>
 
-            <select
+            {/* <select
               name="student"
               value={form.student}
               onChange={handleChange}
@@ -330,7 +437,53 @@ const AdmissionForm = ({
                   );
                 }
               )}
-            </select>
+            </select> */}
+
+            {/* <StudentSearchSelect
+                students={students}
+                value={form.student}
+                loading={studentLoading}
+                onChange={(studentId) => {
+                    setForm((previous) => ({
+                    ...previous,
+                    student: studentId,
+                    }));
+                }}
+                error={errors.student}
+            /> */}
+
+            <StudentSearchSelect
+                students={fetchedStudents}
+                value={form.student}
+                selectedStudent={
+                    selectedStudent
+                }
+                loading={studentLoading}
+                disabled={Boolean(
+                    initialData
+                )}
+                onSearch={(value) => {
+                    setStudentSearch(value);
+                }}
+                onChange={(
+                    studentId,
+                    student
+                ) => {
+                    setForm(
+                    (previous) => ({
+                        ...previous,
+                        student:
+                        studentId,
+                    })
+                    );
+
+                    setSelectedStudent(
+                    student || null
+                    );
+
+                    setError("");
+                }}
+                />
 
             {initialData && (
               <small className="admission-form-help">

@@ -48,22 +48,51 @@ const EditCourse = () => {
     loadCourse();
   }, [id]);
 
+  // const handleSubmit = async (formData) => {
+  //   try {
+  //     setSaving(true);
+
+  //     await updateCourse(id, formData);
+
+  //     navigate("/admin/courses");
+  //   } catch (error) {
+  //     console.error(
+  //       "Failed to update course:",
+  //       error
+  //     );
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
+
   const handleSubmit = async (formData) => {
-    try {
-      setSaving(true);
+  setSaving(true);
 
-      await updateCourse(id, formData);
+  try {
+    await updateCourse(
+      id,
+      formData
+    );
 
-      navigate("/admin/courses");
-    } catch (error) {
-      console.error(
-        "Failed to update course:",
-        error
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+    navigate(
+      "/admin/courses"
+    );
+  } catch (error) {
+    console.error(
+      "Failed to update course:",
+      error
+    );
+
+    /*
+     * IMPORTANT:
+     * Send backend validation error
+     * back to CourseForm.
+     */
+    throw error;
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) {
     return (
