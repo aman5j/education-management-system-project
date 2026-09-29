@@ -159,7 +159,7 @@ const ViewCourse = () => {
           </div>
         </div>
 
-        <div className="course-view-section">
+        {/* <div className="course-view-section">
           <h2>Description</h2>
           <p>
             {course.description || "-"}
@@ -178,7 +178,35 @@ const ViewCourse = () => {
           <p>
             {course.eligibility || "-"}
           </p>
+        </div> */}
+
+        <div className="course-view-section">
+          <h2>Description</h2>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: course.description || "-",
+            }}
+          />
         </div>
+
+        <div className="course-view-section">
+          <h2>Syllabus</h2>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: course.syllabus || "-",
+            }}
+          />
+        </div>
+
+        <div className="course-view-section">
+          <h2>Eligibility</h2>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: course.eligibility || "-",
+            }}
+          />
+        </div>
+
       </div>
     </div>
   );
