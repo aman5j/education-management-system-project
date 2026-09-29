@@ -12,6 +12,7 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import admissionRoutes from "./routes/admission.routes.js";
 import courseRoutes from "./routes/course.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
 
 // Setup __dirname equivalent for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -126,6 +127,11 @@ app.use(
 app.use(
   "/api/courses",
   courseRoutes
+);
+
+app.use(
+  "/api/categories",
+  categoryRoutes
 );
 
 

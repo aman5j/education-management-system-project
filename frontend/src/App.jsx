@@ -23,6 +23,11 @@ import AddCourse from "./pages/admin/courses/AddCourse";
 import EditCourse from "./pages/admin/courses/EditCourse";
 import ViewCourse from "./pages/admin/courses/ViewCourse";
 
+import Categories from "./pages/admin/categories/Categories";
+import AddCategory from "./pages/admin/categories/AddCategory";
+import EditCategory from "./pages/admin/categories/EditCategory";
+import ViewCategory from "./pages/admin/categories/ViewCategory";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -304,6 +309,27 @@ const App = () => {
           <Route
             path="courses/:id/edit"
             element={<EditCourse />}
+          />
+
+          {/* Phase 6 */}
+          <Route
+            path="categories"
+            element={<Categories />}
+          />
+
+          <Route
+            path="categories/add"
+            element={<AddCategory />}
+          />
+
+          <Route
+            path="categories/:id"
+            element={<ViewCategory />}
+          />
+
+          <Route
+            path="categories/:id/edit"
+            element={<EditCategory />}
           />
 
       </Route>

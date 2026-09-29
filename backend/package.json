@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seed/seedUsers.js",
+    "seed:categories": "node src/seed/seedCategories.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

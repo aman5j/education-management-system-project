@@ -80,7 +80,8 @@ const menuItems = [
     children: [
       {
         label: "Course Categories",
-        path: "/admin/course-categories",
+        // path: "/admin/course-categories",
+        path: "/admin/categories",
       },
       {
         label: "Subjects",
