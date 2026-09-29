@@ -28,6 +28,11 @@ import AddCategory from "./pages/admin/categories/AddCategory";
 import EditCategory from "./pages/admin/categories/EditCategory";
 import ViewCategory from "./pages/admin/categories/ViewCategory";
 
+import Batches from "./pages/admin/batches/Batches";
+import AddBatch from "./pages/admin/batches/AddBatch";
+import EditBatch from "./pages/admin/batches/EditBatch";
+import ViewBatch from "./pages/admin/batches/ViewBatch";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -330,6 +335,27 @@ const App = () => {
           <Route
             path="categories/:id/edit"
             element={<EditCategory />}
+          />
+
+          {/* Phase 7 */}
+          <Route
+            path="batches"
+            element={<Batches />}
+          />
+
+          <Route
+            path="batches/add"
+            element={<AddBatch />}
+          />
+
+          <Route
+            path="batches/:id"
+            element={<ViewBatch />}
+          />
+
+          <Route
+            path="batches/:id/edit"
+            element={<EditBatch />}
           />
 
       </Route>
