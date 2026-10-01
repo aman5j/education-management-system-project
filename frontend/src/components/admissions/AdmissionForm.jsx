@@ -4,6 +4,7 @@ import {
   useState,
 } from "react";
 
+import StudentSearchSelect from "./StudentSearchSelect";
 import { getStudents } from "../../services/studentService";
 import { getCourses } from "../../services/courseService";
 import { getBatches } from "../../services/batchService";
@@ -69,46 +70,135 @@ const AdmissionForm = ({
 
   /*
   |--------------------------------------------------------------------------
+  | Student Search & Selection State
+  |--------------------------------------------------------------------------
+  */
+  const [studentSearch, setStudentSearch] =
+    useState("");
+
+  const [fetchedStudents, setFetchedStudents] =
+    useState([]);
+
+  const [studentLoading, setStudentLoading] =
+    useState(false);
+
+  const [selectedStudent, setSelectedStudent] =
+    useState(null);
+
+  
+  /*
+  |--------------------------------------------------------------------------
+  | Debounced Student Search Effect
+  |--------------------------------------------------------------------------
+  */
+  useEffect(() => {
+    const searchValue =
+      studentSearch.trim();
+
+    if (searchValue.length < 2) {
+      setFetchedStudents([]);
+      setStudentLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const timer = setTimeout(async () => {
+      try {
+        setStudentLoading(true);
+
+        const response =
+          await getStudents({
+            search: searchValue,
+            page: 1,
+            limit: 10,
+          });
+
+        if (!active) return;
+
+        let studentList = [];
+
+        if (Array.isArray(response)) {
+          studentList = response;
+        } else if (Array.isArray(response?.data)) {
+          studentList = response.data;
+        } else if (Array.isArray(response?.students)) {
+          studentList = response.students;
+        } else if (
+          Array.isArray(response?.data?.data)
+        ) {
+          studentList = response.data.data;
+        } else if (
+          Array.isArray(response?.data?.students)
+        ) {
+          studentList = response.data.students;
+        }
+
+        setFetchedStudents(studentList);
+      } catch (loadError) {
+        console.error(
+          "Student search error:",
+          loadError
+        );
+
+        if (active) {
+          setFetchedStudents([]);
+        }
+      } finally {
+        if (active) {
+          setStudentLoading(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [studentSearch]);
+
+  /*
+  |--------------------------------------------------------------------------
   | Load Students
   |--------------------------------------------------------------------------
   */
 
-  useEffect(() => {
-    const loadStudents = async () => {
-      try {
-        setLoadingStudents(true);
+  // useEffect(() => {
+  //   const loadStudents = async () => {
+  //     try {
+  //       setLoadingStudents(true);
 
-        const response =
-          await getStudents({
-            page: 1,
-            limit: 100,
-            status: "active",
-          });
+  //       const response =
+  //         await getStudents({
+  //           page: 1,
+  //           limit: 100,
+  //           status: "active",
+  //         });
 
-        const studentList =
-          response?.data?.data?.students ??
-          response?.data?.students ??
-          [];
+  //       const studentList =
+  //         response?.data?.data?.students ??
+  //         response?.data?.students ??
+  //         [];
 
-        setStudents(
-          Array.isArray(studentList)
-            ? studentList
-            : []
-        );
-      } catch (loadError) {
-        console.error(
-          "Failed to load students:",
-          loadError
-        );
+  //       setStudents(
+  //         Array.isArray(studentList)
+  //           ? studentList
+  //           : []
+  //       );
+  //     } catch (loadError) {
+  //       console.error(
+  //         "Failed to load students:",
+  //         loadError
+  //       );
 
-        setStudents([]);
-      } finally {
-        setLoadingStudents(false);
-      }
-    };
+  //       setStudents([]);
+  //     } finally {
+  //       setLoadingStudents(false);
+  //     }
+  //   };
 
-    loadStudents();
-  }, []);
+  //   loadStudents();
+  // }, []);
 
   /*
   |--------------------------------------------------------------------------
@@ -159,6 +249,7 @@ const AdmissionForm = ({
   useEffect(() => {
     if (!initialData) {
       setForm(initialForm);
+      setSelectedStudent(null);
       return;
     }
 
@@ -246,6 +337,15 @@ const AdmissionForm = ({
       remark:
         initialData.remark || "",
     });
+
+    if (
+      initialData.student_id &&
+      typeof initialData.student_id === "object"
+    ) {
+      setSelectedStudent(
+        initialData.student_id
+      );
+    }
   }, [initialData]);
 
   /*
@@ -651,7 +751,7 @@ const AdmissionForm = ({
               </span>
             </label>
 
-            <select
+            {/* <select
               name="student_id"
               value={
                 form.student_id
@@ -698,7 +798,40 @@ const AdmissionForm = ({
                   );
                 }
               )}
-            </select>
+            </select> */}
+
+            <StudentSearchSelect
+              students={fetchedStudents}
+              value={form.student_id}
+              selectedStudent={
+                selectedStudent
+              }
+              loading={studentLoading}
+              disabled={Boolean(
+                initialData
+              )}
+              onSearch={(value) => {
+                setStudentSearch(value);
+              }}
+              onChange={(
+                studentId,
+                student
+              ) => {
+                setForm(
+                  (previous) => ({
+                    ...previous,
+                    student_id:
+                      studentId,
+                  })
+                );
+
+                setSelectedStudent(
+                  student || null
+                );
+
+                setError("");
+              }}
+            />
 
             {initialData && (
               <small className="admission-form-help">
