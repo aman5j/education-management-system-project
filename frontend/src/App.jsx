@@ -34,6 +34,11 @@ import AddBatch from "./pages/admin/batches/AddBatch";
 import EditBatch from "./pages/admin/batches/EditBatch";
 import ViewBatch from "./pages/admin/batches/ViewBatch";
 
+import Payments from "./pages/admin/payments/Payments";
+import AddPayment from "./pages/admin/payments/AddPayment";
+import EditPayment from "./pages/admin/payments/EditPayment";
+import ViewPayment from "./pages/admin/payments/ViewPayment";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -272,6 +277,21 @@ const App = () => {
         />
 
         <Route
+          path="students/add"
+          element={<AddStudent />}
+        />
+
+        {/* <Route
+          path="students/:id"
+          element={<ViewStudent />}
+        /> */}
+
+        <Route
+          path="students/:id/edit"
+          element={<EditStudent />}
+        />
+
+        <Route
           path="admissions"
           element={<Admissions />}
         />
@@ -352,6 +372,27 @@ const App = () => {
           <Route
             path="batches/:id/edit"
             element={<EditBatch />}
+          />
+
+          {/* Phase 10 */}
+          <Route
+            path="payments"
+            element={<Payments />}
+          />
+
+          <Route
+            path="payments/add"
+            element={<AddPayment />}
+          />
+
+          <Route
+            path="payments/:id"
+            element={<ViewPayment />}
+          />
+
+          <Route
+            path="payments/:id/edit"
+            element={<EditPayment />}
           />
 
       </Route>

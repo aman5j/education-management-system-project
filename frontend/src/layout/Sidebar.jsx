@@ -124,7 +124,8 @@ const menuItems = [
       },
       {
         label: "Payment Settings",
-        path: "/admin/payment-settings",
+        // path: "/admin/payment-settings",
+        path: "/admin/payments",
       },
       {
         label: "Reports",

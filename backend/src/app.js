@@ -15,6 +15,7 @@ import admissionRoutes from "./routes/admission.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import batchRoutes from "./routes/batch.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 // Setup __dirname equivalent for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -139,6 +140,11 @@ app.use(
 app.use(
   "/api/batches",
   batchRoutes
+);
+
+app.use(
+  "/api/payments",
+  paymentRoutes
 );
 
 
