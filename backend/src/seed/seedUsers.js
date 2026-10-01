@@ -72,7 +72,7 @@ const users = [
   {
     name: "System Administrator",
     email: "admin@example.com",
-    password: "Admin@12345",
+    password: "Admin@54321",
     role: "admin",
     status: "active",
   },

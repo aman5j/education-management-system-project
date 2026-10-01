@@ -1,56 +1,38 @@
 import {
-  useCallback,
   useEffect,
   useState,
 } from "react";
 
 import {
-  FiDownload,
-  FiPlus,
-} from "react-icons/fi";
+  Link,
+} from "react-router-dom";
 
-import { useNavigate } from "react-router-dom";
-
-import Breadcrumb from "../../../common/Breadcrumb";
-
-import AdmissionFilters from "../../../components/admissions/AdmissionFilters";
-import AdmissionTable from "../../../components/admissions/AdmissionTable";
-import AdmissionView from "../../../components/admissions/AdmissionView";
+import "../../../styles/AdmissionManagement.css";
 
 import {
-  deleteAdmission,
+  FiEdit2,
+  FiEye,
+  FiPlus,
+  FiRefreshCw,
+  FiSearch,
+  FiTrash2,
+} from "react-icons/fi";
+
+import {
   getAdmissions,
-  updateAdmissionStatus,
+  deleteAdmission,
 } from "../../../services/admissionService";
 
-import "./AdmissionManagement.css";
-
-const initialFilters = {
-  search: "",
-  batch: "",
-  course: "",
-  status: "",
-  remark: "",
-  admittedFrom: "",
-  admittedTo: "",
-};
+const money = (value) =>
+  `₹${Number(
+    value || 0
+  ).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  })}`;
 
 const Admissions = () => {
-  const navigate = useNavigate();
-
-  const [filters, setFilters] =
-    useState(initialFilters);
-
   const [admissions, setAdmissions] =
     useState([]);
-
-  const [pagination, setPagination] =
-    useState({
-      page: 1,
-      limit: 10,
-      total: 0,
-      totalPages: 0,
-    });
 
   const [loading, setLoading] =
     useState(true);
@@ -58,285 +40,200 @@ const Admissions = () => {
   const [error, setError] =
     useState("");
 
-  const [selectedAdmission, setSelectedAdmission] =
-    useState(null);
+  const [search, setSearch] =
+    useState("");
+
+  const [status, setStatus] =
+    useState("");
+
+  const [page, setPage] =
+    useState(1);
+
+  const [pagination, setPagination] =
+    useState({
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 1,
+    });
 
   const loadAdmissions =
-    useCallback(async () => {
+    async () => {
       try {
         setLoading(true);
         setError("");
 
         const response =
           await getAdmissions({
-            ...filters,
-            page: pagination.page,
-            limit: pagination.limit,
+            search,
+            status,
+            page,
+            limit: 10,
           });
 
+        const data =
+          response?.data?.data;
+
         setAdmissions(
-          response.data.admissions
+          Array.isArray(
+            data?.admissions
+          )
+            ? data.admissions
+            : []
         );
 
         setPagination(
-          response.data.pagination
+          data?.pagination || {
+            page,
+            limit: 10,
+            total: 0,
+            totalPages: 1,
+          }
         );
-      } catch (requestError) {
+      } catch (loadError) {
+        console.error(
+          loadError
+        );
+
         setError(
-          requestError.response?.data
-            ?.message ||
-            requestError.message ||
+          loadError?.response
+            ?.data?.message ||
             "Unable to load admissions."
         );
       } finally {
         setLoading(false);
       }
-    }, [
-      filters,
-      pagination.page,
-      pagination.limit,
-    ]);
+    };
 
   useEffect(() => {
     loadAdmissions();
-  }, [loadAdmissions]);
+  }, [
+    page,
+    status,
+  ]);
 
-  const handleFilterChange = (
-    event
-  ) => {
-    const {
-      name,
-      value,
-    } = event.target;
+  useEffect(() => {
+    const timer =
+      setTimeout(() => {
+        setPage(1);
+        loadAdmissions();
+      }, 400);
 
-    setFilters((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    return () =>
+      clearTimeout(timer);
+  }, [search]);
 
-    setPagination((previous) => ({
-      ...previous,
-      page: 1,
-    }));
-  };
+  const handleDelete =
+    async (id) => {
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to delete this admission?"
+        );
 
-  const handleReset = () => {
-    setFilters(initialFilters);
+      if (!confirmed) {
+        return;
+      }
 
-    setPagination((previous) => ({
-      ...previous,
-      page: 1,
-    }));
-  };
-
-  const handleDelete = async (
-    admission
-  ) => {
-    const studentName = [
-      admission.student?.firstName,
-      admission.student?.surname,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const confirmed =
-      window.confirm(
-        `Delete admission for ${
-          studentName ||
-          admission.rollNo
-        }?`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await deleteAdmission(
-        admission._id
-      );
-
-      await loadAdmissions();
-    } catch (requestError) {
-      window.alert(
-        requestError.response?.data
-          ?.message ||
-          "Unable to delete admission."
-      );
-    }
-  };
-
-  const handleStatusChange =
-    async (id, status) => {
       try {
-        await updateAdmissionStatus(
-          id,
-          status
+        await deleteAdmission(
+          id
         );
 
         await loadAdmissions();
-      } catch (requestError) {
-        window.alert(
-          requestError.response?.data
-            ?.message ||
-            "Unable to update status."
+      } catch (deleteError) {
+        alert(
+          deleteError?.response
+            ?.data?.message ||
+            "Unable to delete admission."
         );
       }
     };
 
-  const exportCSV = () => {
-    if (!admissions.length) {
-      return;
-    }
-
-    const headers = [
-      "Roll No",
-      "Student",
-      "Course",
-      "Batch",
-      "Course Fee",
-      "Discount",
-      "GST",
-      "Admission Fee",
-      "Final Amount",
-      "Admission Date",
-      "Status",
-    ];
-
-    const rows = admissions.map(
-      (admission) => {
-        const studentName = [
-          admission.student?.firstName,
-          admission.student?.surname,
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        return [
-          admission.rollNo,
-          studentName,
-          admission.course,
-          admission.batch,
-          admission.courseFee,
-          admission.discountAmount,
-          admission.gstAmount,
-          admission.admissionFee,
-          admission.finalAmount,
-          admission.admissionDate,
-          admission.status,
-        ];
-      }
-    );
-
-    const csv = [
-      headers,
-      ...rows,
-    ]
-      .map((row) =>
-        row
-          .map((value) => {
-            const stringValue =
-              String(value ?? "");
-
-            return `"${stringValue.replace(
-              /"/g,
-              '""'
-            )}"`;
-          })
-          .join(",")
-      )
-      .join("\n");
-
-    const blob = new Blob(
-      [csv],
-      {
-        type: "text/csv;charset=utf-8;",
-      }
-    );
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const link =
-      document.createElement("a");
-
-    link.href = url;
-
-    link.download =
-      "admissions.csv";
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  };
+  const resetFilters =
+    () => {
+      setSearch("");
+      setStatus("");
+      setPage(1);
+    };
 
   return (
     <div className="admission-page">
-      <Breadcrumb
-        items={[
-          {
-            label: "Home",
-            path: "/admin/dashboard",
-          },
-          {
-            label: "Admissions",
-          },
-        ]}
-      />
-
       <div className="admission-page-header">
         <div>
-          <span className="page-eyebrow">
-            ADMISSION MANAGEMENT
-          </span>
-
           <h1>
             Manage Admissions
           </h1>
 
           <p>
-            View, create and manage
-            student admissions.
+            Manage student
+            admissions, courses,
+            batches and fees.
           </p>
         </div>
 
-        <div className="admission-header-actions">
-          <button
-            type="button"
-            className="admission-export-button"
-            onClick={exportCSV}
-          >
-            <FiDownload />
-            Export
-          </button>
-
-          <button
-            type="button"
-            className="admission-primary-button"
-            onClick={() =>
-              navigate(
-                "/admin/admissions/add"
-              )
-            }
-          >
-            <FiPlus />
-            Add Admission
-          </button>
-        </div>
+        <Link
+          to="/admin/admissions/add"
+          className="admission-primary-button"
+        >
+          <FiPlus />
+          Add Admission
+        </Link>
       </div>
 
       <div className="admission-card">
-        <AdmissionFilters
-          filters={filters}
-          onChange={
-            handleFilterChange
-          }
-          onReset={handleReset}
-        />
+        <div className="admission-filters">
+          <div className="admission-search">
+            <FiSearch />
+
+            <input
+              type="text"
+              value={search}
+              onChange={(event) =>
+                setSearch(
+                  event.target.value
+                )
+              }
+              placeholder="Search student, roll no, course, batch..."
+            />
+          </div>
+
+          <select
+            value={status}
+            onChange={(event) => {
+              setStatus(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          >
+            <option value="">
+              All Status
+            </option>
+
+            <option value="Active">
+              Active
+            </option>
+
+            <option value="Completed">
+              Completed
+            </option>
+
+            <option value="Dropped">
+              Dropped
+            </option>
+          </select>
+
+          <button
+            type="button"
+            className="admission-reset-button"
+            onClick={
+              resetFilters
+            }
+          >
+            <FiRefreshCw />
+            Reset
+          </button>
+        </div>
 
         {error && (
           <div className="admission-error">
@@ -345,116 +242,243 @@ const Admissions = () => {
         )}
 
         {loading ? (
-          <div className="admission-loading">
+          <div className="admission-state">
             Loading admissions...
           </div>
+        ) : admissions.length ===
+          0 ? (
+          <div className="admission-empty">
+            No admissions found.
+          </div>
         ) : (
-          <AdmissionTable
-            admissions={admissions}
-            onView={
-              setSelectedAdmission
-            }
-            onEdit={(admission) =>
-              navigate(
-                `/admin/admissions/${admission._id}/edit`
-              )
-            }
-            onDelete={
-              handleDelete
-            }
-            onStatusChange={
-              handleStatusChange
-            }
-          />
+          <div className="admission-table-wrapper">
+            <table className="admission-table">
+              <thead>
+                <tr>
+                  <th>
+                    Student
+                  </th>
+
+                  <th>
+                    Course
+                  </th>
+
+                  <th>
+                    Batch
+                  </th>
+
+                  <th>
+                    Admission Date
+                  </th>
+
+                  <th>
+                    Final Amount
+                  </th>
+
+                  <th>
+                    Paid
+                  </th>
+
+                  <th>
+                    Remaining
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {admissions.map(
+                  (admission) => {
+                    const student =
+                      admission.student_id;
+
+                    const course =
+                      admission.course_id;
+
+                    const batch =
+                      admission.batch_id;
+
+                    const remaining =
+                      Math.max(
+                        0,
+                        Number(
+                          admission.final_amount ||
+                            0
+                        ) -
+                          Number(
+                            admission.paid_amount ||
+                              0
+                          )
+                      );
+
+                    return (
+                      <tr
+                        key={
+                          admission._id
+                        }
+                      >
+                        <td>
+                          <div className="admission-student-cell">
+                            <strong>
+                              {[
+                                student?.firstName,
+                                student?.surname,
+                              ]
+                                .filter(
+                                  Boolean
+                                )
+                                .join(
+                                  " "
+                                ) ||
+                                "—"}
+                            </strong>
+
+                            <small>
+                              {student?.rollNo ||
+                                "—"}
+                            </small>
+                          </div>
+                        </td>
+
+                        <td>
+                          {course?.courseTitle ||
+                            "—"}
+                        </td>
+
+                        <td>
+                          {batch?.batch_name ||
+                            "—"}
+                        </td>
+
+                        <td>
+                          {admission.admission_date
+                            ? new Date(
+                                admission.admission_date
+                              ).toLocaleDateString(
+                                "en-IN"
+                              )
+                            : "—"}
+                        </td>
+
+                        <td>
+                          {money(
+                            admission.final_amount
+                          )}
+                        </td>
+
+                        <td>
+                          {money(
+                            admission.paid_amount
+                          )}
+                        </td>
+
+                        <td>
+                          {money(
+                            remaining
+                          )}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`admission-status admission-status-${String(
+                              admission.status
+                            ).toLowerCase()}`}
+                          >
+                            {
+                              admission.status
+                            }
+                          </span>
+                        </td>
+
+                        <td>
+                          <div className="admission-actions">
+                            <Link
+                              to={`/admin/admissions/${admission._id}`}
+                              title="View"
+                            >
+                              <FiEye />
+                            </Link>
+
+                            <Link
+                              to={`/admin/admissions/${admission._id}/edit`}
+                              title="Edit"
+                            >
+                              <FiEdit2 />
+                            </Link>
+
+                            <button
+                              type="button"
+                              title="Delete"
+                              onClick={() =>
+                                handleDelete(
+                                  admission._id
+                                )
+                              }
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <div className="admission-pagination">
-          <span>
-            Showing{" "}
-            {admissions.length} of{" "}
-            {pagination.total} admissions
-          </span>
+        {!loading &&
+          pagination.totalPages >
+            1 && (
+            <div className="admission-pagination">
+              <button
+                type="button"
+                disabled={
+                  page <= 1
+                }
+                onClick={() =>
+                  setPage(
+                    (previous) =>
+                      previous - 1
+                  )
+                }
+              >
+                Previous
+              </button>
 
-          <div>
-            <button
-              type="button"
-              disabled={
-                pagination.page <= 1
-              }
-              onClick={() =>
-                setPagination(
-                  (previous) => ({
-                    ...previous,
-                    page:
-                      previous.page - 1,
-                  })
-                )
-              }
-            >
-              Previous
-            </button>
+              <span>
+                Page {page} of{" "}
+                {
+                  pagination.totalPages
+                }
+              </span>
 
-            <span className="current-page">
-              {pagination.page}
-            </span>
-
-            <button
-              type="button"
-              disabled={
-                pagination.page >=
-                pagination.totalPages
-              }
-              onClick={() =>
-                setPagination(
-                  (previous) => ({
-                    ...previous,
-                    page:
-                      previous.page + 1,
-                  })
-                )
-              }
-            >
-              Next
-            </button>
-
-            <select
-              value={pagination.limit}
-              onChange={(event) =>
-                setPagination(
-                  (previous) => ({
-                    ...previous,
-                    limit: Number(
-                      event.target.value
-                    ),
-                    page: 1,
-                  })
-                )
-              }
-            >
-              <option value="10">
-                10 / page
-              </option>
-
-              <option value="25">
-                25 / page
-              </option>
-
-              <option value="50">
-                50 / page
-              </option>
-            </select>
-          </div>
-        </div>
+              <button
+                type="button"
+                disabled={
+                  page >=
+                  pagination.totalPages
+                }
+                onClick={() =>
+                  setPage(
+                    (previous) =>
+                      previous + 1
+                  )
+                }
+              >
+                Next
+              </button>
+            </div>
+          )}
       </div>
-
-      <AdmissionView
-        admission={
-          selectedAdmission
-        }
-        onClose={() =>
-          setSelectedAdmission(null)
-        }
-      />
     </div>
   );
 };

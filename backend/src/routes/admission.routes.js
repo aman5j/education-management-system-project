@@ -6,8 +6,6 @@ import {
   createAdmission,
   updateAdmission,
   deleteAdmission,
-  updateAdmissionStatus,
-  addAdmissionRemark,
 } from "../controllers/admission.controller.js";
 
 import {
@@ -15,29 +13,61 @@ import {
   authorizeRoles,
 } from "../middleware/auth.middleware.js";
 
+import {
+  createAdmissionValidation,
+  updateAdmissionValidation,
+} from "../validators/admission.validator.js";
+
+import validationMiddleware from "../middleware/validationMiddleware.js";
+
 const router = express.Router();
 
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+*/
+
 router.use(authenticate);
-router.use(authorizeRoles("admin"));
 
-router.get("/", getAdmissions);
+/*
+|--------------------------------------------------------------------------
+| Admin Admission Management
+|--------------------------------------------------------------------------
+*/
 
-router.get("/:id", getAdmission);
-
-router.post("/", createAdmission);
-
-router.put("/:id", updateAdmission);
-
-router.delete("/:id", deleteAdmission);
-
-router.patch(
-  "/:id/status",
-  updateAdmissionStatus
+router.get(
+  "/",
+  authorizeRoles("admin"),
+  getAdmissions
 );
 
-router.patch(
-  "/:id/remark",
-  addAdmissionRemark
+router.get(
+  "/:id",
+  authorizeRoles("admin"),
+  getAdmission
+);
+
+router.post(
+  "/",
+  authorizeRoles("admin"),
+  createAdmissionValidation,
+  validationMiddleware,
+  createAdmission
+);
+
+router.put(
+  "/:id",
+  authorizeRoles("admin"),
+  updateAdmissionValidation,
+  validationMiddleware,
+  updateAdmission
+);
+
+router.delete(
+  "/:id",
+  authorizeRoles("admin"),
+  deleteAdmission
 );
 
 export default router;

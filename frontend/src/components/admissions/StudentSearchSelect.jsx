@@ -6,27 +6,55 @@ import React, {
 
 const StudentSearchSelect = ({
   students = [],
-  value = "",
-  selectedStudent = null,
+  value,
   onChange,
   onSearch,
   loading = false,
   error = "",
   disabled = false,
 }) => {
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
 
-  const [open, setOpen] =
-    useState(false);
+  const wrapperRef = useRef(null);
 
-  const wrapperRef =
-    useRef(null);
+  const selectedStudent = students.find(
+    (student) =>
+      String(student._id) === String(value)
+  );
 
-  const getStudentLabel = (
-    student
-  ) => {
-    if (!student) return "";
+  useEffect(() => {
+    if (selectedStudent) {
+      const label = getStudentLabel(selectedStudent);
+      setSearch(label);
+    }
+  }, [value, selectedStudent]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, []);
+
+  const getStudentLabel = (student) => {
+    const rollNo = student.rollNo || "N/A";
 
     const name = [
       student.firstName,
@@ -35,97 +63,41 @@ const StudentSearchSelect = ({
       .filter(Boolean)
       .join(" ");
 
-    return [
-      student.rollNo,
-      name,
-      student.mobile,
-    ]
-      .filter(Boolean)
-      .join(" - ");
+    const mobile = student.mobile || "";
+
+    return `${rollNo} - ${name}${
+      mobile ? ` - ${mobile}` : ""
+    }`;
   };
 
-  /*
-   * Show selected student on Edit
-   */
-  useEffect(() => {
-    if (selectedStudent) {
-      setSearch(
-        getStudentLabel(
-          selectedStudent
-        )
-      );
-    }
-  }, [selectedStudent]);
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
 
-  /*
-   * Close dropdown outside
-   */
-  useEffect(() => {
-    const handleClickOutside = (
-      event
-    ) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(
-          event.target
-        )
-      ) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
-    };
-  }, []);
-
-  const handleInputChange = (
-    event
-  ) => {
-    const searchValue =
-      event.target.value;
-
-    setSearch(searchValue);
+    setSearch(value);
     setOpen(true);
 
-    /*
-     * IMPORTANT:
-     * send search text to AdmissionForm
-     */
     if (onSearch) {
-      onSearch(searchValue);
-    }
-
-    /*
-     * If user changes text after
-     * selecting student, clear selection.
-     */
-    if (value) {
-      onChange("");
+      onSearch(value);
     }
   };
 
-  const handleSelect = (
-    student
-  ) => {
-    setSearch(
-      getStudentLabel(student)
-    );
+  const handleSelect = (student) => {
+    onChange(student._id);
+
+    setSearch(getStudentLabel(student));
 
     setOpen(false);
+  };
 
-    onChange(
-      student._id,
-      student
-    );
+  const handleClear = () => {
+    setSearch("");
+    onChange("");
+
+    if (onSearch) {
+      onSearch("");
+    }
+
+    setOpen(true);
   };
 
   return (
@@ -137,65 +109,67 @@ const StudentSearchSelect = ({
         <input
           type="text"
           value={search}
-          onChange={
-            handleInputChange
-          }
-          onFocus={() => {
-            if (!disabled) {
-              setOpen(true);
-
-              if (onSearch) {
-                onSearch(search);
-              }
-            }
-          }}
-          disabled={disabled}
-          placeholder="Search by roll no, student name or mobile..."
+          onChange={handleSearchChange}
+          onFocus={() => setOpen(true)}
+          placeholder="Search student by roll no, name or mobile..."
           autoComplete="off"
+          disabled={disabled}
         />
 
-        {loading && (
-          <span className="student-search-loader">
-            Searching...
-          </span>
+        {search && !disabled && (
+          <button
+            type="button"
+            className="student-search-clear"
+            onClick={handleClear}
+            aria-label="Clear student search"
+          >
+            ×
+          </button>
         )}
       </div>
 
       {open && !disabled && (
         <div className="student-search-results">
-          {loading ? (
+          {loading && (
             <div className="student-search-message">
               Searching students...
             </div>
-          ) : students.length > 0 ? (
-            students.map(
-              (student) => (
-                <button
-                  key={
-                    student._id
-                  }
-                  type="button"
-                  className={`student-search-option ${
-                    String(
-                      student._id
-                    ) ===
-                    String(value)
-                      ? "selected"
-                      : ""
-                  }`}
-                  onMouseDown={(
-                    event
-                  ) => {
-                    event.preventDefault();
+          )}
 
-                    handleSelect(
-                      student
-                    );
-                  }}
-                >
+          {!loading &&
+            search.trim().length < 2 && (
+              <div className="student-search-message">
+                Type at least 2 characters to search.
+              </div>
+            )}
+
+          {!loading &&
+            search.trim().length >= 2 &&
+            students.length === 0 && (
+              <div className="student-search-message">
+                No students found.
+              </div>
+            )}
+
+          {!loading &&
+            students.length > 0 &&
+            students.map((student) => (
+              <button
+                type="button"
+                key={student._id}
+                className={`student-search-option ${
+                  String(student._id) ===
+                  String(value)
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  handleSelect(student)
+                }
+              >
+                <div className="student-search-option-main">
                   <strong>
-                    {student.rollNo ||
-                      "No Roll No"}
+                    {student.rollNo || "N/A"}
                   </strong>
 
                   <span>
@@ -206,34 +180,20 @@ const StudentSearchSelect = ({
                       .filter(Boolean)
                       .join(" ")}
                   </span>
+                </div>
 
-                  {student.mobile && (
-                    <small>
-                      {student.mobile}
-                    </small>
-                  )}
-                </button>
-              )
-            )
-          ) : search.trim()
-              .length >= 2 ? (
-            <div className="student-search-message">
-              No student found for
-              "{search}".
-            </div>
-          ) : (
-            <div className="student-search-message">
-              Type at least 2
-              characters to search.
-            </div>
-          )}
+                <div className="student-search-option-meta">
+                  {student.mobile || "No mobile"}
+                </div>
+              </button>
+            ))}
         </div>
       )}
 
       {error && (
-        <small className="admission-field-error">
+        <div className="student-search-error">
           {error}
-        </small>
+        </div>
       )}
     </div>
   );

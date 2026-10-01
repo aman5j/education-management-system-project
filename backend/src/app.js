@@ -10,6 +10,7 @@ import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
+// import admissionRoutes from "./routes/admission.routes.js";
 import admissionRoutes from "./routes/admission.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import categoryRoutes from "./routes/category.routes.js";

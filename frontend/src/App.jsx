@@ -17,6 +17,7 @@ import EditStudent from "./pages/admin/students/EditStudent";
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
 import EditAdmission from "./pages/admin/admissions/EditAdmission";
+import ViewAdmission from "./pages/admin/admissions/ViewAdmission";
 
 import Courses from "./pages/admin/courses/Courses";
 import AddCourse from "./pages/admin/courses/AddCourse";
@@ -271,16 +272,6 @@ const App = () => {
         />
 
         <Route
-          path="students/add"
-          element={<AddStudent />}
-        />
-
-        <Route
-          path="students/:id/edit"
-          element={<EditStudent />}
-        />
-
-        <Route
           path="admissions"
           element={<Admissions />}
         />
@@ -288,6 +279,11 @@ const App = () => {
         <Route
           path="admissions/add"
           element={<AddAdmission />}
+        />
+
+        <Route
+          path="admissions/:id"
+          element={<ViewAdmission />}
         />
 
         <Route

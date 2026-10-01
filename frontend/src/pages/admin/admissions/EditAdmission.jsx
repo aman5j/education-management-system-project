@@ -8,8 +8,6 @@ import {
   useParams,
 } from "react-router-dom";
 
-import Breadcrumb from "../../../common/Breadcrumb";
-
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
 
 import {
@@ -17,130 +15,108 @@ import {
   updateAdmission,
 } from "../../../services/admissionService";
 
-import api from "../../../services/api";
-
-import "./AdmissionManagement.css";
-
 const EditAdmission = () => {
-  const {
-    id,
-  } = useParams();
+  const { id } =
+    useParams();
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   const [admission, setAdmission] =
     useState(null);
 
-  const [students, setStudents] =
-    useState([]);
-
   const [loading, setLoading] =
     useState(true);
 
-  const [submitting, setSubmitting] =
+  const [saving, setSaving] =
     useState(false);
 
+  const [error, setError] =
+    useState("");
+
   useEffect(() => {
-    const loadData = async () => {
+    const loadAdmission =
+      async () => {
+        try {
+          setLoading(true);
+
+          const response =
+            await getAdmission(id);
+
+          setAdmission(
+            response?.data?.data
+          );
+        } catch (loadError) {
+          console.error(
+            "Load admission error:",
+            loadError
+          );
+
+          setError(
+            loadError?.response
+              ?.data?.message ||
+              "Unable to load admission."
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
+
+    loadAdmission();
+  }, [id]);
+
+  const handleSubmit =
+    async (formData) => {
       try {
-        setLoading(true);
+        setSaving(true);
 
-        const [
-          admissionResponse,
-          studentsResponse,
-        ] = await Promise.all([
-          getAdmission(id),
-
-          api.get("/students", {
-            params: {
-              limit: 100,
-            },
-          }),
-        ]);
-
-        setAdmission(
-          admissionResponse.data
-        );
-
-        setStudents(
-          studentsResponse.data.data
-            .students
-        );
-      } catch (error) {
-        window.alert(
-          error.response?.data
-            ?.message ||
-            "Unable to load admission."
+        await updateAdmission(
+          id,
+          formData
         );
 
         navigate(
-          "/admin/admissions"
+          `/admin/admissions/${id}`
+        );
+      } catch (submitError) {
+        throw new Error(
+          submitError?.response
+            ?.data?.message ||
+            "Unable to update admission."
         );
       } finally {
-        setLoading(false);
+        setSaving(false);
       }
     };
 
-    loadData();
-  }, [id, navigate]);
-
-  const handleSubmit = async (
-    data
-  ) => {
-    try {
-      setSubmitting(true);
-
-      await updateAdmission(
-        id,
-        data
-      );
-
-      window.alert(
-        "Admission updated successfully."
-      );
-
-      navigate(
-        "/admin/admissions"
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="admission-page">
-        <div className="admission-card admission-loading">
-          Loading admission...
-        </div>
+      <div className="admission-state">
+        Loading admission...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admission-error">
+        {error}
+      </div>
+    );
+  }
+
+  if (!admission) {
+    return (
+      <div className="admission-empty">
+        Admission not found.
       </div>
     );
   }
 
   return (
     <div className="admission-page">
-      <Breadcrumb
-        items={[
-          {
-            label: "Home",
-            path: "/admin/dashboard",
-          },
-          {
-            label: "Admissions",
-            path: "/admin/admissions",
-          },
-          {
-            label: "Edit Admission",
-          },
-        ]}
-      />
-
       <div className="admission-page-header">
         <div>
-          <span className="page-eyebrow">
-            ADMISSION MANAGEMENT
-          </span>
-
           <h1>
             Edit Admission
           </h1>
@@ -152,15 +128,16 @@ const EditAdmission = () => {
         </div>
       </div>
 
-      <div className="admission-card">
-        <AdmissionForm
-          students={students}
-          initialData={admission}
-          onSubmit={handleSubmit}
-          submitting={submitting}
-          submitLabel="Update Admission"
-        />
-      </div>
+      <AdmissionForm
+        initialData={
+          admission
+        }
+        submitting={saving}
+        submitLabel="Update Admission"
+        onSubmit={
+          handleSubmit
+        }
+      />
     </div>
   );
 };
