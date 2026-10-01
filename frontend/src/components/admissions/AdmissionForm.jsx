@@ -47,8 +47,8 @@ const AdmissionForm = ({
   const [form, setForm] =
     useState(initialForm);
 
-  const [students, setStudents] =
-    useState([]);
+  // const [students, setStudents] =
+  //   useState([]);
 
   const [courses, setCourses] =
     useState([]);
@@ -56,8 +56,8 @@ const AdmissionForm = ({
   const [batches, setBatches] =
     useState([]);
 
-  const [loadingStudents, setLoadingStudents] =
-    useState(false);
+  // const [loadingStudents, setLoadingStudents] =
+  //   useState(false);
 
   const [loadingCourses, setLoadingCourses] =
     useState(false);
