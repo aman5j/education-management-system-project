@@ -21,12 +21,12 @@ import paymentRoutes from "./routes/payment.routes.js";
 
 import receiptRoutes from "./routes/receipt.routes.js";
 
-import { verifyReceipt } from "./controllers/receipt.controller.js";
+// import { verifyReceipt } from "./controllers/receipt.controller.js";
 
-app.get(
-  "/api/verify-receipt/:receiptNo",
-  verifyReceipt
-);
+// app.get(
+//   "/api/verify-receipt/:receiptNo",
+//   verifyReceipt
+// );
 
 
 
@@ -178,6 +178,36 @@ app.use(
 
 // app.use("/api/public/receipts", receiptRoutes);
 app.use("/api/public/receipts", receiptRoutes);
+
+import { verifyReceipt } from "./controllers/receipt.controller.js";
+
+app.use("/api/public/receipts", receiptRoutes);
+
+// Compatibility route for old QR codes
+app.get("/api/verify-receipt/:receiptNo", (req, res) => {
+  const frontendUrl =
+    
+    "https://education-management-frontend.netlify.app/" ||
+    process.env.FRONTEND_URL
+    ||
+    process.env.CLIENT_URL;
+
+  if (!frontendUrl) {
+    return res.status(500).json({
+      success: false,
+      message: "FRONTEND_URL is not configured on the backend.",
+    });
+  }
+
+  const cleanFrontendUrl = frontendUrl.replace(/\/+$/, "");
+
+  const verificationUrl =
+    `${cleanFrontendUrl}/verify-receipt/${encodeURIComponent(
+      req.params.receiptNo
+    )}`;
+
+  return res.redirect(verificationUrl);
+});
 
 
 app.use((req, res) => {
