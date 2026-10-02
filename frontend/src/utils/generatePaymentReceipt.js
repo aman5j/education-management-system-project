@@ -61,6 +61,18 @@ const generatePaymentReceipt = async (payment) => {
     // IMPORTANT:
     // Define receiptNo BEFORE using it anywhere.
     // --------------------------------------------------
+    // const receiptNo =
+    //   payment.receipt_no ||
+    //   payment.receiptNo ||
+    //   payment.receiptNumber ||
+    //   "";
+
+    // if (!receiptNo) {
+    //   throw new Error(
+    //     "Receipt number is missing for this payment."
+    //   );
+    // }
+
     const receiptNo =
       payment.receipt_no ||
       payment.receiptNo ||
@@ -68,10 +80,25 @@ const generatePaymentReceipt = async (payment) => {
       "";
 
     if (!receiptNo) {
-      throw new Error(
-        "Receipt number is missing for this payment."
-      );
+      throw new Error("Receipt number is missing.");
     }
+
+    const frontendBaseUrl = (
+      import.meta.env.VITE_FRONTEND_URL ||
+      window.location.origin
+    ).replace(/\/+$/, "");
+
+    const verificationUrl =
+      `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(receiptNo)}`;
+
+    const qrDataUrl = await QRCode.toDataURL(
+      verificationUrl,
+      {
+        width: 220,
+        margin: 2,
+        errorCorrectionLevel: "H",
+      }
+    );
 
     const student = payment.student_id || {};
     const admission = payment.admission_id || {};
@@ -114,21 +141,21 @@ const generatePaymentReceipt = async (payment) => {
     // QR CODE
     // QR opens the FRONTEND verification page.
     // --------------------------------------------------
-    const frontendBaseUrl = getFrontendBaseUrl();
+    // const frontendBaseUrl = getFrontendBaseUrl();
 
-    const verificationUrl =
-      `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
-        receiptNo
-      )}`;
+    // const verificationUrl =
+    //   `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
+    //     receiptNo
+    //   )}`;
 
-    const qrDataUrl = await QRCode.toDataURL(
-      verificationUrl,
-      {
-        width: 220,
-        margin: 2,
-        errorCorrectionLevel: "H",
-      }
-    );
+    // const qrDataUrl = await QRCode.toDataURL(
+    //   verificationUrl,
+    //   {
+    //     width: 220,
+    //     margin: 2,
+    //     errorCorrectionLevel: "H",
+    //   }
+    // );
 
     // --------------------------------------------------
     // PDF

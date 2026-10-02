@@ -17,7 +17,18 @@ import categoryRoutes from "./routes/category.routes.js";
 import batchRoutes from "./routes/batch.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 // import receiptRoutes from "./routes/receipt.routes.js";
+// import receiptRoutes from "./routes/receipt.routes.js";
+
 import receiptRoutes from "./routes/receipt.routes.js";
+
+import { verifyReceipt } from "./controllers/receipt.controller.js";
+
+app.get(
+  "/api/verify-receipt/:receiptNo",
+  verifyReceipt
+);
+
+
 
 // Setup __dirname equivalent for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -165,6 +176,7 @@ app.use(
 //   receiptRoutes
 // );
 
+// app.use("/api/public/receipts", receiptRoutes);
 app.use("/api/public/receipts", receiptRoutes);
 
 
