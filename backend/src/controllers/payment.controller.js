@@ -236,14 +236,36 @@ export const getPayments =
         total,
       ] = await Promise.all([
         Payment.find(query)
-          .populate(
-            "student_id",
-            "rollNo firstName surname mobile email"
-          )
-          .populate(
-            "admission_id",
-            "course_type course_fee final_amount paid_amount admission_date status"
-          )
+          // .populate(
+          //   "student_id",
+          //   "rollNo firstName surname mobile email"
+          // )
+          // .populate(
+          //   "admission_id",
+          //   "course_type course_fee final_amount paid_amount admission_date status"
+          // )
+          .populate({
+            path: "student_id",
+            select:
+              "rollNo firstName surname fatherName profileImage",
+          })
+          .populate({
+            path: "admission_id",
+            select:
+              "course_id batch_id course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_fee admission_date status",
+            populate: [
+              {
+                path: "course_id",
+                select:
+                  "courseTitle courseType",
+              },
+              {
+                path: "batch_id",
+                select:
+                  "batch_name status",
+              },
+            ],
+          })
           .sort(sort)
           .skip(skip)
           .limit(perPage)

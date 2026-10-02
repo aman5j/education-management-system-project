@@ -925,3 +925,67 @@
   border-color: #e2e8f0;
   box-shadow: none;
 }
+
+
+
+
+/* =========================================================
+   RECEIPT DOWNLOAD ACTION
+========================================================= */
+
+.student-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+}
+
+.student-actions button,
+.student-actions a {
+  width: 32px;
+
+  height: 32px;
+
+  padding: 0;
+
+  border: 1px solid var(--border-color);
+
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  color: #64748b;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  cursor: pointer;
+
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.student-actions button:hover,
+.student-actions a:hover {
+  color: #2563eb;
+
+  border-color: #bfdbfe;
+
+  background: #eff6ff;
+}
+
+.student-actions button.danger:hover {
+  color: #dc2626;
+
+  border-color: #fecaca;
+
+  background: #fef2f2;
+}

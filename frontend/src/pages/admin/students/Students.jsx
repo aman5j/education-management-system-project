@@ -393,6 +393,83 @@ const Students = () => {
       fetchStudents(page);
     };
 
+    /* Function */
+
+    const handleDownloadReceipt = async (
+        student
+      ) => {
+        try {
+          if (!student?._id) {
+            alert(
+              "Student information is missing."
+            );
+
+            return;
+          }
+
+          const response =
+            await getStudentPayments(
+              student._id
+            );
+
+          const data =
+            response?.data?.data;
+
+          const payments = Array.isArray(
+            data?.payments
+          )
+            ? data.payments
+            : Array.isArray(
+                response?.data?.payments
+              )
+            ? response.data.payments
+            : [];
+
+          /*
+          * Only verified payments are allowed.
+          */
+          const verifiedPayments =
+            payments.filter(
+              (payment) =>
+                payment.status ===
+                "Verified"
+            );
+
+          if (
+            verifiedPayments.length === 0
+          ) {
+            alert(
+              "No verified payment receipt is available for this student."
+            );
+
+            return;
+          }
+
+          /*
+          * Payment API is sorted by payment_date desc,
+          * so first payment is the latest receipt.
+          */
+          const latestPayment =
+            verifiedPayments[0];
+
+          await generatePaymentReceipt(
+            latestPayment
+          );
+        } catch (error) {
+          console.error(
+            "Receipt download error:",
+            error
+          );
+
+          alert(
+            error?.response?.data
+              ?.message ||
+              error?.message ||
+              "Unable to download receipt."
+          );
+        }
+      };
+
   return (
     <div className="student-management-page">
       <Breadcrumb

@@ -39,6 +39,8 @@ import AddPayment from "./pages/admin/payments/AddPayment";
 import EditPayment from "./pages/admin/payments/EditPayment";
 import ViewPayment from "./pages/admin/payments/ViewPayment";
 
+import VerifyReceipt from "./pages/public/VerifyReceipt";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -165,6 +167,21 @@ const App = () => {
         path="/reset-password"
         element={<ResetPassword />}
       />
+
+      {/* Public receipt verification */}
+
+      <Route
+        path="/verify-receipt"
+        element={<VerifyReceipt />}
+      />
+
+      
+      <Route
+        path="/verify-receipt/:receiptNo"
+        element={<VerifyReceipt />}
+      />
+
+      
 
       {/* <Route
         path="/admin"
