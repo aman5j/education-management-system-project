@@ -1,36 +1,6 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 
-const money = (value) => {
-  return `Rs. ${Number(
-    value || 0
-  ).toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-};
-
-const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
-
-  return new Date(value).toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }
-  );
-};
-
-// const getFrontendBaseUrl = () => {
-//   return (
-//     import.meta.env.VITE_FRONTEND_URL ||
-//     window.location.origin
-//   );
-// };
-
 const getFrontendBaseUrl = () => {
   const configuredUrl = import.meta.env.VITE_FRONTEND_URL;
 
@@ -41,495 +11,483 @@ const getFrontendBaseUrl = () => {
   return window.location.origin;
 };
 
-const verificationUrl =
-  `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(receiptNo)}`;
+const formatDate = (value) => {
+  if (!value) return "-";
 
-export const generatePaymentReceipt = async (
-  payment
-) => {
-  if (!payment) {
-    throw new Error(
-      "Payment information is required."
-    );
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
   }
 
-  if (payment.status !== "Verified") {
-    throw new Error(
-      "Only verified payments can generate a receipt."
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatCurrency = (value) => {
+  const amount = Number(value || 0);
+
+  return `Rs. ${amount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const getStudentName = (student) => {
+  return [
+    student?.firstName,
+    student?.surname,
+  ]
+    .filter(Boolean)
+    .join(" ");
+};
+
+const generatePaymentReceipt = async (payment) => {
+  try {
+    if (!payment) {
+      throw new Error("Payment information is missing.");
+    }
+
+    if (payment.status !== "Verified") {
+      throw new Error(
+        "Receipt can only be generated for a verified payment."
+      );
+    }
+
+    // --------------------------------------------------
+    // IMPORTANT:
+    // Define receiptNo BEFORE using it anywhere.
+    // --------------------------------------------------
+    const receiptNo =
+      payment.receipt_no ||
+      payment.receiptNo ||
+      payment.receiptNumber ||
+      "";
+
+    if (!receiptNo) {
+      throw new Error(
+        "Receipt number is missing for this payment."
+      );
+    }
+
+    const student = payment.student_id || {};
+    const admission = payment.admission_id || {};
+
+    const studentName = getStudentName(student);
+
+    const rollNo = student?.rollNo || "-";
+
+    const courseTitle =
+      admission?.course_id?.courseTitle ||
+      admission?.courseTitle ||
+      admission?.course_type ||
+      "-";
+
+    const batchName =
+      admission?.batch_id?.batch_name ||
+      admission?.batchName ||
+      "-";
+
+    const paymentAmount = Number(payment.amount || 0);
+
+    const totalFee = Number(
+      admission?.final_amount ||
+        admission?.totalFee ||
+        0
     );
-  }
 
-  const receiptNo =
-    payment.receipt_no ||
-    payment.receiptNo;
-
-  if (!receiptNo) {
-    throw new Error(
-      "Receipt number is missing."
+    const paidFee = Number(
+      admission?.paid_amount ||
+        admission?.paidFee ||
+        0
     );
-  }
 
-  const student =
-    payment.student_id || {};
+    const remainingFee = Math.max(
+      0,
+      totalFee - paidFee
+    );
 
-  const admission =
-    payment.admission_id || {};
+    // --------------------------------------------------
+    // QR CODE
+    // QR opens the FRONTEND verification page.
+    // --------------------------------------------------
+    const frontendBaseUrl = getFrontendBaseUrl();
 
-  const course =
-    admission.course_id || {};
+    const verificationUrl =
+      `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
+        receiptNo
+      )}`;
 
-  const batch =
-    admission.batch_id || {};
-
-  const studentName =
-    [
-      student.firstName,
-      student.surname,
-    ]
-      .filter(Boolean)
-      .join(" ") ||
-    "Student";
-
-  const courseName =
-    course.courseTitle ||
-    admission.course_type ||
-    "—";
-
-  const batchName =
-    batch.batch_name ||
-    "—";
-
-  const totalFee = Number(
-    admission.final_amount || 0
-  );
-
-  const paidFee = Number(
-    admission.paid_amount || 0
-  );
-
-  const remainingFee = Math.max(
-    0,
-    totalFee - paidFee
-  );
-
-  /*
-   * QR code opens the public verification page using frontend URL.
-   */
-  // const verificationUrl =
-  //   `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(
-  //     receiptNo
-  //   )}`;
-
-  
-const verificationUrl =
-  `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(receiptNo)}`;
-
-  const qrDataUrl =
-    await QRCode.toDataURL(
+    const qrDataUrl = await QRCode.toDataURL(
       verificationUrl,
       {
-        width: 180,
-        margin: 1,
+        width: 220,
+        margin: 2,
+        errorCorrectionLevel: "H",
       }
     );
 
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
-
-  const pageWidth =
-    doc.internal.pageSize.getWidth();
-
-  const pageHeight =
-    doc.internal.pageSize.getHeight();
-
-  /*
-   * OUTER BORDER
-   */
-  doc.setDrawColor(
-    210,
-    214,
-    220
-  );
-
-  doc.setLineWidth(0.5);
-
-  doc.rect(
-    10,
-    10,
-    pageWidth - 20,
-    pageHeight - 20
-  );
-
-  /*
-   * HEADER
-   */
-  doc.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  doc.setFontSize(20);
-
-  doc.text(
-    "EDUCATION MANAGEMENT SYSTEM",
-    pageWidth / 2,
-    25,
-    {
-      align: "center",
-    }
-  );
-
-  doc.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  doc.setFontSize(10);
-
-  doc.text(
-    "Official Payment Receipt",
-    pageWidth / 2,
-    32,
-    {
-      align: "center",
-    }
-  );
-
-  /*
-   * RECEIPT NUMBER
-   */
-  doc.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  doc.setFontSize(11);
-
-  doc.text(
-    `Receipt No: ${receiptNo}`,
-    18,
-    45
-  );
-
-  doc.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  doc.text(
-    `Payment Date: ${formatDate(
-      payment.payment_date ||
-        payment.paymentDate
-    )}`,
-    18,
-    52
-  );
-
-  /*
-   * STUDENT INFORMATION
-   */
-  let y = 65;
-
-  doc.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  doc.setFontSize(13);
-
-  doc.text(
-    "Student Information",
-    18,
-    y
-  );
-
-  y += 9;
-
-  doc.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  doc.setFontSize(10);
-
-  doc.text(
-    `Name: ${studentName}`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Roll Number: ${
-      student.rollNo || "—"
-    }`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Course: ${courseName}`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Batch: ${batchName}`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Admission Date: ${formatDate(
-      admission.admission_date ||
-        admission.admissionDate
-    )}`,
-    18,
-    y
-  );
-
-  /*
-   * PAYMENT INFORMATION
-   */
-  y += 15;
-
-  doc.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  doc.setFontSize(13);
-
-  doc.text(
-    "Payment Information",
-    18,
-    y
-  );
-
-  y += 9;
-
-  doc.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  doc.setFontSize(10);
-
-  doc.text(
-    `Payment Amount: ${money(
-      payment.amount
-    )}`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Payment Mode: ${
-      payment.payment_mode ||
-      payment.paymentMode ||
-      "—"
-    }`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Payment Status: ${
-      payment.status || "—"
-    }`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Total Course Fee: ${money(
-      totalFee
-    )}`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Total Paid Fee: ${money(
-      paidFee
-    )}`,
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.text(
-    `Remaining Fee: ${money(
-      remainingFee
-    )}`,
-    18,
-    y
-  );
-
-  /*
-   * AMOUNT BOX
-   */
-  y += 14;
-
-  doc.setDrawColor(
-    190,
-    196,
-    204
-  );
-
-  doc.rect(
-    18,
-    y,
-    105,
-    22
-  );
-
-  doc.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  doc.setFontSize(12);
-
-  doc.text(
-    "Amount Received",
-    24,
-    y + 9
-  );
-
-  doc.setFontSize(15);
-
-  doc.text(
-    money(payment.amount),
-    24,
-    y + 17
-  );
-
-  /*
-   * QR CODE
-   */
-  const qrX =
-    pageWidth - 65;
-
-  const qrY =
-    58;
-
-  doc.addImage(
-    qrDataUrl,
-    "PNG",
-    qrX,
-    qrY,
-    40,
-    40
-  );
-
-  doc.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  doc.setFontSize(8);
-
-  doc.text(
-    "Scan to verify receipt",
-    qrX + 20,
-    qrY + 45,
-    {
-      align: "center",
-    }
-  );
-
-  /*
-   * VERIFICATION URL
-   */
-  y += 38;
-
-  doc.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  doc.setFontSize(10);
-
-  doc.text(
-    "Receipt Verification",
-    18,
-    y
-  );
-
-  y += 7;
-
-  doc.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  doc.setFontSize(7);
-
-  const verificationText =
-    doc.splitTextToSize(
-      verificationUrl,
-      pageWidth - 36
+    // --------------------------------------------------
+    // PDF
+    // --------------------------------------------------
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const left = 18;
+    const right = pageWidth - 18;
+
+    // --------------------------------------------------
+    // OUTER BORDER
+    // --------------------------------------------------
+    doc.setDrawColor(40, 40, 40);
+    doc.setLineWidth(0.5);
+
+    doc.rect(
+      10,
+      10,
+      pageWidth - 20,
+      pageHeight - 20
     );
 
-  doc.text(
-    verificationText,
-    18,
-    y
-  );
+    // --------------------------------------------------
+    // HEADER
+    // --------------------------------------------------
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
 
-  /*
-   * FOOTER
-   */
-  doc.setFontSize(8);
+    doc.text(
+      "PAYMENT RECEIPT",
+      pageWidth / 2,
+      25,
+      {
+        align: "center",
+      }
+    );
 
-  doc.text(
-    "This is a computer-generated payment receipt.",
-    pageWidth / 2,
-    pageHeight - 25,
-    {
-      align: "center",
-    }
-  );
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
 
-  doc.text(
-    "Verify the receipt using the QR code or receipt number.",
-    pageWidth / 2,
-    pageHeight - 19,
-    {
-      align: "center",
-    }
-  );
+    doc.text(
+      "Education Management System",
+      pageWidth / 2,
+      32,
+      {
+        align: "center",
+      }
+    );
 
-  const safeReceipt =
-    String(receiptNo)
-      .replace(
-        /[^a-zA-Z0-9-_]/g,
-        "-"
+    // --------------------------------------------------
+    // RECEIPT INFORMATION
+    // --------------------------------------------------
+    let y = 45;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+
+    doc.text("Receipt Details", left, y);
+
+    y += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    doc.text(
+      `Receipt No: ${receiptNo}`,
+      left,
+      y
+    );
+
+    doc.text(
+      `Payment Date: ${formatDate(
+        payment.payment_date
+      )}`,
+      right,
+      y,
+      {
+        align: "right",
+      }
+    );
+
+    y += 7;
+
+    doc.text(
+      `Payment Mode: ${
+        payment.payment_mode || "-"
+      }`,
+      left,
+      y
+    );
+
+    doc.text(
+      `Status: ${payment.status || "-"}`,
+      right,
+      y,
+      {
+        align: "right",
+      }
+    );
+
+    // --------------------------------------------------
+    // STUDENT DETAILS
+    // --------------------------------------------------
+    y += 15;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+
+    doc.text(
+      "Student Details",
+      left,
+      y
+    );
+
+    y += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    doc.text(
+      `Student Name: ${studentName || "-"}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `Roll No: ${rollNo}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `Course: ${courseTitle}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `Batch: ${batchName}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `Admission Date: ${formatDate(
+        admission.admission_date
+      )}`,
+      left,
+      y
+    );
+
+    // --------------------------------------------------
+    // PAYMENT DETAILS
+    // --------------------------------------------------
+    y += 15;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+
+    doc.text(
+      "Fee Details",
+      left,
+      y
+    );
+
+    y += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    doc.text(
+      `Total Fee: ${formatCurrency(totalFee)}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `Previously Paid: ${formatCurrency(
+        Math.max(
+          0,
+          paidFee - paymentAmount
+        )
+      )}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `This Payment: ${formatCurrency(
+        paymentAmount
+      )}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.text(
+      `Total Paid: ${formatCurrency(paidFee)}`,
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.setFont("helvetica", "bold");
+
+    doc.text(
+      `Remaining Fee: ${formatCurrency(
+        remainingFee
+      )}`,
+      left,
+      y
+    );
+
+    // --------------------------------------------------
+    // QR SECTION
+    // --------------------------------------------------
+    y += 20;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+
+    doc.text(
+      "Receipt Verification",
+      left,
+      y
+    );
+
+    y += 7;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+
+    doc.text(
+      "Scan this QR code to verify this receipt.",
+      left,
+      y
+    );
+
+    // QR image
+    const qrSize = 42;
+
+    doc.addImage(
+      qrDataUrl,
+      "PNG",
+      left,
+      y + 5,
+      qrSize,
+      qrSize
+    );
+
+    // QR URL
+    doc.setFontSize(7);
+
+    const qrText = verificationUrl;
+
+    const wrappedQrText =
+      doc.splitTextToSize(
+        qrText,
+        110
       );
 
-  doc.save(
-    `Payment-Receipt-${safeReceipt}.pdf`
-  );
+    doc.text(
+      wrappedQrText,
+      left + qrSize + 8,
+      y + 15
+    );
+
+    // --------------------------------------------------
+    // NOTES
+    // --------------------------------------------------
+    if (payment.notes) {
+      y += 55;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+
+      doc.text(
+        "Notes",
+        left,
+        y
+      );
+
+      y += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      const notesLines =
+        doc.splitTextToSize(
+          payment.notes,
+          pageWidth - 36
+        );
+
+      doc.text(
+        notesLines,
+        left,
+        y
+      );
+    }
+
+    // --------------------------------------------------
+    // FOOTER
+    // --------------------------------------------------
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+
+    doc.text(
+      "This is a computer generated payment receipt.",
+      pageWidth / 2,
+      pageHeight - 25,
+      {
+        align: "center",
+      }
+    );
+
+    doc.text(
+      "Receipt verification is available through the QR code.",
+      pageWidth / 2,
+      pageHeight - 20,
+      {
+        align: "center",
+      }
+    );
+
+    // --------------------------------------------------
+    // DOWNLOAD
+    // --------------------------------------------------
+    doc.save(
+      `Payment-Receipt-${receiptNo}.pdf`
+    );
+  } catch (error) {
+    console.error(
+      "Payment receipt generation error:",
+      error
+    );
+
+    throw error;
+  }
 };
 
 export default generatePaymentReceipt;
