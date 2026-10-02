@@ -1,342 +1,163 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  useParams,
-} from "react-router-dom";
-
-import {
-  FiCheckCircle,
-  FiAlertCircle,
-  FiSearch,
-} from "react-icons/fi";
-
-import {
-  verifyReceipt,
-} from "../../services/receiptService";
-
-import "../../styles/ReceiptManagement.css";
-
-const money = (value) => {
-  return `₹${Number(
-    value || 0
-  ).toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
-};
-
-const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
-
-  return new Date(value).toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }
-  );
-};
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { verifyReceipt } from "../../services/receiptService";
 
 const VerifyReceipt = () => {
-  const {
-    receiptNo: routeReceiptNo,
-  } = useParams();
+  const { receiptNo } = useParams();
 
-  const [
-    receiptNo,
-    setReceiptNo,
-  ] = useState(
-    routeReceiptNo || ""
-  );
+  const [loading, setLoading] = useState(false);
+  const [receipt, setReceipt] = useState(null);
+  const [error, setError] = useState("");
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-  const [
-    result,
-    setResult,
-  ] = useState(null);
-
-  const handleVerify = async (
-    event
-  ) => {
-    event?.preventDefault();
-
-    const value =
-      receiptNo.trim();
-
-    if (!value) {
-      setError(
-        "Please enter a receipt number."
-      );
-
-      setResult(null);
-
+  useEffect(() => {
+    if (!receiptNo) {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError("");
-      setResult(null);
+    const verify = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        setReceipt(null);
 
-      const response =
-        await verifyReceipt(value);
+        const response = await verifyReceipt(receiptNo);
 
-      setResult(
-        response?.data || null
-      );
-    } catch (verifyError) {
-      setError(
-        verifyError?.response
-          ?.data?.message ||
-          verifyError?.message ||
-          "Unable to verify receipt."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (response?.success) {
+          setReceipt(response.data);
+        } else {
+          setError(
+            response?.message || "Receipt verification failed."
+          );
+        }
+      } catch (err) {
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Receipt verification failed."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    if (routeReceiptNo) {
-      handleVerify();
-    }
-  }, [routeReceiptNo]);
+    verify();
+  }, [receiptNo]);
 
   return (
-    <div className="receipt-verification-page">
-      <div className="receipt-verification-container">
-        <div className="receipt-verification-header">
-          <h1>
-            Receipt Verification
-          </h1>
+    <div className="verify-receipt-page">
+      <div className="verify-receipt-container">
+        <h1>Receipt Verification</h1>
 
-          <p>
-            Verify the authenticity of
-            an education payment receipt.
-          </p>
-        </div>
-
-        <form
-          className="receipt-verification-search"
-          onSubmit={handleVerify}
-        >
-          <div className="receipt-search-input">
-            <FiSearch />
-
-            <input
-              type="text"
-              value={receiptNo}
-              onChange={(event) =>
-                setReceiptNo(
-                  event.target.value
-                )
-              }
-              placeholder="Enter receipt number"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Verifying..."
-              : "Verify Receipt"}
-          </button>
-        </form>
-
-        {error && (
-          <div className="receipt-verification-error">
-            <FiAlertCircle />
-
-            <div>
-              <strong>
-                Receipt Verification Failed
-              </strong>
-
-              <span>
-                {error}
-              </span>
-            </div>
+        {loading && (
+          <div className="verify-loading">
+            Verifying receipt...
           </div>
         )}
 
-        {result && (
-          <div className="verified-receipt-card">
-            <div className="verified-receipt-success">
-              <FiCheckCircle />
+        {!loading && error && (
+          <div className="verify-error">
+            <h2>Receipt Not Verified</h2>
+            <p>{error}</p>
+          </div>
+        )}
 
-              <div>
-                <strong>
-                  Receipt Verified
-                </strong>
-
-                <span>
-                  This payment receipt is
-                  valid and verified.
-                </span>
-              </div>
+        {!loading && receipt && (
+          <div className="verify-success">
+            <div className="verify-success-icon">
+              ✓
             </div>
 
-            <div className="verified-receipt-number">
-              <span>
-                Receipt Number
-              </span>
+            <h2>Receipt Verified</h2>
 
-              <strong>
-                {result.receipt.receiptNo}
-              </strong>
-            </div>
+            <p>
+              This payment receipt is valid and verified.
+            </p>
 
-            <div className="verified-receipt-grid">
+            <div className="receipt-verification-details">
               <div>
-                <span>
-                  Student Name
-                </span>
-
+                <span>Receipt Number</span>
                 <strong>
-                  {
-                    result.student.fullName ||
-                    "—"
-                  }
+                  {receipt.receipt?.receiptNo}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Roll Number
-                </span>
-
+                <span>Student</span>
                 <strong>
-                  {
-                    result.student.rollNo ||
-                    "—"
-                  }
+                  {receipt.student?.fullName || "-"}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Course
-                </span>
-
+                <span>Roll No</span>
                 <strong>
-                  {
-                    result.admission.courseTitle ||
-                    "—"
-                  }
+                  {receipt.student?.rollNo || "-"}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Batch
-                </span>
-
+                <span>Course</span>
                 <strong>
-                  {
-                    result.admission.batchName ||
-                    "—"
-                  }
+                  {receipt.admission?.courseTitle || "-"}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Payment Date
-                </span>
-
+                <span>Batch</span>
                 <strong>
-                  {formatDate(
-                    result.receipt.paymentDate
-                  )}
+                  {receipt.admission?.batchName || "-"}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Payment Mode
-                </span>
-
+                <span>Payment Amount</span>
                 <strong>
-                  {
-                    result.receipt.paymentMode ||
-                    "—"
-                  }
+                  ₹{Number(
+                    receipt.receipt?.amount || 0
+                  ).toLocaleString("en-IN")}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Amount Paid
-                </span>
-
+                <span>Payment Mode</span>
                 <strong>
-                  {money(
-                    result.receipt.amount
-                  )}
+                  {receipt.receipt?.paymentMode || "-"}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Total Fee
-                </span>
-
+                <span>Status</span>
                 <strong>
-                  {money(
-                    result.admission.totalFee
-                  )}
+                  {receipt.receipt?.status || "-"}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Total Paid
-                </span>
-
+                <span>Total Fee</span>
                 <strong>
-                  {money(
-                    result.admission.paidFee
-                  )}
+                  ₹{Number(
+                    receipt.admission?.totalFee || 0
+                  ).toLocaleString("en-IN")}
                 </strong>
               </div>
 
               <div>
-                <span>
-                  Remaining Fee
-                </span>
-
+                <span>Paid Fee</span>
                 <strong>
-                  {money(
-                    result.admission.remainingFee
-                  )}
+                  ₹{Number(
+                    receipt.admission?.paidFee || 0
+                  ).toLocaleString("en-IN")}
                 </strong>
               </div>
-            </div>
 
-            <div className="verified-receipt-footer">
-              <span>
-                Payment Status
-              </span>
-
-              <strong>
-                {result.receipt.status}
-              </strong>
+              <div>
+                <span>Remaining Fee</span>
+                <strong>
+                  ₹{Number(
+                    receipt.admission?.remainingFee || 0
+                  ).toLocaleString("en-IN")}
+                </strong>
+              </div>
             </div>
           </div>
         )}

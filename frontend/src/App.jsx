@@ -171,13 +171,12 @@ const App = () => {
       {/* Public receipt verification */}
 
       <Route
-        path="/verify-receipt"
+        path="/verify-receipt/:receiptNo"
         element={<VerifyReceipt />}
       />
 
-      
       <Route
-        path="/verify-receipt/:receiptNo"
+        path="/verify-receipt"
         element={<VerifyReceipt />}
       />
 

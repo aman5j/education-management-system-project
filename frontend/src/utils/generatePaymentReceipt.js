@@ -24,12 +24,25 @@ const formatDate = (value) => {
   );
 };
 
+// const getFrontendBaseUrl = () => {
+//   return (
+//     import.meta.env.VITE_FRONTEND_URL ||
+//     window.location.origin
+//   );
+// };
+
 const getFrontendBaseUrl = () => {
-  return (
-    import.meta.env.VITE_FRONTEND_URL ||
-    window.location.origin
-  );
+  const configuredUrl = import.meta.env.VITE_FRONTEND_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/+$/, "");
+  }
+
+  return window.location.origin;
 };
+
+const verificationUrl =
+  `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(receiptNo)}`;
 
 export const generatePaymentReceipt = async (
   payment
@@ -102,10 +115,14 @@ export const generatePaymentReceipt = async (
   /*
    * QR code opens the public verification page using frontend URL.
    */
-  const verificationUrl =
-    `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(
-      receiptNo
-    )}`;
+  // const verificationUrl =
+  //   `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(
+  //     receiptNo
+  //   )}`;
+
+  
+const verificationUrl =
+  `${getFrontendBaseUrl()}/verify-receipt/${encodeURIComponent(receiptNo)}`;
 
   const qrDataUrl =
     await QRCode.toDataURL(

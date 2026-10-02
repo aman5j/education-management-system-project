@@ -16,6 +16,7 @@ import courseRoutes from "./routes/course.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import batchRoutes from "./routes/batch.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+// import receiptRoutes from "./routes/receipt.routes.js";
 import receiptRoutes from "./routes/receipt.routes.js";
 
 // Setup __dirname equivalent for ES Modules
@@ -159,10 +160,12 @@ app.use(
   paymentRoutes
 );
 
-app.use(
-  "/api/public/receipts",
-  receiptRoutes
-);
+// app.use(
+//   "/api/public/receipts",
+//   receiptRoutes
+// );
+
+app.use("/api/public/receipts", receiptRoutes);
 
 
 app.use((req, res) => {
