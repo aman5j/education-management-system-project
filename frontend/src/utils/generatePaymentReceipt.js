@@ -936,25 +936,28 @@ const generatePaymentReceipt = async (
     |
     */
 
-    const qrDataUrl =
-      await QRCode.toDataURL(
-        verificationUrl,
-        {
-          type: "image/png",
+const qrDataUrl =
+  await QRCode.toDataURL(
+    verificationUrl,
+    {
+      type: "image/png",
 
-          width: 1600,
+      // High resolution source
+      width: 2000,
 
-          margin: 10,
+      // Large white quiet zone around QR
+      margin: 12,
 
-          errorCorrectionLevel:
-            "H",
+      // M is better here because the URL is short
+      // and it keeps the QR less dense and easier to scan.
+      errorCorrectionLevel: "M",
 
-          color: {
-            dark: "#000000",
-            light: "#FFFFFF",
-          },
-        }
-      );
+      color: {
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
+    }
+  );
 
     /*
     |--------------------------------------------------------------------------
@@ -1921,7 +1924,7 @@ const generatePaymentReceipt = async (
     |
     */
 
-    const lowerHeight = 40;
+    const lowerHeight = 46;
 
     /*
     |--------------------------------------------------------------------------
@@ -1989,13 +1992,13 @@ const generatePaymentReceipt = async (
     |
     */
 
-    const qrX =
-      qrBoxX + 6;
+  const qrX =
+  qrBoxX + 5;
 
-    const qrY =
-      lowerY + 14;
+const qrY =
+  lowerY + 14;
 
-    const qrSize = 24;
+const qrSize = 31;
 
     /*
     |--------------------------------------------------------------------------
@@ -2003,17 +2006,16 @@ const generatePaymentReceipt = async (
     |--------------------------------------------------------------------------
     */
 
-    doc.addImage(
-      qrDataUrl,
-      "PNG",
-      qrX,
-      qrY,
-      qrSize,
-      qrSize,
-      undefined,
-      "FAST"
-    );
-
+doc.addImage(
+  qrDataUrl,
+  "PNG",
+  qrX,
+  qrY,
+  qrSize,
+  qrSize,
+  undefined,
+  "NONE"
+);
     /*
     |--------------------------------------------------------------------------
     | CLICKABLE QR
@@ -2077,11 +2079,11 @@ const generatePaymentReceipt = async (
     doc.setLineWidth(0.25);
 
     doc.line(
-      qrBoxX + 40,
-      lowerY + 14,
-      qrBoxX + 40,
-      lowerY + 36
-    );
+  qrBoxX + 45,
+  lowerY + 14,
+  qrBoxX + 45,
+  lowerY + 40
+);
 
     /*
     |--------------------------------------------------------------------------
@@ -2101,16 +2103,16 @@ const generatePaymentReceipt = async (
     doc.setFontSize(6.8);
 
     doc.text(
-      "Scan this QR code",
-      qrBoxX + 46,
-      lowerY + 22
-    );
+  "Scan this QR code",
+  qrBoxX + 50,
+  lowerY + 23
+);
 
-    doc.text(
-      "to verify this receipt.",
-      qrBoxX + 46,
-      lowerY + 28
-    );
+doc.text(
+  "to verify this receipt.",
+  qrBoxX + 50,
+  lowerY + 29
+);
 
     /*
     |--------------------------------------------------------------------------
@@ -2190,7 +2192,7 @@ const generatePaymentReceipt = async (
       "normal"
     );
 
-    doc.setFontSize(6.4);
+    doc.setFontSize(6.2);
 
     doc.text(
       "This is a computer generated",
