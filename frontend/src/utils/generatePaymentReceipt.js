@@ -176,7 +176,8 @@ const getBatchName = (admission = {}) => {
 
 const getReceiptVerificationBaseUrl = () => {
   const configuredUrl =
-    import.meta.env.VITE_RECEIPT_VERIFY_BASE_URL;
+    // import.meta.env.VITE_RECEIPT_VERIFY_BASE_URL;
+    import.meta.env.VITE_API_URL || "https://education-management-backend-79g1.onrender.com/api";
 
   if (configuredUrl?.trim()) {
     return configuredUrl
@@ -185,7 +186,7 @@ const getReceiptVerificationBaseUrl = () => {
   }
 
   const frontendUrl =
-    import.meta.env.VITE_FRONTEND_URL;
+    import.meta.env.VITE_FRONTEND_URL || "https://education-management-frontend.netlify.app/";
 
   if (frontendUrl?.trim()) {
     return frontendUrl
