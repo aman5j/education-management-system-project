@@ -21,20 +21,16 @@ const PaymentFilters = ({
           type="text"
           value={search}
           onChange={(event) =>
-            setSearch(
-              event.target.value
-            )
+            setSearch(event.target.value)
           }
-          placeholder="Search receipt number or notes..."
+          placeholder="Search receipt no, student name or roll no..."
         />
       </div>
 
       <select
         value={status}
         onChange={(event) =>
-          setStatus(
-            event.target.value
-          )
+          setStatus(event.target.value)
         }
       >
         <option value="">
@@ -61,9 +57,7 @@ const PaymentFilters = ({
       <select
         value={paymentMode}
         onChange={(event) =>
-          setPaymentMode(
-            event.target.value
-          )
+          setPaymentMode(event.target.value)
         }
       >
         <option value="">

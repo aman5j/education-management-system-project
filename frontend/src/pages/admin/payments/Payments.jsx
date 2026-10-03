@@ -118,24 +118,97 @@ const Payments = () => {
       }
     };
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   loadPayments();
+  // }, [
+  //   page,
+  //   status,
+  //   paymentMode,
+  // ]);
+
+  // useEffect(() => {
+  //   const timer =
+  //     setTimeout(() => {
+  //       setPage(1);
+  //       loadPayments();
+  //     }, 400);
+
+  //   return () =>
+  //     clearTimeout(timer);
+  // }, [search]);
+
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     loadPayments();
+  //   }, 400);
+
+  //   return () => {
+  //     clearTimeout(timer);
+  //   };
+  // }, [
+  //   search,
+  //   page,
+  //   status,
+  //   paymentMode,
+  // ]);
+
+  // useEffect(() => {
+  //     setPage(1);
+  //   }, [
+  //     search,
+  //     status,
+  //     paymentMode,
+  //   ]);
+
+  //   useEffect(() => {
+  //     const timer = setTimeout(() => {
+  //       loadPayments();
+  //     }, 400);
+
+  //     return () => {
+  //       clearTimeout(timer);
+  //     };
+  //   }, [
+  //     search,
+  //     page,
+  //     status,
+  //     paymentMode,
+  //   ]);
+
+//   useEffect(() => {
+//   if (page !== 1) {
+//     setPage(1);
+//     return;
+//   }
+
+//   const timer = setTimeout(() => {
+//     loadPayments();
+//   }, 400);
+
+//   return () => {
+//     clearTimeout(timer);
+//   };
+// }, [
+//   search,
+//   status,
+//   paymentMode,
+//   page,
+// ]);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
     loadPayments();
-  }, [
-    page,
-    status,
-    paymentMode,
-  ]);
+  }, 400);
 
-  useEffect(() => {
-    const timer =
-      setTimeout(() => {
-        setPage(1);
-        loadPayments();
-      }, 400);
-
-    return () =>
-      clearTimeout(timer);
-  }, [search]);
+  return () => {
+    clearTimeout(timer);
+  };
+}, [
+  search,
+  status,
+  paymentMode,
+  page,
+]);
 
   const handleDelete =
     async (id) => {
@@ -171,6 +244,11 @@ const Payments = () => {
       setPage(1);
     };
 
+  const handleSearchChange = (value) => {
+      setSearch(value);
+      setPage(1);
+    };
+
   return (
     <div className="payment-page">
       <div className="payment-page-header">
@@ -194,7 +272,7 @@ const Payments = () => {
       </div>
 
       <div className="payment-card">
-        <PaymentFilters
+        {/* <PaymentFilters
           search={search}
           setSearch={
             setSearch
@@ -212,7 +290,23 @@ const Payments = () => {
           onReset={
             resetFilters
           }
-        />
+        /> */}
+
+        <PaymentFilters
+            search={search}
+            setSearch={handleSearchChange}
+            status={status}
+            setStatus={(value) => {
+              setStatus(value);
+              setPage(1);
+            }}
+            paymentMode={paymentMode}
+            setPaymentMode={(value) => {
+              setPaymentMode(value);
+              setPage(1);
+            }}
+            onReset={resetFilters}
+          />
 
         {error && (
           <div className="payment-error">

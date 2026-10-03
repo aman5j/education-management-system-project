@@ -144,164 +144,574 @@ const validateAdmissionAndStudent =
 |--------------------------------------------------------------------------
 */
 
-export const getPayments =
-  async (req, res) => {
-    try {
-      const {
-        search = "",
-        status = "",
-        payment_mode = "",
-        admission_id = "",
-        student_id = "",
-        page = 1,
-        limit = 10,
-        sort = "-payment_date",
-      } = req.query;
+// export const getPayments =
+//   async (req, res) => {
+//     try {
+//       const {
+//         search = "",
+//         status = "",
+//         payment_mode = "",
+//         admission_id = "",
+//         student_id = "",
+//         page = 1,
+//         limit = 10,
+//         sort = "-payment_date",
+//       } = req.query;
 
-      const currentPage = Math.max(
-        Number(page) || 1,
-        1
+//       const currentPage = Math.max(
+//         Number(page) || 1,
+//         1
+//       );
+
+//       const perPage = Math.min(
+//         Math.max(
+//           Number(limit) || 10,
+//           1
+//         ),
+//         100
+//       );
+
+//       const query = {};
+
+//       if (req.user?.role === "student") {
+//         const ownStudentId =
+//           await getAuthenticatedStudentId(
+//             req
+//           );
+
+//         if (!ownStudentId) {
+//           return res.status(403).json({
+//             success: false,
+//             message:
+//               "Student record could not be resolved.",
+//           });
+//         }
+
+//         query.student_id =
+//           ownStudentId;
+//       } else {
+//         if (student_id) {
+//           query.student_id =
+//             student_id;
+//         }
+
+//         if (admission_id) {
+//           query.admission_id =
+//             admission_id;
+//         }
+//       }
+
+//       if (status) {
+//         query.status = status;
+//       }
+
+//       if (payment_mode) {
+//         query.payment_mode =
+//           payment_mode;
+//       }
+
+//       /*
+// |--------------------------------------------------------------------------
+// | SEARCH
+// |--------------------------------------------------------------------------
+// |
+// | Search:
+// | 1. Receipt Number
+// | 2. Notes
+// | 3. Student Name
+// | 4. Student Roll No
+// |
+// |--------------------------------------------------------------------------
+// */
+
+// if (search.trim()) {
+//   const searchValue =
+//     search.trim();
+
+//   const escapedSearch =
+//     searchValue.replace(
+//       /[.*+?^${}()|[\]\\]/g,
+//       "\\$&"
+//     );
+
+//   const regex =
+//     new RegExp(
+//       escapedSearch,
+//       "i"
+//     );
+
+//   const matchingStudents =
+//     await Student.find({
+//       $or: [
+//         {
+//           firstName: regex,
+//         },
+//         {
+//           surname: regex,
+//         },
+//         {
+//           rollNo: regex,
+//         },
+//       ],
+//     })
+//       .select("_id")
+//       .lean();
+
+//   const studentIds =
+//     matchingStudents.map(
+//       (student) =>
+//         student._id
+//     );
+
+//   paymentQuery.$or = [
+//     {
+//       receipt_no: regex,
+//     },
+//     {
+//       notes: regex,
+//     },
+//     {
+//       student_id: {
+//         $in: studentIds,
+//       },
+//     },
+//   ];
+// }
+
+//       // if (search.trim()) {
+//       //   query.$or = [
+//       //     {
+//       //       receipt_no: {
+//       //         $regex: search.trim(),
+//       //         $options: "i",
+//       //       },
+//       //     },
+//       //     {
+//       //       notes: {
+//       //         $regex: search.trim(),
+//       //         $options: "i",
+//       //       },
+//       //     },
+//       //   ];
+//       // }
+
+//       const sort = {};
+
+//       sort[sortBy] =
+//         sortOrder === "asc"
+//           ? 1
+//           : -1;
+
+//       const skip =
+//         (currentPage - 1) *
+//         perPage;
+
+//       const [
+//         payments,
+//         total,
+//       ] = await Promise.all([
+//         Payment.find(query)
+//           // .populate(
+//           //   "student_id",
+//           //   "rollNo firstName surname mobile email"
+//           // )
+//           // .populate(
+//           //   "admission_id",
+//           //   "course_type course_fee final_amount paid_amount admission_date status"
+//           // )
+//           .populate({
+//             path: "student_id",
+//             select:
+//               "rollNo firstName surname fatherName profileImage",
+//           })
+//           .populate({
+//             path: "admission_id",
+//             select:
+//               "course_id batch_id course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_fee admission_date status",
+//             populate: [
+//               {
+//                 path: "course_id",
+//                 select:
+//                   "courseTitle courseType",
+//               },
+//               {
+//                 path: "batch_id",
+//                 select:
+//                   "batch_name status",
+//               },
+//             ],
+//           })
+//           .sort(sort)
+//           .skip(skip)
+//           .limit(perPage)
+//           .lean(),
+
+//         Payment.countDocuments(query),
+//       ]);
+
+//       return res.status(200).json({
+//         success: true,
+//         data: {
+//           payments,
+//           pagination: {
+//             page: currentPage,
+//             limit: perPage,
+//             total,
+//             totalPages:
+//               Math.ceil(
+//                 total / perPage
+//               ) || 1,
+//           },
+//         },
+//       });
+//     } catch (error) {
+//       console.error(
+//         "Get payments error:",
+//         error
+//       );
+
+//       return res.status(500).json({
+//         success: false,
+//         message:
+//           "Unable to load payments.",
+//       });
+//     }
+//   };
+
+/*
+|--------------------------------------------------------------------------
+| GET /api/payments
+|--------------------------------------------------------------------------
+*/
+
+export const getPayments = async (req, res) => {
+  try {
+    const {
+      search = "",
+      status = "",
+      payment_mode = "",
+      admission_id = "",
+      student_id = "",
+      page = 1,
+      limit = 10,
+      sort = "-payment_date",
+    } = req.query;
+
+    const currentPage = Math.max(Number(page) || 1, 1);
+
+    const perPage = Math.min(
+      Math.max(Number(limit) || 10, 1),
+      100
+    );
+
+    const query = {};
+
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT ACCESS
+    |--------------------------------------------------------------------------
+    */
+
+    if (req.user?.role === "student") {
+      const ownStudentId = await getAuthenticatedStudentId(req);
+
+      if (!ownStudentId) {
+        return res.status(403).json({
+          success: false,
+          message: "Student record could not be resolved.",
+        });
+      }
+
+      query.student_id = ownStudentId;
+    } else {
+      /*
+      |--------------------------------------------------------------------------
+      | ADMIN / WEBSITE EDITOR FILTERS
+      |--------------------------------------------------------------------------
+      */
+
+      if (student_id) {
+        query.student_id = student_id;
+      }
+
+      if (admission_id) {
+        query.admission_id = admission_id;
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STATUS FILTER
+    |--------------------------------------------------------------------------
+    */
+
+    if (status) {
+      query.status = status;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT MODE FILTER
+    |--------------------------------------------------------------------------
+    */
+
+    if (payment_mode) {
+      query.payment_mode = payment_mode;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SEARCH
+    |--------------------------------------------------------------------------
+    |
+    | Search supports:
+    |
+    | 1. Receipt Number
+    | 2. Notes
+    | 3. Student First Name
+    | 4. Student Surname
+    | 5. Student Roll Number
+    | 6. Full Student Name
+    |
+    |--------------------------------------------------------------------------
+    */
+
+    if (search.trim()) {
+      const searchValue = search.trim();
+
+      /*
+      |--------------------------------------------------------------------------
+      | Escape regex special characters
+      |--------------------------------------------------------------------------
+      */
+
+      const escapeRegex = (value) => {
+        return value.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        );
+      };
+
+      const escapedSearch = escapeRegex(searchValue);
+
+      const regex = new RegExp(
+        escapedSearch,
+        "i"
       );
 
-      const perPage = Math.min(
-        Math.max(
-          Number(limit) || 10,
-          1
-        ),
-        100
-      );
+      /*
+      |--------------------------------------------------------------------------
+      | Find students matching search
+      |--------------------------------------------------------------------------
+      */
 
-      const query = {};
+      const searchTokens = searchValue
+        .split(/\s+/)
+        .filter(Boolean);
 
-      if (req.user?.role === "student") {
-        const ownStudentId =
-          await getAuthenticatedStudentId(
-            req
-          );
+      let matchingStudents = [];
 
-        if (!ownStudentId) {
-          return res.status(403).json({
-            success: false,
-            message:
-              "Student record could not be resolved.",
-          });
-        }
+      /*
+      |--------------------------------------------------------------------------
+      | Single word search
+      |--------------------------------------------------------------------------
+      */
 
-        query.student_id =
-          ownStudentId;
+      if (searchTokens.length === 1) {
+        matchingStudents = await Student.find({
+          $or: [
+            {
+              firstName: regex,
+            },
+            {
+              surname: regex,
+            },
+            {
+              rollNo: regex,
+            },
+          ],
+        })
+          .select("_id")
+          .lean();
       } else {
-        if (student_id) {
-          query.student_id =
-            student_id;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Full name search
+        |
+        | Example:
+        | Rahul Sharma
+        |
+        | Will match:
+        | firstName = Rahul
+        | surname = Sharma
+        |--------------------------------------------------------------------------
+        */
 
-        if (admission_id) {
-          query.admission_id =
-            admission_id;
-        }
+        const tokenConditions = searchTokens.map(
+          (token) => {
+            const tokenRegex = new RegExp(
+              escapeRegex(token),
+              "i"
+            );
+
+            return {
+              $or: [
+                {
+                  firstName: tokenRegex,
+                },
+                {
+                  surname: tokenRegex,
+                },
+                {
+                  rollNo: tokenRegex,
+                },
+              ],
+            };
+          }
+        );
+
+        matchingStudents = await Student.find({
+          $and: tokenConditions,
+        })
+          .select("_id")
+          .lean();
       }
 
-      if (status) {
-        query.status = status;
-      }
+      const studentIds = matchingStudents.map(
+        (student) => student._id
+      );
 
-      if (payment_mode) {
-        query.payment_mode =
-          payment_mode;
-      }
+      /*
+      |--------------------------------------------------------------------------
+      | IMPORTANT:
+      | Use query, NOT paymentQuery
+      |--------------------------------------------------------------------------
+      */
 
-      if (search.trim()) {
-        query.$or = [
-          {
-            receipt_no: {
-              $regex: search.trim(),
-              $options: "i",
-            },
-          },
-          {
-            notes: {
-              $regex: search.trim(),
-              $options: "i",
-            },
-          },
-        ];
-      }
-
-      const skip =
-        (currentPage - 1) *
-        perPage;
-
-      const [
-        payments,
-        total,
-      ] = await Promise.all([
-        Payment.find(query)
-          // .populate(
-          //   "student_id",
-          //   "rollNo firstName surname mobile email"
-          // )
-          // .populate(
-          //   "admission_id",
-          //   "course_type course_fee final_amount paid_amount admission_date status"
-          // )
-          .populate({
-            path: "student_id",
-            select:
-              "rollNo firstName surname fatherName profileImage",
-          })
-          .populate({
-            path: "admission_id",
-            select:
-              "course_id batch_id course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_fee admission_date status",
-            populate: [
-              {
-                path: "course_id",
-                select:
-                  "courseTitle courseType",
-              },
-              {
-                path: "batch_id",
-                select:
-                  "batch_name status",
-              },
-            ],
-          })
-          .sort(sort)
-          .skip(skip)
-          .limit(perPage)
-          .lean(),
-
-        Payment.countDocuments(query),
-      ]);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          payments,
-          pagination: {
-            page: currentPage,
-            limit: perPage,
-            total,
-            totalPages:
-              Math.ceil(
-                total / perPage
-              ) || 1,
+      query.$or = [
+        {
+          receipt_no: regex,
+        },
+        {
+          notes: regex,
+        },
+        {
+          student_id: {
+            $in: studentIds,
           },
         },
-      });
-    } catch (error) {
-      console.error(
-        "Get payments error:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Unable to load payments.",
-      });
+      ];
     }
-  };
+
+    /*
+    |--------------------------------------------------------------------------
+    | SORT
+    |--------------------------------------------------------------------------
+    */
+
+    let sortObject = {
+      payment_date: -1,
+    };
+
+    if (sort) {
+      if (sort.startsWith("-")) {
+        sortObject = {
+          [sort.substring(1)]: -1,
+        };
+      } else {
+        sortObject = {
+          [sort]: 1,
+        };
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAGINATION
+    |--------------------------------------------------------------------------
+    */
+
+    const skip =
+      (currentPage - 1) * perPage;
+
+    /*
+    |--------------------------------------------------------------------------
+    | FETCH PAYMENTS
+    |--------------------------------------------------------------------------
+    */
+
+    const [
+      payments,
+      total,
+    ] = await Promise.all([
+      Payment.find(query)
+        .populate({
+          path: "student_id",
+          select:
+            "rollNo firstName surname fatherName profileImage",
+        })
+        .populate({
+          path: "admission_id",
+          select:
+            "course_id batch_id course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_fee admission_date status",
+          populate: [
+            {
+              path: "course_id",
+              select:
+                "courseTitle courseType",
+            },
+            {
+              path: "batch_id",
+              select:
+                "batch_name status",
+            },
+          ],
+        })
+        .sort(sortObject)
+        .skip(skip)
+        .limit(perPage)
+        .lean(),
+
+      Payment.countDocuments(query),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        payments,
+
+        pagination: {
+          page: currentPage,
+          limit: perPage,
+          total,
+
+          totalPages:
+            Math.ceil(
+              total / perPage
+            ) || 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Get payments error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Unable to load payments.",
+    });
+  }
+};
 
 /*
 |--------------------------------------------------------------------------
