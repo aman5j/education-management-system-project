@@ -19,28 +19,20 @@ import {
 | PAYMENT RECEIPT GENERATOR
 |--------------------------------------------------------------------------
 |
-| IMPORTANT
-|
 | QR FLOW:
 |
 | QR CODE
 |    ↓
-| FRONTEND /verify-receipt/:receiptNo
+| /verify-receipt/:receiptNo
 |    ↓
 | VerifyReceipt.jsx
 |    ↓
-| BACKEND /api/public/receipts/verify/:receiptNo
+| /api/public/receipts/verify/:receiptNo
 |
-| DO NOT change this flow.
 |--------------------------------------------------------------------------
 */
 
-/* ========================================================================
-   INSTITUTE CONFIGURATION
-   ======================================================================== */
-
-const INSTITUTE_NAME =
-  "IT LEARNING INSTITUTE";
+const INSTITUTE_NAME = "IT LEARNING INSTITUTE";
 
 const INSTITUTE_TAGLINE =
   "An ISO 9001:2015 Certified Organization";
@@ -49,23 +41,29 @@ const INSTITUTE_ADDRESS =
   "ADDRESS : 2ND FLOOR, NATRAJ GYM, CHAR SHAHAR KA NAKA, HAZIRA,\n" +
   "GWALIOR, MADHYA PRADESH 474003";
 
-const WEBSITE =
-  "www.itlearning.in";
+const WEBSITE = "www.itlearning.in";
 
-const PHONE =
-  "+91 9770622162";
+const PHONE = "+91 9770622162";
 
 /*
- * Put the actual logo here:
- *
- * frontend/public/assets/institute-logo.png
- */
+|--------------------------------------------------------------------------
+| Institute Logo
+|--------------------------------------------------------------------------
+|
+| Put your logo here:
+|
+| frontend/public/assets/institute-logo.png
+|
+*/
+
 const INSTITUTE_LOGO_URL =
   "/assets/institute-logo.png";
 
-/* ========================================================================
-   COLORS
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| COLORS
+|--------------------------------------------------------------------------
+*/
 
 const COLORS = {
   purple: [42, 30, 145],
@@ -94,9 +92,11 @@ const COLORS = {
   white: [255, 255, 255],
 };
 
-/* ========================================================================
-   BASIC HELPERS
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| BASIC HELPERS
+|--------------------------------------------------------------------------
+*/
 
 const formatDate = (value) => {
   if (!value) {
@@ -126,9 +126,7 @@ const formatMoney = (value) => {
   )}`;
 };
 
-const getStudentName = (
-  student = {}
-) => {
+const getStudentName = (student = {}) => {
   return (
     [
       student?.firstName,
@@ -139,9 +137,7 @@ const getStudentName = (
   );
 };
 
-const getCourseName = (
-  admission = {}
-) => {
+const getCourseName = (admission = {}) => {
   return (
     admission?.course_id?.courseTitle ||
     admission?.courseTitle ||
@@ -150,9 +146,7 @@ const getCourseName = (
   );
 };
 
-const getBatchName = (
-  admission = {}
-) => {
+const getBatchName = (admission = {}) => {
   return (
     admission?.batch_id?.batch_name ||
     admission?.batchName ||
@@ -160,45 +154,92 @@ const getBatchName = (
   );
 };
 
-/* ========================================================================
-   QR FRONTEND URL
-   ======================================================================== */
-
 /*
- * VERY IMPORTANT:
- *
- * Do not use VITE_FRONTEND_URL here.
- *
- * The receipt is generated from the frontend, therefore
- * window.location.origin is the safest source.
- *
- * Production:
- *
- * https://your-netlify-site.netlify.app
- *
- * Local:
- *
- * http://localhost:5173
- */
+|--------------------------------------------------------------------------
+| RECEIPT VERIFICATION URL
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| For production:
+|
+| VITE_RECEIPT_VERIFY_BASE_URL=https://YOUR-FRONTEND-DOMAIN
+|
+| Example:
+|
+| VITE_RECEIPT_VERIFY_BASE_URL=https://your-site.netlify.app
+|
+| DO NOT use the Render backend URL here.
+|
+|--------------------------------------------------------------------------
+*/
 
-const getFrontendBaseUrl = () => {
+const getReceiptVerificationBaseUrl = () => {
+  const configuredUrl =
+    import.meta.env.VITE_RECEIPT_VERIFY_BASE_URL;
+
+  if (configuredUrl?.trim()) {
+    return configuredUrl
+      .trim()
+      .replace(/\/+$/, "");
+  }
+
+  const frontendUrl =
+    import.meta.env.VITE_FRONTEND_URL;
+
+  if (frontendUrl?.trim()) {
+    return frontendUrl
+      .trim()
+      .replace(/\/+$/, "");
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Development fallback
+  |--------------------------------------------------------------------------
+  |
+  | This works when clicking the QR from the same computer.
+  |
+  | For scanning from a phone while developing locally,
+  | use VITE_RECEIPT_VERIFY_BASE_URL with your PC LAN IP.
+  |
+  */
+
   return window.location.origin.replace(
     /\/+$/,
     ""
   );
 };
 
-/* ========================================================================
-   IMAGE LOADER
-   ======================================================================== */
+const getReceiptVerificationUrl = (
+  receiptNo
+) => {
+  if (!receiptNo) {
+    throw new Error(
+      "Receipt number is missing."
+    );
+  }
+
+  const baseUrl =
+    getReceiptVerificationBaseUrl();
+
+  return `${baseUrl}/verify-receipt/${encodeURIComponent(
+    receiptNo
+  )}`;
+};
+
+/*
+|--------------------------------------------------------------------------
+| IMAGE LOADER
+|--------------------------------------------------------------------------
+*/
 
 const loadImageAsDataUrl = async (
   imageUrl
 ) => {
   return new Promise(
     (resolve, reject) => {
-      const image =
-        new Image();
+      const image = new Image();
 
       image.onload = () => {
         try {
@@ -216,9 +257,16 @@ const loadImageAsDataUrl = async (
             image.height;
 
           const context =
-            canvas.getContext(
-              "2d"
+            canvas.getContext("2d");
+
+          if (!context) {
+            reject(
+              new Error(
+                "Unable to create canvas context."
+              )
             );
+            return;
+          }
 
           context.drawImage(
             image,
@@ -249,24 +297,16 @@ const loadImageAsDataUrl = async (
   );
 };
 
-/* ========================================================================
-   REACT ICON -> PNG
-   ======================================================================== */
-
 /*
- * jsPDF works with image data.
- *
- * React Icons are converted to SVG and then rasterized
- * into PNG before being placed in the PDF.
- *
- * This allows us to use actual react-icons while keeping
- * the PDF stable.
- */
+|--------------------------------------------------------------------------
+| REACT ICON -> PNG
+|--------------------------------------------------------------------------
+*/
 
 const reactIconToPng = async (
   Icon,
   color = "#000000",
-  size = 100
+  size = 128
 ) => {
   const svgMarkup =
     renderToStaticMarkup(
@@ -286,8 +326,7 @@ const reactIconToPng = async (
 
   return new Promise(
     (resolve, reject) => {
-      const image =
-        new Image();
+      const image = new Image();
 
       image.onload = () => {
         try {
@@ -300,9 +339,16 @@ const reactIconToPng = async (
           canvas.height = size;
 
           const context =
-            canvas.getContext(
-              "2d"
+            canvas.getContext("2d");
+
+          if (!context) {
+            reject(
+              new Error(
+                "Unable to create icon canvas."
+              )
             );
+            return;
+          }
 
           context.clearRect(
             0,
@@ -337,15 +383,16 @@ const reactIconToPng = async (
         );
       };
 
-      image.src =
-        svgDataUrl;
+      image.src = svgDataUrl;
     }
   );
 };
 
-/* ========================================================================
-   DRAW ICON
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| DRAW ICON
+|--------------------------------------------------------------------------
+*/
 
 const addIcon = (
   doc,
@@ -364,9 +411,11 @@ const addIcon = (
   );
 };
 
-/* ========================================================================
-   SECTION HEADER
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| SECTION HEADER
+|--------------------------------------------------------------------------
+*/
 
 const drawSectionHeader = (
   doc,
@@ -395,9 +444,6 @@ const drawSectionHeader = (
     "F"
   );
 
-  /*
-   * Icon circle
-   */
   doc.setFillColor(
     ...COLORS.white
   );
@@ -409,9 +455,6 @@ const drawSectionHeader = (
     "F"
   );
 
-  /*
-   * React Icon
-   */
   addIcon(
     doc,
     iconDataUrl,
@@ -420,9 +463,6 @@ const drawSectionHeader = (
     5.6
   );
 
-  /*
-   * Header text
-   */
   doc.setTextColor(
     ...COLORS.dark
   );
@@ -441,9 +481,11 @@ const drawSectionHeader = (
   );
 };
 
-/* ========================================================================
-   KEY VALUE
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| KEY VALUE
+|--------------------------------------------------------------------------
+*/
 
 const drawKeyValue = (
   doc,
@@ -497,9 +539,11 @@ const drawKeyValue = (
   );
 };
 
-/* ========================================================================
-   VERIFIED BADGE
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| VERIFIED BADGE
+|--------------------------------------------------------------------------
+*/
 
 const drawVerifiedBadge = (
   doc,
@@ -541,9 +585,11 @@ const drawVerifiedBadge = (
   );
 };
 
-/* ========================================================================
-   PAYMENT HISTORY
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| PAYMENT HISTORY
+|--------------------------------------------------------------------------
+*/
 
 const drawPaymentHistory = (
   doc,
@@ -554,11 +600,9 @@ const drawPaymentHistory = (
     payments,
   }
 ) => {
-  const headerHeight =
-    8.2;
+  const headerHeight = 8.2;
 
-  const rowHeight =
-    6.2;
+  const rowHeight = 6.2;
 
   const columnWidths = [
     width * 0.25,
@@ -575,8 +619,11 @@ const drawPaymentHistory = (
   ];
 
   /*
-   * Header
-   */
+  |--------------------------------------------------------------------------
+  | Header
+  |--------------------------------------------------------------------------
+  */
+
   doc.setFillColor(
     ...COLORS.lightBlue
   );
@@ -644,8 +691,11 @@ const drawPaymentHistory = (
   );
 
   /*
-   * Rows
-   */
+  |--------------------------------------------------------------------------
+  | Rows
+  |--------------------------------------------------------------------------
+  */
+
   let currentY =
     y + headerHeight;
 
@@ -775,764 +825,418 @@ const drawPaymentHistory = (
         }
       );
 
-      currentY +=
-        rowHeight;
+      currentY += rowHeight;
     }
   );
 
   return currentY;
 };
 
-/* ========================================================================
-   MAIN FUNCTION
-   ======================================================================== */
+/*
+|--------------------------------------------------------------------------
+| MAIN FUNCTION
+|--------------------------------------------------------------------------
+*/
 
-const generatePaymentReceipt =
-  async (
-    payment,
-    paymentHistory = []
-  ) => {
-    try {
-      /* ====================================================================
-         VALIDATION
-         ==================================================================== */
+const generatePaymentReceipt = async (
+  payment,
+  paymentHistory = []
+) => {
+  try {
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
 
-      if (!payment) {
-        throw new Error(
-          "Payment information is missing."
-        );
-      }
+    if (!payment) {
+      throw new Error(
+        "Payment information is missing."
+      );
+    }
 
-      if (
-        payment.status !==
-        "Verified"
-      ) {
-        throw new Error(
-          "Receipt can only be generated for a verified payment."
-        );
-      }
+    if (
+      payment.status !==
+      "Verified"
+    ) {
+      throw new Error(
+        "Receipt can only be generated for a verified payment."
+      );
+    }
 
-      /* ====================================================================
-         RECEIPT NUMBER
-         ==================================================================== */
+    /*
+    |--------------------------------------------------------------------------
+    | RECEIPT NUMBER
+    |--------------------------------------------------------------------------
+    */
 
-      const receiptNo =
-        payment.receipt_no ||
-        payment.receiptNo ||
-        payment.receiptNumber ||
-        "";
+    const receiptNo =
+      payment.receipt_no ||
+      payment.receiptNo ||
+      payment.receiptNumber ||
+      "";
 
-      if (!receiptNo) {
-        throw new Error(
-          "Receipt number is missing."
-        );
-      }
+    if (!receiptNo) {
+      throw new Error(
+        "Receipt number is missing."
+      );
+    }
 
-      /* ====================================================================
-         QR URL
-         ==================================================================== */
+    /*
+    |--------------------------------------------------------------------------
+    | VERIFICATION URL
+    |--------------------------------------------------------------------------
+    */
 
-      /*
-       * THIS IS THE IMPORTANT FIX.
-       *
-       * QR always points to the frontend.
-       *
-       * Example:
-       *
-       * https://your-site.netlify.app/
-       * verify-receipt/AJKLDFJASDLF
-       */
-
-      const getReceiptVerificationUrl = (receiptNo) => {
-  if (!receiptNo) {
-    throw new Error("Receipt number is missing.");
-  }
-
-      // Production frontend URL
-      const configuredFrontendUrl =
-        import.meta.env.VITE_FRONTEND_URL;
-
-      // In production use VITE_FRONTEND_URL.
-      // During local development fallback to current frontend origin.
-      const frontendBaseUrl =
-        configuredFrontendUrl?.trim()
-          ? configuredFrontendUrl.trim().replace(/\/+$/, "")
-          : window.location.origin;
-
-      return `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
+    const verificationUrl =
+      getReceiptVerificationUrl(
         receiptNo
-      )}`;
-    };
-
-      const frontendBaseUrl =
-        getFrontendBaseUrl();
-
-      // const verificationUrl =
-      //   `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
-      //     receiptNo
-      //   )}`;
-      const verificationUrl =
-        getReceiptVerificationUrl(receiptNo);
-
-      console.log("QR Verification URL:", verificationUrl);
-
-      /* ====================================================================
-         QR CODE
-         ==================================================================== */
-
-      // const qrDataUrl =
-      //   await QRCode.toDataURL(
-      //     verificationUrl,
-      //     {
-      //       errorCorrectionLevel:
-      //         "H",
-
-      //       type: "image/png",
-
-      //       /*
-      //        * High resolution
-      //        */
-      //       width: 1200,
-
-      //       /*
-      //        * Required white quiet-zone
-      //        */
-      //       margin: 5,
-
-      //       color: {
-      //         dark: "#000000",
-      //         light: "#FFFFFF",
-      //       },
-      //     }
-      //   );
-
-      const qrDataUrl = await QRCode.toDataURL(
-  verificationUrl,
-  {
-    width: 1000,
-    margin: 6,
-    errorCorrectionLevel: "H",
-    color: {
-      dark: "#000000",
-      light: "#FFFFFF",
-    },
-  }
-);
-
-// doc.addImage(
-//   qrDataUrl,
-//   "PNG",
-//   qrX,
-//   qrY,
-//   qrSize,
-//   qrSize,
-//   undefined,
-//   "FAST"
-// );
-
-// doc.setFont("helvetica", "normal");
-// doc.setFontSize(6.5);
-
-// doc.text(
-//   "Scan to verify receipt",
-//   qrX + qrSize / 2,
-//   qrY + qrSize + 4,
-//   {
-//     align: "center",
-//   }
-// );
-
-// doc.setFontSize(5.5);
-
-// doc.text(
-//   verificationUrl,
-//   qrX + qrSize / 2,
-//   qrY + qrSize + 8,
-//   {
-//     align: "center",
-//     maxWidth: qrSize + 20,
-//   }
-// );
-
-      /* ====================================================================
-         ICONS
-         ==================================================================== */
-
-      const [
-        userIcon,
-        documentIcon,
-        qrIcon,
-        checkIcon,
-        globeIcon,
-        phoneIcon,
-        noteIcon,
-      ] =
-        await Promise.all([
-          reactIconToPng(
-            FaUserGraduate,
-            "#148CEB",
-            128
-          ),
-
-          reactIconToPng(
-            FaFileInvoiceDollar,
-            "#00B964",
-            128
-          ),
-
-          reactIconToPng(
-            FaQrcode,
-            "#691EDC",
-            128
-          ),
-
-          reactIconToPng(
-            FaCircleCheck,
-            "#00B964",
-            128
-          ),
-
-          reactIconToPng(
-            FaGlobe,
-            "#FFFFFF",
-            128
-          ),
-
-          reactIconToPng(
-            FaPhone,
-            "#FFFFFF",
-            128
-          ),
-
-          reactIconToPng(
-            FaFileCircleCheck,
-            "#F2AA00",
-            128
-          ),
-        ]);
-
-      /* ====================================================================
-         INSTITUTE LOGO
-         ==================================================================== */
-
-      let instituteLogo = null;
-
-      try {
-        instituteLogo =
-          await loadImageAsDataUrl(
-            INSTITUTE_LOGO_URL
-          );
-      } catch (logoError) {
-        console.warn(
-          "Institute logo could not be loaded:",
-          logoError
-        );
-      }
-
-      /* ====================================================================
-         DATA
-         ==================================================================== */
-
-      const student =
-        payment.student_id || {};
-
-      const admission =
-        payment.admission_id || {};
-
-      const studentName =
-        getStudentName(
-          student
-        );
-
-      const courseName =
-        getCourseName(
-          admission
-        );
-
-      const batchName =
-        getBatchName(
-          admission
-        );
-
-      const totalFee =
-        Number(
-          admission?.final_amount ??
-            admission?.totalFee ??
-            0
-        );
-
-      const currentPayment =
-        Number(
-          payment.amount || 0
-        );
-
-      /* ====================================================================
-         PAYMENT HISTORY
-         ==================================================================== */
-
-      let verifiedPayments =
-        Array.isArray(
-          paymentHistory
-        )
-          ? paymentHistory.filter(
-              (item) =>
-                item?.status ===
-                "Verified"
-            )
-          : [];
-
-      const currentExists =
-        verifiedPayments.some(
-          (item) =>
-            (
-              item?.receipt_no ||
-              item?.receiptNo
-            ) === receiptNo
-        );
-
-      if (!currentExists) {
-        verifiedPayments.push(
-          payment
-        );
-      }
-
-      verifiedPayments.sort(
-        (a, b) =>
-          new Date(
-            a?.payment_date || 0
-          ).getTime() -
-          new Date(
-            b?.payment_date || 0
-          ).getTime()
       );
 
-      /*
-       * Keep latest five payments.
-       */
-      const displayedPayments =
-        verifiedPayments.slice(
-          -5
-        );
+    console.log(
+      "========================================"
+    );
 
-      /* ====================================================================
-         FEES
-         ==================================================================== */
+    console.log(
+      "Receipt QR Verification URL:"
+    );
 
-      const historyTotal =
-        verifiedPayments.reduce(
-          (sum, item) =>
-            sum +
-            Number(
-              item?.amount || 0
-            ),
-          0
-        );
+    console.log(
+      verificationUrl
+    );
 
-      const admissionPaid =
-        Number(
-          admission?.paid_amount ??
-            admission?.paidFee ??
-            0
-        );
+    console.log(
+      "========================================"
+    );
 
-      const totalPaid =
-        Math.max(
-          historyTotal,
-          admissionPaid
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | HIGH-RESOLUTION QR CODE
+    |--------------------------------------------------------------------------
+    |
+    | Important:
+    |
+    | width = 1600
+    | margin = 10
+    | errorCorrectionLevel = H
+    |
+    | These settings make the physical QR much
+    | easier for phone cameras to scan.
+    |
+    */
 
-      const previousPaid =
-        Math.max(
-          0,
-          totalPaid -
-            currentPayment
-        );
-
-      const remainingFee =
-        Math.max(
-          0,
-          totalFee -
-            totalPaid
-        );
-
-      /* ====================================================================
-         PDF
-         ==================================================================== */
-
-      const doc =
-        new jsPDF({
-          orientation:
-            "portrait",
-          unit: "mm",
-          format: "a4",
-        });
-
-      const pageWidth =
-        doc.internal.pageSize.getWidth();
-
-      const pageHeight =
-        doc.internal.pageSize.getHeight();
-
-      const margin = 6;
-
-      const contentWidth =
-        pageWidth -
-        margin * 2;
-
-      /* ====================================================================
-         PAGE BORDER
-         ==================================================================== */
-
-      doc.setDrawColor(
-        ...COLORS.purple
-      );
-
-      doc.setLineWidth(
-        0.6
-      );
-
-      doc.rect(
-        1.5,
-        1.5,
-        pageWidth - 3,
-        pageHeight - 3
-      );
-
-      /* ====================================================================
-         TOP STRIP
-         ==================================================================== */
-
-      doc.setFillColor(
-        ...COLORS.purple
-      );
-
-      doc.rect(
-        1.5,
-        1.5,
-        pageWidth - 3,
-        6,
-        "F"
-      );
-
-      /* ====================================================================
-         HEADER
-         ==================================================================== */
-
-      /*
-       * LOGO IMAGE
-       *
-       * Smaller than previous version.
-       */
-      if (instituteLogo) {
-        doc.addImage(
-          instituteLogo,
-          "PNG",
-          10,
-          10,
-          29,
-          20
-        );
-      } else {
-        /*
-         * Fallback if logo is missing.
-         */
-        doc.setFillColor(
-          ...COLORS.orange
-        );
-
-        doc.circle(
-          24,
-          20,
-          9,
-          "F"
-        );
-
-        doc.setTextColor(
-          ...COLORS.white
-        );
-
-        doc.setFont(
-          "helvetica",
-          "bold"
-        );
-
-        doc.setFontSize(8);
-
-        doc.text(
-          "</>",
-          24,
-          23,
-          {
-            align: "center",
-          }
-        );
-      }
-
-      /*
-       * Institute name beside logo
-       */
-      doc.setTextColor(
-        ...COLORS.dark
-      );
-
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
-
-      doc.setFontSize(
-        13
-      );
-
-      doc.text(
-        "IT Learning",
-        43,
-        20
-      );
-
-      doc.setFontSize(
-        6.5
-      );
-
-      doc.text(
-        "institute",
-        43,
-        25
-      );
-
-      /*
-       * Institute name
-       */
-      doc.setFontSize(
-        12
-      );
-
-      doc.text(
-        INSTITUTE_NAME,
-        11,
-        42
-      );
-
-      /*
-       * Tagline
-       */
-      doc.setFontSize(
-        6.5
-      );
-
-      doc.text(
-        INSTITUTE_TAGLINE,
-        29,
-        47
-      );
-
-      /*
-       * Address
-       */
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.setFontSize(
-        5.7
-      );
-
-      doc.text(
-        INSTITUTE_ADDRESS.split(
-          "\n"
-        ),
-        59,
-        53,
+    const qrDataUrl =
+      await QRCode.toDataURL(
+        verificationUrl,
         {
-          align: "center",
+          type: "image/png",
+
+          width: 1600,
+
+          margin: 10,
+
+          errorCorrectionLevel:
+            "H",
+
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
         }
       );
 
-      /*
-       * Header divider
-       */
-      doc.setDrawColor(
-        ...COLORS.dark
+    /*
+    |--------------------------------------------------------------------------
+    | ICONS
+    |--------------------------------------------------------------------------
+    */
+
+    const [
+      userIcon,
+      documentIcon,
+      qrIcon,
+      checkIcon,
+      globeIcon,
+      phoneIcon,
+      noteIcon,
+    ] = await Promise.all([
+      reactIconToPng(
+        FaUserGraduate,
+        "#148CEB",
+        128
+      ),
+
+      reactIconToPng(
+        FaFileInvoiceDollar,
+        "#00B964",
+        128
+      ),
+
+      reactIconToPng(
+        FaQrcode,
+        "#691EDC",
+        128
+      ),
+
+      reactIconToPng(
+        FaCircleCheck,
+        "#00B964",
+        128
+      ),
+
+      reactIconToPng(
+        FaGlobe,
+        "#FFFFFF",
+        128
+      ),
+
+      reactIconToPng(
+        FaPhone,
+        "#FFFFFF",
+        128
+      ),
+
+      reactIconToPng(
+        FaFileCircleCheck,
+        "#F2AA00",
+        128
+      ),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTITUTE LOGO
+    |--------------------------------------------------------------------------
+    */
+
+    let instituteLogo = null;
+
+    try {
+      instituteLogo =
+        await loadImageAsDataUrl(
+          INSTITUTE_LOGO_URL
+        );
+    } catch (logoError) {
+      console.warn(
+        "Institute logo could not be loaded:",
+        logoError
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DATA
+    |--------------------------------------------------------------------------
+    */
+
+    const student =
+      payment.student_id || {};
+
+    const admission =
+      payment.admission_id || {};
+
+    const studentName =
+      getStudentName(student);
+
+    const courseName =
+      getCourseName(admission);
+
+    const batchName =
+      getBatchName(admission);
+
+    const totalFee =
+      Number(
+        admission?.final_amount ??
+          admission?.totalFee ??
+          0
       );
 
-      doc.setLineWidth(
-        0.35
+    const currentPayment =
+      Number(
+        payment.amount || 0
       );
 
-      doc.line(
-        124,
-        11,
-        124,
-        57
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT HISTORY
+    |--------------------------------------------------------------------------
+    */
+
+    let verifiedPayments =
+      Array.isArray(
+        paymentHistory
+      )
+        ? paymentHistory.filter(
+            (item) =>
+              item?.status ===
+              "Verified"
+          )
+        : [];
+
+    const currentExists =
+      verifiedPayments.some(
+        (item) =>
+          (
+            item?.receipt_no ||
+            item?.receiptNo
+          ) === receiptNo
       );
 
-      /*
-       * Payment receipt title
-       */
-      doc.setFont(
-        "helvetica",
-        "bold"
+    if (!currentExists) {
+      verifiedPayments.push(
+        payment
+      );
+    }
+
+    verifiedPayments.sort(
+      (a, b) =>
+        new Date(
+          a?.payment_date || 0
+        ).getTime() -
+        new Date(
+          b?.payment_date || 0
+        ).getTime()
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Latest five payments
+    |--------------------------------------------------------------------------
+    */
+
+    const displayedPayments =
+      verifiedPayments.slice(-5);
+
+    /*
+    |--------------------------------------------------------------------------
+    | FEE CALCULATION
+    |--------------------------------------------------------------------------
+    */
+
+    const historyTotal =
+      verifiedPayments.reduce(
+        (sum, item) =>
+          sum +
+          Number(
+            item?.amount || 0
+          ),
+        0
       );
 
-      doc.setFontSize(
-        13.5
+    const admissionPaid =
+      Number(
+        admission?.paid_amount ??
+          admission?.paidFee ??
+          0
       );
 
-      doc.text(
-        "PAYMENT RECEIPT",
-        130,
+    const totalPaid =
+      Math.max(
+        historyTotal,
+        admissionPaid
+      );
+
+    const previousPaid =
+      Math.max(
+        0,
+        totalPaid -
+          currentPayment
+      );
+
+    const remainingFee =
+      Math.max(
+        0,
+        totalFee -
+          totalPaid
+      );
+
+    /*
+    |--------------------------------------------------------------------------
+    | PDF
+    |--------------------------------------------------------------------------
+    */
+
+    const doc =
+      new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const pageHeight =
+      doc.internal.pageSize.getHeight();
+
+    const margin = 6;
+
+    const contentWidth =
+      pageWidth -
+      margin * 2;
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAGE BORDER
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setDrawColor(
+      ...COLORS.purple
+    );
+
+    doc.setLineWidth(0.6);
+
+    doc.rect(
+      1.5,
+      1.5,
+      pageWidth - 3,
+      pageHeight - 3
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOP STRIP
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFillColor(
+      ...COLORS.purple
+    );
+
+    doc.rect(
+      1.5,
+      1.5,
+      pageWidth - 3,
+      6,
+      "F"
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | HEADER
+    |--------------------------------------------------------------------------
+    */
+
+    if (instituteLogo) {
+      doc.addImage(
+        instituteLogo,
+        "PNG",
+        10,
+        10,
+        29,
         20
       );
-
-      doc.setFontSize(
-        6.8
-      );
-
-      doc.text(
-        "Education Management System",
-        130,
-        26
-      );
-
-      /*
-       * Receipt box
-       */
+    } else {
       doc.setFillColor(
-        246,
-        247,
-        255
+        ...COLORS.orange
       );
 
-      doc.roundedRect(
-        128,
-        30,
-        76,
-        27,
-        4,
-        4,
+      doc.circle(
+        24,
+        20,
+        9,
         "F"
-      );
-
-      doc.setTextColor(
-        ...COLORS.dark
-      );
-
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.setFontSize(
-        7
-      );
-
-      doc.text(
-        "Receipt No",
-        132,
-        37
-      );
-
-      doc.text(
-        ":",
-        157,
-        37
-      );
-
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
-
-      doc.setFontSize(
-        6.4
-      );
-
-      doc.text(
-        receiptNo,
-        162,
-        37
-      );
-
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.setFontSize(
-        7
-      );
-
-      doc.text(
-        "Payment Date",
-        132,
-        45
-      );
-
-      doc.text(
-        ":",
-        157,
-        45
-      );
-
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
-
-      doc.text(
-        formatDate(
-          payment.payment_date
-        ),
-        162,
-        45
-      );
-
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.text(
-        "Status",
-        132,
-        53
-      );
-
-      doc.text(
-        ":",
-        157,
-        53
-      );
-
-      drawVerifiedBadge(
-        doc,
-        162,
-        53
-      );
-
-      /* ====================================================================
-         CONTACT BAR
-         ==================================================================== */
-
-      doc.setFillColor(
-        ...COLORS.purple
-      );
-
-      doc.rect(
-        1.5,
-        59,
-        pageWidth - 3,
-        10,
-        "F"
-      );
-
-      addIcon(
-        doc,
-        globeIcon,
-        45,
-        61.2,
-        6
       );
 
       doc.setTextColor(
@@ -1544,890 +1248,1221 @@ const generatePaymentReceipt =
         "bold"
       );
 
-      doc.setFontSize(
-        7.5
-      );
+      doc.setFontSize(8);
 
       doc.text(
-        WEBSITE,
-        53,
-        65.5
-      );
-
-      doc.text(
-        "|",
-        pageWidth / 2,
-        65.5,
+        "</>",
+        24,
+        23,
         {
           align: "center",
         }
       );
+    }
 
-      addIcon(
-        doc,
-        phoneIcon,
-        122,
-        61.2,
-        6
-      );
+    /*
+    |--------------------------------------------------------------------------
+    | Institute Name
+    |--------------------------------------------------------------------------
+    */
 
-      doc.text(
-        PHONE,
-        130,
-        65.5
-      );
+    doc.setTextColor(
+      ...COLORS.dark
+    );
 
-      /* ====================================================================
-         STUDENT DETAILS
-         ==================================================================== */
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
 
-      const studentHeaderY =
-        74;
+    doc.setFontSize(13);
 
-      drawSectionHeader(
+    doc.text(
+      "IT Learning",
+      43,
+      20
+    );
+
+    doc.setFontSize(6.5);
+
+    doc.text(
+      "institute",
+      43,
+      25
+    );
+
+    doc.setFontSize(12);
+
+    doc.text(
+      INSTITUTE_NAME,
+      11,
+      42
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tagline
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFontSize(6.5);
+
+    doc.text(
+      INSTITUTE_TAGLINE,
+      29,
+      47
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Address
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(5.7);
+
+    doc.text(
+      INSTITUTE_ADDRESS.split(
+        "\n"
+      ),
+      59,
+      53,
+      {
+        align: "center",
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Header divider
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setDrawColor(
+      ...COLORS.dark
+    );
+
+    doc.setLineWidth(0.35);
+
+    doc.line(
+      124,
+      11,
+      124,
+      57
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Receipt title
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(13.5);
+
+    doc.text(
+      "PAYMENT RECEIPT",
+      130,
+      20
+    );
+
+    doc.setFontSize(6.8);
+
+    doc.text(
+      "Education Management System",
+      130,
+      26
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Receipt box
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFillColor(
+      246,
+      247,
+      255
+    );
+
+    doc.roundedRect(
+      128,
+      30,
+      76,
+      27,
+      4,
+      4,
+      "F"
+    );
+
+    doc.setTextColor(
+      ...COLORS.dark
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(7);
+
+    doc.text(
+      "Receipt No",
+      132,
+      37
+    );
+
+    doc.text(
+      ":",
+      157,
+      37
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(6.4);
+
+    doc.text(
+      receiptNo,
+      162,
+      37
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(7);
+
+    doc.text(
+      "Payment Date",
+      132,
+      45
+    );
+
+    doc.text(
+      ":",
+      157,
+      45
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.text(
+      formatDate(
+        payment.payment_date
+      ),
+      162,
+      45
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.text(
+      "Status",
+      132,
+      53
+    );
+
+    doc.text(
+      ":",
+      157,
+      53
+    );
+
+    drawVerifiedBadge(
+      doc,
+      162,
+      53
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONTACT BAR
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFillColor(
+      ...COLORS.purple
+    );
+
+    doc.rect(
+      1.5,
+      59,
+      pageWidth - 3,
+      10,
+      "F"
+    );
+
+    addIcon(
+      doc,
+      globeIcon,
+      45,
+      61.2,
+      6
+    );
+
+    doc.setTextColor(
+      ...COLORS.white
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(7.5);
+
+    doc.text(
+      WEBSITE,
+      53,
+      65.5
+    );
+
+    doc.text(
+      "|",
+      pageWidth / 2,
+      65.5,
+      {
+        align: "center",
+      }
+    );
+
+    addIcon(
+      doc,
+      phoneIcon,
+      122,
+      61.2,
+      6
+    );
+
+    doc.text(
+      PHONE,
+      130,
+      65.5
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT DETAILS
+    |--------------------------------------------------------------------------
+    */
+
+    const studentHeaderY = 74;
+
+    drawSectionHeader(
+      doc,
+      {
+        x: margin,
+        y: studentHeaderY,
+        width: contentWidth,
+        title: "Student Details",
+        background:
+          COLORS.lightBlue,
+        iconDataUrl:
+          userIcon,
+      }
+    );
+
+    const studentBoxY =
+      studentHeaderY + 13;
+
+    doc.setDrawColor(
+      ...COLORS.border
+    );
+
+    doc.setLineWidth(0.25);
+
+    doc.roundedRect(
+      margin,
+      studentBoxY,
+      contentWidth,
+      28,
+      3,
+      3
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student divider
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setDrawColor(
+      ...COLORS.blue
+    );
+
+    doc.setLineWidth(0.35);
+
+    doc.line(
+      110,
+      studentBoxY + 4,
+      110,
+      studentBoxY + 24
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student left
+    |--------------------------------------------------------------------------
+    */
+
+    drawKeyValue(
+      doc,
+      {
+        label: "Student Name",
+        value: studentName,
+        x: 12,
+        y:
+          studentBoxY + 8,
+        labelWidth: 34,
+        valueWidth: 58,
+      }
+    );
+
+    drawKeyValue(
+      doc,
+      {
+        label: "Roll No",
+        value:
+          student?.rollNo ||
+          "-",
+        x: 12,
+        y:
+          studentBoxY + 16,
+        labelWidth: 34,
+        valueWidth: 58,
+      }
+    );
+
+    drawKeyValue(
+      doc,
+      {
+        label: "Course",
+        value: courseName,
+        x: 12,
+        y:
+          studentBoxY + 24,
+        labelWidth: 34,
+        valueWidth: 58,
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student right
+    |--------------------------------------------------------------------------
+    */
+
+    drawKeyValue(
+      doc,
+      {
+        label: "Batch",
+        value: batchName,
+        x: 117,
+        y:
+          studentBoxY + 8,
+        labelWidth: 31,
+        valueWidth: 48,
+      }
+    );
+
+    drawKeyValue(
+      doc,
+      {
+        label: "Admission Date",
+        value:
+          formatDate(
+            admission?.admission_date
+          ),
+        x: 117,
+        y:
+          studentBoxY + 16,
+        labelWidth: 31,
+        valueWidth: 48,
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT HISTORY
+    |--------------------------------------------------------------------------
+    */
+
+    const paymentHeaderY = 117;
+
+    drawSectionHeader(
+      doc,
+      {
+        x: margin,
+        y: paymentHeaderY,
+        width: contentWidth,
+        title:
+          "Payment History",
+        background:
+          COLORS.lightGreen,
+        iconDataUrl:
+          documentIcon,
+      }
+    );
+
+    const paymentTableBottom =
+      drawPaymentHistory(
         doc,
         {
           x: margin,
-          y: studentHeaderY,
+          y:
+            paymentHeaderY +
+            13,
           width: contentWidth,
-          title:
-            "Student Details",
-          background:
-            COLORS.lightBlue,
-          iconDataUrl:
-            userIcon,
+          payments:
+            displayedPayments,
         }
       );
 
-      const studentBoxY =
-        studentHeaderY + 13;
+    /*
+    |--------------------------------------------------------------------------
+    | FEE DETAILS
+    |--------------------------------------------------------------------------
+    */
 
-      doc.setDrawColor(
-        ...COLORS.border
-      );
+    const feeHeaderY =
+      paymentTableBottom + 3;
 
-      doc.setLineWidth(
-        0.25
-      );
+    drawSectionHeader(
+      doc,
+      {
+        x: margin,
+        y: feeHeaderY,
+        width: contentWidth,
+        title: "Fee Details",
+        background:
+          COLORS.lightGreen,
+        iconDataUrl:
+          documentIcon,
+      }
+    );
 
-      doc.roundedRect(
-        margin,
-        studentBoxY,
-        contentWidth,
-        28,
-        3,
-        3
-      );
+    const feeTop =
+      feeHeaderY + 13;
 
-      /*
-       * Divider
-       */
-      doc.setDrawColor(
-        ...COLORS.blue
-      );
+    const feeRowHeight = 6.5;
 
-      doc.setLineWidth(
-        0.35
-      );
+    const feeLabelWidth = 125;
 
-      doc.line(
-        110,
-        studentBoxY + 4,
-        110,
-        studentBoxY + 24
-      );
+    const feeRows = [
+      [
+        "Total Fee",
+        formatMoney(totalFee),
+      ],
 
-      /*
-       * Left
-       */
-      drawKeyValue(
-        doc,
-        {
-          label:
-            "Student Name",
-          value:
-            studentName,
-          x: 12,
-          y:
-            studentBoxY + 8,
-          labelWidth: 34,
-          valueWidth: 58,
-        }
-      );
+      [
+        "Previously Paid",
+        formatMoney(previousPaid),
+      ],
 
-      drawKeyValue(
-        doc,
-        {
-          label:
-            "Roll No",
-          value:
-            student?.rollNo ||
-            "-",
-          x: 12,
-          y:
-            studentBoxY + 16,
-          labelWidth: 34,
-          valueWidth: 58,
-        }
-      );
+      [
+        "This Payment",
+        formatMoney(
+          currentPayment
+        ),
+      ],
 
-      drawKeyValue(
-        doc,
-        {
-          label:
-            "Course",
-          value:
-            courseName,
-          x: 12,
-          y:
-            studentBoxY + 24,
-          labelWidth: 34,
-          valueWidth: 58,
-        }
-      );
+      [
+        "Total Paid",
+        formatMoney(totalPaid),
+      ],
 
-      /*
-       * Right
-       */
-      drawKeyValue(
-        doc,
-        {
-          label:
-            "Batch",
-          value:
-            batchName,
-          x: 117,
-          y:
-            studentBoxY + 8,
-          labelWidth: 31,
-          valueWidth: 48,
-        }
-      );
+      [
+        "Remaining Fee",
+        formatMoney(
+          remainingFee
+        ),
+      ],
+    ];
 
-      drawKeyValue(
-        doc,
-        {
-          label:
-            "Admission Date",
-          value:
-            formatDate(
-              admission?.admission_date
-            ),
-          x: 117,
-          y:
-            studentBoxY + 16,
-          labelWidth: 31,
-          valueWidth: 48,
-        }
-      );
+    feeRows.forEach(
+      ([label, value], index) => {
+        const rowY =
+          feeTop +
+          index *
+            feeRowHeight;
 
-      /* ====================================================================
-         PAYMENT HISTORY
-         ==================================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | Total Paid highlight
+        |--------------------------------------------------------------------------
+        */
 
-      const paymentHeaderY =
-        117;
-
-      drawSectionHeader(
-        doc,
-        {
-          x: margin,
-          y: paymentHeaderY,
-          width: contentWidth,
-          title:
-            "Payment History",
-          background:
-            COLORS.lightGreen,
-          iconDataUrl:
-            documentIcon,
-        }
-      );
-
-      const paymentTableBottom =
-        drawPaymentHistory(
-          doc,
-          {
-            x: margin,
-            y:
-              paymentHeaderY +
-              13,
-            width:
-              contentWidth,
-            payments:
-              displayedPayments,
-          }
-        );
-
-      /* ====================================================================
-         FEE DETAILS
-         ==================================================================== */
-
-      const feeHeaderY =
-        paymentTableBottom + 3;
-
-      drawSectionHeader(
-        doc,
-        {
-          x: margin,
-          y: feeHeaderY,
-          width: contentWidth,
-          title:
-            "Fee Details",
-          background:
-            COLORS.lightGreen,
-          iconDataUrl:
-            documentIcon,
-        }
-      );
-
-      const feeTop =
-        feeHeaderY + 13;
-
-      const feeRowHeight =
-        6.5;
-
-      const feeLabelWidth =
-        125;
-
-      const feeRows = [
-        [
-          "Total Fee",
-          formatMoney(
-            totalFee
-          ),
-        ],
-
-        [
-          "Previously Paid",
-          formatMoney(
-            previousPaid
-          ),
-        ],
-
-        [
-          "This Payment",
-          formatMoney(
-            currentPayment
-          ),
-        ],
-
-        [
-          "Total Paid",
-          formatMoney(
-            totalPaid
-          ),
-        ],
-
-        [
-          "Remaining Fee",
-          formatMoney(
-            remainingFee
-          ),
-        ],
-      ];
-
-      feeRows.forEach(
-        ([label, value], index) => {
-          const rowY =
-            feeTop +
-            index *
-              feeRowHeight;
-
-          /*
-           * Total Paid highlight
-           */
-          if (index === 3) {
-            doc.setFillColor(
-              ...COLORS.lightBlue
-            );
-
-            doc.rect(
-              margin,
-              rowY,
-              contentWidth,
-              feeRowHeight,
-              "F"
-            );
-          }
-
-          doc.setDrawColor(
-            ...COLORS.border
+        if (index === 3) {
+          doc.setFillColor(
+            ...COLORS.lightBlue
           );
 
           doc.rect(
             margin,
             rowY,
             contentWidth,
+            feeRowHeight,
+            "F"
+          );
+        }
+
+        doc.setDrawColor(
+          ...COLORS.border
+        );
+
+        doc.rect(
+          margin,
+          rowY,
+          contentWidth,
+          feeRowHeight
+        );
+
+        doc.line(
+          margin +
+            feeLabelWidth,
+          rowY,
+          margin +
+            feeLabelWidth,
+          rowY +
             feeRowHeight
-          );
-
-          doc.line(
-            margin +
-              feeLabelWidth,
-            rowY,
-            margin +
-              feeLabelWidth,
-            rowY +
-              feeRowHeight
-          );
-
-          doc.setTextColor(
-            ...COLORS.dark
-          );
-
-          doc.setFont(
-            "helvetica",
-            index >= 3
-              ? "bold"
-              : "normal"
-          );
-
-          doc.setFontSize(
-            7.3
-          );
-
-          doc.text(
-            label,
-            margin + 13,
-            rowY + 4.5
-          );
-
-          doc.text(
-            value,
-            margin +
-              contentWidth -
-              6,
-            rowY + 4.5,
-            {
-              align: "right",
-            }
-          );
-        }
-      );
-
-      /* ====================================================================
-         LOWER AREA
-         ==================================================================== */
-
-      const lowerY =
-        feeTop +
-        feeRows.length *
-          feeRowHeight +
-        4;
-
-      const lowerGap =
-        5;
-
-      const lowerWidth =
-        (contentWidth -
-          lowerGap) /
-        2;
-
-      /*
-       * Smaller height gives the signature its own area.
-       */
-      const lowerHeight =
-        34;
-
-      /* ====================================================================
-         QR BOX
-         ==================================================================== */
-
-      const qrBoxX =
-        margin;
-
-      doc.setFillColor(
-        ...COLORS.lightViolet
-      );
-
-      doc.roundedRect(
-        qrBoxX,
-        lowerY,
-        lowerWidth,
-        lowerHeight,
-        3,
-        3,
-        "F"
-      );
-
-      doc.setDrawColor(
-        220,
-        200,
-        245
-      );
-
-      doc.roundedRect(
-        qrBoxX,
-        lowerY,
-        lowerWidth,
-        lowerHeight,
-        3,
-        3
-      );
-
-      drawSectionHeader(
-        doc,
-        {
-          x: qrBoxX,
-          y: lowerY,
-          width:
-            lowerWidth,
-          title:
-            "Receipt Verification",
-          background:
-            COLORS.lightViolet,
-          iconDataUrl:
-            qrIcon,
-        }
-      );
-
-      /*
-       * QR CODE
-       *
-       * Complete QR stays inside the box.
-       */
-      const qrX =
-        qrBoxX + 7;
-
-      const qrY =
-        lowerY + 14;
-
-      const qrSize =
-        18.5;
-
-      doc.addImage(
-        qrDataUrl,
-        "PNG",
-        qrX,
-        qrY,
-        qrSize,
-        qrSize,
-        "receiptQR",
-        "FAST"
-      );
-
-      /*
-       * Clickable QR
-       */
-      doc.link(
-        qrX,
-        qrY,
-        qrSize,
-        qrSize,
-        {
-          url:
-            verificationUrl,
-        }
-      );
-
-      /*
-       * Divider
-       */
-      doc.setDrawColor(
-        ...COLORS.dark
-      );
-
-      doc.setLineWidth(
-        0.25
-      );
-
-      doc.line(
-        qrBoxX + 37,
-        lowerY + 14,
-        qrBoxX + 37,
-        lowerY + 30
-      );
-
-      /*
-       * Text
-       */
-      doc.setTextColor(
-        ...COLORS.dark
-      );
-
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.setFontSize(
-        6.8
-      );
-
-      doc.text(
-        "Scan this QR code",
-        qrBoxX + 43,
-        lowerY + 22
-      );
-
-      doc.text(
-        "to verify this receipt.",
-        qrBoxX + 43,
-        lowerY + 28
-      );
-
-      /* ====================================================================
-         IMPORTANT NOTE
-         ==================================================================== */
-
-      const noteBoxX =
-        margin +
-        lowerWidth +
-        lowerGap;
-
-      doc.setFillColor(
-        ...COLORS.lightYellow
-      );
-
-      doc.roundedRect(
-        noteBoxX,
-        lowerY,
-        lowerWidth,
-        lowerHeight,
-        3,
-        3,
-        "F"
-      );
-
-      doc.setDrawColor(
-        245,
-        215,
-        150
-      );
-
-      doc.roundedRect(
-        noteBoxX,
-        lowerY,
-        lowerWidth,
-        lowerHeight,
-        3,
-        3
-      );
-
-      drawSectionHeader(
-        doc,
-        {
-          x: noteBoxX,
-          y: lowerY,
-          width:
-            lowerWidth,
-          title:
-            "Important Note",
-          background:
-            COLORS.lightYellow,
-          iconDataUrl:
-            noteIcon,
-        }
-      );
-
-      /*
-       * Note 1
-       */
-      addIcon(
-        doc,
-        checkIcon,
-        noteBoxX + 5.8,
-        lowerY + 17.3,
-        5.5
-      );
-
-      doc.setTextColor(
-        ...COLORS.dark
-      );
-
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.setFontSize(
-        6.4
-      );
-
-      doc.text(
-        "This is a computer generated",
-        noteBoxX + 13,
-        lowerY + 19
-      );
-
-      doc.text(
-        "payment receipt.",
-        noteBoxX + 13,
-        lowerY + 24
-      );
-
-      /*
-       * Note 2
-       */
-      addIcon(
-        doc,
-        checkIcon,
-        noteBoxX + 5.8,
-        lowerY + 27.5,
-        5.5
-      );
-
-      doc.text(
-        "Receipt verification is available",
-        noteBoxX + 13,
-        lowerY + 29
-      );
-
-      doc.text(
-        "through the QR code.",
-        noteBoxX + 13,
-        lowerY + 33
-      );
-
-      /* ====================================================================
-         FOOTER POSITION
-         ==================================================================== */
-
-      const footerHeight =
-        17;
-
-      const footerY =
-        pageHeight -
-        footerHeight -
-        1.5;
-
-      /* ====================================================================
-         AUTHORISED SIGNATURE
-         ==================================================================== */
-
-      /*
-       * SIGNATURE IS NOW OUTSIDE THE NOTE BOX.
-       *
-       * This fixes the overlap shown in your screenshot.
-       */
-
-      const signatureCenterX =
-        noteBoxX +
-        lowerWidth / 2;
-
-      const signatureY =
-        footerY - 7;
-
-      /*
-       * Signature line
-       */
-      doc.setDrawColor(
-        35,
-        45,
-        150
-      );
-
-      doc.setLineWidth(
-        0.55
-      );
-
-      /*
-       * Small signature strokes
-       */
-      doc.line(
-        signatureCenterX - 14,
-        signatureY - 4,
-        signatureCenterX - 10,
-        signatureY - 9
-      );
-
-      doc.line(
-        signatureCenterX - 10,
-        signatureY - 9,
-        signatureCenterX - 6,
-        signatureY - 3
-      );
-
-      doc.line(
-        signatureCenterX - 6,
-        signatureY - 3,
-        signatureCenterX,
-        signatureY - 10
-      );
-
-      doc.line(
-        signatureCenterX,
-        signatureY - 10,
-        signatureCenterX + 5,
-        signatureY - 4
-      );
-
-      doc.line(
-        signatureCenterX + 5,
-        signatureY - 4,
-        signatureCenterX + 10,
-        signatureY - 8
-      );
-
-      doc.line(
-        signatureCenterX + 10,
-        signatureY - 8,
-        signatureCenterX + 14,
-        signatureY - 4
-      );
-
-      /*
-       * Signature line
-       */
-      doc.setDrawColor(
-        ...COLORS.dark
-      );
-
-      doc.setLineWidth(
-        0.25
-      );
-
-      doc.line(
-        signatureCenterX - 18,
-        signatureY,
-        signatureCenterX + 18,
-        signatureY
-      );
-
-      doc.setTextColor(
-        ...COLORS.dark
-      );
-
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
-
-      doc.setFontSize(
-        5.8
-      );
-
-      doc.text(
-        "Authorised Signatory",
-        signatureCenterX,
-        signatureY + 3.2,
-        {
-          align: "center",
-        }
-      );
-
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      doc.setFontSize(
-        5.4
-      );
-
-      doc.text(
-        INSTITUTE_NAME,
-        signatureCenterX,
-        signatureY + 6.5,
-        {
-          align: "center",
-        }
-      );
-
-      /* ====================================================================
-         FOOTER
-         ==================================================================== */
-
-      doc.setFillColor(
-        ...COLORS.purple
-      );
-
-      doc.rect(
-        1.5,
-        footerY,
-        pageWidth - 3,
-        footerHeight,
-        "F"
-      );
-
-      doc.setTextColor(
-        ...COLORS.white
-      );
-
-      doc.setFont(
-        "helvetica",
-        "bolditalic"
-      );
-
-      doc.setFontSize(
-        8
-      );
-
-      doc.text(
-        "Thank you for your payment!",
-        pageWidth / 2,
-        footerY + 6,
-        {
-          align: "center",
-        }
-      );
-
-      doc.setDrawColor(
-        ...COLORS.white
-      );
-
-      doc.setLineWidth(
-        0.2
-      );
-
-      doc.line(
-        7,
-        footerY + 9,
-        pageWidth - 7,
-        footerY + 9
-      );
-
-      doc.setFont(
-        "helvetica",
-        "italic"
-      );
-
-      doc.setFontSize(
-        5.7
-      );
-
-      doc.text(
-        "All payments are accepted under the terms of non-refund and non-transfer.",
-        pageWidth / 2,
-        footerY + 14,
-        {
-          align: "center",
-        }
-      );
-
-      /* ====================================================================
-         FINAL DEBUG
-         ==================================================================== */
-
-      console.log(
-        "Payment receipt generated successfully."
-      );
-
-      console.log(
-        "Receipt:",
-        receiptNo
-      );
-
-      console.log(
-        "QR URL:",
-        verificationUrl
-      );
-
-      /* ====================================================================
-         DOWNLOAD
-         ==================================================================== */
-
-      doc.save(
-        `Payment-Receipt-${receiptNo}.pdf`
-      );
-    } catch (error) {
-      console.error(
-        "Payment receipt generation error:",
-        error
-      );
-
-      throw error;
-    }
-  };
+        );
+
+        doc.setTextColor(
+          ...COLORS.dark
+        );
+
+        doc.setFont(
+          "helvetica",
+          index >= 3
+            ? "bold"
+            : "normal"
+        );
+
+        doc.setFontSize(7.3);
+
+        doc.text(
+          label,
+          margin + 13,
+          rowY + 4.5
+        );
+
+        doc.text(
+          value,
+          margin +
+            contentWidth -
+            6,
+          rowY + 4.5,
+          {
+            align: "right",
+          }
+        );
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOWER AREA
+    |--------------------------------------------------------------------------
+    */
+
+    const lowerY =
+      feeTop +
+      feeRows.length *
+        feeRowHeight +
+      4;
+
+    const lowerGap = 5;
+
+    const lowerWidth =
+      (contentWidth -
+        lowerGap) /
+      2;
+
+    /*
+    |--------------------------------------------------------------------------
+    | QR BOX HEIGHT
+    |--------------------------------------------------------------------------
+    |
+    | Increased from 34mm to 40mm because the
+    | physical QR is now 24mm.
+    |
+    */
+
+    const lowerHeight = 40;
+
+    /*
+    |--------------------------------------------------------------------------
+    | QR BOX
+    |--------------------------------------------------------------------------
+    */
+
+    const qrBoxX = margin;
+
+    doc.setFillColor(
+      ...COLORS.lightViolet
+    );
+
+    doc.roundedRect(
+      qrBoxX,
+      lowerY,
+      lowerWidth,
+      lowerHeight,
+      3,
+      3,
+      "F"
+    );
+
+    doc.setDrawColor(
+      220,
+      200,
+      245
+    );
+
+    doc.roundedRect(
+      qrBoxX,
+      lowerY,
+      lowerWidth,
+      lowerHeight,
+      3,
+      3
+    );
+
+    drawSectionHeader(
+      doc,
+      {
+        x: qrBoxX,
+        y: lowerY,
+        width: lowerWidth,
+        title:
+          "Receipt Verification",
+        background:
+          COLORS.lightViolet,
+        iconDataUrl:
+          qrIcon,
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | PHYSICAL QR CODE
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    |
+    | 24mm printed size
+    | High-resolution source
+    | Large quiet zone
+    | Error correction H
+    |
+    */
+
+    const qrX =
+      qrBoxX + 6;
+
+    const qrY =
+      lowerY + 14;
+
+    const qrSize = 24;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Add QR image
+    |--------------------------------------------------------------------------
+    */
+
+    doc.addImage(
+      qrDataUrl,
+      "PNG",
+      qrX,
+      qrY,
+      qrSize,
+      qrSize,
+      undefined,
+      "FAST"
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLICKABLE QR
+    |--------------------------------------------------------------------------
+    |
+    | This allows clicking the QR inside a PDF
+    | viewer.
+    |
+    */
+
+    doc.link(
+      qrX,
+      qrY,
+      qrSize,
+      qrSize,
+      {
+        url:
+          verificationUrl,
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | QR TEXT
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setTextColor(
+      ...COLORS.dark
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(6.2);
+
+    doc.text(
+      "Scan to verify receipt",
+      qrX +
+        qrSize / 2,
+      qrY +
+        qrSize +
+        4,
+      {
+        align: "center",
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | QR DIVIDER
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setDrawColor(
+      ...COLORS.dark
+    );
+
+    doc.setLineWidth(0.25);
+
+    doc.line(
+      qrBoxX + 40,
+      lowerY + 14,
+      qrBoxX + 40,
+      lowerY + 36
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | QR DESCRIPTION
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setTextColor(
+      ...COLORS.dark
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(6.8);
+
+    doc.text(
+      "Scan this QR code",
+      qrBoxX + 46,
+      lowerY + 22
+    );
+
+    doc.text(
+      "to verify this receipt.",
+      qrBoxX + 46,
+      lowerY + 28
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT NOTE
+    |--------------------------------------------------------------------------
+    */
+
+    const noteBoxX =
+      margin +
+      lowerWidth +
+      lowerGap;
+
+    doc.setFillColor(
+      ...COLORS.lightYellow
+    );
+
+    doc.roundedRect(
+      noteBoxX,
+      lowerY,
+      lowerWidth,
+      lowerHeight,
+      3,
+      3,
+      "F"
+    );
+
+    doc.setDrawColor(
+      245,
+      215,
+      150
+    );
+
+    doc.roundedRect(
+      noteBoxX,
+      lowerY,
+      lowerWidth,
+      lowerHeight,
+      3,
+      3
+    );
+
+    drawSectionHeader(
+      doc,
+      {
+        x: noteBoxX,
+        y: lowerY,
+        width: lowerWidth,
+        title:
+          "Important Note",
+        background:
+          COLORS.lightYellow,
+        iconDataUrl:
+          noteIcon,
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Note 1
+    |--------------------------------------------------------------------------
+    */
+
+    addIcon(
+      doc,
+      checkIcon,
+      noteBoxX + 5.8,
+      lowerY + 17.3,
+      5.5
+    );
+
+    doc.setTextColor(
+      ...COLORS.dark
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(6.4);
+
+    doc.text(
+      "This is a computer generated",
+      noteBoxX + 13,
+      lowerY + 19
+    );
+
+    doc.text(
+      "payment receipt.",
+      noteBoxX + 13,
+      lowerY + 24
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Note 2
+    |--------------------------------------------------------------------------
+    */
+
+    addIcon(
+      doc,
+      checkIcon,
+      noteBoxX + 5.8,
+      lowerY + 27.5,
+      5.5
+    );
+
+    doc.text(
+      "Receipt verification is available",
+      noteBoxX + 13,
+      lowerY + 29
+    );
+
+    doc.text(
+      "through the QR code.",
+      noteBoxX + 13,
+      lowerY + 33
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | FOOTER POSITION
+    |--------------------------------------------------------------------------
+    */
+
+    const footerHeight = 17;
+
+    const footerY =
+      pageHeight -
+      footerHeight -
+      1.5;
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTHORISED SIGNATURE
+    |--------------------------------------------------------------------------
+    |
+    | Signature remains outside Important Note.
+    |
+    */
+
+    const signatureCenterX =
+      noteBoxX +
+      lowerWidth / 2;
+
+    const signatureY =
+      footerY - 7;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Signature strokes
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setDrawColor(
+      35,
+      45,
+      150
+    );
+
+    doc.setLineWidth(0.55);
+
+    doc.line(
+      signatureCenterX - 14,
+      signatureY - 4,
+      signatureCenterX - 10,
+      signatureY - 9
+    );
+
+    doc.line(
+      signatureCenterX - 10,
+      signatureY - 9,
+      signatureCenterX - 6,
+      signatureY - 3
+    );
+
+    doc.line(
+      signatureCenterX - 6,
+      signatureY - 3,
+      signatureCenterX,
+      signatureY - 10
+    );
+
+    doc.line(
+      signatureCenterX,
+      signatureY - 10,
+      signatureCenterX + 5,
+      signatureY - 4
+    );
+
+    doc.line(
+      signatureCenterX + 5,
+      signatureY - 4,
+      signatureCenterX + 10,
+      signatureY - 8
+    );
+
+    doc.line(
+      signatureCenterX + 10,
+      signatureY - 8,
+      signatureCenterX + 14,
+      signatureY - 4
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Signature line
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setDrawColor(
+      ...COLORS.dark
+    );
+
+    doc.setLineWidth(0.25);
+
+    doc.line(
+      signatureCenterX - 18,
+      signatureY,
+      signatureCenterX + 18,
+      signatureY
+    );
+
+    doc.setTextColor(
+      ...COLORS.dark
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(5.8);
+
+    doc.text(
+      "Authorised Signatory",
+      signatureCenterX,
+      signatureY + 3.2,
+      {
+        align: "center",
+      }
+    );
+
+    doc.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    doc.setFontSize(5.4);
+
+    doc.text(
+      INSTITUTE_NAME,
+      signatureCenterX,
+      signatureY + 6.5,
+      {
+        align: "center",
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | FOOTER
+    |--------------------------------------------------------------------------
+    */
+
+    doc.setFillColor(
+      ...COLORS.purple
+    );
+
+    doc.rect(
+      1.5,
+      footerY,
+      pageWidth - 3,
+      footerHeight,
+      "F"
+    );
+
+    doc.setTextColor(
+      ...COLORS.white
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bolditalic"
+    );
+
+    doc.setFontSize(8);
+
+    doc.text(
+      "Thank you for your payment!",
+      pageWidth / 2,
+      footerY + 6,
+      {
+        align: "center",
+      }
+    );
+
+    doc.setDrawColor(
+      ...COLORS.white
+    );
+
+    doc.setLineWidth(0.2);
+
+    doc.line(
+      7,
+      footerY + 9,
+      pageWidth - 7,
+      footerY + 9
+    );
+
+    doc.setFont(
+      "helvetica",
+      "italic"
+    );
+
+    doc.setFontSize(5.7);
+
+    doc.text(
+      "All payments are accepted under the terms of non-refund and non-transfer.",
+      pageWidth / 2,
+      footerY + 14,
+      {
+        align: "center",
+      }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | DEBUG
+    |--------------------------------------------------------------------------
+    */
+
+    console.log(
+      "Payment receipt generated successfully."
+    );
+
+    console.log(
+      "Receipt:",
+      receiptNo
+    );
+
+    console.log(
+      "QR URL:",
+      verificationUrl
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | DOWNLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    doc.save(
+      `Payment-Receipt-${receiptNo}.pdf`
+    );
+  } catch (error) {
+    console.error(
+      "Payment receipt generation error:",
+      error
+    );
+
+    throw error;
+  }
+};
 
 export default generatePaymentReceipt;
