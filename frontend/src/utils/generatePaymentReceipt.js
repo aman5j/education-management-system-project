@@ -843,59 +843,116 @@ const generatePaymentReceipt =
        * verify-receipt/AJKLDFJASDLF
        */
 
+      const getReceiptVerificationUrl = (receiptNo) => {
+  if (!receiptNo) {
+    throw new Error("Receipt number is missing.");
+  }
+
+      // Production frontend URL
+      const configuredFrontendUrl =
+        import.meta.env.VITE_FRONTEND_URL;
+
+      // In production use VITE_FRONTEND_URL.
+      // During local development fallback to current frontend origin.
+      const frontendBaseUrl =
+        configuredFrontendUrl?.trim()
+          ? configuredFrontendUrl.trim().replace(/\/+$/, "")
+          : window.location.origin;
+
+      return `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
+        receiptNo
+      )}`;
+    };
+
       const frontendBaseUrl =
         getFrontendBaseUrl();
 
+      // const verificationUrl =
+      //   `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
+      //     receiptNo
+      //   )}`;
       const verificationUrl =
-        `${frontendBaseUrl}/verify-receipt/${encodeURIComponent(
-          receiptNo
-        )}`;
+        getReceiptVerificationUrl(receiptNo);
 
-      console.log(
-        "================================="
-      );
-
-      console.log(
-        "RECEIPT QR VERIFICATION URL:"
-      );
-
-      console.log(
-        verificationUrl
-      );
-
-      console.log(
-        "================================="
-      );
+      console.log("QR Verification URL:", verificationUrl);
 
       /* ====================================================================
          QR CODE
          ==================================================================== */
 
-      const qrDataUrl =
-        await QRCode.toDataURL(
-          verificationUrl,
-          {
-            errorCorrectionLevel:
-              "H",
+      // const qrDataUrl =
+      //   await QRCode.toDataURL(
+      //     verificationUrl,
+      //     {
+      //       errorCorrectionLevel:
+      //         "H",
 
-            type: "image/png",
+      //       type: "image/png",
 
-            /*
-             * High resolution
-             */
-            width: 1200,
+      //       /*
+      //        * High resolution
+      //        */
+      //       width: 1200,
 
-            /*
-             * Required white quiet-zone
-             */
-            margin: 5,
+      //       /*
+      //        * Required white quiet-zone
+      //        */
+      //       margin: 5,
 
-            color: {
-              dark: "#000000",
-              light: "#FFFFFF",
-            },
-          }
-        );
+      //       color: {
+      //         dark: "#000000",
+      //         light: "#FFFFFF",
+      //       },
+      //     }
+      //   );
+
+      const qrDataUrl = await QRCode.toDataURL(
+  verificationUrl,
+  {
+    width: 1000,
+    margin: 6,
+    errorCorrectionLevel: "H",
+    color: {
+      dark: "#000000",
+      light: "#FFFFFF",
+    },
+  }
+);
+
+// doc.addImage(
+//   qrDataUrl,
+//   "PNG",
+//   qrX,
+//   qrY,
+//   qrSize,
+//   qrSize,
+//   undefined,
+//   "FAST"
+// );
+
+// doc.setFont("helvetica", "normal");
+// doc.setFontSize(6.5);
+
+// doc.text(
+//   "Scan to verify receipt",
+//   qrX + qrSize / 2,
+//   qrY + qrSize + 4,
+//   {
+//     align: "center",
+//   }
+// );
+
+// doc.setFontSize(5.5);
+
+// doc.text(
+//   verificationUrl,
+//   qrX + qrSize / 2,
+//   qrY + qrSize + 8,
+//   {
+//     align: "center",
+//     maxWidth: qrSize + 20,
+//   }
+// );
 
       /* ====================================================================
          ICONS
