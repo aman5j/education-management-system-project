@@ -174,42 +174,52 @@ const getBatchName = (admission = {}) => {
 |--------------------------------------------------------------------------
 */
 
+// const getReceiptVerificationBaseUrl = () => {
+//   const configuredUrl =
+//     // import.meta.env.VITE_RECEIPT_VERIFY_BASE_URL;
+//     import.meta.env.VITE_API_URL || "https://education-management-backend-79g1.onrender.com/api";
+
+//   if (configuredUrl?.trim()) {
+//     return configuredUrl
+//       .trim()
+//       .replace(/\/+$/, "");
+//   }
+
+//   const frontendUrl =
+//     import.meta.env.VITE_FRONTEND_URL || "https://education-management-frontend.netlify.app/";
+
+//   if (frontendUrl?.trim()) {
+//     return frontendUrl
+//       .trim()
+//       .replace(/\/+$/, "");
+//   }
+
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Development fallback
+//   |--------------------------------------------------------------------------
+//   |
+//   | This works when clicking the QR from the same computer.
+//   |
+//   | For scanning from a phone while developing locally,
+//   | use VITE_RECEIPT_VERIFY_BASE_URL with your PC LAN IP.
+//   |
+//   */
+
+//   return window.location.origin.replace(
+//     /\/+$/,
+//     ""
+//   );
+// };
+
 const getReceiptVerificationBaseUrl = () => {
-  const configuredUrl =
-    // import.meta.env.VITE_RECEIPT_VERIFY_BASE_URL;
-    import.meta.env.VITE_API_URL || "https://education-management-backend-79g1.onrender.com/api";
-
-  if (configuredUrl?.trim()) {
-    return configuredUrl
-      .trim()
-      .replace(/\/+$/, "");
-  }
-
-  const frontendUrl =
-    import.meta.env.VITE_FRONTEND_URL || "https://education-management-frontend.netlify.app/";
+  const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
 
   if (frontendUrl?.trim()) {
-    return frontendUrl
-      .trim()
-      .replace(/\/+$/, "");
+    return frontendUrl.trim().replace(/\/+$/, "");
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Development fallback
-  |--------------------------------------------------------------------------
-  |
-  | This works when clicking the QR from the same computer.
-  |
-  | For scanning from a phone while developing locally,
-  | use VITE_RECEIPT_VERIFY_BASE_URL with your PC LAN IP.
-  |
-  */
-
-  return window.location.origin.replace(
-    /\/+$/,
-    ""
-  );
+  return "https://education-management-frontend.netlify.app";
 };
 
 const getReceiptVerificationUrl = (
