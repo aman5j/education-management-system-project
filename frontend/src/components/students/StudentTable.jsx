@@ -193,6 +193,82 @@ const StudentTable = ({
 //   }
 // };
 
+// const handleDownloadReceipt = async (student) => {
+//   try {
+//     if (!student?._id) {
+//       alert("Student information is missing.");
+//       return;
+//     }
+
+//     const response =
+//       await getStudentPayments(
+//         student._id
+//       );
+
+//     const data =
+//       response?.data?.data;
+
+//     const payments =
+//       Array.isArray(data?.payments)
+//         ? data.payments
+//         : Array.isArray(
+//             response?.data?.payments
+//           )
+//         ? response.data.payments
+//         : [];
+
+//     const verifiedPayments =
+//       payments.filter(
+//         (payment) =>
+//           payment.status ===
+//           "Verified"
+//       );
+
+//     if (
+//       verifiedPayments.length === 0
+//     ) {
+//       alert(
+//         "No verified payment receipt is available for this student."
+//       );
+//       return;
+//     }
+
+//     /*
+//      * Latest payment becomes the
+//      * current receipt.
+//      */
+//     const latestPayment =
+//       [...verifiedPayments].sort(
+//         (a, b) =>
+//           new Date(
+//             b.payment_date || 0
+//           ).getTime() -
+//           new Date(
+//             a.payment_date || 0
+//           ).getTime()
+//       )[0];
+
+//     /*
+//      * Generate receipt with
+//      * complete payment history.
+//      */
+//     await generatePaymentReceipt(
+//       latestPayment,
+//       verifiedPayments
+//     );
+//   } catch (error) {
+//     console.error(
+//       "Receipt download error:",
+//       error
+//     );
+
+//     alert(
+//       error?.response?.data?.message ||
+//         error?.message ||
+//         "Unable to download receipt."
+//     );
+//   }
+// };
 const handleDownloadReceipt = async (student) => {
   try {
     if (!student?._id) {
@@ -201,9 +277,7 @@ const handleDownloadReceipt = async (student) => {
     }
 
     const response =
-      await getStudentPayments(
-        student._id
-      );
+      await getStudentPayments(student._id);
 
     const data =
       response?.data?.data;
@@ -211,32 +285,23 @@ const handleDownloadReceipt = async (student) => {
     const payments =
       Array.isArray(data?.payments)
         ? data.payments
-        : Array.isArray(
-            response?.data?.payments
-          )
+        : Array.isArray(response?.data?.payments)
         ? response.data.payments
         : [];
 
     const verifiedPayments =
       payments.filter(
         (payment) =>
-          payment.status ===
-          "Verified"
+          payment.status === "Verified"
       );
 
-    if (
-      verifiedPayments.length === 0
-    ) {
+    if (!verifiedPayments.length) {
       alert(
         "No verified payment receipt is available for this student."
       );
       return;
     }
 
-    /*
-     * Latest payment becomes the
-     * current receipt.
-     */
     const latestPayment =
       [...verifiedPayments].sort(
         (a, b) =>
@@ -248,10 +313,6 @@ const handleDownloadReceipt = async (student) => {
           ).getTime()
       )[0];
 
-    /*
-     * Generate receipt with
-     * complete payment history.
-     */
     await generatePaymentReceipt(
       latestPayment,
       verifiedPayments
@@ -269,6 +330,7 @@ const handleDownloadReceipt = async (student) => {
     );
   }
 };
+
 
   return (
     <div className="student-table-wrapper">

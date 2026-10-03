@@ -4,20 +4,20 @@ import QRCode from "qrcode";
 /*
 |--------------------------------------------------------------------------
 | IT LEARNING INSTITUTE
-| PAYMENT RECEIPT GENERATOR
+| PAYMENT RECEIPT
 |--------------------------------------------------------------------------
 |
-| This file generates the complete A4 payment receipt.
+| IMPORTANT QR ARCHITECTURE
 |
-| QR FLOW:
-|
-| QR
-|  ↓
-| FRONTEND /verify-receipt/:receiptNo
-|  ↓
+| QR CODE
+|    ↓
+| FRONTEND:
+| /verify-receipt/:receiptNo
+|    ↓
 | VerifyReceipt.jsx
-|  ↓
-| Backend /api/public/receipts/verify/:receiptNo
+|    ↓
+| BACKEND:
+| /api/public/receipts/verify/:receiptNo
 |
 |--------------------------------------------------------------------------
 */
@@ -62,21 +62,17 @@ const COLORS = {
   lightYellow: [255, 248, 225],
 
   dark: [15, 22, 45],
-  gray: [95, 95, 105],
-
   border: [190, 202, 218],
 
   white: [255, 255, 255],
 };
 
 /* ========================================================================
-   BASIC HELPERS
+   HELPERS
    ======================================================================== */
 
 const formatDate = (value) => {
-  if (!value) {
-    return "-";
-  }
+  if (!value) return "-";
 
   const date = new Date(value);
 
@@ -92,9 +88,7 @@ const formatDate = (value) => {
 };
 
 const formatMoney = (value) => {
-  const amount = Number(value || 0);
-
-  return `Rs. ${amount.toLocaleString("en-IN", {
+  return `Rs. ${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -102,10 +96,7 @@ const formatMoney = (value) => {
 
 const getStudentName = (student = {}) => {
   return (
-    [
-      student?.firstName,
-      student?.surname,
-    ]
+    [student?.firstName, student?.surname]
       .filter(Boolean)
       .join(" ") || "-"
   );
@@ -129,29 +120,38 @@ const getBatchName = (admission = {}) => {
 };
 
 /* ========================================================================
-   FRONTEND URL
+   VERY IMPORTANT
+   ========================================================================
+
+   DO NOT use VITE_FRONTEND_URL here.
+
+   Your uploaded PDF proved that the environment variable was resolving
+   to the backend URL.
+
+   Because this function runs inside the frontend browser, the safest
+   verification URL is ALWAYS the current frontend origin.
+
+   Example production:
+
+   https://education-management-system.netlify.app
+
+   Example local:
+
+   http://localhost:5173
+
    ======================================================================== */
 
+// const getFrontendBaseUrl = () => {
+//   return window.location.origin.replace(/\/+$/, "");
+// };
+
 const getFrontendBaseUrl = () => {
-  const configuredUrl =
-    import.meta.env.VITE_FRONTEND_URL;
-
-  if (configuredUrl) {
-    return configuredUrl.replace(/\/+$/, "");
-  }
-
-  return window.location.origin;
+  return window.location.origin.replace(/\/+$/, "");
 };
 
 /* ========================================================================
    VECTOR ICONS
-   These are drawn directly by jsPDF.
-   No React Icons / Font Awesome / external font required.
    ======================================================================== */
-
-/* ------------------------------------------------------------------------
-   Person icon
-   ------------------------------------------------------------------------ */
 
 const drawPersonIcon = (
   doc,
@@ -161,29 +161,23 @@ const drawPersonIcon = (
 ) => {
   doc.setFillColor(...color);
 
-  // Head
   doc.circle(
     x,
-    y - 2.5,
-    1.9,
+    y - 2.2,
+    1.8,
     "F"
   );
 
-  // Body
   doc.roundedRect(
     x - 4,
-    y + 0.5,
+    y + 0.3,
     8,
-    5,
+    4.8,
     2,
     2,
     "F"
   );
 };
-
-/* ------------------------------------------------------------------------
-   Document icon
-   ------------------------------------------------------------------------ */
 
 const drawDocumentIcon = (
   doc,
@@ -192,8 +186,7 @@ const drawDocumentIcon = (
   color
 ) => {
   doc.setDrawColor(...color);
-
-  doc.setLineWidth(0.65);
+  doc.setLineWidth(0.7);
 
   doc.roundedRect(
     x - 3.5,
@@ -227,10 +220,6 @@ const drawDocumentIcon = (
   );
 };
 
-/* ------------------------------------------------------------------------
-   QR icon
-   ------------------------------------------------------------------------ */
-
 const drawQRIcon = (
   doc,
   x,
@@ -238,13 +227,10 @@ const drawQRIcon = (
   color
 ) => {
   doc.setDrawColor(...color);
+  doc.setFillColor(...color);
+  doc.setLineWidth(0.6);
 
-  doc.setLineWidth(0.65);
-
-  const drawFinder = (
-    fx,
-    fy
-  ) => {
+  const finder = (fx, fy) => {
     doc.rect(
       fx,
       fy,
@@ -252,8 +238,6 @@ const drawQRIcon = (
       4.5,
       "S"
     );
-
-    doc.setFillColor(...color);
 
     doc.rect(
       fx + 1.2,
@@ -264,22 +248,9 @@ const drawQRIcon = (
     );
   };
 
-  drawFinder(
-    x - 6,
-    y - 6
-  );
-
-  drawFinder(
-    x + 1.5,
-    y - 6
-  );
-
-  drawFinder(
-    x - 6,
-    y + 1.5
-  );
-
-  doc.setFillColor(...color);
+  finder(x - 6, y - 6);
+  finder(x + 1.5, y - 6);
+  finder(x - 6, y + 1.5);
 
   doc.rect(
     x + 2,
@@ -298,10 +269,6 @@ const drawQRIcon = (
   );
 };
 
-/* ------------------------------------------------------------------------
-   Globe icon
-   ------------------------------------------------------------------------ */
-
 const drawGlobeIcon = (
   doc,
   x,
@@ -309,7 +276,6 @@ const drawGlobeIcon = (
   color
 ) => {
   doc.setDrawColor(...color);
-
   doc.setLineWidth(0.55);
 
   doc.circle(
@@ -335,10 +301,6 @@ const drawGlobeIcon = (
   );
 };
 
-/* ------------------------------------------------------------------------
-   Phone icon
-   ------------------------------------------------------------------------ */
-
 const drawPhoneIcon = (
   doc,
   x,
@@ -346,8 +308,7 @@ const drawPhoneIcon = (
   color
 ) => {
   doc.setDrawColor(...color);
-
-  doc.setLineWidth(0.65);
+  doc.setLineWidth(0.7);
 
   doc.roundedRect(
     x - 2.2,
@@ -369,10 +330,6 @@ const drawPhoneIcon = (
   );
 };
 
-/* ------------------------------------------------------------------------
-   Check icon
-   ------------------------------------------------------------------------ */
-
 const drawCheckIcon = (
   doc,
   x,
@@ -385,7 +342,7 @@ const drawCheckIcon = (
   doc.circle(
     x,
     y,
-    2.8,
+    2.7,
     "F"
   );
 
@@ -396,7 +353,7 @@ const drawCheckIcon = (
   doc.setLineWidth(0.7);
 
   doc.line(
-    x - 1.2,
+    x - 1.1,
     y,
     x - 0.3,
     y + 1
@@ -405,8 +362,8 @@ const drawCheckIcon = (
   doc.line(
     x - 0.3,
     y + 1,
-    x + 1.6,
-    y - 1.2
+    x + 1.5,
+    y - 1.1
   );
 };
 
@@ -428,9 +385,6 @@ const drawSectionHeader = (
 ) => {
   const height = 14;
 
-  /*
-   * Header background
-   */
   doc.setFillColor(
     ...background
   );
@@ -445,9 +399,6 @@ const drawSectionHeader = (
     "F"
   );
 
-  /*
-   * White icon circle
-   */
   doc.setFillColor(
     ...COLORS.white
   );
@@ -455,13 +406,10 @@ const drawSectionHeader = (
   doc.circle(
     x + 10,
     y + 7,
-    5.1,
+    5,
     "F"
   );
 
-  /*
-   * Icon
-   */
   if (icon === "person") {
     drawPersonIcon(
       doc,
@@ -498,9 +446,6 @@ const drawSectionHeader = (
     );
   }
 
-  /*
-   * Title
-   */
   doc.setTextColor(
     ...COLORS.dark
   );
@@ -543,7 +488,7 @@ const drawKeyValue = (
     "normal"
   );
 
-  doc.setFontSize(8.8);
+  doc.setFontSize(8.7);
 
   doc.text(
     label,
@@ -632,9 +577,9 @@ const drawPaymentHistory = (
     payments,
   }
 ) => {
-  const headerHeight = 9;
+  const headerHeight = 8.5;
 
-  const rowHeight = 7.2;
+  const rowHeight = 7;
 
   const columnWidths = [
     width * 0.25,
@@ -650,9 +595,6 @@ const drawPaymentHistory = (
     "Status",
   ];
 
-  /*
-   * Header
-   */
   doc.setFillColor(
     ...COLORS.lightBlue
   );
@@ -703,13 +645,13 @@ const drawPaymentHistory = (
         "bold"
       );
 
-      doc.setFontSize(7);
+      doc.setFontSize(6.8);
 
       doc.text(
         header,
         currentX +
           columnWidth / 2,
-        y + 5.8,
+        y + 5.5,
         {
           align: "center",
         }
@@ -719,9 +661,6 @@ const drawPaymentHistory = (
     }
   );
 
-  /*
-   * Rows
-   */
   let currentY =
     y + headerHeight;
 
@@ -791,7 +730,7 @@ const drawPaymentHistory = (
               currentX +
                 columnWidth / 2 -
                 10,
-              currentY + 1.1,
+              currentY + 1,
               20,
               5,
               2.5,
@@ -810,7 +749,7 @@ const drawPaymentHistory = (
               "bold"
             );
 
-            doc.setFontSize(6.2);
+            doc.setFontSize(6);
 
             doc.text(
               value,
@@ -833,13 +772,13 @@ const drawPaymentHistory = (
                 : "normal"
             );
 
-            doc.setFontSize(6.8);
+            doc.setFontSize(6.7);
 
             doc.text(
               value,
               currentX +
                 columnWidth / 2,
-              currentY + 4.8,
+              currentY + 4.7,
               {
                 align: "center",
               }
@@ -858,7 +797,7 @@ const drawPaymentHistory = (
 };
 
 /* ========================================================================
-   MAIN FUNCTION
+   MAIN RECEIPT FUNCTION
    ======================================================================== */
 
 const generatePaymentReceipt = async (
@@ -866,9 +805,9 @@ const generatePaymentReceipt = async (
   paymentHistory = []
 ) => {
   try {
-    /* ======================================================================
-       VALIDATION
-       ====================================================================== */
+    /* ----------------------------------------------------------------------
+       VALIDATE PAYMENT
+       ---------------------------------------------------------------------- */
 
     if (!payment) {
       throw new Error(
@@ -885,9 +824,9 @@ const generatePaymentReceipt = async (
       );
     }
 
-    /* ======================================================================
+    /* ----------------------------------------------------------------------
        RECEIPT NUMBER
-       ====================================================================== */
+       ---------------------------------------------------------------------- */
 
     const receiptNo =
       payment.receipt_no ||
@@ -901,23 +840,23 @@ const generatePaymentReceipt = async (
       );
     }
 
-    /* ======================================================================
-       QR URL
-       ====================================================================== */
+    /* ----------------------------------------------------------------------
+       CORRECT FRONTEND VERIFICATION URL
+       ---------------------------------------------------------------------- */
 
     /*
      * IMPORTANT:
      *
-     * QR MUST open the FRONTEND verification page.
+     * We deliberately DO NOT use:
      *
-     * Example:
+     * import.meta.env.VITE_FRONTEND_URL
      *
-     * https://your-frontend.netlify.app/
-     * verify-receipt/RCP-20261002-XXXX
+     * because your uploaded PDF proved that it was producing:
      *
-     * NOT:
+     * backend.onrender.com/api/verify-receipt/...
      *
-     * https://backend.onrender.com/api/verify-receipt/...
+     * Instead, window.location.origin ALWAYS points to the frontend
+     * application that is generating this PDF.
      */
 
     const frontendBaseUrl =
@@ -928,20 +867,25 @@ const generatePaymentReceipt = async (
         receiptNo
       )}`;
 
-    /*
-     * Debug:
-     *
-     * Open browser console while
-     * generating the receipt.
-     */
     console.log(
-      "PAYMENT RECEIPT QR URL:",
+      "======================================"
+    );
+
+    console.log(
+      "PAYMENT RECEIPT QR URL:"
+    );
+
+    console.log(
       verificationUrl
     );
 
-    /* ======================================================================
-       GENERATE QR
-       ====================================================================== */
+    console.log(
+      "======================================"
+    );
+
+    /* ----------------------------------------------------------------------
+       QR CODE
+       ---------------------------------------------------------------------- */
 
     const qrDataUrl =
       await QRCode.toDataURL(
@@ -949,8 +893,17 @@ const generatePaymentReceipt = async (
         {
           errorCorrectionLevel: "H",
           type: "image/png",
-          width: 800,
-          margin: 4,
+
+          /*
+           * High resolution.
+           */
+          width: 1000,
+
+          /*
+           * Quiet white border around QR.
+           */
+          margin: 5,
+
           color: {
             dark: "#000000",
             light: "#FFFFFF",
@@ -958,9 +911,9 @@ const generatePaymentReceipt = async (
         }
       );
 
-    /* ======================================================================
+    /* ----------------------------------------------------------------------
        DATA
-       ====================================================================== */
+       ---------------------------------------------------------------------- */
 
     const student =
       payment.student_id || {};
@@ -989,9 +942,9 @@ const generatePaymentReceipt = async (
         payment.amount || 0
       );
 
-    /* ======================================================================
+    /* ----------------------------------------------------------------------
        PAYMENT HISTORY
-       ====================================================================== */
+       ---------------------------------------------------------------------- */
 
     let verifiedPayments =
       Array.isArray(
@@ -1004,11 +957,7 @@ const generatePaymentReceipt = async (
           )
         : [];
 
-    /*
-     * Make sure current payment
-     * is included.
-     */
-    const currentPaymentExists =
+    const currentExists =
       verifiedPayments.some(
         (item) =>
           (
@@ -1017,17 +966,12 @@ const generatePaymentReceipt = async (
           ) === receiptNo
       );
 
-    if (
-      !currentPaymentExists
-    ) {
+    if (!currentExists) {
       verifiedPayments.push(
         payment
       );
     }
 
-    /*
-     * Oldest -> newest
-     */
     verifiedPayments.sort(
       (a, b) =>
         new Date(
@@ -1039,15 +983,14 @@ const generatePaymentReceipt = async (
     );
 
     /*
-     * Display only latest 5 rows
-     * to keep receipt on one page.
+     * Maximum five rows.
      */
     const displayedPayments =
       verifiedPayments.slice(-5);
 
-    /* ======================================================================
-       TOTAL PAID
-       ====================================================================== */
+    /* ----------------------------------------------------------------------
+       PAYMENT CALCULATIONS
+       ---------------------------------------------------------------------- */
 
     const historyTotal =
       verifiedPayments.reduce(
@@ -1086,7 +1029,7 @@ const generatePaymentReceipt = async (
       );
 
     /* ======================================================================
-       CREATE PDF
+       PDF
        ====================================================================== */
 
     const doc = new jsPDF({
@@ -1125,7 +1068,7 @@ const generatePaymentReceipt = async (
     );
 
     /* ======================================================================
-       TOP STRIP
+       TOP PURPLE STRIP
        ====================================================================== */
 
     doc.setFillColor(
@@ -1145,7 +1088,7 @@ const generatePaymentReceipt = async (
        ====================================================================== */
 
     /*
-     * Orange logo circle
+     * Orange logo
      */
     doc.setFillColor(
       ...COLORS.orange
@@ -1247,7 +1190,7 @@ const generatePaymentReceipt = async (
     );
 
     /*
-     * Divider
+     * Header divider
      */
     doc.setDrawColor(
       ...COLORS.dark
@@ -1263,7 +1206,7 @@ const generatePaymentReceipt = async (
     );
 
     /*
-     * PAYMENT RECEIPT
+     * Payment Receipt title
      */
     doc.setFont(
       "helvetica",
@@ -1287,7 +1230,7 @@ const generatePaymentReceipt = async (
     );
 
     /*
-     * Receipt information box
+     * Receipt information
      */
     doc.setFillColor(
       246,
@@ -1333,7 +1276,7 @@ const generatePaymentReceipt = async (
       "bold"
     );
 
-    doc.setFontSize(7.3);
+    doc.setFontSize(7.2);
 
     doc.text(
       receiptNo,
@@ -1476,7 +1419,8 @@ const generatePaymentReceipt = async (
         x: margin,
         y: studentHeaderY,
         width: contentWidth,
-        title: "Student Details",
+        title:
+          "Student Details",
         background:
           COLORS.lightBlue,
         icon: "person",
@@ -1504,7 +1448,7 @@ const generatePaymentReceipt = async (
     );
 
     /*
-     * Vertical divider
+     * Divider
      */
     doc.setDrawColor(
       ...COLORS.blue
@@ -1518,10 +1462,6 @@ const generatePaymentReceipt = async (
       110,
       studentBoxY + 26
     );
-
-    /*
-     * LEFT SIDE
-     */
 
     drawKeyValue(
       doc,
@@ -1564,10 +1504,6 @@ const generatePaymentReceipt = async (
       }
     );
 
-    /*
-     * RIGHT SIDE
-     */
-
     drawKeyValue(
       doc,
       {
@@ -1609,7 +1545,8 @@ const generatePaymentReceipt = async (
         x: margin,
         y: paymentHeaderY,
         width: contentWidth,
-        title: "Payment History",
+        title:
+          "Payment History",
         background:
           COLORS.lightGreen,
         icon: "document",
@@ -1635,12 +1572,6 @@ const generatePaymentReceipt = async (
        FEE DETAILS
        ====================================================================== */
 
-    /*
-     * Dynamic position.
-     *
-     * This is important because Payment History
-     * can have different number of rows.
-     */
     const feeHeaderY =
       paymentTableBottom + 4;
 
@@ -1700,9 +1631,6 @@ const generatePaymentReceipt = async (
           index *
             feeRowHeight;
 
-        /*
-         * Highlight Total Paid
-         */
         if (index === 3) {
           doc.setFillColor(
             ...COLORS.lightBlue
@@ -1749,7 +1677,7 @@ const generatePaymentReceipt = async (
             : "normal"
         );
 
-        doc.setFontSize(8.6);
+        doc.setFontSize(8.5);
 
         doc.text(
           label,
@@ -1771,14 +1699,18 @@ const generatePaymentReceipt = async (
     );
 
     /* ======================================================================
-       LOWER AREA
+       LOWER SECTION
        ====================================================================== */
 
     /*
-     * Position is calculated from Fee Details.
+     * Calculate dynamically.
      *
-     * This prevents overlap when payment
-     * history has more rows.
+     * For 5 payments this normally starts around 238mm.
+     *
+     * Footer starts at 277mm.
+     *
+     * Lower boxes are only 36mm high,
+     * therefore nothing can be hidden behind footer.
      */
 
     const lowerY =
@@ -1794,7 +1726,7 @@ const generatePaymentReceipt = async (
         lowerGap) /
       2;
 
-    const lowerHeight = 48;
+    const lowerHeight = 36;
 
     /* ======================================================================
        QR VERIFICATION BOX
@@ -1850,16 +1782,18 @@ const generatePaymentReceipt = async (
     /*
      * QR
      *
-     * Keep the complete QR well inside
-     * the box.
+     * IMPORTANT:
+     * QR size is now 22mm.
+     * It fits completely before footer.
      */
+
     const qrX =
       qrBoxX + 7;
 
     const qrY =
-      lowerY + 16;
+      lowerY + 14;
 
-    const qrSize = 30;
+    const qrSize = 22;
 
     doc.addImage(
       qrDataUrl,
@@ -1867,11 +1801,13 @@ const generatePaymentReceipt = async (
       qrX,
       qrY,
       qrSize,
-      qrSize
+      qrSize,
+      undefined,
+      "FAST"
     );
 
     /*
-     * Make QR clickable inside PDF.
+     * Clickable QR
      */
     doc.link(
       qrX,
@@ -1894,14 +1830,14 @@ const generatePaymentReceipt = async (
     doc.setLineWidth(0.3);
 
     doc.line(
-      qrBoxX + 45,
-      lowerY + 16,
-      qrBoxX + 45,
-      lowerY + 40
+      qrBoxX + 37,
+      lowerY + 14,
+      qrBoxX + 37,
+      lowerY + 31
     );
 
     /*
-     * QR text
+     * Text
      */
     doc.setTextColor(
       ...COLORS.dark
@@ -1912,18 +1848,18 @@ const generatePaymentReceipt = async (
       "normal"
     );
 
-    doc.setFontSize(8.3);
+    doc.setFontSize(7.5);
 
     doc.text(
       "Scan this QR code",
-      qrBoxX + 51,
-      lowerY + 26
+      qrBoxX + 43,
+      lowerY + 23
     );
 
     doc.text(
       "to verify this receipt.",
-      qrBoxX + 51,
-      lowerY + 33
+      qrBoxX + 43,
+      lowerY + 29
     );
 
     /* ======================================================================
@@ -1986,7 +1922,7 @@ const generatePaymentReceipt = async (
     drawCheckIcon(
       doc,
       noteBoxX + 9,
-      lowerY + 21
+      lowerY + 20
     );
 
     doc.setTextColor(
@@ -1998,18 +1934,18 @@ const generatePaymentReceipt = async (
       "normal"
     );
 
-    doc.setFontSize(7.7);
+    doc.setFontSize(7.2);
 
     doc.text(
       "This is a computer generated",
       noteBoxX + 16,
-      lowerY + 20
+      lowerY + 19
     );
 
     doc.text(
       "payment receipt.",
       noteBoxX + 16,
-      lowerY + 26
+      lowerY + 24.5
     );
 
     /*
@@ -2018,36 +1954,54 @@ const generatePaymentReceipt = async (
     drawCheckIcon(
       doc,
       noteBoxX + 9,
-      lowerY + 35
+      lowerY + 30
     );
 
     doc.text(
       "Receipt verification is available",
       noteBoxX + 16,
-      lowerY + 34
+      lowerY + 29
     );
 
     doc.text(
       "through the QR code.",
       noteBoxX + 16,
-      lowerY + 40
+      lowerY + 34
     );
 
     /* ======================================================================
-       AUTHORISED SIGNATORY
+       SIGNATURE
        ====================================================================== */
+
+    /*
+     * Put signature BELOW the boxes,
+     * but BEFORE footer.
+     */
+
+    const footerHeight = 18;
+
+    const footerY =
+      pageHeight -
+      footerHeight -
+      1.5;
 
     const signatureCenterX =
       noteBoxX +
       lowerWidth / 2;
 
+    /*
+     * Signature must stay above footer.
+     */
     const signatureY =
-      lowerY +
-      lowerHeight +
-      9;
+      Math.min(
+        lowerY +
+          lowerHeight +
+          8,
+        footerY - 8
+      );
 
     /*
-     * Signature line drawing
+     * Signature drawing
      */
     doc.setDrawColor(
       30,
@@ -2055,18 +2009,18 @@ const generatePaymentReceipt = async (
       150
     );
 
-    doc.setLineWidth(0.65);
+    doc.setLineWidth(0.6);
 
     doc.line(
       signatureCenterX - 18,
       signatureY - 5,
       signatureCenterX - 13,
-      signatureY - 12
+      signatureY - 11
     );
 
     doc.line(
       signatureCenterX - 13,
-      signatureY - 12,
+      signatureY - 11,
       signatureCenterX - 8,
       signatureY - 3
     );
@@ -2075,12 +2029,12 @@ const generatePaymentReceipt = async (
       signatureCenterX - 8,
       signatureY - 3,
       signatureCenterX - 2,
-      signatureY - 13
+      signatureY - 12
     );
 
     doc.line(
       signatureCenterX - 2,
-      signatureY - 13,
+      signatureY - 12,
       signatureCenterX + 5,
       signatureY - 4
     );
@@ -2089,12 +2043,12 @@ const generatePaymentReceipt = async (
       signatureCenterX + 5,
       signatureY - 4,
       signatureCenterX + 12,
-      signatureY - 11
+      signatureY - 10
     );
 
     doc.line(
       signatureCenterX + 12,
-      signatureY - 11,
+      signatureY - 10,
       signatureCenterX + 18,
       signatureY - 5
     );
@@ -2106,12 +2060,12 @@ const generatePaymentReceipt = async (
       ...COLORS.dark
     );
 
-    doc.setLineWidth(0.3);
+    doc.setLineWidth(0.25);
 
     doc.line(
-      signatureCenterX - 22,
+      signatureCenterX - 20,
       signatureY,
-      signatureCenterX + 22,
+      signatureCenterX + 20,
       signatureY
     );
 
@@ -2124,12 +2078,12 @@ const generatePaymentReceipt = async (
       "bold"
     );
 
-    doc.setFontSize(6.7);
+    doc.setFontSize(6.2);
 
     doc.text(
       "Authorised Signatory",
       signatureCenterX,
-      signatureY + 4,
+      signatureY + 3.5,
       {
         align: "center",
       }
@@ -2140,12 +2094,12 @@ const generatePaymentReceipt = async (
       "normal"
     );
 
-    doc.setFontSize(6.3);
+    doc.setFontSize(5.8);
 
     doc.text(
       INSTITUTE_NAME,
       signatureCenterX,
-      signatureY + 8,
+      signatureY + 7,
       {
         align: "center",
       }
@@ -2154,14 +2108,6 @@ const generatePaymentReceipt = async (
     /* ======================================================================
        FOOTER
        ====================================================================== */
-
-    const footerHeight =
-      18;
-
-    const footerY =
-      pageHeight -
-      footerHeight -
-      1.5;
 
     doc.setFillColor(
       ...COLORS.purple
@@ -2184,7 +2130,7 @@ const generatePaymentReceipt = async (
       "bolditalic"
     );
 
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
 
     doc.text(
       "Thank you for your payment!",
@@ -2213,7 +2159,7 @@ const generatePaymentReceipt = async (
       "italic"
     );
 
-    doc.setFontSize(6.8);
+    doc.setFontSize(6.5);
 
     doc.text(
       "All payments are accepted under the terms of non-refund and non-transfer.",
@@ -2225,7 +2171,7 @@ const generatePaymentReceipt = async (
     );
 
     /* ======================================================================
-       SAVE PDF
+       DOWNLOAD
        ====================================================================== */
 
     doc.save(
