@@ -3,7 +3,10 @@ import {
   FiEdit2,
   FiEye,
   FiTrash2,
+  FiCreditCard,
 } from "react-icons/fi";
+
+import { Link } from "react-router-dom";
 
 // import { getAssetUrl } from "../../../utils/assetUrl";
 import { getAssetUrl } from "../../utils/assetUrl";
@@ -554,6 +557,22 @@ const handleDownloadReceipt = async (student) => {
                       >
                         <FiEdit2 />
                       </button>
+
+                      {/* <Link
+                        to={`/admin/students/${student._id}/payments`}
+                        className="student-action-button"
+                        title="Payment History"
+                      >
+                        <FiCreditCard />
+                      </Link> */}
+
+                      <Link
+                        to={`/admin/students/${student._id}/payments`}
+                        className="student-action-button"
+                        title="Payment History"
+                      >
+                        <FiCreditCard />
+                      </Link>
 
                       <button
                         type="button"

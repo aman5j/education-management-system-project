@@ -10,6 +10,16 @@ export const getPayments = (
     }
   );
 
+export const getStudentPaymentHistory = async (
+  studentId
+) => {
+  const response = await api.get(
+    `/payments/student/${studentId}`
+  );
+
+  return response;
+};
+
 export const getPayment = (
   id
 ) =>

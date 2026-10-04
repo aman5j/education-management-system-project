@@ -713,6 +713,183 @@ export const getPayments = async (req, res) => {
   }
 };
 
+
+/*
+|--------------------------------------------------------------------------
+| GET /api/payments/student/:studentId
+|--------------------------------------------------------------------------
+| Get complete payment history for one student
+|--------------------------------------------------------------------------
+*/
+
+export const getStudentPaymentHistory = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student ID.",
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Student
+    |--------------------------------------------------------------------------
+    */
+
+    const student = await Student.findById(studentId)
+      .select(
+        "rollNo firstName surname fatherName mobile email profileImage"
+      )
+      .lean();
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found.",
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student authorization
+    |--------------------------------------------------------------------------
+    */
+
+    if (req.user?.role === "student") {
+      const authenticatedStudentId =
+        await getAuthenticatedStudentId(req);
+
+      if (
+        !authenticatedStudentId ||
+        String(authenticatedStudentId) !==
+          String(studentId)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "You are not authorized to access this student's payment history.",
+        });
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Payments
+    |--------------------------------------------------------------------------
+    */
+
+    const payments = await Payment.find({
+      student_id: studentId,
+    })
+      .populate({
+        path: "admission_id",
+        select:
+          "course_id batch_id course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_fee admission_date status",
+        populate: [
+          {
+            path: "course_id",
+            select: "courseTitle courseType",
+          },
+          {
+            path: "batch_id",
+            select: "batch_name status",
+          },
+        ],
+      })
+      .sort({
+        payment_date: -1,
+        createdAt: -1,
+      })
+      .lean();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate summary
+    |--------------------------------------------------------------------------
+    */
+
+    const verifiedPayments = payments.filter(
+      (payment) =>
+        payment.status === "Verified"
+    );
+
+    const totalPaid = verifiedPayments.reduce(
+      (total, payment) =>
+        total + Number(payment.amount || 0),
+      0
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Find latest admission
+    |--------------------------------------------------------------------------
+    */
+
+    const latestAdmission =
+      payments.find(
+        (payment) =>
+          payment.admission_id
+      )?.admission_id || null;
+
+    const totalFee = Number(
+      latestAdmission?.final_amount || 0
+    );
+
+    const remainingAmount = Math.max(
+      totalFee - totalPaid,
+      0
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Response
+    |--------------------------------------------------------------------------
+    */
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        student,
+
+        admission: latestAdmission,
+
+        summary: {
+          totalFee: Number(
+            totalFee.toFixed(2)
+          ),
+
+          totalPaid: Number(
+            totalPaid.toFixed(2)
+          ),
+
+          remainingAmount: Number(
+            remainingAmount.toFixed(2)
+          ),
+
+          totalPayments: payments.length,
+        },
+
+        payments,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Get student payment history error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Unable to load student payment history.",
+    });
+  }
+};
+
 /*
 |--------------------------------------------------------------------------
 | GET /api/payments/:id

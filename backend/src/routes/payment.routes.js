@@ -6,6 +6,7 @@ import {
   createPayment,
   updatePayment,
   deletePayment,
+  getStudentPaymentHistory,
 } from "../controllers/payment.controller.js";
 
 import {
@@ -47,6 +48,11 @@ router.get(
     "student"
   ),
   getPayments
+);
+
+router.get(
+  "/student/:studentId",
+  getStudentPaymentHistory
 );
 
 router.get(

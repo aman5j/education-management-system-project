@@ -38,6 +38,7 @@ import Payments from "./pages/admin/payments/Payments";
 import AddPayment from "./pages/admin/payments/AddPayment";
 import EditPayment from "./pages/admin/payments/EditPayment";
 import ViewPayment from "./pages/admin/payments/ViewPayment";
+import StudentPaymentHistory from "./pages/admin/payments/StudentPaymentHistory";
 
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
@@ -409,6 +410,13 @@ const App = () => {
           <Route
             path="payments/:id/edit"
             element={<EditPayment />}
+          />
+
+          <Route
+            path="/admin/students/:studentId/payments"
+            element={
+              <StudentPaymentHistory />
+            }
           />
 
       </Route>
