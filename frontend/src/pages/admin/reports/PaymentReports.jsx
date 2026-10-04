@@ -804,6 +804,11 @@ const PaymentReports = () => {
                           getPaymentAmount(payment)
                         )}
                       </strong>
+                      {/* <strong>
+                        {formatPdfCurrency(
+                          getPaymentAmount(payment)
+                        )}
+                      </strong> */}
                     </td>
 
                     <td>
