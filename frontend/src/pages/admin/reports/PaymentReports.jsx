@@ -300,75 +300,394 @@ const PaymentReports = () => {
     return applied;
   };
 
+  // const exportExcel = () => {
+  //   if (!transactions.length) {
+  //     alert("No payment records available for Excel export.");
+  //     return;
+  //   }
+
+  //   const transactionRows = transactions.map((payment) => ({
+  //     "Receipt No": getReceiptNumber(payment),
+  //     "Student Name": getStudentName(payment?.student),
+  //     "Roll No": payment?.student?.rollNo || "-",
+  //     "Course": getCourseName(payment),
+  //     "Batch": getBatchName(payment),
+  //     "Payment Date": formatDate(payment?.payment_date),
+  //     "Payment Mode": getPaymentMode(payment),
+  //     Amount: getPaymentAmount(payment),
+  //     Status: getPaymentStatus(payment),
+  //     Notes: payment?.notes || "",
+  //   }));
+
+  //   const summaryRows = [
+  //     {
+  //       Metric: "Total Students",
+  //       Value: Number(summary.totalStudents || 0),
+  //     },
+  //     {
+  //       Metric: "Total Transactions",
+  //       Value: Number(summary.totalTransactions || 0),
+  //     },
+  //     {
+  //       Metric: "Total Fees Collected",
+  //       Value: Number(summary.totalFeesCollected || 0),
+  //     },
+  //     {
+  //       Metric: "Pending Payments",
+  //       Value: Number(summary.pendingPayments || 0),
+  //     },
+  //     {
+  //       Metric: "Overdue Payments",
+  //       Value: Number(summary.overduePayments || 0),
+  //     },
+  //     {
+  //       Metric: "Failed Payments",
+  //       Value: Number(summary.failedPayments || 0),
+  //     },
+  //   ];
+
+  //   const workbook = XLSX.utils.book_new();
+
+  //   const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+  //   const paymentSheet = XLSX.utils.json_to_sheet(transactionRows);
+
+  //   XLSX.utils.book_append_sheet(
+  //     workbook,
+  //     summarySheet,
+  //     "Summary"
+  //   );
+
+  //   XLSX.utils.book_append_sheet(
+  //     workbook,
+  //     paymentSheet,
+  //     "Payments"
+  //   );
+
+  //   const filename = `payment-report-${new Date()
+  //     .toISOString()
+  //     .slice(0, 10)}.xlsx`;
+
+  //   XLSX.writeFile(workbook, filename);
+  // };
+
+
   const exportExcel = () => {
-    if (!transactions.length) {
-      alert("No payment records available for Excel export.");
+  if (!transactions.length) {
+    alert("No payment records available for Excel export.");
+    return;
+  }
+
+  const workbook = XLSX.utils.book_new();
+
+  // ---------------------------------------------------------
+  // REPORT INFORMATION
+  // ---------------------------------------------------------
+
+  const appliedFilters = getAppliedFilters();
+
+  const reportInfo = [
+    ["IT Learning Institute"],
+    ["Payment Report"],
+    [],
+    ["Generated", new Date().toLocaleString("en-IN")],
+  ];
+
+  if (appliedFilters.length) {
+    reportInfo.push([
+      "Applied Filters",
+      appliedFilters.join(" | "),
+    ]);
+  } else {
+    reportInfo.push([
+      "Applied Filters",
+      "All Payments",
+    ]);
+  }
+
+  reportInfo.push([]);
+
+  // ---------------------------------------------------------
+  // SUMMARY
+  // ---------------------------------------------------------
+
+  reportInfo.push(["REPORT SUMMARY"]);
+
+  reportInfo.push([
+    "Total Students",
+    Number(summary.totalStudents || 0),
+  ]);
+
+  reportInfo.push([
+    "Total Transactions",
+    Number(summary.totalTransactions || 0),
+  ]);
+
+  reportInfo.push([
+    "Total Fees Collected",
+    Number(summary.totalFeesCollected || 0),
+  ]);
+
+  reportInfo.push([
+    "Pending Payments",
+    Number(summary.pendingPayments || 0),
+  ]);
+
+  reportInfo.push([
+    "Overdue Payments",
+    Number(summary.overduePayments || 0),
+  ]);
+
+  reportInfo.push([
+    "Failed Payments",
+    Number(summary.failedPayments || 0),
+  ]);
+
+  reportInfo.push([]);
+
+  // ---------------------------------------------------------
+  // PAYMENT MODE SUMMARY
+  // ---------------------------------------------------------
+
+  reportInfo.push(["PAYMENT MODE SUMMARY"]);
+
+  const paymentModeTotals = {
+    Cash: 0,
+    UPI: 0,
+    Card: 0,
+    "Bank Transfer": 0,
+  };
+
+  transactions.forEach((payment) => {
+    if (getPaymentStatus(payment) !== "Verified") {
       return;
     }
 
-    const transactionRows = transactions.map((payment) => ({
-      "Receipt No": getReceiptNumber(payment),
-      "Student Name": getStudentName(payment?.student),
-      "Roll No": payment?.student?.rollNo || "-",
-      "Course": getCourseName(payment),
-      "Batch": getBatchName(payment),
-      "Payment Date": formatDate(payment?.payment_date),
-      "Payment Mode": getPaymentMode(payment),
-      Amount: getPaymentAmount(payment),
-      Status: getPaymentStatus(payment),
-      Notes: payment?.notes || "",
-    }));
+    const mode = getPaymentMode(payment);
+    const amount = getPaymentAmount(payment);
 
-    const summaryRows = [
-      {
-        Metric: "Total Students",
-        Value: Number(summary.totalStudents || 0),
-      },
-      {
-        Metric: "Total Transactions",
-        Value: Number(summary.totalTransactions || 0),
-      },
-      {
-        Metric: "Total Fees Collected",
-        Value: Number(summary.totalFeesCollected || 0),
-      },
-      {
-        Metric: "Pending Payments",
-        Value: Number(summary.pendingPayments || 0),
-      },
-      {
-        Metric: "Overdue Payments",
-        Value: Number(summary.overduePayments || 0),
-      },
-      {
-        Metric: "Failed Payments",
-        Value: Number(summary.failedPayments || 0),
-      },
-    ];
+    if (
+      Object.prototype.hasOwnProperty.call(
+        paymentModeTotals,
+        mode
+      )
+    ) {
+      paymentModeTotals[mode] += amount;
+    }
+  });
 
-    const workbook = XLSX.utils.book_new();
+  Object.entries(paymentModeTotals).forEach(
+    ([mode, amount]) => {
+      reportInfo.push([
+        mode,
+        Number(amount.toFixed(2)),
+      ]);
+    }
+  );
 
-    const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
-    const paymentSheet = XLSX.utils.json_to_sheet(transactionRows);
+  reportInfo.push([]);
+  reportInfo.push(["PAYMENT TRANSACTIONS"]);
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      summarySheet,
-      "Summary"
+  // ---------------------------------------------------------
+  // COMPLETE TRANSACTION DATA
+  // ---------------------------------------------------------
+
+  reportInfo.push([
+    "Receipt No",
+    "Student Name",
+    "Roll No",
+    "Course",
+    "Batch",
+    "Payment Date",
+    "Payment Mode",
+    "Amount",
+    "Status",
+    "Notes",
+  ]);
+
+  transactions.forEach((payment) => {
+    reportInfo.push([
+      getReceiptNumber(payment),
+      getStudentName(payment?.student),
+      payment?.student?.rollNo || "-",
+      getCourseName(payment),
+      getBatchName(payment),
+      formatDate(payment?.payment_date),
+      getPaymentMode(payment),
+      getPaymentAmount(payment),
+      getPaymentStatus(payment),
+      payment?.notes || "",
+    ]);
+  });
+
+  // ---------------------------------------------------------
+  // REPORT SHEET
+  // ---------------------------------------------------------
+
+  const reportSheet =
+    XLSX.utils.aoa_to_sheet(reportInfo);
+
+  reportSheet["!cols"] = [
+    { wch: 28 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 32 },
+    { wch: 25 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 15 },
+    { wch: 35 },
+  ];
+
+  // Freeze the transaction header.
+  // Transaction header begins after the report information.
+  const transactionHeaderRow =
+    reportInfo.findIndex(
+      (row) =>
+        row.length === 10 &&
+        row[0] === "Receipt No"
     );
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      paymentSheet,
-      "Payments"
-    );
+  if (transactionHeaderRow >= 0) {
+    reportSheet["!freeze"] = {
+      xSplit: 0,
+      ySplit: transactionHeaderRow + 1,
+    };
 
-    const filename = `payment-report-${new Date()
-      .toISOString()
-      .slice(0, 10)}.xlsx`;
+    reportSheet["!autofilter"] = {
+      ref: `A${transactionHeaderRow + 1}:J${reportInfo.length}`,
+    };
+  }
 
-    XLSX.writeFile(workbook, filename);
+  // ---------------------------------------------------------
+  // SUMMARY SHEET
+  // ---------------------------------------------------------
+
+  const summaryRows = [
+    ["Metric", "Value"],
+    [
+      "Total Students",
+      Number(summary.totalStudents || 0),
+    ],
+    [
+      "Total Transactions",
+      Number(summary.totalTransactions || 0),
+    ],
+    [
+      "Total Fees Collected",
+      Number(summary.totalFeesCollected || 0),
+    ],
+    [
+      "Pending Payments",
+      Number(summary.pendingPayments || 0),
+    ],
+    [
+      "Overdue Payments",
+      Number(summary.overduePayments || 0),
+    ],
+    [
+      "Failed Payments",
+      Number(summary.failedPayments || 0),
+    ],
+  ];
+
+  const summarySheet =
+    XLSX.utils.aoa_to_sheet(summaryRows);
+
+  summarySheet["!cols"] = [
+    { wch: 28 },
+    { wch: 20 },
+  ];
+
+  // ---------------------------------------------------------
+  // PAYMENTS SHEET
+  // ---------------------------------------------------------
+
+  const paymentRows = [
+    [
+      "Receipt No",
+      "Student Name",
+      "Roll No",
+      "Course",
+      "Batch",
+      "Payment Date",
+      "Payment Mode",
+      "Amount",
+      "Status",
+      "Notes",
+    ],
+
+    ...transactions.map((payment) => [
+      getReceiptNumber(payment),
+      getStudentName(payment?.student),
+      payment?.student?.rollNo || "-",
+      getCourseName(payment),
+      getBatchName(payment),
+      formatDate(payment?.payment_date),
+      getPaymentMode(payment),
+      getPaymentAmount(payment),
+      getPaymentStatus(payment),
+      payment?.notes || "",
+    ]),
+  ];
+
+  const paymentSheet =
+    XLSX.utils.aoa_to_sheet(paymentRows);
+
+  paymentSheet["!cols"] = [
+    { wch: 26 },
+    { wch: 24 },
+    { wch: 20 },
+    { wch: 32 },
+    { wch: 24 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 15 },
+    { wch: 35 },
+  ];
+
+  paymentSheet["!freeze"] = {
+    xSplit: 0,
+    ySplit: 1,
   };
+
+  paymentSheet["!autofilter"] = {
+    ref: `A1:J${paymentRows.length}`,
+  };
+
+  // ---------------------------------------------------------
+  // ADD SHEETS
+  // ---------------------------------------------------------
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    reportSheet,
+    "Payment Report"
+  );
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    summarySheet,
+    "Summary"
+  );
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    paymentSheet,
+    "Payments"
+  );
+
+  // ---------------------------------------------------------
+  // DOWNLOAD
+  // ---------------------------------------------------------
+
+  const filename = `payment-report-${new Date()
+    .toISOString()
+    .slice(0, 10)}.xlsx`;
+
+  XLSX.writeFile(workbook, filename);
+};
 
   const exportPDF = () => {
     if (!transactions.length) {
@@ -472,6 +791,7 @@ const PaymentReports = () => {
 
     doc.text(
       `Fees Collected: ${formatCurrency(
+      // `Fees Collected: ${formatPdfCurrency(
         summary.totalFeesCollected
       )}`,
       150,
