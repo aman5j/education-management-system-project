@@ -1,783 +1,822 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
-import {
-  FiDownload,
-  FiRefreshCw,
-  FiSearch,
-  FiTrendingUp,
-} from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { FiDownload, FiFileText, FiRefreshCw } from "react-icons/fi";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import {
   getPaymentReport,
+  getPaymentReportFilters,
 } from "../../../services/paymentReportService";
 
 import "../../../styles/PaymentReports.css";
 
+const getResponseData = (response) => {
+  return response?.data?.data ?? response?.data ?? {};
+};
+
+const formatCurrency = (value) => {
+  const amount = Number(value || 0);
+
+  return `₹${amount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const formatPdfCurrency = (value) => {
+  const amount = Number(value || 0);
+
+  return `Rs. ${amount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleDateString("en-IN");
+};
+
+const getStudentName = (student) => {
+  if (!student) return "-";
+
+  // Current Payment Report API response
+  if (student.name) {
+    return student.name;
+  }
+
+  // Fallback for populated Student object
+  return (
+    [student.firstName, student.surname]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "-"
+  );
+};
+
+const getCourseName = (payment) => {
+  // Current Payment Report API response
+  if (payment?.course) {
+    return payment.course;
+  }
+
+  // Fallback for populated admission object
+  return (
+    payment?.admission?.course?.courseTitle ||
+    payment?.admission?.course_title ||
+    payment?.admission?.courseType ||
+    "-"
+  );
+};
+
+const getBatchName = (payment) => {
+  // Current Payment Report API response
+  if (payment?.batch) {
+    return payment.batch;
+  }
+
+  // Fallback for populated admission object
+  return (
+    payment?.admission?.batch?.batch_name ||
+    payment?.admission?.batch_name ||
+    "-"
+  );
+};
+
+const getReceiptNumber = (payment) => {
+  return payment?.receipt_no || payment?.receiptNo || "-";
+};
+
+const getPaymentAmount = (payment) => {
+  return Number(payment?.amount || 0);
+};
+
+const getPaymentMode = (payment) => {
+  return payment?.payment_mode || payment?.paymentMode || "-";
+};
+
+const getPaymentStatus = (payment) => {
+  return payment?.status || "-";
+};
+
 const PaymentReports = () => {
-  const [report, setReport] =
-    useState({
-      summary: {
-        totalStudents: 0,
-        totalTransactions: 0,
-        totalFeesCollected: 0,
-        pendingPayments: 0,
-        overduePayments: 0,
-        failedPayments: 0,
-      },
-      paymentModeSummary: [],
-      transactions: [],
-    });
+  const [filters, setFilters] = useState({
+    date_from: "",
+    date_to: "",
+    course_id: "",
+    batch_id: "",
+    student_id: "",
+    status: "",
+    payment_mode: "",
+  });
 
-  const [filters, setFilters] =
-    useState({
-      date_from: "",
-      date_to: "",
-      status: "",
-      payment_mode: "",
-    });
+  const [filterData, setFilterData] = useState({
+    courses: [],
+    batches: [],
+    students: [],
+  });
 
-  const [loading, setLoading] =
-    useState(true);
+  const [report, setReport] = useState({
+    summary: {},
+    transactions: [],
+  });
 
-  const [error, setError] =
-    useState("");
-
-  const loadReport =
-    async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const response =
-          await getPaymentReport(
-            filters
-          );
-
-        const data =
-          response?.data?.data;
-
-        setReport({
-          summary:
-            data?.summary || {
-              totalStudents: 0,
-              totalTransactions: 0,
-              totalFeesCollected: 0,
-              pendingPayments: 0,
-              overduePayments: 0,
-              failedPayments: 0,
-            },
-
-          paymentModeSummary:
-            Array.isArray(
-              data?.paymentModeSummary
-            )
-              ? data.paymentModeSummary
-              : [],
-
-          transactions:
-            Array.isArray(
-              data?.transactions
-            )
-              ? data.transactions
-              : [],
-        });
-      } catch (reportError) {
-        console.error(
-          "Payment report error:",
-          reportError
-        );
-
-        setError(
-          reportError?.response
-            ?.data?.message ||
-            "Unable to load payment report."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [loading, setLoading] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    loadReportFilters();
     loadReport();
   }, []);
 
-  const handleFilterChange =
-    (event) => {
-      const {
-        name,
-        value,
-      } = event.target;
+  const loadReportFilters = async () => {
+    try {
+      setFiltersLoading(true);
 
-      setFilters(
-        (previous) => ({
-          ...previous,
-          [name]: value,
-        })
-      );
-    };
+      const response = await getPaymentReportFilters();
+      const data = getResponseData(response);
 
-  const handleApply =
-    () => {
-      loadReport();
-    };
-
-  const handleReset =
-    () => {
-      setFilters({
-        date_from: "",
-        date_to: "",
-        status: "",
-        payment_mode: "",
+      setFilterData({
+        courses: data?.courses || [],
+        batches: data?.batches || [],
+        students: data?.students || [],
       });
+    } catch (err) {
+      console.error("Payment report filters error:", err);
 
-      setTimeout(
-        () => {
-          loadReport();
-        },
-        0
+      setError(
+        err?.response?.data?.message ||
+          "Unable to load report filters."
       );
-    };
+    } finally {
+      setFiltersLoading(false);
+    }
+  };
 
-  const formatCurrency =
-    (amount) => {
-      return `₹${Number(
-        amount || 0
-      ).toLocaleString(
-        "en-IN",
-        {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }
-      )}`;
-    };
+  const loadReport = async (customFilters = filters) => {
+    try {
+      setLoading(true);
+      setError("");
 
-  const formatDate =
-    (date) => {
-      if (!date) {
-        return "-";
-      }
-
-      const parsed =
-        new Date(date);
-
-      if (
-        Number.isNaN(
-          parsed.getTime()
+      const params = Object.fromEntries(
+        Object.entries(customFilters).filter(
+          ([, value]) => value !== "" && value !== null && value !== undefined
         )
-      ) {
-        return "-";
-      }
-
-      return parsed.toLocaleDateString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }
       );
+
+      const response = await getPaymentReport(params);
+      const data = getResponseData(response);
+
+      setReport({
+        summary: data?.summary || {},
+        transactions: data?.transactions || [],
+      });
+    } catch (err) {
+      console.error("Payment report error:", err);
+
+      setError(
+        err?.response?.data?.message ||
+          "Unable to load payment report."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const availableBatches = useMemo(() => {
+    if (!filters.course_id) {
+      return filterData.batches;
+    }
+
+    return filterData.batches.filter((batch) => {
+      const batchCourseId =
+        batch?.course_id?._id ||
+        batch?.course_id ||
+        batch?.course?._id;
+
+      return String(batchCourseId) === String(filters.course_id);
+    });
+  }, [filters.course_id, filterData.batches]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    if (name === "course_id") {
+      setFilters((previous) => ({
+        ...previous,
+        course_id: value,
+        batch_id: "",
+      }));
+
+      return;
+    }
+
+    setFilters((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  const handleApply = () => {
+    loadReport(filters);
+  };
+
+  const handleReset = () => {
+    const resetFilters = {
+      date_from: "",
+      date_to: "",
+      course_id: "",
+      batch_id: "",
+      student_id: "",
+      status: "",
+      payment_mode: "",
     };
 
-  /*
-  |--------------------------------------------------------------------------
-  | CSV Export
-  |--------------------------------------------------------------------------
-  */
+    setFilters(resetFilters);
+    loadReport(resetFilters);
+  };
 
-  const exportCSV =
-    () => {
-      const rows =
-        report.transactions;
+  const summary = report.summary || {};
+  const transactions = report.transactions || [];
 
-      if (!rows.length) {
-        alert(
-          "No payment data available for export."
-        );
+  const selectedCourse = filterData.courses.find(
+    (course) => String(course?._id) === String(filters.course_id)
+  );
 
-        return;
-      }
+  const selectedBatch = filterData.batches.find(
+    (batch) => String(batch?._id) === String(filters.batch_id)
+  );
 
-      const headers = [
-        "Receipt Number",
-        "Payment Date",
-        "Student Name",
-        "Roll No",
-        "Course",
-        "Batch",
-        "Payment Mode",
-        "Amount",
-        "Status",
-      ];
+  const selectedStudent = filterData.students.find(
+    (student) => String(student?._id) === String(filters.student_id)
+  );
 
-      const csvRows =
-        rows.map(
-          (row) => [
-            row.receipt_no,
-            formatDate(
-              row.payment_date
-            ),
-            row.student?.name ||
-              "",
-            row.student?.rollNo ||
-              "",
-            row.course || "",
-            row.batch || "",
-            row.payment_mode ||
-              "",
-            row.amount || 0,
-            row.status || "",
-          ]
-        );
+  const getAppliedFilters = () => {
+    const applied = [];
 
-      const csvContent = [
-        headers,
-        ...csvRows,
-      ]
-        .map(
-          (row) =>
-            row
-              .map(
-                (value) =>
-                  `"${String(
-                    value ?? ""
-                  ).replace(
-                    /"/g,
-                    '""'
-                  )}"`
-              )
-              .join(",")
-        )
-        .join("\n");
+    if (filters.date_from) {
+      applied.push(`From: ${filters.date_from}`);
+    }
 
-      const blob =
-        new Blob(
-          [csvContent],
-          {
-            type:
-              "text/csv;charset=utf-8;",
-          }
-        );
+    if (filters.date_to) {
+      applied.push(`To: ${filters.date_to}`);
+    }
 
-      const url =
-        URL.createObjectURL(
-          blob
-        );
+    if (selectedCourse) {
+      applied.push(
+        `Course: ${selectedCourse.courseTitle || "-"}`
+      );
+    }
 
-      const link =
-        document.createElement(
-          "a"
-        );
+    if (selectedBatch) {
+      applied.push(
+        `Batch: ${selectedBatch.batch_name || "-"}`
+      );
+    }
 
-      link.href = url;
+    if (selectedStudent) {
+      applied.push(
+        `Student: ${getStudentName(selectedStudent)}`
+      );
+    }
 
-      link.download =
-        "payment-report.csv";
+    if (filters.status) {
+      applied.push(`Status: ${filters.status}`);
+    }
 
-      document.body.appendChild(
-        link
+    if (filters.payment_mode) {
+      applied.push(`Mode: ${filters.payment_mode}`);
+    }
+
+    return applied;
+  };
+
+  const exportExcel = () => {
+    if (!transactions.length) {
+      alert("No payment records available for Excel export.");
+      return;
+    }
+
+    const transactionRows = transactions.map((payment) => ({
+      "Receipt No": getReceiptNumber(payment),
+      "Student Name": getStudentName(payment?.student),
+      "Roll No": payment?.student?.rollNo || "-",
+      "Course": getCourseName(payment),
+      "Batch": getBatchName(payment),
+      "Payment Date": formatDate(payment?.payment_date),
+      "Payment Mode": getPaymentMode(payment),
+      Amount: getPaymentAmount(payment),
+      Status: getPaymentStatus(payment),
+      Notes: payment?.notes || "",
+    }));
+
+    const summaryRows = [
+      {
+        Metric: "Total Students",
+        Value: Number(summary.totalStudents || 0),
+      },
+      {
+        Metric: "Total Transactions",
+        Value: Number(summary.totalTransactions || 0),
+      },
+      {
+        Metric: "Total Fees Collected",
+        Value: Number(summary.totalFeesCollected || 0),
+      },
+      {
+        Metric: "Pending Payments",
+        Value: Number(summary.pendingPayments || 0),
+      },
+      {
+        Metric: "Overdue Payments",
+        Value: Number(summary.overduePayments || 0),
+      },
+      {
+        Metric: "Failed Payments",
+        Value: Number(summary.failedPayments || 0),
+      },
+    ];
+
+    const workbook = XLSX.utils.book_new();
+
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+    const paymentSheet = XLSX.utils.json_to_sheet(transactionRows);
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      summarySheet,
+      "Summary"
+    );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      paymentSheet,
+      "Payments"
+    );
+
+    const filename = `payment-report-${new Date()
+      .toISOString()
+      .slice(0, 10)}.xlsx`;
+
+    XLSX.writeFile(workbook, filename);
+  };
+
+  const exportPDF = () => {
+    if (!transactions.length) {
+      alert("No payment records available for PDF export.");
+      return;
+    }
+
+    const doc = new jsPDF("landscape", "mm", "a4");
+
+    doc.setFontSize(18);
+    doc.text("IT Learning Institute", 14, 15);
+
+    doc.setFontSize(14);
+    doc.text("Payment Report", 14, 23);
+
+    doc.setFontSize(9);
+
+    let currentY = 31;
+
+    const appliedFilters = getAppliedFilters();
+
+    if (appliedFilters.length) {
+      doc.text(
+        `Filters: ${appliedFilters.join(" | ")}`,
+        14,
+        currentY
       );
 
-      link.click();
+      currentY += 7;
+    }
 
-      document.body.removeChild(
-        link
-      );
+    doc.text(
+      `Generated: ${new Date().toLocaleString("en-IN")}`,
+      14,
+      currentY
+    );
 
-      URL.revokeObjectURL(
-        url
-      );
-    };
+    currentY += 8;
 
-  /*
-  |--------------------------------------------------------------------------
-  | Total Mode Amount
-  |--------------------------------------------------------------------------
-  */
+    autoTable(doc, {
+      startY: currentY,
+      head: [
+        [
+          "Receipt",
+          "Student",
+          "Roll No",
+          "Course",
+          "Batch",
+          "Date",
+          "Mode",
+          "Amount",
+          "Status",
+        ],
+      ],
+      body: transactions.map((payment) => [
+        getReceiptNumber(payment),
+        getStudentName(payment?.student),
+        payment?.student?.rollNo || "-",
+        getCourseName(payment),
+        getBatchName(payment),
+        formatDate(payment?.payment_date),
+        getPaymentMode(payment),
+        formatCurrency(getPaymentAmount(payment)),
+        // formatPdfCurrency(getPaymentAmount(payment)),
+        // formatCurrency(getPaymentAmount(payment)),
+        getPaymentStatus(payment),
+      ]),
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fontSize: 7,
+      },
+      margin: {
+        left: 10,
+        right: 10,
+      },
+    });
 
-  const totalModeAmount =
-    useMemo(() => {
-      return report.paymentModeSummary.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item.amount || 0
-          ),
-        0
-      );
-    }, [
-      report.paymentModeSummary,
-    ]);
+    const finalY =
+      doc.lastAutoTable?.finalY
+        ? doc.lastAutoTable.finalY + 10
+        : currentY + 10;
+
+    doc.setFontSize(10);
+
+    doc.text(
+      `Total Students: ${Number(summary.totalStudents || 0)}`,
+      14,
+      finalY
+    );
+
+    doc.text(
+      `Total Transactions: ${Number(
+        summary.totalTransactions || 0
+      )}`,
+      70,
+      finalY
+    );
+
+    doc.text(
+      `Fees Collected: ${formatCurrency(
+        summary.totalFeesCollected
+      )}`,
+      150,
+      finalY
+    );
+
+    doc.text(
+      `Pending: ${Number(summary.pendingPayments || 0)}`,
+      240,
+      finalY
+    );
+
+    const filename = `payment-report-${new Date()
+      .toISOString()
+      .slice(0, 10)}.pdf`;
+
+    doc.save(filename);
+  };
 
   return (
-    <div className="payment-report-page">
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
-      <div className="payment-report-header">
+    <div className="payment-reports-page">
+      <div className="payment-reports-header">
         <div>
-          <h1>
-            Payment Reports
-          </h1>
-
+          <h1>Payment Reports</h1>
           <p>
-            Analyze student payments,
-            collections and outstanding
-            transactions.
+            View, filter and export payment collection reports.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="payment-report-export-button"
-          onClick={
-            exportCSV
-          }
-        >
-          <FiDownload />
-          Export CSV
-        </button>
-      </div>
+        <div className="payment-report-actions">
+          <button
+            type="button"
+            className="report-btn secondary"
+            onClick={() => loadReport()}
+            disabled={loading}
+          >
+            <FiRefreshCw />
+            Refresh
+          </button>
 
-      {/* =====================================================
-          FILTERS
-      ===================================================== */}
+          <button
+            type="button"
+            className="report-btn excel"
+            onClick={exportExcel}
+            disabled={!transactions.length}
+          >
+            <FiDownload />
+            Excel
+          </button>
 
-      <div className="payment-report-card">
-        <div className="payment-report-section-header">
-          <div>
-            <h2>
-              Report Filters
-            </h2>
-
-            <p>
-              Filter payment transactions
-              by date and status.
-            </p>
-          </div>
-        </div>
-
-        <div className="payment-report-filters">
-          <div className="payment-report-field">
-            <label>
-              Date From
-            </label>
-
-            <input
-              type="date"
-              name="date_from"
-              value={
-                filters.date_from
-              }
-              onChange={
-                handleFilterChange
-              }
-            />
-          </div>
-
-          <div className="payment-report-field">
-            <label>
-              Date To
-            </label>
-
-            <input
-              type="date"
-              name="date_to"
-              value={
-                filters.date_to
-              }
-              onChange={
-                handleFilterChange
-              }
-            />
-          </div>
-
-          <div className="payment-report-field">
-            <label>
-              Status
-            </label>
-
-            <select
-              name="status"
-              value={
-                filters.status
-              }
-              onChange={
-                handleFilterChange
-              }
-            >
-              <option value="">
-                All Statuses
-              </option>
-
-              <option value="Verified">
-                Verified
-              </option>
-
-              <option value="Pending">
-                Pending
-              </option>
-
-              <option value="Failed">
-                Failed
-              </option>
-
-              <option value="Overdue">
-                Overdue
-              </option>
-            </select>
-          </div>
-
-          <div className="payment-report-field">
-            <label>
-              Payment Mode
-            </label>
-
-            <select
-              name="payment_mode"
-              value={
-                filters.payment_mode
-              }
-              onChange={
-                handleFilterChange
-              }
-            >
-              <option value="">
-                All Modes
-              </option>
-
-              <option value="Cash">
-                Cash
-              </option>
-
-              <option value="UPI">
-                UPI
-              </option>
-
-              <option value="Card">
-                Card
-              </option>
-
-              <option value="Bank Transfer">
-                Bank Transfer
-              </option>
-            </select>
-          </div>
-
-          <div className="payment-report-filter-actions">
-            <button
-              type="button"
-              className="payment-report-apply-button"
-              onClick={
-                handleApply
-              }
-            >
-              <FiSearch />
-              Apply
-            </button>
-
-            <button
-              type="button"
-              className="payment-report-reset-button"
-              onClick={
-                handleReset
-              }
-            >
-              <FiRefreshCw />
-              Reset
-            </button>
-          </div>
+          <button
+            type="button"
+            className="report-btn pdf"
+            onClick={exportPDF}
+            disabled={!transactions.length}
+          >
+            <FiFileText />
+            PDF
+          </button>
         </div>
       </div>
-
-      {/* =====================================================
-          ERROR
-      ===================================================== */}
 
       {error && (
-        <div className="payment-report-error">
+        <div className="report-error">
           {error}
         </div>
       )}
 
-      {/* =====================================================
-          SUMMARY CARDS
-      ===================================================== */}
-
-      <div className="payment-report-summary-grid">
-        <div className="payment-report-summary-card">
-          <span>
-            Total Students
-          </span>
-
-          <strong>
-            {
-              report.summary
-                .totalStudents
-            }
-          </strong>
+      <div className="payment-report-filters">
+        <div className="filter-field">
+          <label>From Date</label>
+          <input
+            type="date"
+            name="date_from"
+            value={filters.date_from}
+            onChange={handleChange}
+          />
         </div>
 
-        <div className="payment-report-summary-card payment-report-collected">
-          <span>
-            Total Fees Collected
-          </span>
-
-          <strong>
-            {formatCurrency(
-              report.summary
-                .totalFeesCollected
-            )}
-          </strong>
+        <div className="filter-field">
+          <label>To Date</label>
+          <input
+            type="date"
+            name="date_to"
+            value={filters.date_to}
+            onChange={handleChange}
+          />
         </div>
 
-        <div className="payment-report-summary-card payment-report-pending">
-          <span>
-            Pending Payments
-          </span>
+        <div className="filter-field">
+          <label>Course</label>
 
-          <strong>
-            {formatCurrency(
-              report.summary
-                .pendingPayments
-            )}
-          </strong>
-        </div>
+          <select
+            name="course_id"
+            value={filters.course_id}
+            onChange={handleChange}
+            disabled={filtersLoading}
+          >
+            <option value="">All Courses</option>
 
-        <div className="payment-report-summary-card payment-report-overdue">
-          <span>
-            Overdue Payments
-          </span>
-
-          <strong>
-            {formatCurrency(
-              report.summary
-                .overduePayments
-            )}
-          </strong>
-        </div>
-      </div>
-
-      {/* =====================================================
-          PAYMENT MODE SUMMARY
-      ===================================================== */}
-
-      <div className="payment-report-card">
-        <div className="payment-report-section-header">
-          <div>
-            <h2>
-              Payment Mode Summary
-            </h2>
-
-            <p>
-              Verified payment collection
-              by payment mode.
-            </p>
-          </div>
-
-          <div className="payment-report-total">
-            <FiTrendingUp />
-
-            <span>
-              Total
-            </span>
-
-            <strong>
-              {formatCurrency(
-                totalModeAmount
-              )}
-            </strong>
-          </div>
-        </div>
-
-        <div className="payment-mode-grid">
-          {report.paymentModeSummary.map(
-            (item) => (
-              <div
-                className="payment-mode-card"
-                key={
-                  item.mode
-                }
+            {filterData.courses.map((course) => (
+              <option
+                key={course._id}
+                value={course._id}
               >
-                <span>
-                  {
-                    item.mode
-                  }
-                </span>
+                {course.courseTitle}
+              </option>
+            ))}
+          </select>
+        </div>
 
-                <strong>
-                  {formatCurrency(
-                    item.amount
-                  )}
-                </strong>
-              </div>
-            )
-          )}
+        <div className="filter-field">
+          <label>Batch</label>
+
+          <select
+            name="batch_id"
+            value={filters.batch_id}
+            onChange={handleChange}
+            disabled={filtersLoading || !availableBatches.length}
+          >
+            <option value="">All Batches</option>
+
+            {availableBatches.map((batch) => (
+              <option
+                key={batch._id}
+                value={batch._id}
+              >
+                {batch.batch_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-field">
+          <label>Student</label>
+
+          <select
+            name="student_id"
+            value={filters.student_id}
+            onChange={handleChange}
+            disabled={filtersLoading}
+          >
+            <option value="">All Students</option>
+
+            {filterData.students.map((student) => (
+              <option
+                key={student._id}
+                value={student._id}
+              >
+                {student.rollNo
+                  ? `${student.rollNo} - `
+                  : ""}
+                {getStudentName(student)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-field">
+          <label>Status</label>
+
+          <select
+            name="status"
+            value={filters.status}
+            onChange={handleChange}
+          >
+            <option value="">All Status</option>
+            <option value="Verified">Verified</option>
+            <option value="Pending">Pending</option>
+            <option value="Failed">Failed</option>
+            <option value="Overdue">Overdue</option>
+          </select>
+        </div>
+
+        <div className="filter-field">
+          <label>Payment Mode</label>
+
+          <select
+            name="payment_mode"
+            value={filters.payment_mode}
+            onChange={handleChange}
+          >
+            <option value="">All Modes</option>
+            <option value="Cash">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="Card">Card</option>
+            <option value="Bank Transfer">
+              Bank Transfer
+            </option>
+          </select>
+        </div>
+
+        <div className="report-filter-buttons">
+          <button
+            type="button"
+            className="report-btn primary"
+            onClick={handleApply}
+            disabled={loading}
+          >
+            Apply Filters
+          </button>
+
+          <button
+            type="button"
+            className="report-btn secondary"
+            onClick={handleReset}
+          >
+            Reset
+          </button>
         </div>
       </div>
 
-      {/* =====================================================
-          TRANSACTIONS
-      ===================================================== */}
+      <div className="payment-report-summary">
+        <div className="report-summary-card">
+          <span>Total Students</span>
+          <strong>
+            {Number(summary.totalStudents || 0)}
+          </strong>
+        </div>
 
-      <div className="payment-report-card">
-        <div className="payment-report-section-header">
+        <div className="report-summary-card">
+          <span>Total Transactions</span>
+          <strong>
+            {Number(summary.totalTransactions || 0)}
+          </strong>
+        </div>
+
+        <div className="report-summary-card">
+          <span>Fees Collected</span>
+          <strong>
+            {formatCurrency(summary.totalFeesCollected)}
+            {/* {formatPdfCurrency(summary.totalFeesCollected)} */}
+          </strong>
+        </div>
+
+        <div className="report-summary-card">
+          <span>Pending Payments</span>
+          <strong>
+            {Number(summary.pendingPayments || 0)}
+          </strong>
+        </div>
+
+        <div className="report-summary-card">
+          <span>Overdue Payments</span>
+          <strong>
+            {Number(summary.overduePayments || 0)}
+          </strong>
+        </div>
+
+        <div className="report-summary-card">
+          <span>Failed Payments</span>
+          <strong>
+            {Number(summary.failedPayments || 0)}
+          </strong>
+        </div>
+      </div>
+
+      <div className="payment-report-table-card">
+        <div className="report-table-header">
           <div>
-            <h2>
-              Payment Transactions
-            </h2>
-
-            <p>
-              {
-                report.summary
-                  .totalTransactions
-              }{" "}
-              transactions found.
-            </p>
+            <h2>Payment Transactions</h2>
+            <span>
+              {transactions.length} transaction
+              {transactions.length !== 1 ? "s" : ""}
+            </span>
           </div>
         </div>
 
         {loading ? (
-          <div className="payment-report-state">
+          <div className="report-empty-state">
             Loading payment report...
           </div>
-        ) : report
-            .transactions
-            .length === 0 ? (
-          <div className="payment-report-state">
-            No payment transactions
-            found for the selected
-            filters.
+        ) : transactions.length === 0 ? (
+          <div className="report-empty-state">
+            No payment records found for the selected filters.
           </div>
         ) : (
-          <div className="payment-report-table-wrapper">
+          <div className="report-table-wrapper">
             <table className="payment-report-table">
               <thead>
                 <tr>
-                  <th>
-                    Receipt No.
-                  </th>
-
-                  <th>
-                    Date
-                  </th>
-
-                  <th>
-                    Student
-                  </th>
-
-                  <th>
-                    Roll No
-                  </th>
-
-                  <th>
-                    Course
-                  </th>
-
-                  <th>
-                    Batch
-                  </th>
-
-                  <th>
-                    Mode
-                  </th>
-
-                  <th>
-                    Amount
-                  </th>
-
-                  <th>
-                    Status
-                  </th>
+                  <th>Receipt No</th>
+                  <th>Student</th>
+                  <th>Roll No</th>
+                  <th>Course</th>
+                  <th>Batch</th>
+                  <th>Payment Date</th>
+                  <th>Mode</th>
+                  <th>Amount</th>
+                  <th>Status</th>
                 </tr>
               </thead>
 
               <tbody>
-                {report.transactions.map(
-                  (transaction) => (
-                    <tr
-                      key={
-                        transaction._id
-                      }
-                    >
-                      <td>
-                        <strong>
-                          {
-                            transaction.receipt_no
-                          }
-                        </strong>
-                      </td>
+                {transactions.map((payment) => (
+                  <tr key={payment._id}>
+                    <td>
+                      <strong>
+                        {getReceiptNumber(payment)}
+                      </strong>
+                    </td>
 
-                      <td>
-                        {formatDate(
-                          transaction.payment_date
+                    <td>
+                      {getStudentName(payment?.student)}
+                    </td>
+
+                    <td>
+                      {payment?.student?.rollNo || "-"}
+                    </td>
+
+                    <td>
+                      {getCourseName(payment)}
+                    </td>
+
+                    <td>
+                      {getBatchName(payment)}
+                    </td>
+
+                    <td>
+                      {formatDate(payment?.payment_date)}
+                    </td>
+
+                    <td>
+                      {getPaymentMode(payment)}
+                    </td>
+
+                    <td>
+                      <strong>
+                        {formatCurrency(
+                          getPaymentAmount(payment)
                         )}
-                      </td>
+                      </strong>
+                    </td>
 
-                      <td>
-                        {
-                          transaction
-                            .student
-                            ?.name
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          transaction
-                            .student
-                            ?.rollNo
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          transaction.course
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          transaction.batch
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          transaction.payment_mode
-                        }
-                      </td>
-
-                      <td>
-                        <strong>
-                          {formatCurrency(
-                            transaction.amount
-                          )}
-                        </strong>
-                      </td>
-
-                      <td>
-                        <span
-                          className={`payment-report-status payment-report-status-${String(
-                            transaction.status ||
-                              ""
-                          ).toLowerCase()}`}
-                        >
-                          {
-                            transaction.status
-                          }
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                )}
+                    <td>
+                      <span
+                        className={`payment-status ${String(
+                          getPaymentStatus(payment)
+                        ).toLowerCase()}`}
+                      >
+                        {getPaymentStatus(payment)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

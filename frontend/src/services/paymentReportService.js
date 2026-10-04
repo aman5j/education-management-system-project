@@ -1,20 +1,11 @@
 import api from "./api";
 
-/*
-|--------------------------------------------------------------------------
-| Get Payment Report
-|--------------------------------------------------------------------------
-*/
+export const getPaymentReport = async (params = {}) => {
+  return api.get("/reports/payments", {
+    params,
+  });
+};
 
-export const getPaymentReport =
-  async (params = {}) => {
-    const response =
-      await api.get(
-        "/reports/payments",
-        {
-          params,
-        }
-      );
-
-    return response;
-  };
+export const getPaymentReportFilters = async () => {
+  return api.get("/reports/payment-filters");
+};
