@@ -20,6 +20,8 @@ import {
   getStudentPaymentHistory,
 } from "../../../services/paymentService";
 
+import generatePaymentReceipt from "../../../utils/generatePaymentReceipt";
+
 import {
   getAssetUrl,
 } from "../../../utils/assetUrl";
@@ -159,6 +161,58 @@ const StudentPaymentHistory = () => {
       maximumFractionDigits: 2,
     })}`;
   };
+
+const handleDownloadReceipt = async (payment) => {
+  if (!payment) {
+    return;
+  }
+
+  if (payment.status !== "Verified") {
+    alert(
+      "Receipt can only be downloaded for verified payments."
+    );
+
+    return;
+  }
+
+  try {
+    /*
+    |--------------------------------------------------------------------------
+    | The receipt generator expects:
+    | generatePaymentReceipt(payment)
+    |
+    | Make sure the payment object contains the
+    | populated student and admission information.
+    |--------------------------------------------------------------------------
+    */
+
+    const receiptPayment = {
+      ...payment,
+
+      student_id:
+        payment?.student_id?.firstName
+          ? payment.student_id
+          : student,
+
+      admission_id:
+        payment?.admission_id || admission,
+    };
+
+    await generatePaymentReceipt(
+      receiptPayment
+    );
+  } catch (error) {
+    console.error(
+      "Download receipt error:",
+      error
+    );
+
+    alert(
+      error?.message ||
+        "Unable to generate payment receipt."
+    );
+  }
+};
 
   if (loading) {
     return (
@@ -446,6 +500,7 @@ const StudentPaymentHistory = () => {
 
                       <td>
                         <div className="payment-action-buttons">
+                        {/* View Payment */}
                           <Link
                             to={`/admin/payments/${payment._id}`}
                             className="payment-action-button"
@@ -453,13 +508,17 @@ const StudentPaymentHistory = () => {
                           >
                             <FiEye />
                           </Link>
-
+                        
+                          {/* Download Receipt */}
                           {payment.status ===
                             "Verified" && (
                             <button
                               type="button"
                               className="payment-action-button"
                               title="Download Receipt"
+                              onClick={() =>
+                                    handleDownloadReceipt(payment)
+                                }
                             >
                               <FiDownload />
                             </button>
