@@ -129,7 +129,8 @@ const menuItems = [
       },
       {
         label: "Reports",
-        path: "/admin/reports/payments",
+        path: "/admin/reports",
+        // path: "/admin/reports/payments",
       },
     ],
   },
