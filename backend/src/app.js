@@ -21,6 +21,8 @@ import paymentRoutes from "./routes/payment.routes.js";
 
 import receiptRoutes from "./routes/receipt.routes.js";
 
+import paymentReportRoutes from "./routes/paymentReport.routes.js";
+
 // import { verifyReceipt } from "./controllers/receipt.controller.js";
 
 // app.get(
@@ -179,9 +181,16 @@ app.use(
 // app.use("/api/public/receipts", receiptRoutes);
 app.use("/api/public/receipts", receiptRoutes);
 
+app.use(
+  "/api/reports",
+  paymentReportRoutes
+);
+
+
+
 import { verifyReceipt } from "./controllers/receipt.controller.js";
 
-app.use("/api/public/receipts", receiptRoutes);
+// app.use("/api/public/receipts", receiptRoutes);
 
 // Compatibility route for old QR codes
 app.get("/api/verify-receipt/:receiptNo", (req, res) => {
