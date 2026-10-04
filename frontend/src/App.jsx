@@ -42,6 +42,8 @@ import StudentPaymentHistory from "./pages/admin/payments/StudentPaymentHistory"
 
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
+import PaymentReports from "./pages/admin/reports/PaymentReports";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -416,6 +418,13 @@ const App = () => {
             path="/admin/students/:studentId/payments"
             element={
               <StudentPaymentHistory />
+            }
+          />
+
+          <Route
+            path="/admin/reports/payments"
+            element={
+              <PaymentReports />
             }
           />
 
