@@ -709,238 +709,558 @@
    View Payment
 ========================================================= */
 
+/* =========================================================
+   VIEW PAYMENT - FINAL ALIGNED DESIGN
+========================================================= */
+
+.payment-page {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.payment-page *,
+.payment-page *::before,
+.payment-page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
 .payment-view-header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
+.payment-view-header-actions
+  .payment-primary-button,
+.payment-view-header-actions
+  .payment-secondary-button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   RECEIPT HEADER
+========================================================= */
+
 .payment-detail-header-card {
+  width: 100%;
+  min-height: 68px;
+  padding: 16px 20px !important;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 20px;
+
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
 }
 
 .payment-receipt-info {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 14px;
 }
 
 .payment-receipt-icon {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 8px;
   background: #f1f5f9;
   color: #334155;
-  font-size: 22px;
+  font-size: 20px;
+}
+
+.payment-receipt-info > div:last-child {
+  min-width: 0;
 }
 
 .payment-receipt-info span {
   display: block;
-  margin-bottom: 5px;
+  margin: 0 0 4px;
+
   font-size: 12px;
+  line-height: 1.3;
   color: #64748b;
 }
 
 .payment-receipt-info strong {
   display: block;
-  font-size: 16px;
-  color: #1e293b;
+
+  margin: 0;
+
+  font-size: 15px;
+  line-height: 1.4;
+  color: #172033;
+
+  word-break: break-word;
 }
 
+/* =========================================================
+   STATUS
+========================================================= */
+
+.payment-detail-header-card
+  .payment-status {
+  flex: 0 0 auto;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  min-height: 28px;
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   COMMON CARD
+========================================================= */
+
+.payment-page
+  .payment-card {
+  width: 100%;
+  margin-bottom: 16px;
+
+  padding: 20px !important;
+
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  overflow: hidden;
+}
+
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+
 .payment-detail-section-title {
-  margin-bottom: 20px;
+  width: 100%;
+
+  margin: 0 0 18px !important;
+  padding: 0 0 12px;
+
+  border-bottom: 1px solid #e8edf4;
 }
 
 .payment-detail-section-title h2 {
-  margin: 0;
-  font-size: 18px;
-  color: #1e293b;
+  margin: 0 !important;
+  padding: 0 !important;
+
+  font-size: 17px !important;
+  line-height: 1.4 !important;
+  font-weight: 700;
+
+  color: #172033;
 }
 
+/* =========================================================
+   STUDENT INFORMATION
+========================================================= */
+
 .payment-student-detail-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+
+  align-items: start;
+
+  column-gap: 22px;
 }
 
 .payment-student-detail-image {
-  width: 90px;
-  height: 90px;
-  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   overflow: hidden;
+
   border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .payment-student-detail-image img {
+  display: block;
+
   width: 100%;
   height: 100%;
+
   object-fit: cover;
 }
 
 .payment-student-detail-image
   .payment-student-avatar {
-  width: 90px;
-  height: 90px;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 0;
+
+  background: #eaf2ff;
+  color: #2563eb;
+
+  font-size: 28px;
+  font-weight: 700;
 }
+
+/* =========================================================
+   DETAIL GRID
+========================================================= */
 
 .payment-detail-grid {
   width: 100%;
+  min-width: 0;
+
   display: grid;
+
   grid-template-columns:
     repeat(3, minmax(0, 1fr));
-  gap: 20px;
+
+  column-gap: 28px;
+  row-gap: 20px;
 }
 
 .payment-detail-grid-four {
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
+
+  column-gap: 26px;
+  row-gap: 20px;
 }
 
 .payment-detail-item {
+  min-width: 0;
+
   display: flex;
   flex-direction: column;
+
   gap: 6px;
 }
 
 .payment-detail-item span {
+  display: block;
+
+  margin: 0;
+
   font-size: 12px;
+  line-height: 1.3;
+
   color: #64748b;
 }
 
 .payment-detail-item strong {
+  display: block;
+
+  margin: 0;
+
   font-size: 14px;
-  color: #1e293b;
+  line-height: 1.45;
+
+  font-weight: 600;
+
+  color: #172033;
+
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .payment-amount-highlight {
   font-size: 16px !important;
+  font-weight: 700 !important;
 }
 
+/* =========================================================
+   FEE BREAKDOWN
+========================================================= */
+
 .payment-fee-breakdown {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  width: 100%;
+
   overflow: hidden;
+
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+
+  background: #ffffff;
 }
 
 .payment-fee-row {
+  width: 100%;
+  min-height: 52px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 20px;
-  padding: 14px 16px;
-  border-bottom: 1px solid #e2e8f0;
+
+  padding: 0 16px;
+
+  border-bottom: 1px solid #e6ebf2;
 }
 
 .payment-fee-row:last-child {
-  border-bottom: none;
+  border-bottom: 0;
 }
 
 .payment-fee-row span {
-  color: #64748b;
   font-size: 14px;
+  line-height: 1.4;
+  color: #64748b;
 }
 
 .payment-fee-row strong {
-  color: #1e293b;
   font-size: 14px;
+  line-height: 1.4;
+
+  font-weight: 600;
+
+  color: #172033;
+
+  white-space: nowrap;
 }
 
 .payment-fee-total {
+  min-height: 56px;
+
   background: #f8fafc;
 }
 
 .payment-fee-total span,
 .payment-fee-total strong {
-  color: #1e293b;
+  color: #172033;
   font-weight: 700;
 }
 
+.payment-fee-total strong {
+  font-size: 15px;
+}
+
+/* =========================================================
+   NOTES
+========================================================= */
+
 .payment-notes-box {
-  margin-top: 22px;
-  padding: 16px;
+  width: 100%;
+
+  margin-top: 20px;
+  padding: 14px 16px;
+
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
+
   background: #f8fafc;
 }
 
 .payment-notes-box span {
   display: block;
-  margin-bottom: 7px;
+
+  margin: 0 0 7px;
+
   font-size: 12px;
+  line-height: 1.3;
+
   color: #64748b;
 }
 
 .payment-notes-box p {
   margin: 0;
-  color: #334155;
+
   font-size: 14px;
   line-height: 1.6;
+
+  color: #334155;
+
+  word-break: break-word;
 }
 
+/* =========================================================
+   FEE SUMMARY
+========================================================= */
+
 .payment-view-summary {
+  width: 100%;
+
   display: grid;
+
   grid-template-columns:
     repeat(3, minmax(0, 1fr));
+
   gap: 16px;
-  margin-top: 20px;
+
+  margin: 0 0 16px;
 }
 
 .payment-view-summary-card {
-  padding: 22px;
-  border: 1px solid #e2e8f0;
+  min-width: 0;
+
+  padding: 20px;
+
+  border: 1px solid #dbe3ef;
   border-radius: 10px;
+
   background: #ffffff;
 }
 
 .payment-view-summary-card span {
   display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
+
+  margin: 0 0 8px;
+
+  font-size: 12px;
+  line-height: 1.3;
+
   color: #64748b;
 }
 
 .payment-view-summary-card strong {
   display: block;
-  font-size: 22px;
-  color: #1e293b;
+
+  margin: 0;
+
+  font-size: 21px;
+  line-height: 1.3;
+
+  font-weight: 700;
+
+  color: #172033;
+
+  white-space: nowrap;
 }
 
 .payment-remaining-card {
   background: #f8fafc;
 }
 
+/* =========================================================
+   BOTTOM ACTIONS
+========================================================= */
+
 .payment-bottom-actions {
+  width: 100%;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 12px;
-  margin-top: 20px;
+
+  margin-top: 4px;
+  padding-bottom: 8px;
 }
 
-@media (max-width: 1000px) {
-  .payment-detail-grid,
+.payment-bottom-actions
+  .payment-primary-button,
+.payment-bottom-actions
+  .payment-secondary-button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   BUTTON ALIGNMENT
+========================================================= */
+
+.payment-primary-button,
+.payment-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  min-height: 40px;
+
+  padding: 0 15px;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
   .payment-detail-grid-four {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
 
-  .payment-view-summary {
+  .payment-detail-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 800px) {
   .payment-view-header-actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .payment-student-detail-layout {
+    grid-template-columns: 72px minmax(0, 1fr);
+    column-gap: 16px;
+  }
+
+  .payment-student-detail-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .payment-detail-grid,
+  .payment-detail-grid-four {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-view-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .payment-page
+    .payment-card {
+    padding: 16px !important;
   }
 
   .payment-detail-header-card {
@@ -949,17 +1269,41 @@
   }
 
   .payment-student-detail-layout {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
-  .payment-detail-grid,
-  .payment-detail-grid-four,
-  .payment-view-summary {
-    grid-template-columns: 1fr;
+  .payment-student-detail-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .payment-view-header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-view-header-actions
+    .payment-primary-button,
+  .payment-view-header-actions
+    .payment-secondary-button {
+    width: 100%;
   }
 
   .payment-bottom-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .payment-bottom-actions
+    .payment-primary-button,
+  .payment-bottom-actions
+    .payment-secondary-button {
+    width: 100%;
+  }
+
+  .payment-fee-row {
+    min-height: 48px;
+    padding: 0 12px;
   }
 }
