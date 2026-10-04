@@ -896,79 +896,104 @@ export const getStudentPaymentHistory = async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-export const getPayment =
-  async (req, res) => {
-    try {
-      const payment =
-        await Payment.findById(
-          req.params.id
-        )
-          .populate(
-            "student_id",
-            "rollNo firstName surname mobile email"
-          )
-          .populate(
-            "admission_id",
-            "course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_date status"
-          );
+/*
+|--------------------------------------------------------------------------
+| GET /api/payments/:id
+|--------------------------------------------------------------------------
+*/
 
-      if (!payment) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Payment not found.",
-        });
-      }
+export const getPayment = async (req, res) => {
+  try {
+    const payment =
+      await Payment.findById(
+        req.params.id
+      )
+        .populate({
+          path: "student_id",
+          select:
+            "rollNo firstName surname fatherName motherName mobile email profileImage",
+        })
+        .populate({
+          path: "admission_id",
+          select:
+            "student_id course_id batch_id course_type course_fee discount_type discount_value gst_amount final_amount paid_amount admission_fee admission_date status remark",
+          populate: [
+            {
+              path: "course_id",
+              select:
+                "courseTitle courseType duration durationUnit",
+            },
+            {
+              path: "batch_id",
+              select:
+                "batch_name max_seats available_seats status",
+            },
+          ],
+        })
+        .lean();
 
-      if (req.user?.role === "student") {
-        const ownStudentId =
-          await getAuthenticatedStudentId(
-            req
-          );
-
-        if (
-          !ownStudentId ||
-          String(
-            payment.student_id?._id
-          ) !==
-            String(ownStudentId)
-        ) {
-          return res.status(403).json({
-            success: false,
-            message:
-              "You are not authorized to access this payment.",
-          });
-        }
-      }
-
-      return res.status(200).json({
-        success: true,
-        data: payment,
-      });
-    } catch (error) {
-      console.error(
-        "Get payment error:",
-        error
-      );
-
-      if (
-        error instanceof
-          mongoose.Error.CastError
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid payment ID.",
-        });
-      }
-
-      return res.status(500).json({
+    if (!payment) {
+      return res.status(404).json({
         success: false,
-        message:
-          "Unable to load payment.",
+        message: "Payment not found.",
       });
     }
-  };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Ownership
+    |--------------------------------------------------------------------------
+    */
+
+    if (req.user?.role === "student") {
+      const ownStudentId =
+        await getAuthenticatedStudentId(
+          req
+        );
+
+      if (
+        !ownStudentId ||
+        String(
+          payment.student_id?._id
+        ) !==
+          String(ownStudentId)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "You are not authorized to access this payment.",
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: payment,
+    });
+  } catch (error) {
+    console.error(
+      "Get payment error:",
+      error
+    );
+
+    if (
+      error instanceof
+        mongoose.Error.CastError
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment ID.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Unable to load payment.",
+    });
+  }
+};
 
 /*
 |--------------------------------------------------------------------------

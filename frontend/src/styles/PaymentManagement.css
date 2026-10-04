@@ -703,3 +703,263 @@
     overflow-x: auto;
   }
 }
+
+
+/* =========================================================
+   View Payment
+========================================================= */
+
+.payment-view-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payment-detail-header-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.payment-receipt-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.payment-receipt-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 22px;
+}
+
+.payment-receipt-info span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.payment-receipt-info strong {
+  display: block;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.payment-detail-section-title {
+  margin-bottom: 20px;
+}
+
+.payment-detail-section-title h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.payment-student-detail-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.payment-student-detail-image {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.payment-student-detail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.payment-student-detail-image
+  .payment-student-avatar {
+  width: 90px;
+  height: 90px;
+}
+
+.payment-detail-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.payment-detail-grid-four {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+}
+
+.payment-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.payment-detail-item span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.payment-detail-item strong {
+  font-size: 14px;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.payment-amount-highlight {
+  font-size: 16px !important;
+}
+
+.payment-fee-breakdown {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.payment-fee-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.payment-fee-row:last-child {
+  border-bottom: none;
+}
+
+.payment-fee-row span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.payment-fee-row strong {
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.payment-fee-total {
+  background: #f8fafc;
+}
+
+.payment-fee-total span,
+.payment-fee-total strong {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.payment-notes-box {
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.payment-notes-box span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.payment-notes-box p {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.payment-view-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.payment-view-summary-card {
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.payment-view-summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.payment-view-summary-card strong {
+  display: block;
+  font-size: 22px;
+  color: #1e293b;
+}
+
+.payment-remaining-card {
+  background: #f8fafc;
+}
+
+.payment-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1000px) {
+  .payment-detail-grid,
+  .payment-detail-grid-four {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .payment-view-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .payment-view-header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-detail-header-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .payment-student-detail-layout {
+    flex-direction: column;
+  }
+
+  .payment-detail-grid,
+  .payment-detail-grid-four,
+  .payment-view-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-bottom-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

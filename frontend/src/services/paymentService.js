@@ -27,6 +27,14 @@ export const getPayment = (
     `/payments/${id}`
   );
 
+// export const getPayment = async (id) => {
+//   const response = await api.get(
+//     `/payments/${id}`
+//   );
+
+//   return response;
+// };
+
 export const createPayment = (
   data
 ) =>
