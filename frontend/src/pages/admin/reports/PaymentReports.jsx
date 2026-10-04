@@ -750,8 +750,8 @@ const PaymentReports = () => {
         getBatchName(payment),
         formatDate(payment?.payment_date),
         getPaymentMode(payment),
-        formatCurrency(getPaymentAmount(payment)),
-        // formatPdfCurrency(getPaymentAmount(payment)),
+        // formatCurrency(getPaymentAmount(payment)),
+        formatPdfCurrency(getPaymentAmount(payment)),
         // formatCurrency(getPaymentAmount(payment)),
         getPaymentStatus(payment),
       ]),
@@ -790,8 +790,8 @@ const PaymentReports = () => {
     );
 
     doc.text(
-      `Fees Collected: ${formatCurrency(
-      // `Fees Collected: ${formatPdfCurrency(
+      // `Fees Collected: ${formatCurrency(
+      `Fees Collected: ${formatPdfCurrency(
         summary.totalFeesCollected
       )}`,
       150,
