@@ -297,7 +297,7 @@ const handleShareWhatsApp = () => {
 
     // Open WhatsApp directly for this student
     const whatsappUrl =
-      `https://wa.me/${mobile}` +
+      `https://wa.me/${student?.mobile}` +
       `?text=${encodeURIComponent(message)}`;
 
     window.open(
