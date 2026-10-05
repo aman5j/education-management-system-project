@@ -291,9 +291,14 @@ const handleShareWhatsApp = () => {
       "IT Learning Institute",
     ].join("\n");
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
-      message
-    )}`;
+    // const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+    //   message
+    // )}`;
+
+    // Open WhatsApp directly for this student
+    const whatsappUrl =
+      `https://wa.me/${mobile}` +
+      `?text=${encodeURIComponent(message)}`;
 
     window.open(
       whatsappUrl,
