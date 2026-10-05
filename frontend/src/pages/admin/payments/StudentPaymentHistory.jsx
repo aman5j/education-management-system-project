@@ -15,6 +15,7 @@ import {
   FiDownload,
   FiEye,
   FiMessageCircle,
+  FiShare2,
 } from "react-icons/fi";
 
 import {
@@ -211,6 +212,131 @@ const handleDownloadReceipt = async (payment) => {
     alert(
       error?.message ||
         "Unable to generate payment receipt."
+    );
+  }
+};
+
+const handleShareReceipt = async (payment) => {
+  if (!payment) {
+    return;
+  }
+
+  if (payment.status !== "Verified") {
+    alert(
+      "Receipt can only be shared for verified payments."
+    );
+
+    return;
+  }
+
+  if (!student?.mobile) {
+    alert(
+      "Student mobile number is not available."
+    );
+
+    return;
+  }
+
+  try {
+    const receiptPayment = {
+      ...payment,
+
+      student_id:
+        payment?.student_id?.firstName
+          ? payment.student_id
+          : student,
+
+      admission_id:
+        payment?.admission_id || admission,
+    };
+
+    /*
+     * Generate the same receipt PDF.
+     *
+     * generatePaymentReceipt must return
+     * the generated PDF Blob.
+     */
+    const pdfBlob =
+      await generatePaymentReceipt(
+        receiptPayment
+      );
+
+    if (!pdfBlob) {
+      alert(
+        "Unable to prepare the receipt PDF for sharing."
+      );
+
+      return;
+    }
+
+    const receiptNo =
+      payment?.receipt_no ||
+      "payment-receipt";
+
+    const pdfFile = new File(
+      [
+        pdfBlob instanceof Blob
+          ? pdfBlob
+          : new Blob([pdfBlob], {
+              type: "application/pdf",
+            }),
+      ],
+      `Payment-Receipt-${receiptNo}.pdf`,
+      {
+        type: "application/pdf",
+      }
+    );
+
+    /*
+     * Browser/device must support sharing files.
+     */
+    if (
+      !navigator.share ||
+      !navigator.canShare ||
+      !navigator.canShare({
+        files: [pdfFile],
+      })
+    ) {
+      alert(
+        "PDF sharing is not supported by this browser/device. " +
+        "Please download the receipt and share it manually on WhatsApp."
+      );
+
+      return;
+    }
+
+    await navigator.share({
+      title: `Payment Receipt - ${receiptNo}`,
+
+      text:
+        `Payment Receipt ${receiptNo}\n` +
+        `Student: ${getStudentName()}\n` +
+        `Amount: ${formatCurrency(
+          payment.amount
+        )}\n` +
+        `Date: ${formatDate(
+          payment.payment_date
+        )}`,
+
+      files: [pdfFile],
+    });
+  } catch (error) {
+    /*
+     * User closing/cancelling the native share
+     * dialog is not a real application error.
+     */
+    if (error?.name === "AbortError") {
+      return;
+    }
+
+    console.error(
+      "Share receipt error:",
+      error
+    );
+
+    alert(
+      error?.message ||
+        "Unable to share payment receipt."
     );
   }
 };
@@ -782,7 +908,7 @@ const handleShareWhatsApp = () => {
                           </Link>
                         
                           {/* Download Receipt */}
-                          {payment.status ===
+                          {/* {payment.status ===
                             "Verified" && (
                             <button
                               type="button"
@@ -794,6 +920,34 @@ const handleShareWhatsApp = () => {
                             >
                               <FiDownload />
                             </button>
+                          )} */}
+
+                          {/* Download Receipt */}
+                          {payment.status === "Verified" && (
+                            <>
+                              <button
+                                type="button"
+                                className="payment-action-button"
+                                title="Download Receipt"
+                                onClick={() =>
+                                  handleDownloadReceipt(payment)
+                                }
+                              >
+                                <FiDownload />
+                              </button>
+
+                              {/* Share Receipt */}
+                              <button
+                                type="button"
+                                className="payment-action-button payment-share-receipt"
+                                title="Share Receipt"
+                                onClick={() =>
+                                  handleShareReceipt(payment)
+                                }
+                              >
+                                <FiShare2 />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>

@@ -2465,9 +2465,15 @@ doc.text(
     |--------------------------------------------------------------------------
     */
 
-    doc.save(
-      `Payment-Receipt-${receiptNo}.pdf`
-    );
+    // doc.save(
+    //   `Payment-Receipt-${receiptNo}.pdf`
+    // );
+    const pdfBlob = doc.output("blob");
+
+    doc.save(`Payment-Receipt-${receiptNo}.pdf`);
+
+    return pdfBlob;
+    
   } catch (error) {
     console.error(
       "Payment receipt generation error:",

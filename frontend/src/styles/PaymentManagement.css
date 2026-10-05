@@ -1365,3 +1365,13 @@
     width: 100%;
   }
 }
+
+
+.payment-share-receipt {
+  color: #16a34a;
+}
+
+.payment-share-receipt:hover {
+  background: #ecfdf3;
+  color: #15803d;
+}
