@@ -851,7 +851,8 @@ const drawPaymentHistory = (
 
 const generatePaymentReceipt = async (
   payment,
-  paymentHistory = []
+  paymentHistory = [], 
+  options = {}
 ) => {
   try {
     /*
@@ -2468,12 +2469,22 @@ doc.text(
     // doc.save(
     //   `Payment-Receipt-${receiptNo}.pdf`
     // );
-    const pdfBlob = doc.output("blob");
+    // const pdfBlob = doc.output("blob");
 
-    doc.save(`Payment-Receipt-${receiptNo}.pdf`);
+    // doc.save(`Payment-Receipt-${receiptNo}.pdf`);
 
-    return pdfBlob;
-    
+    // return pdfBlob;
+
+    const fileName = `Payment-Receipt-${receiptNo}.pdf`;
+
+    if (options?.returnBlob) {
+      return doc.output("blob");
+    }
+
+    doc.save(fileName);
+
+    return null;
+
   } catch (error) {
     console.error(
       "Payment receipt generation error:",

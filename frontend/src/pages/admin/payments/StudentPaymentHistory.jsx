@@ -8,6 +8,9 @@ import {
   useParams,
 } from "react-router-dom";
 
+import uploadReceiptPdf from
+  "../../../services/sharereceiptService.js";
+
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -201,7 +204,7 @@ const handleDownloadReceipt = async (payment) => {
     };
 
     await generatePaymentReceipt(
-      receiptPayment
+      receiptPayment,
     );
   } catch (error) {
     console.error(
@@ -216,12 +219,17 @@ const handleDownloadReceipt = async (payment) => {
   }
 };
 
-const handleShareReceipt = async (payment) => {
+const handleShareReceipt = async (
+  payment
+) => {
   if (!payment) {
     return;
   }
 
-  if (payment.status !== "Verified") {
+  if (
+    payment.status !==
+    "Verified"
+  ) {
     alert(
       "Receipt can only be shared for verified payments."
     );
@@ -229,9 +237,38 @@ const handleShareReceipt = async (payment) => {
     return;
   }
 
-  if (!student?.mobile) {
+  const rawMobile =
+    String(
+      student?.mobile || ""
+    ).trim();
+
+  if (!rawMobile) {
     alert(
       "Student mobile number is not available."
+    );
+
+    return;
+  }
+
+  let mobile =
+    rawMobile.replace(
+      /\D/g,
+      ""
+    );
+
+  if (
+    mobile.length === 10
+  ) {
+    mobile =
+      `91${mobile}`;
+  }
+
+  if (
+    mobile.length !== 12
+  ) {
+    alert(
+      "Please check the student's mobile number. " +
+      "A valid Indian mobile number must contain 10 digits."
     );
 
     return;
@@ -247,95 +284,121 @@ const handleShareReceipt = async (payment) => {
           : student,
 
       admission_id:
-        payment?.admission_id || admission,
+        payment?.admission_id ||
+        admission,
     };
 
+    const receiptNo =
+      payment?.receipt_no ||
+      payment?.receiptNo ||
+      "";
+
+    if (!receiptNo) {
+      alert(
+        "Receipt number is missing."
+      );
+
+      return;
+    }
+
     /*
-     * Generate the same receipt PDF.
-     *
-     * generatePaymentReceipt must return
-     * the generated PDF Blob.
+     * Generate the exact same PDF receipt,
+     * but return it as a Blob instead
+     * of downloading it.
      */
     const pdfBlob =
       await generatePaymentReceipt(
-        receiptPayment
+        receiptPayment,
+         [],
+        {
+          returnBlob: true,
+        }
       );
 
     if (!pdfBlob) {
       alert(
-        "Unable to prepare the receipt PDF for sharing."
+        "Unable to generate receipt PDF."
       );
 
       return;
     }
 
-    const receiptNo =
-      payment?.receipt_no ||
-      "payment-receipt";
+    /*
+     * Upload PDF to backend.
+     */
+    const uploadResponse =
+      await uploadReceiptPdf(
+        pdfBlob,
+        receiptNo
+      );
 
-    const pdfFile = new File(
-      [
-        pdfBlob instanceof Blob
-          ? pdfBlob
-          : new Blob([pdfBlob], {
-              type: "application/pdf",
-            }),
-      ],
-      `Payment-Receipt-${receiptNo}.pdf`,
-      {
-        type: "application/pdf",
-      }
+    const receiptUrl =
+      uploadResponse?.data
+        ?.receiptUrl;
+
+    if (!receiptUrl) {
+      throw new Error(
+        "Receipt URL was not generated."
+      );
+    }
+
+    const message = [
+      "🏫 IT Learning Institute",
+      "",
+      "🧾 *Payment Receipt*",
+      "",
+      `👤 Student: ${getStudentName()}`,
+      `🎓 Roll No: ${
+        student?.rollNo || "-"
+      }`,
+      "",
+      `📚 Course: ${getCourseName()}`,
+      `🗓️ Batch: ${getBatchName()}`,
+      "",
+      "💳 *Payment Details*",
+      "",
+      `🧾 Receipt No: ${receiptNo}`,
+      `💵 Amount: ${formatCurrency(
+        payment?.amount
+      )}`,
+      `📅 Payment Date: ${formatDate(
+        payment?.payment_date
+      )}`,
+      `💳 Payment Mode: ${
+        payment?.payment_mode || "-"
+      }`,
+      `✅ Status: ${
+        payment?.status || "-"
+      }`,
+      "",
+      "📄 *Download Receipt:*",
+      receiptUrl,
+      "",
+      "Thank you.",
+      "IT Learning Institute",
+    ].join("\n");
+
+    const whatsappUrl =
+      `https://wa.me/${mobile}` +
+      `?text=${encodeURIComponent(
+        message
+      )}`;
+
+    window.open(
+      whatsappUrl,
+      "_blank",
+      "noopener,noreferrer"
     );
-
-    /*
-     * Browser/device must support sharing files.
-     */
-    if (
-      !navigator.share ||
-      !navigator.canShare ||
-      !navigator.canShare({
-        files: [pdfFile],
-      })
-    ) {
-      alert(
-        "PDF sharing is not supported by this browser/device. " +
-        "Please download the receipt and share it manually on WhatsApp."
-      );
-
-      return;
-    }
-
-    await navigator.share({
-      title: `Payment Receipt - ${receiptNo}`,
-
-      text:
-        `Payment Receipt ${receiptNo}\n` +
-        `Student: ${getStudentName()}\n` +
-        `Amount: ${formatCurrency(
-          payment.amount
-        )}\n` +
-        `Date: ${formatDate(
-          payment.payment_date
-        )}`,
-
-      files: [pdfFile],
-    });
   } catch (error) {
-    /*
-     * User closing/cancelling the native share
-     * dialog is not a real application error.
-     */
-    if (error?.name === "AbortError") {
-      return;
-    }
-
     console.error(
       "Share receipt error:",
       error
     );
 
     alert(
-      error?.message ||
+      error?.response?.data
+        ?.message ||
+        error?.message ||
         "Unable to share payment receipt."
     );
   }
