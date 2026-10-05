@@ -580,6 +580,8 @@ export const getPaymentReport = async (
           status:
             payment.status,
 
+          notes: payment.notes || "", // <-- Add this line
+
           student: {
             _id:
               payment.student_id?._id,

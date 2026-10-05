@@ -128,9 +128,9 @@ const menuItems = [
         path: "/admin/payments",
       },
       {
-        label: "Reports",
-        path: "/admin/reports",
-        // path: "/admin/reports/payments",
+        label: "PaymentReports",
+        // path: "/admin/reports",
+        path: "/admin/reports/payments",
       },
     ],
   },
