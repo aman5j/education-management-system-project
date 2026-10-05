@@ -1307,3 +1307,61 @@
     padding: 0 12px;
   }
 }
+
+/* whatsapp share student payment history */
+
+.student-payment-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-whatsapp-button {
+  height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 7px;
+  background: #25d366;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.student-whatsapp-button:hover:not(:disabled) {
+  background: #1ebe5d;
+  transform: translateY(-1px);
+}
+
+.student-whatsapp-button:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.student-whatsapp-button svg {
+  font-size: 17px;
+}
+
+@media (max-width: 768px) {
+  .payment-page-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .student-payment-header-actions {
+    width: 100%;
+  }
+
+  .student-whatsapp-button {
+    width: 100%;
+  }
+}
