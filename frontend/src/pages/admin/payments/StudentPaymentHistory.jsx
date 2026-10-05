@@ -215,6 +215,108 @@ const handleDownloadReceipt = async (payment) => {
   }
 };
 
+// const handleShareWhatsApp = () => {
+//   try {
+//     if (!student) {
+//       alert("Student information is not available.");
+//       return;
+//     }
+
+//     if (!payments.length) {
+//       alert(
+//         "No payment history is available to share."
+//       );
+//       return;
+//     }
+
+//     const studentName = getStudentName();
+//     const courseName = getCourseName();
+//     const batchName = getBatchName();
+
+//     const paymentLines = payments
+//       .map((payment, index) => {
+//         return [
+//           `${index + 1}. ${payment?.receipt_no || "-"}`,
+//           `   Date: ${formatDate(
+//             payment?.payment_date
+//           )}`,
+//           `   Mode: ${
+//             payment?.payment_mode || "-"
+//           }`,
+//           `   Amount: ${formatCurrency(
+//             payment?.amount
+//           )}`,
+//           `   Status: ${
+//             payment?.status || "-"
+//           }`,
+//         ].join("\n");
+//       })
+//       .join("\n\n");
+
+//     const message = [
+//       "🏫 IT Learning Institute",
+//       "",
+//       "📋 *Student Payment History*",
+//       "",
+//       `👤 Student: ${studentName}`,
+//       `🎓 Roll No: ${student?.rollNo || "-"}`,
+//       `📱 Mobile: ${student?.mobile || "-"}`,
+//       `📧 Email: ${student?.email || "-"}`,
+//       "",
+//       `📚 Course: ${courseName}`,
+//       `🗓️ Batch: ${batchName}`,
+//       `📅 Admission Date: ${formatDate(
+//         admission?.admission_date
+//       )}`,
+//       "",
+//       "💰 *Payment Summary*",
+//       `Total Course Fee: ${formatCurrency(
+//         summary.totalFee
+//       )}`,
+//       `Total Paid: ${formatCurrency(
+//         summary.totalPaid
+//       )}`,
+//       `Remaining: ${formatCurrency(
+//         summary.remainingAmount
+//       )}`,
+//       `Total Transactions: ${
+//         summary.totalPayments || 0
+//       }`,
+//       "",
+//       "💳 *Payment History*",
+//       "",
+//       paymentLines,
+//       "",
+//       "Thank you.",
+//       "IT Learning Institute",
+//     ].join("\n");
+
+//     // const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+//     //   message
+//     // )}`;
+
+//     // Open WhatsApp directly for this student
+//     const whatsappUrl =
+//       `https://wa.me/${student?.mobile}` +
+//       `?text=${encodeURIComponent(message)}`;
+
+//     window.open(
+//       whatsappUrl,
+//       "_blank",
+//       "noopener,noreferrer"
+//     );
+//   } catch (error) {
+//     console.error(
+//       "WhatsApp share error:",
+//       error
+//     );
+
+//     alert(
+//       "Unable to prepare WhatsApp payment history."
+//     );
+//   }
+// };
+
 const handleShareWhatsApp = () => {
   try {
     if (!student) {
@@ -229,6 +331,43 @@ const handleShareWhatsApp = () => {
       return;
     }
 
+    // Get student's own mobile number
+    const rawMobile = String(
+      student?.mobile || ""
+    ).trim();
+
+    if (!rawMobile) {
+      alert(
+        "Student mobile number is not available."
+      );
+      return;
+    }
+
+    // Keep only digits
+    let mobile = rawMobile.replace(/\D/g, "");
+
+    /*
+     * India WhatsApp numbers should contain
+     * country code 91.
+     *
+     * Example:
+     * 9876543210
+     * becomes
+     * 919876543210
+     */
+
+    if (mobile.length === 10) {
+      mobile = `91${mobile}`;
+    }
+
+    if (mobile.length !== 12) {
+      alert(
+        "Please check the student's mobile number. " +
+        "A valid Indian mobile number must contain 10 digits."
+      );
+      return;
+    }
+
     const studentName = getStudentName();
     const courseName = getCourseName();
     const batchName = getBatchName();
@@ -236,7 +375,9 @@ const handleShareWhatsApp = () => {
     const paymentLines = payments
       .map((payment, index) => {
         return [
-          `${index + 1}. ${payment?.receipt_no || "-"}`,
+          `${index + 1}. ${
+            payment?.receipt_no || "-"
+          }`,
           `   Date: ${formatDate(
             payment?.payment_date
           )}`,
@@ -261,7 +402,6 @@ const handleShareWhatsApp = () => {
       `👤 Student: ${studentName}`,
       `🎓 Roll No: ${student?.rollNo || "-"}`,
       `📱 Mobile: ${student?.mobile || "-"}`,
-      `📧 Email: ${student?.email || "-"}`,
       "",
       `📚 Course: ${courseName}`,
       `🗓️ Batch: ${batchName}`,
@@ -290,10 +430,6 @@ const handleShareWhatsApp = () => {
       "Thank you.",
       "IT Learning Institute",
     ].join("\n");
-
-    // const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
-    //   message
-    // )}`;
 
     // Open WhatsApp directly for this student
     const whatsappUrl =
