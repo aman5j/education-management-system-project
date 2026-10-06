@@ -217,148 +217,148 @@ const handleDownloadReceipt = async (payment) => {
   }
 };
 
-const handleShareReceipt = (payment) => {
-  if (!payment) {
-    return;
-  }
+// const handleShareReceipt = (payment) => {
+//   if (!payment) {
+//     return;
+//   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Only verified payments can be shared
-  |--------------------------------------------------------------------------
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Only verified payments can be shared
+//   |--------------------------------------------------------------------------
+//   */
 
-  if (payment.status !== "Verified") {
-    alert(
-      "Receipt can only be shared for verified payments."
-    );
+//   if (payment.status !== "Verified") {
+//     alert(
+//       "Receipt can only be shared for verified payments."
+//     );
 
-    return;
-  }
+//     return;
+//   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Student registered mobile number
-  |--------------------------------------------------------------------------
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Student registered mobile number
+//   |--------------------------------------------------------------------------
+//   */
 
-  const rawMobile = String(
-    student?.mobile || ""
-  ).trim();
+//   const rawMobile = String(
+//     student?.mobile || ""
+//   ).trim();
 
-  if (!rawMobile) {
-    alert(
-      "Student mobile number is not available."
-    );
+//   if (!rawMobile) {
+//     alert(
+//       "Student mobile number is not available."
+//     );
 
-    return;
-  }
+//     return;
+//   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Normalize Indian WhatsApp number
-  |--------------------------------------------------------------------------
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Normalize Indian WhatsApp number
+//   |--------------------------------------------------------------------------
+//   */
 
-  let mobile = rawMobile.replace(
-    /\D/g,
-    ""
-  );
+//   let mobile = rawMobile.replace(
+//     /\D/g,
+//     ""
+//   );
 
-  if (mobile.length === 10) {
-    mobile = `91${mobile}`;
-  }
+//   if (mobile.length === 10) {
+//     mobile = `91${mobile}`;
+//   }
 
-  if (mobile.length !== 12) {
-    alert(
-      "Please check the student's mobile number. " +
-      "A valid Indian mobile number must contain 10 digits."
-    );
+//   if (mobile.length !== 12) {
+//     alert(
+//       "Please check the student's mobile number. " +
+//       "A valid Indian mobile number must contain 10 digits."
+//     );
 
-    return;
-  }
+//     return;
+//   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Receipt number
-  |--------------------------------------------------------------------------
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Receipt number
+//   |--------------------------------------------------------------------------
+//   */
 
-  const receiptNo =
-    payment?.receipt_no ||
-    payment?.receiptNo ||
-    "";
+//   const receiptNo =
+//     payment?.receipt_no ||
+//     payment?.receiptNo ||
+//     "";
 
-  if (!receiptNo) {
-    alert(
-      "Receipt number is missing."
-    );
+//   if (!receiptNo) {
+//     alert(
+//       "Receipt number is missing."
+//     );
 
-    return;
-  }
+//     return;
+//   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Fee Slip / Student Portal URL
-  |--------------------------------------------------------------------------
-  |
-  | Replace this URL with your actual student
-  | login / fee slip page before production.
-  |
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Fee Slip / Student Portal URL
+//   |--------------------------------------------------------------------------
+//   |
+//   | Replace this URL with your actual student
+//   | login / fee slip page before production.
+//   |
+//   */
 
-  const feeSlipUrl =
-    "https://www.xyz.com";
+//   const feeSlipUrl =
+//     "https://www.xyz.com";
 
-  /*
-  |--------------------------------------------------------------------------
-  | WhatsApp Message
-  |--------------------------------------------------------------------------
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | WhatsApp Message
+//   |--------------------------------------------------------------------------
+//   */
 
-  const message = [
-    "🏫 IT Learning Institute",
-    "",
-    "🧾 Payment Receipt",
-    "",
-    `👤 Student: ${getStudentName()}`,
-    `🎓 Roll No: ${student?.rollNo || "-"}`,
-    "",
-    `📚 Course: ${getCourseName()}`,
-    `🗓️ Batch: ${getBatchName()}`,
-    "",
-    "💳 Payment Details",
-    "",
-    `🧾 Receipt No: ${receiptNo}`,
-    `💵 Amount: ${formatCurrency(payment?.amount)}`,
-    `📅 Payment Date: ${formatDate(payment?.payment_date)}`,
-    `💳 Payment Mode: ${payment?.payment_mode || "-"}`,
-    `✅ Status: ${payment?.status || "-"}`,
-    "",
-    "📄 Download Receipt:",
-    "To download your fee slip, click the link below and log in with your registered details.",
-    feeSlipUrl,
-    "",
-    "Thank you for choosing",
-    "IT Learning Institute",
-  ].join("\n");
+//   const message = [
+//     "🏫 IT Learning Institute",
+//     "",
+//     "🧾 Payment Receipt",
+//     "",
+//     `👤 Student: ${getStudentName()}`,
+//     `🎓 Roll No: ${student?.rollNo || "-"}`,
+//     "",
+//     `📚 Course: ${getCourseName()}`,
+//     `🗓️ Batch: ${getBatchName()}`,
+//     "",
+//     "💳 Payment Details",
+//     "",
+//     `🧾 Receipt No: ${receiptNo}`,
+//     `💵 Amount: ${formatCurrency(payment?.amount)}`,
+//     `📅 Payment Date: ${formatDate(payment?.payment_date)}`,
+//     `💳 Payment Mode: ${payment?.payment_mode || "-"}`,
+//     `✅ Status: ${payment?.status || "-"}`,
+//     "",
+//     "📄 Download Receipt:",
+//     "To download your fee slip, click the link below and log in with your registered details.",
+//     feeSlipUrl,
+//     "",
+//     "Thank you for choosing",
+//     "IT Learning Institute",
+//   ].join("\n");
 
-  /*
-  |--------------------------------------------------------------------------
-  | Open WhatsApp directly for student's registered number
-  |--------------------------------------------------------------------------
-  */
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Open WhatsApp directly for student's registered number
+//   |--------------------------------------------------------------------------
+//   */
 
-  const whatsappUrl =
-    `https://wa.me/${mobile}` +
-    `?text=${encodeURIComponent(message)}`;
+//   const whatsappUrl =
+//     `https://wa.me/${mobile}` +
+//     `?text=${encodeURIComponent(message)}`;
 
-  window.open(
-    whatsappUrl,
-    "_blank",
-    "noopener,noreferrer"
-  );
-};
+//   window.open(
+//     whatsappUrl,
+//     "_blank",
+//     "noopener,noreferrer"
+//   );
+// };
 
 // const handleShareWhatsApp = () => {
 //   try {
@@ -461,6 +461,133 @@ const handleShareReceipt = (payment) => {
 //     );
 //   }
 // };
+
+
+const handleShareReceipt = (payment) => {
+  if (!payment) {
+    return;
+  }
+
+  if (payment.status !== "Verified") {
+    alert(
+      "Receipt can only be shared for verified payments."
+    );
+    return;
+  }
+
+  const rawMobile = String(
+    student?.mobile || ""
+  ).trim();
+
+  if (!rawMobile) {
+    alert(
+      "Student mobile number is not available."
+    );
+    return;
+  }
+
+  let mobile = rawMobile.replace(/\D/g, "");
+
+  if (mobile.length === 10) {
+    mobile = `91${mobile}`;
+  }
+
+  if (mobile.length !== 12) {
+    alert(
+      "Please check the student's mobile number. " +
+      "A valid Indian mobile number must contain 10 digits."
+    );
+    return;
+  }
+
+  const receiptNo =
+    payment?.receipt_no ||
+    payment?.receiptNo ||
+    "";
+
+  if (!receiptNo) {
+    alert("Receipt number is missing.");
+    return;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Unicode emoji characters
+  |--------------------------------------------------------------------------
+  | Using code points avoids emoji/source-encoding problems
+  | with some desktop WhatsApp clients.
+  |--------------------------------------------------------------------------
+  */
+
+  const EMOJI = {
+    institute: String.fromCodePoint(0x1F3EB), // 🏫
+    receipt: String.fromCodePoint(0x1F9FE),   // 🧾
+    student: String.fromCodePoint(0x1F464),   // 👤
+    graduation: String.fromCodePoint(0x1F393), // 🎓
+    course: String.fromCodePoint(0x1F4DA),    // 📚
+    calendar: String.fromCodePoint(0x1F5D3),  // 🗓️
+    payment: String.fromCodePoint(0x1F4B3),   // 💳
+    money: String.fromCodePoint(0x1F4B5),     // 💵
+    date: String.fromCodePoint(0x1F4C5),      // 📅
+    check: String.fromCodePoint(0x2705),      // ✅
+    document: String.fromCodePoint(0x1F4C4),  // 📄
+  };
+
+  const feeSlipUrl =
+    "https://www.xyz.com";
+
+  const message = [
+    `${EMOJI.institute} IT Learning Institute`,
+    "",
+    `${EMOJI.receipt} Payment Receipt`,
+    "",
+    `${EMOJI.student} Student: ${getStudentName()}`,
+    `${EMOJI.graduation} Roll No: ${student?.rollNo || "-"}`,
+    "",
+    `${EMOJI.course} Course: ${getCourseName()}`,
+    `${EMOJI.calendar} Batch: ${getBatchName()}`,
+    "",
+    `${EMOJI.payment} Payment Details`,
+    "",
+    `${EMOJI.receipt} Receipt No: ${receiptNo}`,
+    `${EMOJI.money} Amount: ${formatCurrency(payment?.amount)}`,
+    `${EMOJI.date} Payment Date: ${formatDate(payment?.payment_date)}`,
+    `${EMOJI.payment} Payment Mode: ${payment?.payment_mode || "-"}`,
+    `${EMOJI.check} Status: ${payment?.status || "-"}`,
+    "",
+    `${EMOJI.document} Download Receipt:`,
+    "To download your fee slip, click the link below and log in with your registered details.",
+    feeSlipUrl,
+    "",
+    "Thank you for choosing",
+    "IT Learning Institute",
+  ].join("\n");
+
+  const encodedMessage =
+    encodeURIComponent(message);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Desktop vs Mobile WhatsApp
+  |--------------------------------------------------------------------------
+  */
+
+  const isDesktop =
+    !/Android|iPhone|iPad|iPod|Windows Phone/i.test(
+      navigator.userAgent
+    );
+
+  const whatsappUrl = isDesktop
+    ? `https://web.whatsapp.com/send?phone=${mobile}&text=${encodedMessage}`
+    : `https://wa.me/${mobile}?text=${encodedMessage}`;
+
+  window.open(
+    whatsappUrl,
+    "_blank",
+    "noopener,noreferrer"
+  );
+};
+
 
 const handleShareWhatsApp = () => {
   try {
