@@ -4,6 +4,8 @@ import {
   useState,
 } from "react";
 
+import { useAuth } from "../../../context/AuthContext";
+
 import {
   FiDownload,
   FiFileText,
@@ -80,6 +82,11 @@ const getStatusLabel = (
 */
 
 const StudentReports = () => {
+  const {
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
+
   const [filters, setFilters] =
     useState({
       date_from: "",
@@ -246,10 +253,38 @@ const StudentReports = () => {
   |--------------------------------------------------------------------------
   */
 
-  useEffect(() => {
-    loadFilters();
-    loadReport();
-  }, []);
+//   useEffect(() => {
+//     loadFilters();
+//     loadReport();
+//   }, []);
+
+// useEffect(() => {
+//   if (!authReady || !isAuthenticated) {
+//     return;
+//   }
+
+//   loadFilters();
+//   loadReport();
+// }, [
+//   authReady,
+//   isAuthenticated,
+// ]);
+
+useEffect(() => {
+  if (authLoading) {
+    return;
+  }
+
+  if (!isAuthenticated) {
+    return;
+  }
+
+  loadFilters();
+  loadReport();
+}, [
+  authLoading,
+  isAuthenticated,
+]);
 
   /*
   |--------------------------------------------------------------------------

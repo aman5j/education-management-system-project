@@ -9,9 +9,13 @@ import {
   FiArrowRight,
 } from "react-icons/fi";
 
+import { useNavigate } from "react-router-dom";
+
 import "../../../styles/Reports.css";
 
 const Reports = () => {
+  const navigate = useNavigate();
+
   const reports = [
     {
       title: "Student Reports",
@@ -73,7 +77,8 @@ const Reports = () => {
 
   const handleReportClick = (report) => {
     if (report.status === "Completed") {
-      window.location.href = report.path;
+      // window.location.href = report.path;
+      navigate(report.path);
     }
   };
 
