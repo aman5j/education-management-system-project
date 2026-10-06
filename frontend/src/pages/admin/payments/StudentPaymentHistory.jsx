@@ -704,9 +704,13 @@ const handleShareWhatsApp = () => {
     ].join("\n");
 
     // Open WhatsApp directly for this student
-    const whatsappUrl =
-      `https://wa.me/${student?.mobile}` +
-      `?text=${encodeURIComponent(message)}`;
+    // const whatsappUrl =
+    //   `https://wa.me/${student?.mobile}` +
+    //   `?text=${encodeURIComponent(message)}`;
+
+     const whatsappUrl = isDesktop
+    ? `https://web.whatsapp.com/send?phone=${mobile}&text=${encodedMessage}`
+    : `https://wa.me/${mobile}?text=${encodedMessage}`;
 
     window.open(
       whatsappUrl,
