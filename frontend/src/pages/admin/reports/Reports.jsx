@@ -19,7 +19,7 @@ const Reports = () => {
         "View student records, status, course and batch information.",
       icon: FiUsers,
       path: "/admin/reports/students",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Admission Reports",

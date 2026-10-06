@@ -47,6 +47,7 @@ import VerifyReceipt from "./pages/public/VerifyReceipt";
 
 import Reports from "./pages/admin/reports/Reports";
 import PaymentReports from "./pages/admin/reports/PaymentReports";
+import StudentReports from "./pages/admin/reports/StudentReports";
 
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
@@ -441,6 +442,11 @@ const App = () => {
             path="reports/payments"
             element={<PaymentReports />}
           />
+
+          <Route
+          path="reports/students"
+          element={<StudentReports />}
+        />
 
       </Route>
 
