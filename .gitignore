@@ -46,3 +46,11 @@ temp/
 
 # Vite
 .vite/
+
+# Generated receipt PDFs
+# backend/uploads/receipts/*.pdf
+
+# Uploaded files
+# backend/uploads/students/*
+# backend/uploads/courses/*
+# backend/uploads/categories/*

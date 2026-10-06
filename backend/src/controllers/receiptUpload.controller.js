@@ -11,12 +11,14 @@ const uploadReceiptPdf = async (req, res) => {
       });
     }
 
-    const receiptNo =
-      String(
-        req.body.receipt_no || "payment-receipt"
-      )
-        .trim()
-        .replace(/[^a-zA-Z0-9-_]/g, "-");
+    // Support both names
+    const receiptNo = String(
+      req.body.receiptNo ||
+        req.body.receipt_no ||
+        "payment-receipt"
+    )
+      .trim()
+      .replace(/[^a-zA-Z0-9-_]/g, "-");
 
     const uploadDirectory = path.join(
       process.cwd(),
@@ -32,7 +34,7 @@ const uploadReceiptPdf = async (req, res) => {
     );
 
     const uniqueName =
-      `${receiptNo}-${crypto
+      `payment-receipt-${receiptNo}-${crypto
         .randomBytes(8)
         .toString("hex")}.pdf`;
 
@@ -46,6 +48,12 @@ const uploadReceiptPdf = async (req, res) => {
       req.file.buffer
     );
 
+    /*
+     * Public backend URL
+     *
+     * Example:
+     * https://education-management-backend-79g1.onrender.com
+     */
     const baseUrl =
       `${req.protocol}://${req.get("host")}`;
 
@@ -54,6 +62,20 @@ const uploadReceiptPdf = async (req, res) => {
         uniqueName
       )}`;
 
+    console.log(
+      "Payment receipt uploaded successfully."
+    );
+
+    console.log(
+      "Receipt No:",
+      receiptNo
+    );
+
+    console.log(
+      "Receipt URL:",
+      receiptUrl
+    );
+
     return res.status(201).json({
       success: true,
       message:
@@ -61,6 +83,7 @@ const uploadReceiptPdf = async (req, res) => {
       data: {
         receiptUrl,
         fileName: uniqueName,
+        receiptNo,
       },
     });
   } catch (error) {
