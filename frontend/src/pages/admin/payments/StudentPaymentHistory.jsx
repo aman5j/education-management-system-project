@@ -589,6 +589,146 @@ const handleShareReceipt = (payment) => {
 };
 
 
+// const handleShareWhatsApp = () => {
+//   try {
+//     if (!student) {
+//       alert("Student information is not available.");
+//       return;
+//     }
+
+//     if (!payments.length) {
+//       alert(
+//         "No payment history is available to share."
+//       );
+//       return;
+//     }
+
+//     // Get student's own mobile number
+//     const rawMobile = String(
+//       student?.mobile || ""
+//     ).trim();
+
+//     if (!rawMobile) {
+//       alert(
+//         "Student mobile number is not available."
+//       );
+//       return;
+//     }
+
+//     // Keep only digits
+//     let mobile = rawMobile.replace(/\D/g, "");
+
+//     /*
+//      * India WhatsApp numbers should contain
+//      * country code 91.
+//      *
+//      * Example:
+//      * 9876543210
+//      * becomes
+//      * 919876543210
+//      */
+
+//     if (mobile.length === 10) {
+//       mobile = `91${mobile}`;
+//     }
+
+//     if (mobile.length !== 12) {
+//       alert(
+//         "Please check the student's mobile number. " +
+//         "A valid Indian mobile number must contain 10 digits."
+//       );
+//       return;
+//     }
+
+//     const studentName = getStudentName();
+//     const courseName = getCourseName();
+//     const batchName = getBatchName();
+
+//     const paymentLines = payments
+//       .map((payment, index) => {
+//         return [
+//           `${index + 1}. ${
+//             payment?.receipt_no || "-"
+//           }`,
+//           `   Date: ${formatDate(
+//             payment?.payment_date
+//           )}`,
+//           `   Mode: ${
+//             payment?.payment_mode || "-"
+//           }`,
+//           `   Amount: ${formatCurrency(
+//             payment?.amount
+//           )}`,
+//           `   Status: ${
+//             payment?.status || "-"
+//           }`,
+//         ].join("\n");
+//       })
+//       .join("\n\n");
+
+//     const message = [
+//       "🏫 IT Learning Institute",
+//       "",
+//       "📋 *Student Payment History*",
+//       "",
+//       `👤 Student: ${studentName}`,
+//       `🎓 Roll No: ${student?.rollNo || "-"}`,
+//       `📱 Mobile: ${student?.mobile || "-"}`,
+//       "",
+//       `📚 Course: ${courseName}`,
+//       `🗓️ Batch: ${batchName}`,
+//       `📅 Admission Date: ${formatDate(
+//         admission?.admission_date
+//       )}`,
+//       "",
+//       "💰 *Payment Summary*",
+//       `Total Course Fee: ${formatCurrency(
+//         summary.totalFee
+//       )}`,
+//       `Total Paid: ${formatCurrency(
+//         summary.totalPaid
+//       )}`,
+//       `Remaining: ${formatCurrency(
+//         summary.remainingAmount
+//       )}`,
+//       `Total Transactions: ${
+//         summary.totalPayments || 0
+//       }`,
+//       "",
+//       "💳 *Payment History*",
+//       "",
+//       paymentLines,
+//       "",
+//       "Thank you.",
+//       "IT Learning Institute",
+//     ].join("\n");
+
+//     // Open WhatsApp directly for this student
+//     const whatsappUrl =
+//       `https://wa.me/${student?.mobile}` +
+//       `?text=${encodeURIComponent(message)}`;
+
+//     //  const whatsappUrl = isDesktop
+//     // ? `https://web.whatsapp.com/send?phone=${mobile}&text=${encodedMessage}`
+//     // : `https://wa.me/${mobile}?text=${encodedMessage}`;
+
+//     window.open(
+//       whatsappUrl,
+//       "_blank",
+//       "noopener,noreferrer"
+//     );
+//   } catch (error) {
+//     console.error(
+//       "WhatsApp share error:",
+//       error
+//     );
+
+//     alert(
+//       "Unable to prepare WhatsApp payment history."
+//     );
+//   }
+// };
+
 const handleShareWhatsApp = () => {
   try {
     if (!student) {
@@ -618,16 +758,7 @@ const handleShareWhatsApp = () => {
     // Keep only digits
     let mobile = rawMobile.replace(/\D/g, "");
 
-    /*
-     * India WhatsApp numbers should contain
-     * country code 91.
-     *
-     * Example:
-     * 9876543210
-     * becomes
-     * 919876543210
-     */
-
+    // Add India country code
     if (mobile.length === 10) {
       mobile = `91${mobile}`;
     }
@@ -643,6 +774,34 @@ const handleShareWhatsApp = () => {
     const studentName = getStudentName();
     const courseName = getCourseName();
     const batchName = getBatchName();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Unicode emoji characters
+    |--------------------------------------------------------------------------
+    | Same approach used in handleShareReceipt.
+    | This prevents emoji encoding problems on WhatsApp Desktop.
+    |--------------------------------------------------------------------------
+    */
+
+    const EMOJI = {
+      institute: String.fromCodePoint(0x1F3EB),   // 🏫
+      history: String.fromCodePoint(0x1F4CB),     // 📋
+      student: String.fromCodePoint(0x1F464),     // 👤
+      graduation: String.fromCodePoint(0x1F393),  // 🎓
+      mobile: String.fromCodePoint(0x1F4F1),      // 📱
+      course: String.fromCodePoint(0x1F4DA),      // 📚
+      calendar: String.fromCodePoint(0x1F5D3),    // 🗓️
+      date: String.fromCodePoint(0x1F4C5),        // 📅
+      money: String.fromCodePoint(0x1F4B0),       // 💰
+      payment: String.fromCodePoint(0x1F4B3),     // 💳
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment history rows
+    |--------------------------------------------------------------------------
+    */
 
     const paymentLines = payments
       .map((payment, index) => {
@@ -666,22 +825,32 @@ const handleShareWhatsApp = () => {
       })
       .join("\n\n");
 
+    /*
+    |--------------------------------------------------------------------------
+    | WhatsApp Message
+    |--------------------------------------------------------------------------
+    */
+
     const message = [
-      "🏫 IT Learning Institute",
+      `${EMOJI.institute} IT Learning Institute`,
       "",
-      "📋 *Student Payment History*",
+      `${EMOJI.history} *Student Payment History*`,
       "",
-      `👤 Student: ${studentName}`,
-      `🎓 Roll No: ${student?.rollNo || "-"}`,
-      `📱 Mobile: ${student?.mobile || "-"}`,
+      `${EMOJI.student} Student: ${studentName}`,
+      `${EMOJI.graduation} Roll No: ${
+        student?.rollNo || "-"
+      }`,
+      `${EMOJI.mobile} Mobile: ${
+        student?.mobile || "-"
+      }`,
       "",
-      `📚 Course: ${courseName}`,
-      `🗓️ Batch: ${batchName}`,
-      `📅 Admission Date: ${formatDate(
+      `${EMOJI.course} Course: ${courseName}`,
+      `${EMOJI.calendar} Batch: ${batchName}`,
+      `${EMOJI.date} Admission Date: ${formatDate(
         admission?.admission_date
       )}`,
       "",
-      "💰 *Payment Summary*",
+      `${EMOJI.money} *Payment Summary*`,
       `Total Course Fee: ${formatCurrency(
         summary.totalFee
       )}`,
@@ -695,7 +864,7 @@ const handleShareWhatsApp = () => {
         summary.totalPayments || 0
       }`,
       "",
-      "💳 *Payment History*",
+      `${EMOJI.payment} *Payment History*`,
       "",
       paymentLines,
       "",
@@ -703,14 +872,35 @@ const handleShareWhatsApp = () => {
       "IT Learning Institute",
     ].join("\n");
 
-    // Open WhatsApp directly for this student
-    // const whatsappUrl =
-    //   `https://wa.me/${student?.mobile}` +
-    //   `?text=${encodeURIComponent(message)}`;
+    /*
+    |--------------------------------------------------------------------------
+    | Encode complete message
+    |--------------------------------------------------------------------------
+    */
 
-     const whatsappUrl = isDesktop
-    ? `https://web.whatsapp.com/send?phone=${mobile}&text=${encodedMessage}`
-    : `https://wa.me/${mobile}?text=${encodedMessage}`;
+    const encodedMessage =
+      encodeURIComponent(message);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Desktop vs Mobile WhatsApp
+    |--------------------------------------------------------------------------
+    */
+
+    const isDesktop =
+      !/Android|iPhone|iPad|iPod|Windows Phone/i.test(
+        navigator.userAgent
+      );
+
+    const whatsappUrl = isDesktop
+      ? `https://web.whatsapp.com/send?phone=${mobile}&text=${encodedMessage}`
+      : `https://wa.me/${mobile}?text=${encodedMessage}`;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Open WhatsApp
+    |--------------------------------------------------------------------------
+    */
 
     window.open(
       whatsappUrl,
