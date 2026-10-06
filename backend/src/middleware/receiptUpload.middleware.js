@@ -2,27 +2,32 @@ import multer from "multer";
 
 const storage = multer.memoryStorage();
 
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === "application/pdf") {
-    cb(null, true);
-    return;
+const fileFilter = (
+  req,
+  file,
+  callback
+) => {
+  if (
+    file.mimetype !==
+    "application/pdf"
+  ) {
+    return callback(
+      new Error(
+        "Only PDF files are allowed."
+      ),
+      false
+    );
   }
 
-  cb(
-    new Error("Only PDF receipt files are allowed."),
-    false
-  );
+  callback(null, true);
 };
 
 const receiptUpload = multer({
   storage,
-
+  fileFilter,
   limits: {
-    // 20 MB maximum for payment receipts
     fileSize: 20 * 1024 * 1024,
   },
-
-  fileFilter,
 });
 
 export default receiptUpload;
