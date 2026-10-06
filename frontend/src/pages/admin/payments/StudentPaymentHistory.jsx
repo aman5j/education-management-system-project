@@ -8,8 +8,6 @@ import {
   useParams,
 } from "react-router-dom";
 
-import uploadReceiptPdf from
-  "../../../services/sharereceiptService.js";
 
 import {
   FiArrowLeft,
@@ -219,17 +217,18 @@ const handleDownloadReceipt = async (payment) => {
   }
 };
 
-const handleShareReceipt = async (
-  payment
-) => {
+const handleShareReceipt = (payment) => {
   if (!payment) {
     return;
   }
 
-  if (
-    payment.status !==
-    "Verified"
-  ) {
+  /*
+  |--------------------------------------------------------------------------
+  | Only verified payments can be shared
+  |--------------------------------------------------------------------------
+  */
+
+  if (payment.status !== "Verified") {
     alert(
       "Receipt can only be shared for verified payments."
     );
@@ -237,10 +236,15 @@ const handleShareReceipt = async (
     return;
   }
 
-  const rawMobile =
-    String(
-      student?.mobile || ""
-    ).trim();
+  /*
+  |--------------------------------------------------------------------------
+  | Student registered mobile number
+  |--------------------------------------------------------------------------
+  */
+
+  const rawMobile = String(
+    student?.mobile || ""
+  ).trim();
 
   if (!rawMobile) {
     alert(
@@ -250,22 +254,22 @@ const handleShareReceipt = async (
     return;
   }
 
-  let mobile =
-    rawMobile.replace(
-      /\D/g,
-      ""
-    );
+  /*
+  |--------------------------------------------------------------------------
+  | Normalize Indian WhatsApp number
+  |--------------------------------------------------------------------------
+  */
 
-  if (
-    mobile.length === 10
-  ) {
-    mobile =
-      `91${mobile}`;
+  let mobile = rawMobile.replace(
+    /\D/g,
+    ""
+  );
+
+  if (mobile.length === 10) {
+    mobile = `91${mobile}`;
   }
 
-  if (
-    mobile.length !== 12
-  ) {
+  if (mobile.length !== 12) {
     alert(
       "Please check the student's mobile number. " +
       "A valid Indian mobile number must contain 10 digits."
@@ -274,134 +278,86 @@ const handleShareReceipt = async (
     return;
   }
 
-  try {
-    const receiptPayment = {
-      ...payment,
+  /*
+  |--------------------------------------------------------------------------
+  | Receipt number
+  |--------------------------------------------------------------------------
+  */
 
-      student_id:
-        payment?.student_id?.firstName
-          ? payment.student_id
-          : student,
+  const receiptNo =
+    payment?.receipt_no ||
+    payment?.receiptNo ||
+    "";
 
-      admission_id:
-        payment?.admission_id ||
-        admission,
-    };
-
-    const receiptNo =
-      payment?.receipt_no ||
-      payment?.receiptNo ||
-      "";
-
-    if (!receiptNo) {
-      alert(
-        "Receipt number is missing."
-      );
-
-      return;
-    }
-
-    /*
-     * Generate the exact same PDF receipt,
-     * but return it as a Blob instead
-     * of downloading it.
-     */
-    const pdfBlob =
-      await generatePaymentReceipt(
-        receiptPayment,
-         [],
-        {
-          returnBlob: true,
-        }
-      );
-
-    if (!pdfBlob) {
-      alert(
-        "Unable to generate receipt PDF."
-      );
-
-      return;
-    }
-
-    /*
-     * Upload PDF to backend.
-     */
-    const uploadResponse =
-      await uploadReceiptPdf(
-        pdfBlob,
-        receiptNo
-      );
-
-    const receiptUrl =
-      uploadResponse?.data
-        ?.receiptUrl;
-
-    if (!receiptUrl) {
-      throw new Error(
-        "Receipt URL was not generated."
-      );
-    }
-
-    const message = [
-      "🏫 IT Learning Institute",
-      "",
-      "🧾 *Payment Receipt*",
-      "",
-      `👤 Student: ${getStudentName()}`,
-      `🎓 Roll No: ${
-        student?.rollNo || "-"
-      }`,
-      "",
-      `📚 Course: ${getCourseName()}`,
-      `🗓️ Batch: ${getBatchName()}`,
-      "",
-      "💳 *Payment Details*",
-      "",
-      `🧾 Receipt No: ${receiptNo}`,
-      `💵 Amount: ${formatCurrency(
-        payment?.amount
-      )}`,
-      `📅 Payment Date: ${formatDate(
-        payment?.payment_date
-      )}`,
-      `💳 Payment Mode: ${
-        payment?.payment_mode || "-"
-      }`,
-      `✅ Status: ${
-        payment?.status || "-"
-      }`,
-      "",
-      "📄 *Download Receipt:*",
-      receiptUrl,
-      "",
-      "Thank you.",
-      "IT Learning Institute",
-    ].join("\n");
-
-    const whatsappUrl =
-      `https://wa.me/${mobile}` +
-      `?text=${encodeURIComponent(
-        message
-      )}`;
-
-    window.open(
-      whatsappUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
-  } catch (error) {
-    console.error(
-      "Share receipt error:",
-      error
-    );
-
+  if (!receiptNo) {
     alert(
-      error?.response?.data
-        ?.message ||
-        error?.message ||
-        "Unable to share payment receipt."
+      "Receipt number is missing."
     );
+
+    return;
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Fee Slip / Student Portal URL
+  |--------------------------------------------------------------------------
+  |
+  | Replace this URL with your actual student
+  | login / fee slip page before production.
+  |
+  */
+
+  const feeSlipUrl =
+    "https://www.xyz.com";
+
+  /*
+  |--------------------------------------------------------------------------
+  | WhatsApp Message
+  |--------------------------------------------------------------------------
+  */
+
+  const message = [
+    "🏫 IT Learning Institute",
+    "",
+    "🧾 Payment Receipt",
+    "",
+    `👤 Student: ${getStudentName()}`,
+    `🎓 Roll No: ${student?.rollNo || "-"}`,
+    "",
+    `📚 Course: ${getCourseName()}`,
+    `🗓️ Batch: ${getBatchName()}`,
+    "",
+    "💳 Payment Details",
+    "",
+    `🧾 Receipt No: ${receiptNo}`,
+    `💵 Amount: ${formatCurrency(payment?.amount)}`,
+    `📅 Payment Date: ${formatDate(payment?.payment_date)}`,
+    `💳 Payment Mode: ${payment?.payment_mode || "-"}`,
+    `✅ Status: ${payment?.status || "-"}`,
+    "",
+    "📄 Download Receipt:",
+    "To download your fee slip, click the link below and log in with your registered details.",
+    feeSlipUrl,
+    "",
+    "Thank you for choosing",
+    "IT Learning Institute",
+  ].join("\n");
+
+  /*
+  |--------------------------------------------------------------------------
+  | Open WhatsApp directly for student's registered number
+  |--------------------------------------------------------------------------
+  */
+
+  const whatsappUrl =
+    `https://wa.me/${mobile}` +
+    `?text=${encodeURIComponent(message)}`;
+
+  window.open(
+    whatsappUrl,
+    "_blank",
+    "noopener,noreferrer"
+  );
 };
 
 // const handleShareWhatsApp = () => {

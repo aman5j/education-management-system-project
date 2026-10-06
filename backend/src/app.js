@@ -23,8 +23,8 @@ import receiptRoutes from "./routes/receipt.routes.js";
 
 import paymentReportRoutes from "./routes/paymentReport.routes.js";
 
-import receiptUploadRoutes from
-  "./routes/receiptUpload.routes.js";
+// import receiptUploadRoutes from
+//   "./routes/receiptUpload.routes.js";
 
 // import { verifyReceipt } from "./controllers/receipt.controller.js";
 
@@ -189,10 +189,10 @@ app.use(
   paymentReportRoutes
 );
 
-app.use(
-  "/api/receipts",
-  receiptUploadRoutes
-);
+// app.use(
+//   "/api/receipts",
+//   receiptUploadRoutes
+// );
 
 
 
