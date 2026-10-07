@@ -108,24 +108,18 @@ const studentSchema = new mongoose.Schema(
       default: "",
     },
 
-    /*
-     * These two fields support the course/batch
-     * filters requested by the specification.
-     *
-     * They are intentionally optional for Phase 3.
-     * Later Course and Batch modules can replace
-     * these with proper references.
-     */
-    course: {
-      type: String,
-      default: "",
-      trim: true,
+    course_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+      default: null,
+      index: true,
     },
 
-    batch: {
-      type: String,
-      default: "",
-      trim: true,
+    batch_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      default: null,
+      index: true,
     },
 
     status: {

@@ -1,4 +1,8 @@
 import {
+  useMemo,
+} from "react";
+
+import {
   FiFilter,
   FiRefreshCw,
   FiSearch,
@@ -6,11 +10,37 @@ import {
 
 const StudentFilters = ({
   filters,
+  courses = [],
+  batches = [],
   onChange,
   onReset,
 }) => {
+  const availableBatches =
+    useMemo(() => {
+      if (!filters.course_id) {
+        return batches;
+      }
+
+      return batches.filter(
+        (batch) => {
+          const batchCourseId =
+            batch?.course_id?._id ||
+            batch?.course_id;
+
+          return (
+            String(batchCourseId) ===
+            String(filters.course_id)
+          );
+        }
+      );
+    }, [
+      filters.course_id,
+      batches,
+    ]);
+
   return (
     <div className="student-filters">
+
       <div className="student-search">
         <FiSearch />
 
@@ -49,21 +79,53 @@ const StudentFilters = ({
         </select>
       </div>
 
-      <input
+      {/* COURSE */}
+      <select
         className="student-filter-input"
-        name="course"
-        value={filters.course}
+        name="course_id"
+        value={filters.course_id}
         onChange={onChange}
-        placeholder="Course"
-      />
+      >
+        <option value="">
+          All Courses
+        </option>
 
-      <input
+        {courses.map((course) => (
+          <option
+            key={course._id}
+            value={course._id}
+          >
+            {course.courseTitle}
+          </option>
+        ))}
+      </select>
+
+      {/* BATCH */}
+      <select
         className="student-filter-input"
-        name="batch"
-        value={filters.batch}
+        name="batch_id"
+        value={filters.batch_id}
         onChange={onChange}
-        placeholder="Batch"
-      />
+        disabled={
+          Boolean(filters.course_id) &&
+          !availableBatches.length
+        }
+      >
+        <option value="">
+          All Batches
+        </option>
+
+        {availableBatches.map(
+          (batch) => (
+            <option
+              key={batch._id}
+              value={batch._id}
+            >
+              {batch.batch_name}
+            </option>
+          )
+        )}
+      </select>
 
       <button
         type="button"

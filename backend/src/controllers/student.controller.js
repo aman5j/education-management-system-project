@@ -1,4 +1,10 @@
+// import Student from "../models/Student.js";
+
+import mongoose from "mongoose";
+
 import Student from "../models/Student.js";
+import Course from "../models/Course.js";
+import Batch from "../models/Batch.js";
 
 // const createRollNumber =
 //   async () => {
@@ -69,8 +75,8 @@ export const getStudents =
       const {
         search = "",
         status = "",
-        course = "",
-        batch = "",
+        course_id = "",
+        batch_id = "",
         page = 1,
         limit = 10,
         sortBy = "createdAt",
@@ -102,12 +108,40 @@ export const getStudents =
         filter.status = status;
       }
 
-      if (course) {
-        filter.course = course;
+      if (course_id) {
+        if (!mongoose.Types.ObjectId.isValid(course_id)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid course ID.",
+          });
+        }
+
+        filter.course_id = course_id;
       }
 
-      if (batch) {
-        filter.batch = batch;
+      if (batch_id) {
+        if (!mongoose.Types.ObjectId.isValid(batch_id)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid batch ID.",
+          });
+        }
+
+        filter.batch_id = batch_id;
+      }
+
+      if (course_id && batch_id) {
+        const batchExists = await Batch.exists({
+          _id: batch_id,
+          course_id,
+        });
+
+        if (!batchExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Selected batch does not belong to the selected course.",
+          });
+        }
       }
 
       if (search.trim()) {
@@ -173,6 +207,14 @@ export const getStudents =
         total,
       ] = await Promise.all([
         Student.find(filter)
+        .populate({
+          path: "course_id",
+          select: "_id courseTitle courseType status",
+        })
+        .populate({
+          path: "batch_id",
+          select: "_id batch_name course_id status",
+        })
           .sort({
             [safeSortBy]:
               safeSortOrder,
@@ -212,10 +254,24 @@ export const getStudents =
 export const getStudent =
   async (req, res, next) => {
     try {
+      // const student =
+      //   await Student.findById(
+      //     req.params.id
+      //   ).lean();
+
       const student =
         await Student.findById(
           req.params.id
-        ).lean();
+        )
+          .populate({
+            path: "course_id",
+            select: "_id courseTitle courseType status",
+          })
+          .populate({
+            path: "batch_id",
+            select: "_id batch_name course_id status",
+          })
+          .lean();
 
       if (!student) {
         return res.status(404).json({
@@ -251,8 +307,8 @@ export const createStudent =
         email,
         address,
         pincode,
-        course,
-        batch,
+        course_id,
+        batch_id,
         showFatherName,
         showSurname,
         status,
@@ -302,6 +358,60 @@ export const createStudent =
     //   const rollNo =
     //     await createRollNumber();
 
+      if (!course_id) {
+          return res.status(400).json({
+            success: false,
+            message: "Course is required.",
+          });
+        }
+
+        if (!batch_id) {
+          return res.status(400).json({
+            success: false,
+            message: "Batch is required.",
+          });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(course_id)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid course.",
+          });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(batch_id)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid batch.",
+          });
+        }
+
+        const courseDocument = await Course.findById(course_id)
+          .select("_id courseTitle")
+          .lean();
+
+        if (!courseDocument) {
+          return res.status(404).json({
+            success: false,
+            message: "Selected course not found.",
+          });
+        }
+
+        const batchDocument = await Batch.findOne({
+          _id: batch_id,
+          course_id,
+        })
+          .select("_id batch_name course_id")
+          .lean();
+
+        if (!batchDocument) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Selected batch does not belong to the selected course.",
+          });
+        }
+
       const student =
         await Student.create({
           rollNo: rollNo.trim(),
@@ -344,11 +454,8 @@ export const createStudent =
           pincode:
             pincode?.trim() || "",
 
-          course:
-            course?.trim() || "",
-
-          batch:
-            batch?.trim() || "",
+           course_id: courseDocument._id,
+           batch_id: batchDocument._id,
 
           profileImage:
             req.files?.profileImage?.[0]
@@ -389,193 +496,6 @@ export const createStudent =
     }
   };
 
-// export const updateStudent =
-//   async (req, res, next) => {
-//     try {
-      
-//       const { id } = req.params;
-
-//       const student =
-//         await Student.findById(
-//           req.params.id
-//         );
-
-//       if (!student) {
-//         return res.status(404).json({
-//           success: false,
-//           message:
-//             "Student not found.",
-//         });
-//       }
-
-//       const {
-//         rollNo,
-//         firstName,
-//         surname,
-//         fatherName,
-//         motherName,
-//         relationship,
-//         dob,
-//         gender,
-//         mobile,
-//         alternateMobile,
-//         email,
-//         address,
-//         pincode,
-//         course,
-//         batch,
-//         showFatherName,
-//         showSurname,
-//         status,
-//       } = req.body;
-
-//        // ==========================================
-//     // ROLL NUMBER VALIDATION
-//     // ==========================================
-
-//     if (rollNo !== undefined) {
-//       const normalizedRollNo = String(rollNo).trim();
-
-//       if (!normalizedRollNo) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Roll number is required",
-//         });
-//       }
-
-//       const duplicateStudent = await Student.findOne({
-//         rollNo: normalizedRollNo,
-//         _id: { $ne: id },
-//       });
-
-//       if (duplicateStudent) {
-//         return res.status(409).json({
-//           success: false,
-//           message: "This roll number is already assigned to another student",
-//         });
-//       }
-
-//       student.rollNo = normalizedRollNo;
-//     }
-
-//      // ==========================================
-//     // BASIC INFORMATION
-//     // ==========================================
-
-//       if (!firstName?.trim()) {
-//         return res.status(400).json({
-//           success: false,
-//           message:
-//             "First name is required.",
-//         });
-//       }
-
-//       if (!mobile?.trim()) {
-//         return res.status(400).json({
-//           success: false,
-//           message:
-//             "Mobile number is required.",
-//         });
-//       }
-
-//       student.firstName =
-//         firstName.trim();
-
-//       student.surname =
-//         surname?.trim() || "";
-
-//       student.fatherName =
-//         fatherName?.trim() || "";
-
-//       student.motherName =
-//         motherName?.trim() || "";
-
-//       student.relationship =
-//         relationship?.trim() ||
-//         "Father";
-
-//       student.dob =
-//         dob || null;
-
-//       student.gender =
-//         gender || "";
-
-//       student.mobile =
-//         mobile.trim();
-
-//       student.alternateMobile =
-//         alternateMobile?.trim() ||
-//         "";
-
-//       student.email =
-//         email?.trim()
-//           ? email
-//               .trim()
-//               .toLowerCase()
-//           : "";
-
-//       student.address =
-//         address?.trim() || "";
-
-//       student.pincode =
-//         pincode?.trim() || "";
-
-//       student.course =
-//         course?.trim() || "";
-
-//       student.batch =
-//         batch?.trim() || "";
-
-//       if (
-//         showFatherName !==
-//         undefined
-//       ) {
-//         student.showFatherName =
-//           showFatherName ===
-//           "true";
-//       }
-
-//       if (
-//         showSurname !==
-//         undefined
-//       ) {
-//         student.showSurname =
-//           showSurname ===
-//           "true";
-//       }
-
-//       if (status) {
-//         student.status =
-//           status;
-//       }
-
-//       if (
-//         req.files?.profileImage?.[0]
-//       ) {
-//         student.profileImage =
-//           `/uploads/students/${req.files.profileImage[0].filename}`;
-//       }
-
-//       if (
-//         req.files?.signature?.[0]
-//       ) {
-//         student.signature =
-//           `/uploads/students/${req.files.signature[0].filename}`;
-//       }
-
-//       await student.save();
-
-//       return res.status(200).json({
-//         success: true,
-//         message:
-//           "Student updated successfully.",
-//         data: student,
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   };
-
 export const updateStudent = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -603,8 +523,8 @@ export const updateStudent = async (req, res, next) => {
       email,
       address,
       pincode,
-      course,
-      batch,
+      course_id,
+      batch_id,
       status,
       showFatherName,
       showSurname,
@@ -703,13 +623,82 @@ export const updateStudent = async (req, res, next) => {
     // COURSE / BATCH
     // ==========================================
 
-    if (course !== undefined) {
-      student.course = course.trim();
+    const nextCourseId =
+      course_id !== undefined
+        ? course_id
+        : student.course_id;
+
+    const nextBatchId =
+      batch_id !== undefined
+        ? batch_id
+        : student.batch_id;
+
+    if (!nextCourseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Course is required.",
+      });
     }
 
-    if (batch !== undefined) {
-      student.batch = batch.trim();
+    if (!nextBatchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Batch is required.",
+      });
     }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        nextCourseId
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID.",
+      });
+    }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        nextBatchId
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid batch ID.",
+      });
+    }
+
+    const courseDocument =
+      await Course.findById(nextCourseId)
+        .select("_id courseTitle")
+        .lean();
+
+    if (!courseDocument) {
+      return res.status(404).json({
+        success: false,
+        message: "Selected course not found.",
+      });
+    }
+
+    const batchDocument =
+      await Batch.findOne({
+        _id: nextBatchId,
+        course_id: nextCourseId,
+      })
+        .select("_id batch_name course_id")
+        .lean();
+
+    if (!batchDocument) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Selected batch does not belong to the selected course.",
+      });
+    }
+
+    student.course_id = courseDocument._id;
+    student.batch_id = batchDocument._id;
 
     // ==========================================
     // STATUS

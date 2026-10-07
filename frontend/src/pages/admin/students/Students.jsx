@@ -10,6 +10,14 @@ import {
 } from "react-icons/fi";
 
 import {
+  getCourses,
+} from "../../../services/courseService";
+
+import {
+  getBatches,
+} from "../../../services/batchService";
+
+import {
   useNavigate,
 } from "react-router-dom";
 
@@ -29,13 +37,77 @@ import "./StudentManagement.css";
 const defaultFilters = {
   search: "",
   status: "",
-  course: "",
-  batch: "",
+  course_id: "",
+  batch_id: "",
 };
 
 const Students = () => {
   const navigate =
     useNavigate();
+
+  const [courses, setCourses] =
+  useState([]);
+
+  const [batches, setBatches] =
+    useState([]);
+
+  useEffect(() => {
+  const loadFilterOptions =
+    async () => {
+      try {
+        const [
+          coursesResponse,
+          batchesResponse,
+        ] = await Promise.all([
+          getCourses({
+            page: 1,
+            limit: 100,
+          }),
+
+          getBatches({
+            page: 1,
+            limit: 100,
+          }),
+        ]);
+
+        const courseCandidates = [
+          coursesResponse?.data?.data?.courses,
+          coursesResponse?.data?.courses,
+          coursesResponse?.data?.data,
+          coursesResponse?.data,
+        ];
+
+        const batchCandidates = [
+          batchesResponse?.data?.data?.batches,
+          batchesResponse?.data?.batches,
+          batchesResponse?.data?.data,
+          batchesResponse?.data,
+        ];
+
+        setCourses(
+          courseCandidates.find(
+            (value) => Array.isArray(value)
+          ) || []
+        );
+
+        setBatches(
+          batchCandidates.find(
+            (value) => Array.isArray(value)
+          ) || []
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load student filter options:",
+          error
+        );
+
+        setCourses([]);
+        setBatches([]);
+      }
+    };
+
+  loadFilterOptions();
+}, []);
 
   const [
     students,
@@ -108,17 +180,17 @@ const Students = () => {
             );
           }
 
-          if (filters.course) {
+          if (filters.course_id) {
             params.set(
-              "course",
-              filters.course
+              "course_id",
+              filters.course_id
             );
           }
 
-          if (filters.batch) {
+          if (filters.batch_id) {
             params.set(
-              "batch",
-              filters.batch
+              "batch_id",
+              filters.batch_id
             );
           }
 
@@ -188,20 +260,49 @@ const Students = () => {
     pagination.limit,
   ]);
 
-  const handleFilterChange =
-    (event) => {
-      const {
-        name,
-        value,
-      } = event.target;
+  // const handleFilterChange =
+  //   (event) => {
+  //     const {
+  //       name,
+  //       value,
+  //     } = event.target;
 
+  //     setFilters(
+  //       (previous) => ({
+  //         ...previous,
+  //         [name]: value,
+  //       })
+  //     );
+  //   };
+
+
+  const handleFilterChange = (
+    event
+  ) => {
+    const {
+      name,
+      value,
+    } = event.target;
+
+    if (name === "course_id") {
       setFilters(
         (previous) => ({
           ...previous,
-          [name]: value,
+          course_id: value,
+          batch_id: "",
         })
       );
-    };
+
+      return;
+    }
+
+    setFilters(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    );
+  };
 
   const handleReset =
     () => {
@@ -339,8 +440,8 @@ const Students = () => {
           student.email,
           student.address,
           student.pincode,
-          student.course,
-          student.batch,
+          student.course_id?.courseTitle || "",
+          student.batch_id?.batch_name || "",
           student.status,
         ]
           .map(escapeCsv)
@@ -523,9 +624,9 @@ const Students = () => {
       <section className="student-list-card">
         <StudentFilters
           filters={filters}
-          onChange={
-            handleFilterChange
-          }
+          courses={courses}
+          batches={batches}
+          onChange={handleFilterChange}
           onReset={handleReset}
         />
 

@@ -45,7 +45,7 @@ const StudentView = ({
             onClick={onClose}
             className="student-close-button"
           >
-            ×
+            Ã—
           </button>
         </div>
 
@@ -176,7 +176,7 @@ const StudentView = ({
               </span>
 
               <strong>
-                {student.course ||
+                {student.course_id?.courseTitle ||
                   "-"}
               </strong>
             </div>
@@ -187,7 +187,7 @@ const StudentView = ({
               </span>
 
               <strong>
-                {student.batch ||
+                {student.batch_id?.batch_name ||
                   "-"}
               </strong>
             </div>
