@@ -39,7 +39,7 @@ const Reports = () => {
         "View course-wise student and admission information.",
       icon: FiBookOpen,
       path: "/admin/reports/courses",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Batch Reports",

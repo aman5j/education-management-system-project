@@ -25,6 +25,7 @@ import receiptRoutes from "./routes/receipt.routes.js";
 import paymentReportRoutes from "./routes/paymentReport.routes.js";
 import studentReportRoutes from "./routes/studentReport.routes.js";
 import admissionReportRoutes from "./routes/admissionReport.routes.js";
+import courseReportRoutes from "./routes/courseReport.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -205,6 +206,11 @@ app.use(
 app.use(
   "/api/reports",
   admissionReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  courseReportRoutes
 );
 
 // app.use(
