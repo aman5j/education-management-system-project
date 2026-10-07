@@ -31,7 +31,7 @@ const Reports = () => {
         "Analyze admissions by date, course, batch and status.",
       icon: FiClipboard,
       path: "/admin/reports/admissions",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Course Reports",

@@ -1,0 +1,277 @@
+.admission-reports-page {
+  padding: 24px;
+}
+
+.admission-reports-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.admission-reports-header h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #0f172a;
+}
+
+.admission-reports-header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admission-report-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admission-report-btn {
+  border: 0;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admission-report-btn.secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.admission-report-btn.excel {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.admission-report-btn.pdf {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.admission-report-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admission-report-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admission-summary-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.admission-summary-card span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.admission-summary-card strong {
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.admission-report-filters {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) auto;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.admission-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admission-filter-field label {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admission-filter-field input,
+.admission-filter-field select {
+  width: 100%;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+
+.admission-filter-field input:focus,
+.admission-filter-field select:focus {
+  border-color: #2563eb;
+}
+
+.admission-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.admission-filter-actions button {
+  height: 40px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.admission-filter-actions button:first-child {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.admission-filter-actions button:last-child {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.admission-report-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+}
+
+.admission-report-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.admission-report-table {
+  width: 100%;
+  min-width: 1150px;
+  border-collapse: collapse;
+}
+
+.admission-report-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  padding: 13px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.admission-report-table td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.admission-report-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.admission-report-student {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admission-report-student strong {
+  color: #0f172a;
+}
+
+.admission-report-student small {
+  color: #64748b;
+}
+
+.admission-report-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admission-report-status-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admission-report-status-completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.admission-report-status-dropped {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.admission-report-state {
+  padding: 50px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+@media (max-width: 1100px) {
+  .admission-report-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admission-report-filters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .admission-reports-page {
+    padding: 16px;
+  }
+
+  .admission-reports-header {
+    flex-direction: column;
+  }
+
+  .admission-report-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admission-report-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admission-filter-actions {
+    align-items: stretch;
+  }
+}
