@@ -1310,3 +1310,28 @@
     width: 100%;
   }
 }
+
+.student-close-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #f8fafc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.student-close-button:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.student-close-button svg {
+  display: block;
+  stroke-width: 2;
+}
