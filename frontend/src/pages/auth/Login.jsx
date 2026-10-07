@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import logo from "../../assets/logo.png";
+import bgImage from "../../assets/loginback.png";
+
 import {
   Link,
   useLocation,
@@ -6,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import { FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
+
 
 import { useAuth } from "../../context/AuthContext";
 import { getRoleHomePath } from "../../constants/roles";
@@ -99,54 +103,23 @@ const Login = () => {
   };
 
   return (
-    <main className="auth-page">
+    <main className="auth-page" style={{
+        backgroundImage: `url(${bgImage})`,
+      }}>
       <section className="auth-shell">
-        <div className="auth-brand-panel">
-          <div className="auth-brand-content">
-            <div className="brand-mark">
-              EMS
-            </div>
-
-            <h1>
-              Education Management System
-            </h1>
-
-            <p>
-              Manage students, admissions, courses,
-              examinations and institutional operations
-              from one secure platform.
-            </p>
-
-            <div className="brand-points">
-              <div>
-                <span>✓</span>
-                Secure authentication
-              </div>
-
-              <div>
-                <span>✓</span>
-                Role-based access
-              </div>
-
-              <div>
-                <span>✓</span>
-                Centralized management
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         <div className="auth-form-panel">
           <div className="auth-card">
             <div className="auth-heading">
-              <span className="auth-eyebrow">
-                Welcome back
-              </span>
+              <div className="brand-mark">
+              <img src={logo} alt="Logo" />
+            </div>
 
-              <h2>Sign in to your account</h2>
+              <h2>Welcome Back</h2>
 
               <p>
-                Enter your credentials to continue.
+              Log in to access your account and continue managing your educational portal with a safe and secure experience.
               </p>
             </div>
 
@@ -157,6 +130,7 @@ const Login = () => {
             )}
 
             <form onSubmit={handleSubmit}>
+              
               <div className="form-group">
                 <label htmlFor="email">
                   Email
@@ -239,22 +213,6 @@ const Login = () => {
               </button>
             </form>
 
-            <div className="auth-divider">
-              <span>OR</span>
-            </div>
-
-            <button
-              type="button"
-              className="google-button"
-              onClick={handleGoogleLogin}
-            >
-              <span className="google-icon">
-                G
-              </span>
-
-              Continue with Google
-            </button>
-
             <div className="auth-footer">
               <span>
                 Don't have an account?
@@ -266,6 +224,7 @@ const Login = () => {
             </div>
           </div>
         </div>
+
       </section>
     </main>
   );
