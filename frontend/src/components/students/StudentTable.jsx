@@ -42,8 +42,8 @@ const StudentTable = ({
     }
 
     return sortOrder === "asc"
-      ? " ↑"
-      : " ↓";
+      ? " â†‘"
+      : " â†“";
   };
 
   // const handleDownloadReceipt = async (
@@ -492,13 +492,11 @@ const handleDownloadReceipt = async (student) => {
                   </td>
 
                   <td>
-                    {student.course ||
-                      "-"}
+                    {student.course_id?.courseTitle || "-"}
                   </td>
 
                   <td>
-                    {student.batch ||
-                      "-"}
+                    {student.batch_id?.batch_name || "-"}
                   </td>
 
                   <td>

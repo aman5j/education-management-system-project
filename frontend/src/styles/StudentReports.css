@@ -1,9 +1,20 @@
+/* ==========================================================================
+   STUDENT REPORTS PAGE
+   ========================================================================== */
+
 .student-reports-page {
-  padding: 24px;
+  width: 100%;
   min-height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
 }
 
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+
 .student-reports-header {
+  width: 100%;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -13,36 +24,64 @@
 
 .student-reports-header h1 {
   margin: 0 0 6px;
+  color: #111827;
   font-size: 24px;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .student-reports-header p {
   margin: 0;
   color: #6b7280;
   font-size: 14px;
+  line-height: 1.5;
 }
+
+/* ==========================================================================
+   TOP ACTIONS
+   ========================================================================== */
 
 .student-report-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
 
+/* ==========================================================================
+   COMMON BUTTON
+   ========================================================================== */
+
 .student-report-btn {
   min-height: 40px;
+  height: 40px;
+
+  box-sizing: border-box;
+
   border: 1px solid #d9dee7;
   border-radius: 7px;
+
   padding: 0 14px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   gap: 7px;
+
   cursor: pointer;
+
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1;
+
   background: #ffffff;
+  color: #374151;
+
+  white-space: nowrap;
+
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -59,164 +98,445 @@
   transform: none;
 }
 
+.student-report-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Primary */
+
 .student-report-btn.primary {
   background: #2563eb;
   border-color: #2563eb;
   color: #ffffff;
 }
 
+.student-report-btn.primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Secondary */
+
 .student-report-btn.secondary {
   background: #ffffff;
+  border-color: #d9dee7;
   color: #374151;
 }
+
+.student-report-btn.secondary:hover {
+  background: #f9fafb;
+}
+
+/* Excel */
 
 .student-report-btn.excel {
   color: #15803d;
 }
 
+.student-report-btn.excel:hover {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+/* PDF */
+
 .student-report-btn.pdf {
   color: #dc2626;
 }
 
+.student-report-btn.pdf:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* ==========================================================================
+   FILTER CONTAINER
+   ========================================================================== */
+
 .student-report-filters {
+  width: 100%;
+  box-sizing: border-box;
+
   background: #ffffff;
+
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 18px;
+
+  padding: 18px 20px;
+
   display: grid;
+
+  /*
+    5 filter fields
+    +
+    action group
+  */
   grid-template-columns:
-    repeat(5, minmax(150px, 1fr))
+    repeat(5, 135px)
     auto;
-  gap: 14px;
+
+  column-gap: 14px;
+  row-gap: 12px;
+
   align-items: end;
+  justify-content: center;
+
   margin-bottom: 20px;
 }
 
-.student-filter-field {
+/* ==========================================================================
+   FILTER FIELD
+   ========================================================================== */
+
+.student-report-filters .student-filter-field {
+  width: 135px;
+  min-width: 0;
+
+  box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
+
   gap: 7px;
+
+  margin: 0;
+  padding: 0;
+
+  border: none;
+  background: transparent;
+
+  box-shadow: none;
 }
 
-.student-filter-field label {
+/* ==========================================================================
+   FILTER LABEL
+   ========================================================================== */
+
+.student-report-filters .student-filter-field label {
+  display: block;
+
+  width: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  color: #374151;
+
+  font-family: inherit;
+
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  line-height: 1.2;
+
+  text-align: left;
+
+  white-space: nowrap;
 }
 
-.student-filter-field input,
-.student-filter-field select {
-  width: 100%;
+/* ==========================================================================
+   INPUT / SELECT
+   ========================================================================== */
+
+.student-report-filters .student-filter-field input,
+.student-report-filters .student-filter-field select {
+  display: block;
+
+  width: 135px;
+  min-width: 135px;
+
+  height: 40px;
   min-height: 40px;
-  border: 1px solid #d7dce5;
-  border-radius: 6px;
-  background: #ffffff;
+
+  box-sizing: border-box;
+
+  margin: 0;
   padding: 0 11px;
-  font-size: 13px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+
+  background: #ffffff;
+
   color: #111827;
+
+  font-family: inherit;
+
+  font-size: 13px;
+  font-weight: 400;
+
   outline: none;
+
+  box-shadow: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.student-filter-field input:focus,
-.student-filter-field select:focus {
-  border-color: #2563eb;
+/* Hover */
+
+.student-report-filters .student-filter-field input:hover,
+.student-report-filters .student-filter-field select:hover {
+  border-color: #b8c0cc;
 }
+
+/* Focus */
+
+.student-report-filters .student-filter-field input:focus,
+.student-report-filters .student-filter-field select:focus {
+  border-color: #2563eb;
+
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+/* Disabled */
+
+.student-report-filters .student-filter-field input:disabled,
+.student-report-filters .student-filter-field select:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   DATE INPUT
+   ========================================================================== */
+
+.student-report-filters
+  .student-filter-field
+  input[type="date"] {
+  padding-left: 10px;
+  padding-right: 6px;
+}
+
+/* ==========================================================================
+   SELECT
+   ========================================================================== */
+
+.student-report-filters
+  .student-filter-field
+  select {
+  cursor: pointer;
+
+  padding-left: 10px;
+  padding-right: 26px;
+}
+
+/* ==========================================================================
+   FILTER ACTIONS
+   ========================================================================== */
 
 .student-filter-actions {
+  height: 40px;
+
   display: flex;
+
   align-items: center;
+  justify-content: center;
+
   gap: 8px;
+
+  margin: 0;
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  box-shadow: none;
+
+  white-space: nowrap;
 }
+
+/* Apply */
+
+.student-filter-actions .student-report-btn.primary {
+  min-width: 104px;
+  height: 40px;
+
+  padding: 0 14px;
+}
+
+/* Reset */
+
+.student-filter-actions .student-report-btn.secondary {
+  min-width: 62px;
+  height: 40px;
+
+  padding: 0 14px;
+}
+
+/* ==========================================================================
+   ERROR
+   ========================================================================== */
 
 .student-report-error {
+  width: 100%;
+  box-sizing: border-box;
+
   padding: 12px 14px;
-  border-radius: 7px;
+
   margin-bottom: 18px;
-  background: #fef2f2;
+
   border: 1px solid #fecaca;
+  border-radius: 7px;
+
+  background: #fef2f2;
+
   color: #b91c1c;
+
   font-size: 13px;
+  line-height: 1.5;
 }
 
+/* ==========================================================================
+   SUMMARY
+   ========================================================================== */
+
 .student-report-summary {
+  width: 100%;
+
   display: grid;
+
   grid-template-columns:
-    repeat(5, minmax(150px, 1fr));
+    repeat(5, minmax(0, 1fr));
+
   gap: 14px;
+
   margin-bottom: 20px;
 }
 
 .student-summary-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 18px;
+  min-width: 0;
+
+  box-sizing: border-box;
+
   min-height: 95px;
+
+  padding: 18px;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
 
 .student-summary-card span {
   color: #6b7280;
+
   font-size: 13px;
+  line-height: 1.4;
 }
 
 .student-summary-card strong {
   color: #111827;
+
   font-size: 24px;
+  font-weight: 700;
+
   line-height: 1;
 }
 
+/* ==========================================================================
+   TABLE CARD
+   ========================================================================== */
+
 .student-report-table-card {
+  width: 100%;
+  box-sizing: border-box;
+
   background: #ffffff;
+
   border: 1px solid #e5e7eb;
   border-radius: 10px;
+
   overflow: hidden;
 }
 
+/* ==========================================================================
+   TABLE HEADER
+   ========================================================================== */
+
 .student-report-table-header {
   min-height: 68px;
+
   padding: 16px 18px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   border-bottom: 1px solid #e5e7eb;
 }
 
 .student-report-table-header h2 {
   margin: 0 0 4px;
+
+  color: #111827;
+
   font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .student-report-table-header span {
   color: #6b7280;
+
   font-size: 12px;
+  line-height: 1.4;
 }
+
+/* ==========================================================================
+   TABLE WRAPPER
+   ========================================================================== */
 
 .student-report-table-wrapper {
   width: 100%;
+
   overflow-x: auto;
+  overflow-y: hidden;
+
+  -webkit-overflow-scrolling: touch;
 }
+
+/* ==========================================================================
+   TABLE
+   ========================================================================== */
 
 .student-report-table {
   width: 100%;
   min-width: 950px;
+
   border-collapse: collapse;
+
+  table-layout: auto;
 }
 
 .student-report-table th,
 .student-report-table td {
   padding: 13px 14px;
+
   text-align: left;
+
   border-bottom: 1px solid #edf0f4;
+
   white-space: nowrap;
+
   font-size: 13px;
+  line-height: 1.4;
 }
 
 .student-report-table th {
   background: #f8fafc;
+
   color: #374151;
+
   font-weight: 700;
 }
 
@@ -228,15 +548,41 @@
   background: #fafafa;
 }
 
+.student-report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ==========================================================================
+   STUDENT NAME
+   ========================================================================== */
+
+.student-report-table td strong {
+  color: #374151;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   STATUS
+   ========================================================================== */
+
 .student-report-status {
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
+
   min-width: 72px;
+
   padding: 5px 9px;
+
   border-radius: 999px;
+
   font-size: 11px;
   font-weight: 700;
+
+  line-height: 1;
+
+  white-space: nowrap;
 }
 
 .student-report-status.active {
@@ -254,53 +600,149 @@
   color: #b91c1c;
 }
 
+/* ==========================================================================
+   EMPTY STATE
+   ========================================================================== */
+
 .student-report-empty {
   min-height: 220px;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   color: #6b7280;
+
   font-size: 14px;
+
+  text-align: center;
 }
 
-@media (max-width: 1200px) {
+/* ==========================================================================
+   TABLET
+   ========================================================================== */
+
+@media (max-width: 1100px) {
   .student-report-filters {
     grid-template-columns:
-      repeat(3, minmax(150px, 1fr));
+      repeat(3, minmax(140px, 1fr));
+
+    justify-content: center;
+  }
+
+  .student-report-filters
+    .student-filter-field {
+    width: 100%;
+  }
+
+  .student-report-filters
+    .student-filter-field
+    input,
+  .student-report-filters
+    .student-filter-field
+    select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .student-filter-actions {
+    grid-column: 1 / -1;
+
+    justify-content: center;
   }
 
   .student-report-summary {
     grid-template-columns:
-      repeat(3, minmax(150px, 1fr));
+      repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+/* ==========================================================================
+   SMALL TABLET
+   ========================================================================== */
+
+@media (max-width: 750px) {
   .student-reports-page {
+    padding: 18px;
+  }
+
+  .student-report-filters {
+    grid-template-columns:
+      repeat(2, minmax(130px, 1fr));
+
     padding: 16px;
+  }
+
+  .student-report-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ==========================================================================
+   MOBILE
+   ========================================================================== */
+
+@media (max-width: 600px) {
+  .student-reports-page {
+    padding: 14px;
   }
 
   .student-reports-header {
     flex-direction: column;
+    gap: 14px;
+  }
+
+  .student-reports-header h1 {
+    font-size: 22px;
   }
 
   .student-report-actions {
     width: 100%;
+    justify-content: stretch;
   }
 
-  .student-report-btn {
+  .student-report-actions .student-report-btn {
     flex: 1;
   }
 
   .student-report-filters {
     grid-template-columns: 1fr;
+
+    padding: 15px;
+
+    gap: 12px;
   }
 
-  .student-filter-actions {
+  .student-report-filters
+    .student-filter-field {
     width: 100%;
   }
 
-  .student-filter-actions .student-report-btn {
+  .student-report-filters
+    .student-filter-field
+    input,
+  .student-report-filters
+    .student-filter-field
+    select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .student-filter-actions {
+    grid-column: 1 / -1;
+
+    width: 100%;
+
+    justify-content: center;
+  }
+
+  .student-filter-actions
+    .student-report-btn {
     flex: 1;
   }
 
@@ -309,8 +751,30 @@
   }
 }
 
-@media (max-width: 480px) {
+/* ==========================================================================
+   SMALL MOBILE
+   ========================================================================== */
+
+@media (max-width: 420px) {
   .student-report-summary {
     grid-template-columns: 1fr;
+  }
+
+  .student-report-actions {
+    flex-direction: column;
+  }
+
+  .student-report-actions .student-report-btn {
+    width: 100%;
+    flex: none;
+  }
+
+  .student-filter-actions {
+    width: 100%;
+  }
+
+  .student-filter-actions
+    .student-report-btn {
+    flex: 1;
   }
 }
