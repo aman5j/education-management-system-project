@@ -2,6 +2,7 @@ import {
   FiDownload,
   FiEdit2,
   FiEye,
+  FiFileText,
   FiTrash2,
   FiCreditCard,
 } from "react-icons/fi";
@@ -30,6 +31,7 @@ const StudentTable = ({
   onEdit,
   onDelete,
   onStatusChange,
+  onDocuments,
   sortBy,
   sortOrder,
   onSort,
@@ -544,6 +546,9 @@ const handleDownloadReceipt = async (student) => {
                         <FiEye />
                       </button>
 
+
+                      {/* DOCUMENTS */}
+
                       <button
                         type="button"
                         title="Edit"
@@ -554,6 +559,29 @@ const handleDownloadReceipt = async (student) => {
                         }
                       >
                         <FiEdit2 />
+                      </button>
+
+                      <button
+                        type="button"
+                        title="Manage Documents"
+                        className="student-document-table-action"
+                        onClick={() =>
+                          onDocuments?.(student)
+                        }
+                      >
+                        <FiFileText />
+
+                        {Array.isArray(
+                          student.uploadDocument
+                        ) &&
+                          student.uploadDocument.length >
+                            0 && (
+                            <span className="student-document-count">
+                              {
+                                student.uploadDocument.length
+                              }
+                            </span>
+                          )}
                       </button>
 
                       {/* <Link

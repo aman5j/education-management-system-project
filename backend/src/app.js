@@ -10,6 +10,7 @@ import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
+import studentDocumentRoutes from "./routes/studentDocument.routes.js";
 // import admissionRoutes from "./routes/admission.routes.js";
 import admissionRoutes from "./routes/admission.routes.js";
 import courseRoutes from "./routes/course.routes.js";
@@ -23,6 +24,7 @@ import receiptRoutes from "./routes/receipt.routes.js";
 
 import paymentReportRoutes from "./routes/paymentReport.routes.js";
 import studentReportRoutes from "./routes/studentReport.routes.js";
+import admissionReportRoutes from "./routes/admissionReport.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -153,6 +155,11 @@ app.use(
 );
 
 app.use(
+  "/api/students",
+  studentDocumentRoutes
+);
+
+app.use(
   "/api/admissions",
   admissionRoutes
 );
@@ -193,6 +200,11 @@ app.use(
 app.use(
   "/api/reports",
   studentReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  admissionReportRoutes
 );
 
 // app.use(

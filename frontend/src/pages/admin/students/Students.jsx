@@ -30,6 +30,7 @@ import Breadcrumb from "../../../common/Breadcrumb";
 import StudentFilters from "../../../components/students/StudentFilters";
 import StudentTable from "../../../components/students/StudentTable";
 import StudentView from "../../../components/students/StudentView";
+import StudentDocuments from "../../../components/students/StudentDocuments";
 
 import "../../../layout/AdminLayout.css";
 import "./StudentManagement.css";
@@ -146,6 +147,11 @@ const Students = () => {
   const [
     selectedStudent,
     setSelectedStudent,
+  ] = useState(null);
+
+  const [
+    documentStudent,
+    setDocumentStudent,
   ] = useState(null);
 
   const [
@@ -662,6 +668,11 @@ const Students = () => {
               onStatusChange={
                 handleStatusChange
               }
+
+              onDocuments={
+                setDocumentStudent
+              }
+
               sortBy={sortBy}
               sortOrder={
                 sortOrder
@@ -809,6 +820,45 @@ const Students = () => {
 
             navigate(
               `/admin/students/${student._id}/edit`
+            );
+          }}
+        />
+      )}
+
+      {/* {documentStudent && (
+        <StudentDocuments
+          student={documentStudent}
+          onClose={() =>
+            setDocumentStudent(null)
+          }
+          onCountChange={(count) => {
+            setStudents((previous) =>
+              previous.map(
+                (item) =>
+                  item._id ===
+                  documentStudent._id
+                    ? {
+                        ...item,
+                        uploadDocument:
+                          Array.from({
+                            length: count,
+                          }),
+                      }
+                    : item
+              )
+            );
+          }}
+        />
+      )} */}
+
+      {documentStudent && (
+        <StudentDocuments
+          student={documentStudent}
+          onClose={() => {
+            setDocumentStudent(null);
+
+            fetchStudents(
+              pagination.page
             );
           }}
         />

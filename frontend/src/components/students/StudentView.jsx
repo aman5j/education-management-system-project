@@ -4,6 +4,7 @@ import {
   FiMapPin,
   FiPhone,
   FiUser,
+  FiX,
 } from "react-icons/fi";
 
 import { getAssetUrl } from "../../utils/assetUrl";
@@ -44,8 +45,10 @@ const StudentView = ({
             type="button"
             onClick={onClose}
             className="student-close-button"
+            aria-label="Close student details"
+            title="Close"
           >
-            Ã—
+            <FiX size={22} />
           </button>
         </div>
 
