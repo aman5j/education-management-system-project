@@ -10,6 +10,7 @@ import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
+import studentDocumentRoutes from "./routes/studentDocument.routes.js";
 // import admissionRoutes from "./routes/admission.routes.js";
 import admissionRoutes from "./routes/admission.routes.js";
 import courseRoutes from "./routes/course.routes.js";
@@ -150,6 +151,11 @@ app.use(
 app.use(
   "/api/students",
   studentRoutes
+);
+
+app.use(
+  "/api/students",
+  studentDocumentRoutes
 );
 
 app.use(

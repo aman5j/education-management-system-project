@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const studentSchema = new mongoose.Schema(
   {
+    // ==========================================
+    // ROLL NUMBER
+    // ==========================================
+
     rollNo: {
       type: String,
       unique: true,
@@ -9,6 +13,10 @@ const studentSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+
+    // ==========================================
+    // PERSONAL INFORMATION
+    // ==========================================
 
     firstName: {
       type: String,
@@ -62,6 +70,10 @@ const studentSchema = new mongoose.Schema(
       default: "",
     },
 
+    // ==========================================
+    // CONTACT INFORMATION
+    // ==========================================
+
     mobile: {
       type: String,
       required: true,
@@ -98,15 +110,89 @@ const studentSchema = new mongoose.Schema(
       maxlength: 10,
     },
 
+    // ==========================================
+    // PROFILE IMAGE
+    // ==========================================
+
     profileImage: {
       type: String,
       default: "",
     },
 
+    // ==========================================
+    // SIGNATURE
+    // ==========================================
+
     signature: {
       type: String,
       default: "",
     },
+
+    // ==========================================
+    // STUDENT DOCUMENTS
+    // ==========================================
+    //
+    // Multiple documents can be stored for one
+    // student.
+    //
+    // Example:
+    // Aadhaar.pdf
+    // 10th-MarkSheet.pdf
+    // 12th-MarkSheet.pdf
+    // Transfer-Certificate.pdf
+    //
+    // Actual files will be stored on the server
+    // or cloud storage later.
+    //
+    // MongoDB stores only document metadata.
+    // ==========================================
+
+    uploadDocument: {
+      type: [
+        {
+          originalName: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          fileName: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          filePath: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          mimeType: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+
+          fileSize: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+
+          uploadedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+
+      default: [],
+    },
+
+    // ==========================================
+    // COURSE
+    // ==========================================
 
     course_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -115,12 +201,20 @@ const studentSchema = new mongoose.Schema(
       index: true,
     },
 
+    // ==========================================
+    // BATCH
+    // ==========================================
+
     batch_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Batch",
       default: null,
       index: true,
     },
+
+    // ==========================================
+    // STATUS
+    // ==========================================
 
     status: {
       type: String,
@@ -133,6 +227,10 @@ const studentSchema = new mongoose.Schema(
       index: true,
     },
 
+    // ==========================================
+    // CERTIFICATE OPTIONS
+    // ==========================================
+
     showFatherName: {
       type: Boolean,
       default: true,
@@ -143,10 +241,15 @@ const studentSchema = new mongoose.Schema(
       default: true,
     },
   },
+
   {
     timestamps: true,
   }
 );
+
+// ==========================================
+// TEXT SEARCH INDEX
+// ==========================================
 
 studentSchema.index({
   firstName: "text",
@@ -157,10 +260,13 @@ studentSchema.index({
   rollNo: "text",
 });
 
-const Student =
-  mongoose.model(
-    "Student",
-    studentSchema
-  );
+// ==========================================
+// MODEL
+// ==========================================
+
+const Student = mongoose.model(
+  "Student",
+  studentSchema
+);
 
 export default Student;
