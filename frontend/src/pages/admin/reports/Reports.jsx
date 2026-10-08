@@ -47,7 +47,7 @@ const Reports = () => {
         "View batch capacity, seats and student allocation.",
       icon: FiLayers,
       path: "/admin/reports/batches",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Fee Reports",
