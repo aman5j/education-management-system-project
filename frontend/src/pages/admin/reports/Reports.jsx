@@ -71,7 +71,7 @@ const Reports = () => {
         "Identify students with outstanding fee balances.",
       icon: FiAlertCircle,
       path: "/admin/reports/pending-fees",
-      status: "Next",
+      status: "Completed",
     },
   ];
 

@@ -28,6 +28,7 @@ import admissionReportRoutes from "./routes/admissionReport.routes.js";
 import courseReportRoutes from "./routes/courseReport.routes.js";
 import batchReportRoutes from "./routes/batchReport.routes.js";
 import feeReportRoutes from "./routes/feeReport.routes.js";
+import pendingFeeReportRoutes from "./routes/pendingFeeReport.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -223,6 +224,11 @@ app.use(
 app.use(
   "/api/reports",
   feeReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  pendingFeeReportRoutes
 );
 
 // app.use(
