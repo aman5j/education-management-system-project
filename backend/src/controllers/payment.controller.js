@@ -6,6 +6,10 @@ import StudentAdmission from "../models/StudentAdmission.js";
 
 import generateReceiptNumber from "../utils/generateReceiptNumber.js";
 
+import {
+  notifyAdmins,
+} from "../services/notificationService.js";
+
 const getAuthenticatedStudentId =
   async (req) => {
     if (req.user?.student_id) {
@@ -1147,6 +1151,43 @@ export const createPayment =
 
           createdPayment =
             payment;
+
+          if (status === "Verified") {
+            await notifyAdmins({
+              title: "Payment Received",
+              message: `A payment of ₹${numericAmount.toFixed(
+                2
+              )} has been received successfully.`,
+              type: "payment_received",
+              link: "/admin/payments",
+              metadata: {
+                paymentId: payment._id,
+                admissionId: admission_id,
+                studentId: student_id,
+                amount: numericAmount,
+                receiptNo: receiptNo.toUpperCase(),
+              },
+            });
+          }
+
+          if (status === "Pending") {
+            await notifyAdmins({
+              title: "Payment Pending",
+              message: `A payment of ₹${numericAmount.toFixed(
+                2
+              )} is pending verification.`,
+              type: "payment_pending",
+              link: "/admin/payments",
+              metadata: {
+                paymentId: payment._id,
+                admissionId: admission_id,
+                studentId: student_id,
+                amount: numericAmount,
+                receiptNo: receiptNo.toUpperCase(),
+              },
+            });
+          }
+
         }
       );
 

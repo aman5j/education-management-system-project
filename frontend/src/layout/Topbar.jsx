@@ -4,7 +4,7 @@ import {
 } from "react";
 
 import {
-  FiBell,
+  // FiBell,
   FiChevronDown,
   FiMaximize,
   FiMenu,
@@ -20,6 +20,8 @@ import {
 } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
+
+import NotificationBell from "../components/notifications/NotificationBell";
 
 import "./AdminLayout.css";
 
@@ -144,7 +146,7 @@ const Topbar = ({
           <FiMaximize />
         </button>
 
-        <button
+        {/* <button
           className="topbar-icon-button notification-button"
           title="Notifications"
         >
@@ -153,7 +155,9 @@ const Topbar = ({
           <span className="notification-count">
             0
           </span>
-        </button>
+        </button> */}
+
+        <NotificationBell />
 
         <div className="topbar-profile-wrapper">
           <button

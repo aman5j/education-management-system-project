@@ -54,6 +54,8 @@ import BatchReports from "./pages/admin/reports/BatchReports";
 import FeeReports from "./pages/admin/reports/FeeReports";
 import PendingFeeReports from "./pages/admin/reports/PendingFeeReports";
 
+import Notifications from "./pages/admin/notifications/Notifications";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -476,6 +478,13 @@ const App = () => {
         <Route
           path="reports/pending-fees"
           element={<PendingFeeReports />}
+        />
+
+        {/* Notifications */}
+        
+        <Route
+          path="notifications"
+          element={<Notifications />}
         />
 
       </Route>
