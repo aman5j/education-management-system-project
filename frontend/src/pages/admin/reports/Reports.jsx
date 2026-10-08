@@ -55,7 +55,7 @@ const Reports = () => {
         "Analyze total fees, paid fees, pending fees and collections.",
       icon: FiDollarSign,
       path: "/admin/reports/fees",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Payment Reports",

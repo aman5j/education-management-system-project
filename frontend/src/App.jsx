@@ -51,6 +51,7 @@ import StudentReports from "./pages/admin/reports/StudentReports";
 import AdmissionReports from "./pages/admin/reports/AdmissionReports";
 import CourseReports from "./pages/admin/reports/CourseReports";
 import BatchReports from "./pages/admin/reports/BatchReports";
+import FeeReports from "./pages/admin/reports/FeeReports";
 
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
@@ -464,6 +465,11 @@ const App = () => {
         <Route
           path="reports/batches"
           element={<BatchReports />}
+        />
+
+        <Route
+          path="reports/fees"
+          element={<FeeReports />}
         />
 
       </Route>

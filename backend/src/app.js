@@ -27,6 +27,7 @@ import studentReportRoutes from "./routes/studentReport.routes.js";
 import admissionReportRoutes from "./routes/admissionReport.routes.js";
 import courseReportRoutes from "./routes/courseReport.routes.js";
 import batchReportRoutes from "./routes/batchReport.routes.js";
+import feeReportRoutes from "./routes/feeReport.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -217,6 +218,11 @@ app.use(
 app.use(
   "/api/reports",
   batchReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  feeReportRoutes
 );
 
 // app.use(
