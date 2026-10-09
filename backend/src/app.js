@@ -33,6 +33,8 @@ import pendingFeeReportRoutes from "./routes/pendingFeeReport.routes.js";
 
 import notificationRoutes from "./routes/notification.routes.js";
 
+import subjectRoutes from "./routes/subject.routes.js";
+
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -196,6 +198,8 @@ app.use(
   "/api/notifications",
   notificationRoutes
 );
+
+app.use("/api/subjects", subjectRoutes);
 
 // app.use(
 //   "/api/public/receipts",

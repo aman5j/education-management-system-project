@@ -56,6 +56,11 @@ import PendingFeeReports from "./pages/admin/reports/PendingFeeReports";
 
 import Notifications from "./pages/admin/notifications/Notifications";
 
+import SubjectManagement from "./pages/admin/subjects/SubjectManagement";
+import AddSubject from "./pages/admin/subjects/AddSubject";
+import EditSubject from "./pages/admin/subjects/EditSubject";
+import ViewSubject from "./pages/admin/subjects/ViewSubject";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleRoute from "./components/auth/RoleRoute";
 
@@ -362,6 +367,29 @@ const App = () => {
             path="courses/:id/edit"
             element={<EditCourse />}
           />
+
+
+          
+          <Route
+            path="subjects"
+            element={<SubjectManagement />}
+          />
+
+          <Route
+            path="subjects/add"
+            element={<AddSubject />}
+          />
+
+          <Route
+            path="subjects/edit/:id"
+            element={<EditSubject />}
+          />
+
+          <Route
+            path="subjects/view/:id"
+            element={<ViewSubject />}
+          />
+
 
           {/* Phase 6 */}
           <Route
