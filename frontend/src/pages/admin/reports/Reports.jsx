@@ -39,7 +39,7 @@ const Reports = () => {
         "View course-wise student and admission information.",
       icon: FiBookOpen,
       path: "/admin/reports/courses",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Batch Reports",
@@ -47,7 +47,7 @@ const Reports = () => {
         "View batch capacity, seats and student allocation.",
       icon: FiLayers,
       path: "/admin/reports/batches",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Fee Reports",
@@ -55,7 +55,7 @@ const Reports = () => {
         "Analyze total fees, paid fees, pending fees and collections.",
       icon: FiDollarSign,
       path: "/admin/reports/fees",
-      status: "Next",
+      status: "Completed",
     },
     {
       title: "Payment Reports",
@@ -71,7 +71,7 @@ const Reports = () => {
         "Identify students with outstanding fee balances.",
       icon: FiAlertCircle,
       path: "/admin/reports/pending-fees",
-      status: "Next",
+      status: "Completed",
     },
   ];
 

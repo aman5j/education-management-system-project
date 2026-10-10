@@ -1,0 +1,247 @@
+.pending-fee-reports-page {
+  padding: 24px;
+}
+
+.pending-fee-reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.pending-fee-reports-header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+}
+
+.pending-fee-reports-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.pending-fee-report-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.report-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.report-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.report-btn.secondary {
+  background: #eef2f7;
+  color: #374151;
+}
+
+.report-btn.excel {
+  background: #15803d;
+  color: #fff;
+}
+
+.report-btn.pdf {
+  background: #dc2626;
+  color: #fff;
+}
+
+.report-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+
+.pending-fee-summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.pending-fee-summary-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.pending-fee-summary-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.pending-fee-summary-card strong {
+  font-size: 22px;
+  color: #111827;
+}
+
+.pending-fee-summary-card.pending {
+  border-color: #f59e0b;
+}
+
+.pending-fee-summary-card.pending strong {
+  color: #b45309;
+}
+
+.pending-fee-filters {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.filter-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.filter-field input,
+.filter-field select {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  border-color: #2563eb;
+}
+
+.reset-filter-btn {
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #f9fafb;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pending-fee-table-wrapper {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.pending-fee-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1200px;
+}
+
+.pending-fee-table th,
+.pending-fee-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #edf0f3;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.pending-fee-table th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 700;
+}
+
+.pending-fee-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.pending-amount {
+  font-weight: 700;
+  color: #b45309;
+}
+
+.payment-status,
+.admission-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.payment-status.unpaid {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.payment-status.partial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admission-status {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.report-loading,
+.report-empty {
+  padding: 45px;
+  text-align: center;
+  color: #6b7280;
+}
+
+@media (max-width: 1200px) {
+  .pending-fee-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .pending-fee-filters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .pending-fee-reports-page {
+    padding: 15px;
+  }
+
+  .pending-fee-reports-header {
+    flex-direction: column;
+  }
+
+  .pending-fee-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .pending-fee-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .pending-fee-report-actions {
+    width: 100%;
+  }
+}

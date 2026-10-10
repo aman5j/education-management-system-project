@@ -25,6 +25,17 @@ import receiptRoutes from "./routes/receipt.routes.js";
 import paymentReportRoutes from "./routes/paymentReport.routes.js";
 import studentReportRoutes from "./routes/studentReport.routes.js";
 import admissionReportRoutes from "./routes/admissionReport.routes.js";
+import courseReportRoutes from "./routes/courseReport.routes.js";
+import batchReportRoutes from "./routes/batchReport.routes.js";
+import feeReportRoutes from "./routes/feeReport.routes.js";
+import pendingFeeReportRoutes from "./routes/pendingFeeReport.routes.js";
+
+
+import notificationRoutes from "./routes/notification.routes.js";
+
+import subjectRoutes from "./routes/subject.routes.js";
+import attendanceRoutes from "./routes/attendance.routes.js";
+
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -184,6 +195,20 @@ app.use(
   paymentRoutes
 );
 
+app.use(
+  "/api/notifications",
+  notificationRoutes
+);
+
+app.use("/api/subjects", subjectRoutes);
+
+app.use(
+  "/api/attendance",
+  attendanceRoutes
+);
+
+
+
 // app.use(
 //   "/api/public/receipts",
 //   receiptRoutes
@@ -205,6 +230,26 @@ app.use(
 app.use(
   "/api/reports",
   admissionReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  courseReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  batchReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  feeReportRoutes
+);
+
+app.use(
+  "/api/reports",
+  pendingFeeReportRoutes
 );
 
 // app.use(
