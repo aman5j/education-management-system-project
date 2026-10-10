@@ -158,15 +158,29 @@ const [historyError, setHistoryError] = useState("");
     setRecords([]);
   };
 
-  const markAll = (status) => {
+    const markAll = (status) => {
     setStatuses((previous) => {
-      const next = { ...previous };
-      students.forEach((student) => {
+        const next = { ...previous };
+
+        students.forEach((student) => {
         next[student._id] = status;
-      });
-      return next;
+        });
+
+        return next;
     });
-  };
+    };
+
+    const clearAll = () => {
+    setStatuses((previous) => {
+        const next = { ...previous };
+
+        students.forEach((student) => {
+        next[student._id] = "";
+        });
+
+        return next;
+    });
+    };
 
   const handleSave = async () => {
     if (!courseId || !batchId || !date) {
@@ -177,6 +191,19 @@ const [historyError, setHistoryError] = useState("");
     if (!students.length) {
       setError("No students found for the selected batch.");
       return;
+    }
+
+    const incompleteStudent = students.find(
+    (student) => !statuses[student._id]
+    );
+
+    if (incompleteStudent) {
+    setError(
+        `Please select an attendance status for ${
+        incompleteStudent.firstName || "every student"
+        } before saving.`
+    );
+    return;
     }
 
     setSaving(true);
@@ -340,10 +367,26 @@ const [historyError, setHistoryError] = useState("");
         {message && <div className="attendance-success">{message}</div>}
 
         <div className="attendance-summary">
-          <div><span>Total students</span><strong>{students.length}</strong></div>
-          <div><span>Present</span><strong>{count("Present")}</strong></div>
-          <div><span>Absent</span><strong>{count("Absent")}</strong></div>
-          <div><span>Late</span><strong>{count("Late")}</strong></div>
+            <div>
+                <span>Total students</span>
+                <strong>{students.length}</strong>
+            </div>
+            <div>
+                <span>Present</span>
+                <strong>{count("Present")}</strong>
+            </div>
+            <div>
+                <span>Absent</span>
+                <strong>{count("Absent")}</strong>
+            </div>
+            <div>
+                <span>Leave</span>
+                <strong>{count("Leave")}</strong>
+            </div>
+            <div>
+                <span>Late</span>
+                <strong>{count("Late")}</strong>
+            </div>
         </div>
 
         {!courseId || !batchId ? (
@@ -359,15 +402,21 @@ const [historyError, setHistoryError] = useState("");
         ) : (
           <>
             <div className="attendance-bulk-actions">
-              <span>{students.length} students</span>
-              <div>
-                <button type="button" onClick={() => markAll("Present")}>
-                  Mark all present
-                </button>
-                <button type="button" onClick={() => markAll("Absent")}>
-                  Mark all absent
-                </button>
-              </div>
+                <span>{students.length} students</span>
+
+                <div>
+                    <button type="button" onClick={() => markAll("Present")}>
+                    ✓ Mark all present
+                    </button>
+
+                    <button type="button" onClick={() => markAll("Absent")}>
+                    ✕ Mark all absent
+                    </button>
+
+                    <button type="button" onClick={clearAll}>
+                    Clear all
+                    </button>
+                </div>
             </div>
 
             <div className="attendance-table-wrapper">
@@ -390,22 +439,30 @@ const [historyError, setHistoryError] = useState("");
                         {`${student.firstName || ""} ${student.surname || ""}`.trim()}
                       </td>
                       <td>
-                        <select
-                          className={`attendance-status ${(
-                            statuses[student._id] || "Present"
-                          ).toLowerCase()}`}
-                          value={statuses[student._id] || "Present"}
-                          onChange={(event) =>
-                            setStatuses((previous) => ({
-                              ...previous,
-                              [student._id]: event.target.value,
-                            }))
-                          }
-                        >
-                          <option value="Present">Present</option>
-                          <option value="Absent">Absent</option>
-                          <option value="Late">Late</option>
-                        </select>
+                        <div className="attendance-radio-group">
+                            {["Present", "Absent", "Leave", "Late"].map((status) => (
+                            <label
+                                key={status}
+                                className={`attendance-radio-option ${status.toLowerCase()} ${
+                                statuses[student._id] === status ? "selected" : ""
+                                }`}
+                            >
+                                <input
+                                type="radio"
+                                name={`attendance-${student._id}`}
+                                value={status}
+                                checked={statuses[student._id] === status}
+                                onChange={() =>
+                                    setStatuses((previous) => ({
+                                    ...previous,
+                                    [student._id]: status,
+                                    }))
+                                }
+                                />
+                                <span>{status}</span>
+                            </label>
+                            ))}
+                        </div>
                       </td>
                       <td>
                         <input
