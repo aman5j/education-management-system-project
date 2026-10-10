@@ -60,6 +60,9 @@ import AddSubject from "./pages/admin/subjects/AddSubject";
 import EditSubject from "./pages/admin/subjects/EditSubject";
 import ViewSubject from "./pages/admin/subjects/ViewSubject";
 
+import Attendance from "./pages/admin/attendance/Attendance";
+
+
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
 import RoleRoute from "./components/auth/RoleRoute";
@@ -220,6 +223,9 @@ const App = () => {
 
         {/* Notifications */}
         <Route path="notifications" element={<Notifications />} />
+
+        {/* Attendance */}
+        <Route path="attendance" element={<Attendance />} />
 
         {/* Unknown admin route */}
         <Route

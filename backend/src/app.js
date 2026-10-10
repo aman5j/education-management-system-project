@@ -34,6 +34,7 @@ import pendingFeeReportRoutes from "./routes/pendingFeeReport.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 
 import subjectRoutes from "./routes/subject.routes.js";
+import attendanceRoutes from "./routes/attendance.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -200,6 +201,13 @@ app.use(
 );
 
 app.use("/api/subjects", subjectRoutes);
+
+app.use(
+  "/api/attendance",
+  attendanceRoutes
+);
+
+
 
 // app.use(
 //   "/api/public/receipts",
