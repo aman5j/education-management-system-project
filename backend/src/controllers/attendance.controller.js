@@ -29,7 +29,7 @@ const normalizeDate = (value) => {
   return date;
 };
 
-const validStatuses = ["Present", "Absent", "Late"];
+const validStatuses = ["Present", "Absent", "Leave", "Late"];
 
 const validateAttendanceRelations = async ({
   student_id,
@@ -227,7 +227,7 @@ export const createAttendance = async (req, res, next) => {
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: "Status must be Present, Absent, or Late.",
+        message: "Status must be Present, Absent, Leave, or Late.",
       });
     }
 
@@ -310,7 +310,7 @@ export const updateAttendance = async (req, res, next) => {
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: "Status must be Present, Absent, or Late.",
+          message: "Status must be Present, Absent, Leave, or Late.",
         });
       }
 
