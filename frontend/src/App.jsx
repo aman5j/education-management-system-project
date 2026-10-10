@@ -1,3 +1,4 @@
+
 import {
   Navigate,
   Route,
@@ -9,6 +10,9 @@ import { useAuth } from "./context/AuthContext";
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+
+import Dashboard from "./pages/admin/Dashboard";
+import RoleHome from "./pages/dashboard/RoleHome";
 
 import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
@@ -40,11 +44,6 @@ import EditPayment from "./pages/admin/payments/EditPayment";
 import ViewPayment from "./pages/admin/payments/ViewPayment";
 import StudentPaymentHistory from "./pages/admin/payments/StudentPaymentHistory";
 
-import VerifyReceipt from "./pages/public/VerifyReceipt";
-
-// import PaymentReports from "./pages/admin/reports/PaymentReports";
-// import Reports from "./pages/admin/reports/Reports";
-
 import Reports from "./pages/admin/reports/Reports";
 import PaymentReports from "./pages/admin/reports/PaymentReports";
 import StudentReports from "./pages/admin/reports/StudentReports";
@@ -61,504 +60,199 @@ import AddSubject from "./pages/admin/subjects/AddSubject";
 import EditSubject from "./pages/admin/subjects/EditSubject";
 import ViewSubject from "./pages/admin/subjects/ViewSubject";
 
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import VerifyReceipt from "./pages/public/VerifyReceipt";
+
 import RoleRoute from "./components/auth/RoleRoute";
-
 import AdminLayout from "./layout/AdminLayout";
-
-import Dashboard from "./pages/admin/Dashboard";
-
-import RoleHome from "./pages/dashboard/RoleHome";
 
 import { ROLES } from "./constants/roles";
 
-const Unauthorized = () => {
-  return (
-    <main
+const Unauthorized = () => (
+  <main
+    style={{
+      minHeight: "100vh",
+      display: "grid",
+      placeItems: "center",
+      padding: "24px",
+      background: "#f4f7fb",
+      fontFamily: "Inter, Arial, sans-serif",
+    }}
+  >
+    <div
       style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        background: "#f4f7fb",
-        fontFamily:
-          "Inter, Arial, sans-serif",
+        maxWidth: "480px",
+        width: "100%",
+        textAlign: "center",
+        background: "#ffffff",
+        padding: "40px 24px",
+        borderRadius: "16px",
+        boxShadow: "0 10px 35px rgba(15, 23, 42, 0.08)",
       }}
     >
-      <div
-        style={{
-          textAlign: "center",
-          background: "#ffffff",
-          padding: "40px",
-          borderRadius: "16px",
-          boxShadow:
-            "0 10px 35px rgba(15, 23, 42, 0.08)",
-        }}
-      >
-        <h1>403</h1>
-
-        <h2>Access Denied</h2>
-
-        <p>
-          You do not have permission to access
-          this page.
-        </p>
-      </div>
-    </main>
-  );
-};
+      <h1>403</h1>
+      <h2>Access Denied</h2>
+      <p>You do not have permission to access this page.</p>
+    </div>
+  </main>
+);
 
 const AppRedirect = () => {
-  const {
-    user,
-    isAuthenticated,
-    loading,
-  } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return null;
   }
 
   if (!isAuthenticated) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
-  if (user?.role === ROLES.ADMIN) {
-    return (
-      <Navigate
-        to="/admin/dashboard"
-        replace
-      />
-    );
-  }
+  switch (user?.role) {
+    case ROLES.ADMIN:
+      return <Navigate to="/admin/dashboard" replace />;
 
-  if (
-    user?.role ===
-    ROLES.WEBSITE_EDITOR
-  ) {
-    return (
-      <Navigate
-        to="/website-editor/dashboard"
-        replace
-      />
-    );
-  }
+    case ROLES.WEBSITE_EDITOR:
+      return <Navigate to="/website-editor/dashboard" replace />;
 
-  if (user?.role === ROLES.STUDENT) {
-    return (
-      <Navigate
-        to="/student/dashboard"
-        replace
-      />
-    );
-  }
+    case ROLES.STUDENT:
+      return <Navigate to="/student/dashboard" replace />;
 
-  return (
-    <Navigate
-      to="/unauthorized"
-      replace
-    />
-  );
+    default:
+      return <Navigate to="/unauthorized" replace />;
+  }
 };
 
 const App = () => {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<AppRedirect />}
-      />
+      {/* Application entry */}
+      <Route path="/" element={<AppRedirect />} />
 
-      <Route
-        path="/login"
-        element={<Login />}
-      />
-
-      <Route
-        path="/forgot-password"
-        element={<ForgotPassword />}
-      />
-
-      <Route
-        path="/reset-password"
-        element={<ResetPassword />}
-      />
+      {/* Authentication */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Public receipt verification */}
-
       <Route
         path="/verify-receipt/:receiptNo"
         element={<VerifyReceipt />}
       />
-
       <Route
         path="/verify-receipt"
         element={<VerifyReceipt />}
       />
 
-      
-
-      {/* <Route
+      {/* Admin portal */}
+      <Route
         path="/admin"
         element={
-          <RoleRoute
-            allowedRoles={[
-              ROLES.ADMIN,
-            ]}
-          >
+          <RoleRoute allowedRoles={[ROLES.ADMIN]}>
             <AdminLayout />
           </RoleRoute>
         }
       >
         <Route
           index
-          element={
-            <Navigate
-              to="/admin/dashboard"
-              replace
-            />
-          }
+          element={<Navigate to="dashboard" replace />}
         />
 
+        {/* Dashboard */}
+        <Route path="dashboard" element={<Dashboard />} />
+
+        {/* Student management */}
+        <Route path="students" element={<Students />} />
+        <Route path="students/add" element={<AddStudent />} />
+        <Route path="students/:id/edit" element={<EditStudent />} />
+
+        {/* Admissions */}
+        <Route path="admissions" element={<Admissions />} />
+        <Route path="admissions/add" element={<AddAdmission />} />
+        <Route path="admissions/:id" element={<ViewAdmission />} />
+        <Route path="admissions/:id/edit" element={<EditAdmission />} />
+
+        {/* Course management */}
+        <Route path="courses" element={<Courses />} />
+        <Route path="courses/add" element={<AddCourse />} />
+        <Route path="courses/:id" element={<ViewCourse />} />
+        <Route path="courses/:id/edit" element={<EditCourse />} />
+
+        {/* Subject management */}
+        <Route path="subjects" element={<SubjectManagement />} />
+        <Route path="subjects/add" element={<AddSubject />} />
+        <Route path="subjects/edit/:id" element={<EditSubject />} />
+        <Route path="subjects/view/:id" element={<ViewSubject />} />
+
+        {/* Course categories */}
+        <Route path="categories" element={<Categories />} />
+        <Route path="categories/add" element={<AddCategory />} />
+        <Route path="categories/:id" element={<ViewCategory />} />
+        <Route path="categories/:id/edit" element={<EditCategory />} />
+
+        {/* Batch management */}
+        <Route path="batches" element={<Batches />} />
+        <Route path="batches/add" element={<AddBatch />} />
+        <Route path="batches/:id" element={<ViewBatch />} />
+        <Route path="batches/:id/edit" element={<EditBatch />} />
+
+        {/* Payments */}
+        <Route path="payments" element={<Payments />} />
+        <Route path="payments/add" element={<AddPayment />} />
+        <Route path="payments/:id" element={<ViewPayment />} />
+        <Route path="payments/:id/edit" element={<EditPayment />} />
         <Route
-          path="dashboard"
-          element={<Dashboard />}
+          path="students/:studentId/payments"
+          element={<StudentPaymentHistory />}
         />
 
-        <Route
-          path="students"
-          element={<Students />}
-        />
-
-        <Route
-          path="students/add"
-          element={<AddStudent />}
-        />
-
-        <Route
-          path="students/:id/edit"
-          element={<EditStudent />}
-        />
-
-        {/* <Route
-        path="/admin/admissions"
-        element={
-          <RoleRoute allowedRoles={["admin"]}>
-            {/* <AdminLayout /> */}
-          {/* </RoleRoute>
-        }
-      > */} */
-        <Route
-          // index
-           path="admissions"
-          element={<Admissions />}
-        />
-
-        <Route
-          path="add"
-          element={<AddAdmission />}
-        />
-
-        <Route
-          path=":id/edit"
-          element={<EditAdmission />}
-        />
-      {/* </Route> */}
-        
-
-        <Route
-          path="*"
-          element={
-            <div
-              style={{
-                padding: "40px",
-                background: "#ffffff",
-                borderRadius: "14px",
-              }}
-            >
-              <h2>
-                Module coming in a later phase
-              </h2>
-
-              <p>
-                This navigation item has been
-                prepared for the next development
-                phase.
-              </p>
-            </div>
-          }
-        />
-      {/* </Route> */} */
-
-      <Route
-        path="/admin"
-        element={
-          <RoleRoute allowedRoles={["admin"]}>
-            <AdminLayout />
-          </RoleRoute>
-        }
-      >
-        <Route
-          path="dashboard"
-          element={<Dashboard />}
-        />
-
-        <Route
-          path="students"
-          element={<Students />}
-        />
-
-        <Route
-          path="students/add"
-          element={<AddStudent />}
-        />
-
-        {/* <Route
-          path="students/:id"
-          element={<ViewStudent />}
-        /> */}
-
-        <Route
-          path="students/:id/edit"
-          element={<EditStudent />}
-        />
-
-        <Route
-          path="admissions"
-          element={<Admissions />}
-        />
-
-        <Route
-          path="admissions/add"
-          element={<AddAdmission />}
-        />
-
-        <Route
-          path="admissions/:id"
-          element={<ViewAdmission />}
-        />
-
-        <Route
-          path="admissions/:id/edit"
-          element={<EditAdmission />}
-        />
-
-         {/* Phase 5 */}
-          <Route
-            path="courses"
-            element={<Courses />}
-          />
-
-          <Route
-            path="courses/add"
-            element={<AddCourse />}
-          />
-
-          <Route
-            path="courses/:id"
-            element={<ViewCourse />}
-          />
-
-          <Route
-            path="courses/:id/edit"
-            element={<EditCourse />}
-          />
-
-
-          
-          <Route
-            path="subjects"
-            element={<SubjectManagement />}
-          />
-
-          <Route
-            path="subjects/add"
-            element={<AddSubject />}
-          />
-
-          <Route
-            path="subjects/edit/:id"
-            element={<EditSubject />}
-          />
-
-          <Route
-            path="subjects/view/:id"
-            element={<ViewSubject />}
-          />
-
-
-          {/* Phase 6 */}
-          <Route
-            path="categories"
-            element={<Categories />}
-          />
-
-          <Route
-            path="categories/add"
-            element={<AddCategory />}
-          />
-
-          <Route
-            path="categories/:id"
-            element={<ViewCategory />}
-          />
-
-          <Route
-            path="categories/:id/edit"
-            element={<EditCategory />}
-          />
-
-          {/* Phase 7 */}
-          <Route
-            path="batches"
-            element={<Batches />}
-          />
-
-          <Route
-            path="batches/add"
-            element={<AddBatch />}
-          />
-
-          <Route
-            path="batches/:id"
-            element={<ViewBatch />}
-          />
-
-          <Route
-            path="batches/:id/edit"
-            element={<EditBatch />}
-          />
-
-          {/* Phase 10 */}
-          <Route
-            path="payments"
-            element={<Payments />}
-          />
-
-          <Route
-            path="payments/add"
-            element={<AddPayment />}
-          />
-
-          <Route
-            path="payments/:id"
-            element={<ViewPayment />}
-          />
-
-          <Route
-            path="payments/:id/edit"
-            element={<EditPayment />}
-          />
-
-          <Route
-            path="/admin/students/:studentId/payments"
-            element={
-              <StudentPaymentHistory />
-            }
-          />
-
-          <Route
-            path="/admin/reports/payments"
-            element={
-              <PaymentReports />
-            }
-          />
-
-          <Route
-            path="reports"
-            element={<Reports />}
-          />
-
-          <Route
-            path="reports/payments"
-            element={<PaymentReports />}
-          />
-
-          <Route
-          path="reports/students"
-          element={<StudentReports />}
-        />
-
-        <Route
-          path="reports/admissions"
-          element={<AdmissionReports />}
-        />
-
-        <Route
-          path="reports/courses"
-          element={<CourseReports />}
-        />
-
-        <Route
-          path="reports/batches"
-          element={<BatchReports />}
-        />
-
-        <Route
-          path="reports/fees"
-          element={<FeeReports />}
-        />
-
+        {/* Reports */}
+        <Route path="reports" element={<Reports />} />
+        <Route path="reports/payments" element={<PaymentReports />} />
+        <Route path="reports/students" element={<StudentReports />} />
+        <Route path="reports/admissions" element={<AdmissionReports />} />
+        <Route path="reports/courses" element={<CourseReports />} />
+        <Route path="reports/batches" element={<BatchReports />} />
+        <Route path="reports/fees" element={<FeeReports />} />
         <Route
           path="reports/pending-fees"
           element={<PendingFeeReports />}
         />
 
         {/* Notifications */}
-        
-        <Route
-          path="notifications"
-          element={<Notifications />}
-        />
+        <Route path="notifications" element={<Notifications />} />
 
+        {/* Unknown admin route */}
+        <Route
+          path="*"
+          element={<Navigate to="/admin/dashboard" replace />}
+        />
       </Route>
 
-      
-
+      {/* Website Editor portal */}
       <Route
         path="/website-editor/dashboard"
         element={
-          <RoleRoute
-            allowedRoles={[
-              ROLES.WEBSITE_EDITOR,
-            ]}
-          >
+          <RoleRoute allowedRoles={[ROLES.WEBSITE_EDITOR]}>
             <RoleHome />
           </RoleRoute>
         }
       />
 
+      {/* Student portal */}
       <Route
         path="/student/dashboard"
         element={
-          <RoleRoute
-            allowedRoles={[
-              ROLES.STUDENT,
-            ]}
-          >
+          <RoleRoute allowedRoles={[ROLES.STUDENT]}>
             <RoleHome />
           </RoleRoute>
         }
       />
 
-      <Route
-        path="/unauthorized"
-        element={<Unauthorized />}
-      />
+      {/* Unauthorized access */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
-      <Route
-        path="*"
-        element={
-          <Navigate
-            to="/"
-            replace
-          />
-        }
-      />
+      {/* Unknown application route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
