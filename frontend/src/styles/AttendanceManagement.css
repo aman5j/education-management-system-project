@@ -263,3 +263,52 @@
     flex-direction: column;
   }
 }
+
+
+
+.attendance-history-card {
+  margin-top: 22px;
+}
+
+.attendance-history-heading {
+  margin-bottom: 18px;
+}
+
+.attendance-history-heading h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  color: #111827;
+}
+
+.attendance-history-heading p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.attendance-history-filters {
+  margin-bottom: 20px;
+}
+
+.attendance-history-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.attendance-history-status.present {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.attendance-history-status.absent {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.attendance-history-status.late {
+  background: #fffbeb;
+  color: #b45309;
+}
