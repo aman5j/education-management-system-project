@@ -9,6 +9,8 @@ import {
 } from "../../../services/attendanceService";
 import "../../../styles/AttendanceManagement.css";
 
+import AttendanceQRScanner from "../../../components/attendance/AttendanceQRScanner";
+
 const today = () => {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -428,142 +430,151 @@ const [historyError, setHistoryError] = useState("");
         )}
       </section>
 
+      <AttendanceQRScanner
+        courseId={courseId}
+        batchId={batchId}
+        date={date}
+        onSuccess={async () => {
+            await loadAttendance();
+        }}
+        />
+
       <section className="attendance-card attendance-history-card">
-  <div className="attendance-history-heading">
-    <div>
-      <h2>Student Attendance History</h2>
-      <p>View saved attendance records for an individual student.</p>
-    </div>
-  </div>
+        <div className="attendance-history-heading">
+            <div>
+            <h2>Student Attendance History</h2>
+            <p>View saved attendance records for an individual student.</p>
+            </div>
+        </div>
 
-  <div className="attendance-filters attendance-history-filters">
-    <label>
-      Student
-      <select
-        value={historyStudentId}
-        onChange={(event) =>
-          setHistoryStudentId(event.target.value)
-        }
-      >
-        <option value="">Select student</option>
+        <div className="attendance-filters attendance-history-filters">
+            <label>
+            Student
+            <select
+                value={historyStudentId}
+                onChange={(event) =>
+                setHistoryStudentId(event.target.value)
+                }
+            >
+                <option value="">Select student</option>
 
-        {students.map((student) => (
-          <option key={student._id} value={student._id}>
-            {student.rollNo || "No Roll No"} —{" "}
-            {`${student.firstName || ""} ${student.surname || ""}`.trim()}
-          </option>
-        ))}
-      </select>
-    </label>
+                {students.map((student) => (
+                <option key={student._id} value={student._id}>
+                    {student.rollNo || "No Roll No"} —{" "}
+                    {`${student.firstName || ""} ${student.surname || ""}`.trim()}
+                </option>
+                ))}
+            </select>
+            </label>
 
-    <label>
-      From date
-      <input
-        type="date"
-        value={historyFrom}
-        onChange={(event) => setHistoryFrom(event.target.value)}
-        max={historyTo || today()}
-      />
-    </label>
+            <label>
+            From date
+            <input
+                type="date"
+                value={historyFrom}
+                onChange={(event) => setHistoryFrom(event.target.value)}
+                max={historyTo || today()}
+            />
+            </label>
 
-    <label>
-      To date
-      <input
-        type="date"
-        value={historyTo}
-        onChange={(event) => setHistoryTo(event.target.value)}
-        min={historyFrom || undefined}
-        max={today()}
-      />
-    </label>
+            <label>
+            To date
+            <input
+                type="date"
+                value={historyTo}
+                onChange={(event) => setHistoryTo(event.target.value)}
+                min={historyFrom || undefined}
+                max={today()}
+            />
+            </label>
 
-    <button
-      type="button"
-      className="attendance-primary-button"
-      onClick={loadStudentHistory}
-      disabled={historyLoading}
-    >
-      {historyLoading ? "Loading..." : "View History"}
-    </button>
-  </div>
+            <button
+            type="button"
+            className="attendance-primary-button"
+            onClick={loadStudentHistory}
+            disabled={historyLoading}
+            >
+            {historyLoading ? "Loading..." : "View History"}
+            </button>
+        </div>
 
-  {historyError && (
-    <div className="attendance-error">{historyError}</div>
-  )}
+        {historyError && (
+            <div className="attendance-error">{historyError}</div>
+        )}
 
-  {historyLoading ? (
-    <div className="attendance-empty">Loading history...</div>
-  ) : historyRecords.length === 0 ? (
-    <div className="attendance-empty">
-      Select a student and click View History to see records.
-    </div>
-  ) : (
-    <div className="attendance-table-wrapper">
-      <table className="attendance-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Student</th>
-            <th>Course</th>
-            <th>Batch</th>
-            <th>Status</th>
-            <th>Remarks</th>
-          </tr>
-        </thead>
+        {historyLoading ? (
+            <div className="attendance-empty">Loading history...</div>
+        ) : historyRecords.length === 0 ? (
+            <div className="attendance-empty">
+            Select a student and click View History to see records.
+            </div>
+        ) : (
+            <div className="attendance-table-wrapper">
+            <table className="attendance-table">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Batch</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+                </thead>
 
-        <tbody>
-          {historyRecords.map((record) => {
-            const student =
-              typeof record.student_id === "object"
-                ? record.student_id
-                : null;
+                <tbody>
+                {historyRecords.map((record) => {
+                    const student =
+                    typeof record.student_id === "object"
+                        ? record.student_id
+                        : null;
 
-            const course =
-              typeof record.course_id === "object"
-                ? record.course_id
-                : null;
+                    const course =
+                    typeof record.course_id === "object"
+                        ? record.course_id
+                        : null;
 
-            const batch =
-              typeof record.batch_id === "object"
-                ? record.batch_id
-                : null;
+                    const batch =
+                    typeof record.batch_id === "object"
+                        ? record.batch_id
+                        : null;
 
-            return (
-              <tr key={record._id}>
-                <td>
-                  {record.attendance_date
-                    ? record.attendance_date.slice(0, 10)
-                    : "—"}
-                </td>
+                    return (
+                    <tr key={record._id}>
+                        <td>
+                        {record.attendance_date
+                            ? record.attendance_date.slice(0, 10)
+                            : "—"}
+                        </td>
 
-                <td>
-                  {student
-                    ? `${student.rollNo || ""} ${student.firstName || ""} ${student.surname || ""}`.trim()
-                    : "Student"}
-                </td>
+                        <td>
+                        {student
+                            ? `${student.rollNo || ""} ${student.firstName || ""} ${student.surname || ""}`.trim()
+                            : "Student"}
+                        </td>
 
-                <td>{course?.courseTitle || "—"}</td>
-                <td>{batch?.batch_name || "—"}</td>
+                        <td>{course?.courseTitle || "—"}</td>
+                        <td>{batch?.batch_name || "—"}</td>
 
-                <td>
-                  <span
-                    className={`attendance-history-status ${(
-                      record.status || ""
-                    ).toLowerCase()}`}
-                  >
-                    {record.status}
-                  </span>
-                </td>
+                        <td>
+                        <span
+                            className={`attendance-history-status ${(
+                            record.status || ""
+                            ).toLowerCase()}`}
+                        >
+                            {record.status}
+                        </span>
+                        </td>
 
-                <td>{record.remarks || "—"}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  )}
-</section>
+                        <td>{record.remarks || "—"}</td>
+                    </tr>
+                    );
+                })}
+                </tbody>
+            </table>
+            </div>
+        )}
+        </section>
 
 
     </div>

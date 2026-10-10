@@ -312,3 +312,61 @@
   background: #fffbeb;
   color: #b45309;
 }
+
+
+
+
+
+
+
+
+
+.attendance-qr-card {
+  margin-top: 22px;
+}
+
+.attendance-qr-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.attendance-qr-heading h2 {
+  margin: 0 0 7px;
+  font-size: 18px;
+}
+
+.attendance-qr-heading p,
+.attendance-qr-note {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.attendance-qr-heading p {
+  margin: 0;
+}
+
+.attendance-qr-reader {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.attendance-qr-reader video {
+  border-radius: 8px;
+}
+
+.attendance-qr-note {
+  margin: 14px 0 0;
+}
+
+@media (max-width: 650px) {
+  .attendance-qr-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
