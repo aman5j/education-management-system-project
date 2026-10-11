@@ -62,6 +62,8 @@ import ViewSubject from "./pages/admin/subjects/ViewSubject";
 
 import Attendance from "./pages/admin/attendance/Attendance";
 
+import ExamSchedule from "./pages/admin/exams/ExamSchedule";
+
 
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
@@ -226,6 +228,13 @@ const App = () => {
 
         {/* Attendance */}
         <Route path="attendance" element={<Attendance />} />
+
+        {/* Exams */}
+        {/* Exam Schedule */}
+        <Route
+          path="exams/schedule"
+          element={<ExamSchedule />}
+        />
 
         {/* Unknown admin route */}
         <Route
