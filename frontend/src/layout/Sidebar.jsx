@@ -149,7 +149,8 @@ const menuItems = [
       },
       {
         label: "Question Bank",
-        path: "/admin/question-bank",
+        // path: "/admin/question-bank",
+        path: "/admin/exams/questions",
       },
       {
         label: "Result Reports",
