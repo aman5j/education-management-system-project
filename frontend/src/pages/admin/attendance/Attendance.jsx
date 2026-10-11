@@ -10,7 +10,6 @@ import {
 import "../../../styles/AttendanceManagement.css";
 
 import AttendanceQRScanner from "../../../components/attendance/AttendanceQRScanner";
-import QRCode from "qrcode";
 
 const today = () => {
   const date = new Date();
@@ -58,10 +57,6 @@ const Attendance = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
 
-
-  const [qrStudentId, setQrStudentId] = useState("");
-  const [qrImage, setQrImage] = useState("");
-  const [qrError, setQrError] = useState("");
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -523,64 +518,6 @@ const Attendance = () => {
         }}
         />
 
-      <section className="attendance-card attendance-qr-card">
-        <h2>Test Student QR Code</h2>
-        <p>
-            Generate a QR code for a student in the currently selected batch.
-        </p>
-
-        <div className="attendance-filters">
-            <label>
-            Student
-            <select
-                value={qrStudentId}
-                onChange={(event) => {
-                setQrStudentId(event.target.value);
-                setQrImage("");
-                setQrError("");
-                }}
-            >
-                <option value="">Select student</option>
-
-                {students.map((student) => (
-                <option key={student._id} value={student._id}>
-                    {student.rollNo || "No Roll No"} —{" "}
-                    {`${student.firstName || ""} ${student.surname || ""}`.trim()}
-                </option>
-                ))}
-            </select>
-            </label>
-
-            <button
-            type="button"
-            className="attendance-primary-button"
-            onClick={generateTestQR}
-            >
-            Generate Test QR
-            </button>
-        </div>
-
-        {qrError && <div className="attendance-error">{qrError}</div>}
-
-        {qrImage && (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-            <img
-                src={qrImage}
-                alt="Test student QR code"
-                width="280"
-                height="280"
-                style={{ maxWidth: "100%", objectFit: "contain" }}
-            />
-
-            <p>Selected student: {qrStudentId}</p>
-
-            <a href={qrImage} download="ems-test-student-qr.png">
-                Download test QR code
-            </a>
-            </div>
-        )}
-        </section>
-
       <section className="attendance-card attendance-history-card">
         <div className="attendance-history-heading">
             <div>
@@ -716,7 +653,7 @@ const Attendance = () => {
             </table>
             </div>
         )}
-        </section>
+      </section>
 
 
     </div>
