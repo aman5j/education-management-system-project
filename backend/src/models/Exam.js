@@ -89,6 +89,33 @@ const examSchema = new mongoose.Schema(
       default: "",
     },
 
+    
+    reviewStatus: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+      index: true,
+    },
+
+    reviewComment: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: "",
+    },
+
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
+
+
     status: {
       type: String,
       enum: ["Scheduled", "Completed", "Cancelled"],
@@ -110,6 +137,11 @@ examSchema.index({
 
 examSchema.index({
   subject_id: 1,
+  examDate: 1,
+});
+
+examSchema.index({
+  reviewStatus: 1,
   examDate: 1,
 });
 

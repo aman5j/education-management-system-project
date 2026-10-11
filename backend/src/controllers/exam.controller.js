@@ -474,6 +474,34 @@ export const updateExam = async (req, res, next) => {
     }
 
     Object.assign(existing, updates);
+
+    const reviewSensitiveFields = [
+        "examName",
+        "course_id",
+        "batch_id",
+        "subject_id",
+        "examType",
+        "examDate",
+        "startTime",
+        "endTime",
+        "durationMinutes",
+        "totalMarks",
+        "passingMarks",
+        "room",
+        "instructions",
+        ];
+
+        const scheduleChanged = reviewSensitiveFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+        );
+
+        if (scheduleChanged) {
+        existing.reviewStatus = "Pending";
+        existing.reviewComment = "";
+        existing.reviewedBy = null;
+        existing.reviewedAt = null;
+        }
+
     await existing.save();
 
     const populated = await populateExam(Exam.findById(existing._id));

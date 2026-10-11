@@ -21,3 +21,17 @@ export const deleteExam = (id) => {
   if (!id) throw new Error("Exam ID is required.");
   return api.delete(`/exams/${id}`);
 };
+
+
+
+
+
+
+
+export const getExamReviewQueue = (params = {}) =>
+  api.get("/exam-review", { params });
+
+export const submitExamReview = (id, data) => {
+  if (!id) throw new Error("Exam ID is required.");
+  return api.patch(`/exam-review/${id}/decision`, data);
+};
