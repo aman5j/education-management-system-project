@@ -35,7 +35,8 @@ import notificationRoutes from "./routes/notification.routes.js";
 
 import subjectRoutes from "./routes/subject.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
-
+import examRoutes from "./routes/exam.routes.js";
+import examReviewRoutes from "./routes/examReview.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -251,6 +252,12 @@ app.use(
   "/api/reports",
   pendingFeeReportRoutes
 );
+
+app.use("/api/exams", examRoutes);
+
+app.use("/api/exam-review", examReviewRoutes);
+
+
 
 // app.use(
 //   "/api/receipts",
