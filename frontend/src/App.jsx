@@ -64,6 +64,7 @@ import Attendance from "./pages/admin/attendance/Attendance";
 
 import ExamSchedule from "./pages/admin/exams/ExamSchedule";
 import ExamReview from "./pages/admin/exams/ExamReview";
+import QuestionBank from "./pages/admin/questions/QuestionBank";
 
 
 import VerifyReceipt from "./pages/public/VerifyReceipt";
@@ -241,6 +242,12 @@ const App = () => {
         <Route
           path="exams/review"
           element={<ExamReview />}
+        />
+
+        {/* Question Bank */}
+        <Route
+          path="exams/questions"
+          element={<QuestionBank />}
         />
         
 
