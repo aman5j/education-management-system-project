@@ -10,7 +10,18 @@ import {
   FiDollarSign,
   FiHelpCircle,
   FiUsers,
-} from "react-icons/fi";
+
+
+} 
+from "react-icons/fi";
+import {FaGraduationCap} from "react-icons/fa";
+import { GiExpense } from "react-icons/gi";
+import { PiMoneyBold } from "react-icons/pi";
+import { IoWalletSharp } from "react-icons/io5";
+import { FaUserFriends } from "react-icons/fa";
+import { FaBookOpen } from "react-icons/fa6";
+
+
 
 import api from "../../services/api";
 
@@ -21,6 +32,8 @@ import FeeCollection from "../../components/dashboard/FeeCollection";
 import RecentAdmissions from "../../components/dashboard/RecentAdmissions";
 import TodaysClasses from "../../components/dashboard/TodaysClasses";
 import PendingActions from "../../components/dashboard/PendingActions";
+import { MdAccessTimeFilled } from "react-icons/md";
+
 
 const getGreeting = () => {
   const hour =
@@ -127,82 +140,82 @@ const Dashboard = () => {
         title: "Total Students",
         value:
           summary?.totalStudents ?? 0,
-        icon: FiUsers,
-        change: 0,
-        comparison:
-          "Current registered students",
-        type: "primary",
+        icon: FaUserFriends,
+        type: "success"
       },
 
-      {
-        title: "New Admissions",
-        value:
-          summary?.newAdmissions ?? 0,
-        icon: FiClipboard,
-        change: 0,
-        comparison:
-          "Current admissions",
-        type: "success",
-      },
+     
 
       {
         title: "Enquiries",
         value:
           summary?.enquiries ?? 0,
-        icon: FiHelpCircle,
-        change: 0,
-        comparison:
-          "Current enquiries",
-        type: "warning",
+        icon: FaGraduationCap,
+        type: "bluewarning",
       },
 
       {
         title: "Active Courses",
         value:
           summary?.activeCourses ?? 0,
-        icon: FiBookOpen,
-        change: 0,
-        comparison:
-          "Currently active courses",
+        icon: FaBookOpen,
         type: "purple",
       },
 
-      {
-        title: "Fees Collected",
-        value:
-          `₹${(
-            summary?.feesCollected ?? 0
-          ).toLocaleString("en-IN")}`,
-        icon: FiDollarSign,
-        change: 0,
-        comparison:
-          "Current fee records",
-        type: "success",
-      },
+     
 
       {
-        title: "Pending Fees",
+        title: "Total Expenses",
         value:
           `₹${(
             summary?.pendingFees ?? 0
           ).toLocaleString("en-IN")}`,
-        icon: FiDollarSign,
-        change: 0,
-        comparison:
-          "Outstanding fee records",
+        icon: GiExpense,
         type: "danger",
       },
+
+       {
+        title: "Total Fees",
+        value:
+          `₹${(
+            summary?.totalFeeReceived ?? 0
+          ).toLocaleString("en-IN")}`,
+        icon: PiMoneyBold,
+        type: "warning",
+      },
+
+        {
+        title: "Fees Collected",
+        value:
+          `₹${(
+            summary?.totalFeeReceived ?? 0
+          ).toLocaleString("en-IN")}`,
+        icon: IoWalletSharp,
+        type: "success",
+      },
+
+       {
+        title: "Pending Fees",
+        value:
+          `₹${(
+            summary?.totalPending ?? 0
+          ).toLocaleString("en-IN")}`,
+        icon: MdAccessTimeFilled,
+        type: "danger",
+      },
+
+       
     ],
     [summary]
   );
 
   return (
     <div className="dashboard-page">
-      <Breadcrumb
+      {/* <Breadcrumb
         currentPage="Dashboard"
-      />
+      /> */}
 
-      <section className="dashboard-hero">
+      {/* <section className="dashboard-hero">
         <div>
           <span className="dashboard-eyebrow">
             ADMIN DASHBOARD
@@ -221,7 +234,7 @@ const Dashboard = () => {
         <div className="dashboard-date">
           {formatDate()}
         </div>
-      </section>
+      </section> */}
 
       {error && (
         <div className="dashboard-error">
@@ -249,7 +262,11 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          <section className="dashboard-stat-grid">
+          <section className="dashboard-panel dashboard-chart-panel ">
+            <div class="panel-header"><div><h3>Your Institution Overview</h3></div></div>
+              <div className="dashboard-stat-grid">
+      
+
             {statCards.map(
               (card) => (
                 <StatCard
@@ -258,7 +275,16 @@ const Dashboard = () => {
                 />
               )
             )}
+            </div>
           </section>
+
+  <section className="dashboard-panel dashboard-chart-panel ">
+            <div class="panel-header"><div><h3>Student Details Lookup</h3> </div></div>
+            <div className="quickaction-main">
+              <input type="text" className="inputview" placeholder="Enter Student ID or Name" />
+            </div>
+          </section>
+          
 
           <section className="dashboard-main-grid">
             <FeeCollection
@@ -269,6 +295,16 @@ const Dashboard = () => {
               admissions={admissions}
             />
           </section>
+           <section className="dashboard-panel dashboard-chart-panel ">
+            <div class="panel-header"><div><h3>Quick Actions</h3> </div></div>
+            <div className="quickaction-main">
+              <button className="quickaction-btn card-success"><FiUsers /> <span>Manage Students</span></button>
+              <button className="quickaction-btn card-bluewarning"><FiBookOpen /> <span>Manage Courses</span></button>
+              <button className="quickaction-btn card-purple"><FiClipboard /> <span>Manage Enquiries</span></button>
+              <button className="quickaction-btn card-danger"><FiDollarSign /> <span>Manage Fees</span></button>
+              <button className="quickaction-btn card-bluewarning"><FiHelpCircle /> <span>Support</span></button>
+            </div>
+          </section>
 
           <section className="dashboard-main-grid">
             <TodaysClasses />
@@ -277,6 +313,8 @@ const Dashboard = () => {
               actions={pendingActions}
             />
           </section>
+
+          
         </>
       )}
     </div>

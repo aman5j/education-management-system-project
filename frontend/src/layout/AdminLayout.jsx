@@ -122,6 +122,9 @@ const AdminLayout = () => {
         <main className="admin-content">
           <Outlet />
         </main>
+        <footer className="footer">
+          <p>&copy; 2026 <a href="#">India Tech Samadhaan</a> All rights reserved.</p>
+        </footer>
       </div>
     </div>
   );

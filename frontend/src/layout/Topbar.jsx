@@ -108,29 +108,7 @@ const Topbar = ({
           <FiMenu />
         </button>
 
-        <div
-          className={`topbar-search ${
-            searchOpen
-              ? "topbar-search-open"
-              : ""
-          }`}
-        >
-          <FiSearch />
-
-          <input
-            type="search"
-            value={searchValue}
-            onFocus={() =>
-              setSearchOpen(true)
-            }
-            onChange={(event) =>
-              setSearchValue(
-                event.target.value
-              )
-            }
-            placeholder="Search..."
-          />
-        </div>
+       
       </div>
 
       <div className="topbar-actions">

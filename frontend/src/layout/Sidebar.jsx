@@ -28,6 +28,7 @@ import {
 } from "react-router-dom";
 
 import "./AdminLayout.css";
+import logo from "../assets/logo.png";
 
 const menuItems = [
   {
@@ -281,15 +282,7 @@ const Sidebar = ({
             className="sidebar-brand"
             onClick={onCloseMobile}
           >
-            <span className="sidebar-brand-logo">
-              EMS
-            </span>
-
-            {!collapsed && (
-              <span className="sidebar-brand-name">
-                Education MS
-              </span>
-            )}
+            <img src={logo}  alt="Logo" className="sidebar-logo"/>
           </NavLink>
 
           <button
@@ -318,10 +311,7 @@ const Sidebar = ({
         </div>
 
         <div className="sidebar-scroll">
-          <div className="sidebar-section-title">
-            {!collapsed && "MAIN MENU"}
-          </div>
-
+          
           <nav className="sidebar-navigation">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -448,23 +438,7 @@ const Sidebar = ({
           </nav>
         </div>
 
-        {!collapsed && (
-          <div className="sidebar-help-card">
-            <div className="sidebar-help-icon">
-              <FiHelpCircle />
-            </div>
-
-            <div>
-              <strong>
-                Need help?
-              </strong>
-
-              <span>
-                Contact support
-              </span>
-            </div>
-          </div>
-        )}
+      
       </aside>
     </>
   );

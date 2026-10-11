@@ -8,33 +8,16 @@ const StatCard = ({
   value,
   icon: Icon,
   change = 0,
-  comparison = "Compared with last month",
   type = "primary",
 }) => {
   const positive = Number(change) >= 0;
 
   return (
-    <article className="dashboard-stat-card">
+    <article className={`dashboard-stat-card card-${type}`}>
       <div className="stat-card-top">
         <div className={`stat-icon stat-icon-${type}`}>
           <Icon />
         </div>
-
-        <span
-          className={`stat-change ${
-            positive
-              ? "stat-change-positive"
-              : "stat-change-negative"
-          }`}
-        >
-          {positive ? (
-            <FiArrowUpRight />
-          ) : (
-            <FiArrowDownRight />
-          )}
-
-          {Math.abs(change)}%
-        </span>
       </div>
 
       <div className="stat-card-body">
@@ -43,12 +26,10 @@ const StatCard = ({
         </span>
 
         <strong className="stat-card-value">
-          {value}
+          {value} 
         </strong>
 
-        <span className="stat-card-comparison">
-          {comparison}
-        </span>
+        
       </div>
     </article>
   );
