@@ -1,5 +1,11 @@
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -86,6 +92,9 @@ export default function SubjectQuestionBank() {
   const [notice, setNotice] = useState("");
   const [importReport, setImportReport] = useState(null);
 
+  const formSectionRef = useRef(null);
+  const questionInputRef = useRef(null);
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -112,6 +121,21 @@ export default function SubjectQuestionBank() {
       setLoading(false);
     }
   }, [subjectId]);
+
+  useEffect(() => {
+    if (!showForm) return;
+
+    const frameId = requestAnimationFrame(() => {
+        formSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        });
+
+        questionInputRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => cancelAnimationFrame(frameId);
+    }, [showForm, editingId]);
 
   useEffect(() => {
     loadData();
@@ -505,7 +529,7 @@ export default function SubjectQuestionBank() {
       </section>
 
       {showForm && (
-        <section className="sqb-card">
+        <section ref={formSectionRef} className="sqb-card">
           <div className="sqb-section-heading">
             <h2>{editingId ? "Edit MCQ" : "Add MCQ Manually"}</h2>
 
@@ -524,6 +548,7 @@ export default function SubjectQuestionBank() {
               <label className="sqb-field sqb-full">
                 Question *
                 <textarea
+                  ref={questionInputRef}
                   name="questionText"
                   value={form.questionText}
                   onChange={changeField}

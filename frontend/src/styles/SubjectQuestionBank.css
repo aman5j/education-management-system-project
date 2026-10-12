@@ -388,3 +388,35 @@
     margin-left: 0;
   }
 }
+
+
+
+
+
+.sqb-edit-form-card {
+  scroll-margin-top: 24px;
+  animation: sqb-form-appear 0.25s ease-out;
+}
+
+.sqb-edit-form-card:focus-within {
+  outline: 2px solid rgba(59, 130, 246, 0.18);
+  outline-offset: 2px;
+}
+
+@keyframes sqb-form-appear {
+  from {
+    opacity: 0.75;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sqb-edit-form-card {
+    animation: none;
+  }
+}
