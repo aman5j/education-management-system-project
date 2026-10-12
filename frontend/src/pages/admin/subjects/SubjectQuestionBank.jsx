@@ -26,86 +26,44 @@ import "../../../styles/SubjectQuestionBank.css";
 
 const EMPTY_FORM = {
   questionText: "",
-  topic: "",
-  questionType: "MCQ",
-  options: [
-    { optionKey: "A", optionText: "" },
-    { optionKey: "B", optionText: "" },
-    { optionKey: "C", optionText: "" },
-    { optionKey: "D", optionText: "" },
-  ],
-  correctAnswers: ["A"],
-  expectedAnswer: "",
-  explanation: "",
-  difficulty: "Medium",
-  marks: 1,
-  status: "Draft",
+  optionA: "",
+  optionB: "",
+  optionC: "",
+  optionD: "",
+  correctAnswer: "A",
 };
 
-const OPTION_TYPES = ["MCQ", "Multiple Select", "True/False"];
+const REQUIRED_COLUMNS = [
+  "questionText",
+  "optionA",
+  "optionB",
+  "optionC",
+  "optionD",
+  "correctAnswer",
+];
 
 const messageFrom = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
 
-const getPayload = (response) => response?.data?.data ?? response?.data;
+const getPayload = (response) =>
+  response?.data?.data ?? response?.data;
 
-const normalizeExcelRow = (row) => {
+const normalizeExcelRow = (row = {}) => {
   const normalized = {};
 
-  Object.entries(row || {}).forEach(([key, value]) => {
-    normalized[String(key).trim().toLowerCase().replace(/[\s_-]+/g, "")] =
-      value;
+  Object.entries(row).forEach(([key, value]) => {
+    normalized[String(key).trim().toLowerCase()] = value;
   });
 
-  const get = (...keys) => {
-    for (const key of keys) {
-      const value = normalized[key.toLowerCase().replace(/[\s_-]+/g, "")];
-      if (value !== undefined && value !== null) return value;
-    }
-    return "";
-  };
-
-  const questionType = String(get("questionType") || "MCQ").trim();
-  const options = ["A", "B", "C", "D", "E"]
-    .map((key) => ({
-      optionKey: key,
-      optionText: String(get(`option${key}`) || "").trim(),
-    }))
-    .filter((option) => option.optionText);
-
-  let correctAnswers = String(get("correctAnswers", "correctAnswer"))
-    .split(/[,;|]/)
-    .map((answer) => answer.trim().toUpperCase())
-    .filter(Boolean);
-
-  let finalOptions = options;
-
-  if (questionType === "True/False" && !options.length) {
-    finalOptions = [
-      { optionKey: "A", optionText: "True" },
-      { optionKey: "B", optionText: "False" },
-    ];
-  }
-
-  if (
-    questionType === "True/False" &&
-    correctAnswers.length &&
-    ["TRUE", "FALSE"].includes(correctAnswers[0])
-  ) {
-    correctAnswers = [correctAnswers[0] === "TRUE" ? "A" : "B"];
-  }
-
   return {
-    questionText: String(get("questionText", "question")).trim(),
-    topic: String(get("topic") || "").trim(),
-    questionType,
-    options: finalOptions,
-    correctAnswers,
-    expectedAnswer: String(get("expectedAnswer", "answer") || "").trim(),
-    explanation: String(get("explanation") || "").trim(),
-    difficulty: String(get("difficulty") || "Medium").trim(),
-    marks: Number(get("marks") || 1),
-    status: String(get("status") || "Draft").trim(),
+    questionText: String(normalized.questiontext ?? "").trim(),
+    optionA: String(normalized.optiona ?? "").trim(),
+    optionB: String(normalized.optionb ?? "").trim(),
+    optionC: String(normalized.optionc ?? "").trim(),
+    optionD: String(normalized.optiond ?? "").trim(),
+    correctAnswer: String(normalized.correctanswer ?? "")
+      .trim()
+      .toUpperCase(),
   };
 };
 
@@ -115,11 +73,9 @@ export default function SubjectQuestionBank() {
 
   const [subject, setSubject] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
   const [editingId, setEditingId] = useState("");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -141,10 +97,9 @@ export default function SubjectQuestionBank() {
       ]);
 
       const subjectPayload = getPayload(subjectResponse);
-      const subjectData =
-        subjectPayload?.subject || subjectPayload;
-
+      const subjectData = subjectPayload?.subject || subjectPayload;
       const questionPayload = getPayload(questionResponse);
+
       const questionData = Array.isArray(questionPayload)
         ? questionPayload
         : questionPayload?.questions || questionPayload?.data || [];
@@ -152,7 +107,7 @@ export default function SubjectQuestionBank() {
       setSubject(subjectData);
       setQuestions(Array.isArray(questionData) ? questionData : []);
     } catch (err) {
-      setError(messageFrom(err, "Unable to load the subject question bank."));
+      setError(messageFrom(err, "Unable to load the subject MCQs."));
     } finally {
       setLoading(false);
     }
@@ -165,84 +120,31 @@ export default function SubjectQuestionBank() {
   const visibleQuestions = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return questions.filter((question) => {
-      const matchesSearch =
+    return questions.filter(
+      (question) =>
         !query ||
         question.questionText?.toLowerCase().includes(query) ||
-        question.topic?.toLowerCase().includes(query);
-
-      return (
-        matchesSearch &&
-        (!statusFilter || question.status === statusFilter) &&
-        (!typeFilter || question.questionType === typeFilter)
-      );
-    });
-  }, [questions, search, statusFilter, typeFilter]);
+        question.optionA?.toLowerCase().includes(query) ||
+        question.optionB?.toLowerCase().includes(query) ||
+        question.optionC?.toLowerCase().includes(query) ||
+        question.optionD?.toLowerCase().includes(query)
+    );
+  }, [questions, search]);
 
   const changeField = (event) => {
     const { name, value } = event.target;
 
-    setForm((previous) => {
-      if (name === "questionType") {
-        const options =
-          value === "True/False"
-            ? [
-                { optionKey: "A", optionText: "True" },
-                { optionKey: "B", optionText: "False" },
-              ]
-            : value === "Short Answer" || value === "Long Answer"
-              ? []
-              : previous.options.length >= 2
-                ? previous.options
-                : EMPTY_FORM.options;
-
-        return {
-          ...previous,
-          questionType: value,
-          options,
-          correctAnswers:
-            value === "True/False" || value === "MCQ"
-              ? [previous.correctAnswers[0] || "A"]
-              : previous.correctAnswers,
-        };
-      }
-
-      return { ...previous, [name]: value };
-    });
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
 
     setError("");
     setNotice("");
   };
 
-  const changeOption = (index, value) => {
-    setForm((previous) => ({
-      ...previous,
-      options: previous.options.map((option, optionIndex) =>
-        optionIndex === index
-          ? { ...option, optionText: value }
-          : option
-      ),
-    }));
-  };
-
-  const toggleCorrectAnswer = (key) => {
-    setForm((previous) => {
-      const isMultiple = previous.questionType === "Multiple Select";
-      const selected = previous.correctAnswers.includes(key);
-
-      return {
-        ...previous,
-        correctAnswers: isMultiple
-          ? selected
-            ? previous.correctAnswers.filter((answer) => answer !== key)
-            : [...previous.correctAnswers, key]
-          : [key],
-      };
-    });
-  };
-
   const startNewQuestion = () => {
-    setForm({ ...EMPTY_FORM, options: EMPTY_FORM.options.map((o) => ({ ...o })) });
+    setForm({ ...EMPTY_FORM });
     setEditingId("");
     setShowForm(true);
     setError("");
@@ -251,13 +153,14 @@ export default function SubjectQuestionBank() {
 
   const startEdit = (question) => {
     setForm({
-      ...EMPTY_FORM,
-      ...question,
-      options: question.options?.length
-        ? question.options.map((option) => ({ ...option }))
-        : [],
-      correctAnswers: question.correctAnswers || [],
+      questionText: question.questionText || "",
+      optionA: question.optionA || "",
+      optionB: question.optionB || "",
+      optionC: question.optionC || "",
+      optionD: question.optionD || "",
+      correctAnswer: question.correctAnswer || "A",
     });
+
     setEditingId(question._id);
     setShowForm(true);
     setError("");
@@ -267,16 +170,28 @@ export default function SubjectQuestionBank() {
   const handleSave = async (event) => {
     event.preventDefault();
 
-    if (!form.questionText.trim()) {
-      setError("Please enter the question.");
+    const payload = {
+      questionText: form.questionText.trim(),
+      optionA: form.optionA.trim(),
+      optionB: form.optionB.trim(),
+      optionC: form.optionC.trim(),
+      optionD: form.optionD.trim(),
+      correctAnswer: form.correctAnswer,
+    };
+
+    if (
+      !payload.questionText ||
+      !payload.optionA ||
+      !payload.optionB ||
+      !payload.optionC ||
+      !payload.optionD
+    ) {
+      setError("Please fill in the question and all four options.");
       return;
     }
 
-    if (
-      OPTION_TYPES.includes(form.questionType) &&
-      form.correctAnswers.length === 0
-    ) {
-      setError("Please select at least one correct answer.");
+    if (!["A", "B", "C", "D"].includes(payload.correctAnswer)) {
+      setError("Please select the correct answer.");
       return;
     }
 
@@ -285,50 +200,44 @@ export default function SubjectQuestionBank() {
       setError("");
       setNotice("");
 
-      const payload = {
-        ...form,
-        questionText: form.questionText.trim(),
-        marks: Number(form.marks),
-      };
-
       if (editingId) {
         await updateSubjectQuestion(subjectId, editingId, payload);
-        setNotice("Question updated successfully.");
+        setNotice("MCQ updated successfully.");
       } else {
         await addSubjectQuestion(subjectId, payload);
-        setNotice("Question added successfully.");
+        setNotice("MCQ added successfully.");
       }
 
       setShowForm(false);
       setEditingId("");
-      setForm(EMPTY_FORM);
+      setForm({ ...EMPTY_FORM });
+
       await loadData();
     } catch (err) {
-      setError(messageFrom(err, "Unable to save the question."));
+      setError(messageFrom(err, "Unable to save the MCQ."));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (question) => {
-    if (
-      !window.confirm(
-        "Delete this question permanently from the subject?"
-      )
-    ) {
+    if (!window.confirm("Delete this MCQ permanently?")) {
       return;
     }
 
     try {
       setError("");
       setNotice("");
+
       await deleteSubjectQuestion(subjectId, question._id);
+
       setQuestions((previous) =>
         previous.filter((item) => item._id !== question._id)
       );
-      setNotice("Question deleted successfully.");
+
+      setNotice("MCQ deleted successfully.");
     } catch (err) {
-      setError(messageFrom(err, "Unable to delete the question."));
+      setError(messageFrom(err, "Unable to delete the MCQ."));
     }
   };
 
@@ -336,58 +245,21 @@ export default function SubjectQuestionBank() {
     const template = [
       {
         questionText: "What does HTML stand for?",
-        questionType: "MCQ",
-        topic: "HTML Basics",
         optionA: "Hyper Text Markup Language",
         optionB: "High Text Machine Language",
         optionC: "Hyper Tool Multi Language",
         optionD: "Home Text Markup Language",
-        optionE: "",
-        correctAnswers: "A",
-        expectedAnswer: "",
-        explanation: "HTML is used to structure web pages.",
-        difficulty: "Easy",
-        marks: 1,
-        status: "Draft",
-      },
-      {
-        questionText: "JavaScript is a programming language.",
-        questionType: "True/False",
-        topic: "JavaScript Basics",
-        optionA: "True",
-        optionB: "False",
-        optionC: "",
-        optionD: "",
-        optionE: "",
-        correctAnswers: "A",
-        expectedAnswer: "",
-        explanation: "",
-        difficulty: "Easy",
-        marks: 1,
-        status: "Draft",
-      },
-      {
-        questionText: "Explain closures in JavaScript.",
-        questionType: "Short Answer",
-        topic: "JavaScript",
-        optionA: "",
-        optionB: "",
-        optionC: "",
-        optionD: "",
-        optionE: "",
-        correctAnswers: "",
-        expectedAnswer: "A function retains access to its lexical scope.",
-        explanation: "",
-        difficulty: "Medium",
-        marks: 3,
-        status: "Draft",
+        correctAnswer: "A",
       },
     ];
 
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(template);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Questions");
-    XLSX.writeFile(workbook, "subject-question-bank-template.xlsx");
+    const worksheet = XLSX.utils.json_to_sheet(template, {
+      header: REQUIRED_COLUMNS,
+    });
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "MCQs");
+    XLSX.writeFile(workbook, "subject-mcq-template.xlsx");
   };
 
   const handleExcelFile = async (event) => {
@@ -411,9 +283,16 @@ export default function SubjectQuestionBank() {
       setNotice("");
       setImportReport(null);
 
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array" });
+      const workbook = XLSX.read(await file.arrayBuffer(), {
+        type: "array",
+      });
+
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      if (!firstSheet) {
+        setError("The Excel file does not contain a worksheet.");
+        return;
+      }
 
       const rows = XLSX.utils.sheet_to_json(firstSheet, {
         defval: "",
@@ -421,7 +300,22 @@ export default function SubjectQuestionBank() {
       });
 
       if (!rows.length) {
-        setError("The selected Excel sheet has no question rows.");
+        setError("The selected Excel sheet has no MCQ rows.");
+        return;
+      }
+
+      const actualColumns = Object.keys(rows[0]).map((key) =>
+        key.trim().toLowerCase()
+      );
+
+      const missingColumns = REQUIRED_COLUMNS.filter(
+        (column) => !actualColumns.includes(column.toLowerCase())
+      );
+
+      if (missingColumns.length) {
+        setError(
+          `Missing Excel column(s): ${missingColumns.join(", ")}. Download the template and use its exact column names.`
+        );
         return;
       }
 
@@ -441,46 +335,34 @@ export default function SubjectQuestionBank() {
       setNotice("");
       setImportReport(null);
 
-      const response = await importSubjectQuestions(subjectId, excelRows);
+      const response = await importSubjectQuestions(
+        subjectId,
+        excelRows
+      );
+
       const result = response?.data || {};
 
-        setImportReport(result);
-        setNotice(result.message || "Excel import completed.");
+      setImportReport(result);
+      setNotice(result.message || "Excel import completed.");
 
-        if (result.importedCount > 0) {
+      if (result.importedCount > 0) {
         await loadData();
-        }
+      }
 
-        if (result.rejected?.length > 0) {
-        // Keep only rejected rows in the preview so a retry
-        // does not import already-successful rows again.
-        const rejectedRowNumbers = new Set(
-            result.rejected.map((item) => item.row)
+      if (result.rejected?.length > 0) {
+        const rejectedRows = new Set(
+          result.rejected.map((item) => item.row)
         );
 
         setExcelRows((previous) =>
-            previous.filter((_, index) =>
-            rejectedRowNumbers.has(index + 2)
-            )
+          previous.filter((_, index) => rejectedRows.has(index + 2))
         );
 
-        setExcelFileName("Correct the rejected rows and retry");
-        } else {
+        setExcelFileName("Rejected rows — correct them and retry");
+      } else {
         setExcelRows([]);
         setExcelFileName("");
-        }
-
-    //   setImportReport(result);
-    //   setNotice(result.message || "Excel import completed.");
-
-    //   if (result.importedCount > 0) {
-    //     await loadData();
-    //   }
-
-    //   if (result.importedCount === excelRows.length) {
-    //     setExcelRows([]);
-    //     setExcelFileName("");
-    //   }
+      }
     } catch (err) {
       setError(messageFrom(err, "Excel import failed."));
     } finally {
@@ -489,118 +371,135 @@ export default function SubjectQuestionBank() {
   };
 
   if (loading) {
-    return <div className="sqb-page"><div className="sqb-card">Loading Question Bank...</div></div>;
+    return (
+      <div className="sqb-page">
+        <div className="sqb-card">Loading Question Bank...</div>
+      </div>
+    );
   }
 
   return (
     <div className="sqb-page">
-      <header className="sqb-header">
+      <div className="sqb-page-header">
+        <button
+          type="button"
+          className="sqb-secondary"
+          onClick={() => navigate("/admin/subjects")}
+        >
+          <FiArrowLeft /> Back to Subjects
+        </button>
+
         <div>
-          <button
-            type="button"
-            className="sqb-back"
-            onClick={() => navigate("/admin/subjects")}
-          >
-            <FiArrowLeft /> Back to Subjects
-          </button>
-          <h1>Question Bank</h1>
+          <h1>Subject MCQ Question Bank</h1>
           <p>
-            {subject?.subjectName || "Subject"}{" "}
-            {subject?.subjectCode ? `(${subject.subjectCode})` : ""}
+            Subject: <strong>{subject?.subjectName || "Subject"}</strong>
           </p>
         </div>
 
-        <button type="button" className="sqb-primary" onClick={startNewQuestion}>
-          <FiPlus /> Add Question
+        <button
+          type="button"
+          className="sqb-primary"
+          onClick={startNewQuestion}
+        >
+          <FiPlus /> Add MCQ
         </button>
-      </header>
+      </div>
 
-      {error && <div className="sqb-alert sqb-error" role="alert">{error}</div>}
-      {notice && <div className="sqb-alert sqb-success" role="status">{notice}</div>}
+      {error && (
+        <div className="sqb-alert sqb-alert-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="sqb-alert sqb-alert-success" role="status">
+          {notice}
+        </div>
+      )}
 
       <section className="sqb-card">
         <div className="sqb-section-heading">
           <div>
-            <h2>Import questions from Excel</h2>
-            <p>Download the template, fill it, and upload your completed file.</p>
+            <h2>Excel MCQ Import</h2>
+            <p>
+              Use the six required columns. No marks column is needed.
+            </p>
           </div>
-          <button type="button" className="sqb-secondary" onClick={downloadTemplate}>
-            <FiDownload /> Download template
+
+          <button
+            type="button"
+            className="sqb-secondary"
+            onClick={downloadTemplate}
+          >
+            <FiDownload /> Download Excel Template
           </button>
         </div>
 
-        <label className="sqb-upload">
-          <FiUpload />
-          <span>Choose Excel file (.xlsx or .xls)</span>
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleExcelFile}
-          />
-        </label>
+        <div className="sqb-import-controls">
+          <label className="sqb-secondary">
+            <FiUpload /> Select Excel File
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleExcelFile}
+              hidden
+            />
+          </label>
 
-        {excelFileName && (
-          <div className="sqb-import-summary">
-            <div>
-              <strong>{excelFileName}</strong>
-              <p>{excelRows.length} row(s) ready for preview</p>
-            </div>
-            <div className="sqb-inline-actions">
-              <button
-                type="button"
-                className="sqb-secondary"
-                onClick={() => {
-                  setExcelRows([]);
-                  setExcelFileName("");
-                  setImportReport(null);
-                }}
-              >
-                <FiX /> Clear
-              </button>
-              <button
-                type="button"
-                className="sqb-primary"
-                onClick={handleImport}
-                disabled={importing || !excelRows.length}
-              >
-                <FiUpload /> {importing ? "Importing..." : "Import questions"}
-              </button>
-            </div>
+          {excelFileName && <span>{excelFileName}</span>}
+
+          <button
+            type="button"
+            className="sqb-primary"
+            disabled={!excelRows.length || importing}
+            onClick={handleImport}
+          >
+            {importing
+              ? "Importing..."
+              : `Import ${excelRows.length} MCQ(s)`}
+          </button>
+        </div>
+
+        {excelRows.length > 0 && (
+          <div className="sqb-table-wrap">
+            <table className="sqb-table">
+              <thead>
+                <tr>
+                  <th>Question</th>
+                  <th>Option A</th>
+                  <th>Option B</th>
+                  <th>Option C</th>
+                  <th>Option D</th>
+                  <th>Correct Answer</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {excelRows.map((row, index) => (
+                  <tr key={`${index}-${row.questionText}`}>
+                    <td>{row.questionText}</td>
+                    <td>{row.optionA}</td>
+                    <td>{row.optionB}</td>
+                    <td>{row.optionC}</td>
+                    <td>{row.optionD}</td>
+                    <td>{row.correctAnswer}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
-        {excelRows.length > 0 && (
-          <div className="sqb-preview">
-            <h3>Import preview (first 5 rows)</h3>
-            <div className="sqb-table-wrap">
-              <table className="sqb-table">
-                <thead>
-                  <tr><th>Question</th><th>Type</th><th>Difficulty</th><th>Marks</th></tr>
-                </thead>
-                <tbody>
-                  {excelRows.slice(0, 5).map((row, index) => (
-                    <tr key={`${index}-${row.questionText}`}>
-                      <td>{row.questionText || "Missing question text"}</td>
-                      <td>{row.questionType}</td>
-                      <td>{row.difficulty}</td>
-                      <td>{row.marks}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {importReport?.rejected?.length > 0 && (
-              <div className="sqb-rejected">
-                <strong>Rows needing correction</strong>
-                <ul>
-                  {importReport.rejected.map((item) => (
-                    <li key={`${item.row}-${item.message}`}>
-                      Excel row {item.row}: {item.message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {importReport?.rejected?.length > 0 && (
+          <div className="sqb-rejected">
+            <strong>Rows needing correction</strong>
+            <ul>
+              {importReport.rejected.map((item) => (
+                <li key={`${item.row}-${item.message}`}>
+                  Excel row {item.row}: {item.message}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </section>
@@ -608,12 +507,13 @@ export default function SubjectQuestionBank() {
       {showForm && (
         <section className="sqb-card">
           <div className="sqb-section-heading">
-            <h2>{editingId ? "Edit Question" : "Add Question Manually"}</h2>
+            <h2>{editingId ? "Edit MCQ" : "Add MCQ Manually"}</h2>
+
             <button
               type="button"
               className="sqb-icon-button"
               onClick={() => setShowForm(false)}
-              aria-label="Close question form"
+              aria-label="Close form"
             >
               <FiX />
             </button>
@@ -633,126 +533,62 @@ export default function SubjectQuestionBank() {
                 />
               </label>
 
-              <label className="sqb-field">
-                Topic
-                <input name="topic" value={form.topic} onChange={changeField} maxLength={150} />
-              </label>
+              {["A", "B", "C", "D"].map((key) => (
+                <label className="sqb-field" key={key}>
+                  Option {key} *
+                  <input
+                    name={`option${key}`}
+                    value={form[`option${key}`]}
+                    onChange={changeField}
+                    maxLength={1000}
+                    required
+                  />
+                </label>
+              ))}
 
-              <label className="sqb-field">
-                Question type
-                <select name="questionType" value={form.questionType} onChange={changeField}>
-                  {["MCQ", "Multiple Select", "True/False", "Short Answer", "Long Answer"].map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </label>
+              <fieldset className="sqb-field sqb-full">
+                <legend>Correct Answer *</legend>
 
-              <label className="sqb-field">
-                Difficulty
-                <select name="difficulty" value={form.difficulty} onChange={changeField}>
-                  {["Easy", "Medium", "Hard"].map((item) => <option key={item}>{item}</option>)}
-                </select>
-              </label>
-
-              <label className="sqb-field">
-                Marks
-                <input name="marks" type="number" min="1" max="1000" step="1" value={form.marks} onChange={changeField} required />
-              </label>
-
-              <label className="sqb-field">
-                Status
-                <select name="status" value={form.status} onChange={changeField}>
-                  {["Draft", "Active", "Archived"].map((item) => <option key={item}>{item}</option>)}
-                </select>
-              </label>
-
-              {OPTION_TYPES.includes(form.questionType) && (
-                <div className="sqb-field sqb-full">
-                  <span>Options — select the correct answer{form.questionType === "Multiple Select" ? "s" : ""}</span>
-                  <div className="sqb-options">
-                    {form.options.map((option, index) => (
-                      <div className="sqb-option-row" key={option.optionKey}>
-                        <label className="sqb-correct-choice">
-                          <input
-                            type={form.questionType === "Multiple Select" ? "checkbox" : "radio"}
-                            name="correctAnswers"
-                            checked={form.correctAnswers.includes(option.optionKey)}
-                            onChange={() => toggleCorrectAnswer(option.optionKey)}
-                          />
-                          {option.optionKey}
-                        </label>
-                        <input
-                          aria-label={`Option ${option.optionKey}`}
-                          value={option.optionText}
-                          maxLength={500}
-                          onChange={(event) => changeOption(index, event.target.value)}
-                          required
-                        />
-                        {form.questionType !== "True/False" && form.options.length > 2 && (
-                          <button
-                            type="button"
-                            className="sqb-icon-button"
-                            aria-label={`Remove option ${option.optionKey}`}
-                            onClick={() => {
-                              setForm((previous) => {
-                                const nextOptions = previous.options.filter((_, i) => i !== index);
-                                return {
-                                  ...previous,
-                                  options: nextOptions,
-                                  correctAnswers: previous.correctAnswers.filter((key) =>
-                                    nextOptions.some((item) => item.optionKey === key)
-                                  ),
-                                };
-                              });
-                            }}
-                          >
-                            <FiX />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {form.questionType !== "True/False" && form.options.length < 5 && (
-                    <button
-                      type="button"
-                      className="sqb-secondary"
-                      onClick={() => {
-                        setForm((previous) => {
-                          const nextKey = ["A", "B", "C", "D", "E"].find(
-                            (key) => !previous.options.some((item) => item.optionKey === key)
-                          );
-                          if (!nextKey) return previous;
-                          return {
-                            ...previous,
-                            options: [...previous.options, { optionKey: nextKey, optionText: "" }]
-                          };
-                        });
-                      }}
+                <div className="sqb-options">
+                  {["A", "B", "C", "D"].map((key) => (
+                    <label
+                      className="sqb-correct-choice"
+                      key={key}
                     >
-                      <FiPlus /> Add option
-                    </button>
-                  )}
+                      <input
+                        type="radio"
+                        name="correctAnswer"
+                        value={key}
+                        checked={form.correctAnswer === key}
+                        onChange={changeField}
+                      />
+                      Option {key}
+                    </label>
+                  ))}
                 </div>
-              )}
-
-              <label className="sqb-field sqb-full">
-                Expected answer (for short/long answer questions)
-                <textarea name="expectedAnswer" value={form.expectedAnswer} onChange={changeField} rows={3} maxLength={5000} />
-              </label>
-
-              <label className="sqb-field sqb-full">
-                Explanation
-                <textarea name="explanation" value={form.explanation} onChange={changeField} rows={2} maxLength={3000} />
-              </label>
+              </fieldset>
             </div>
 
             <div className="sqb-form-actions">
-              <button type="button" className="sqb-secondary" onClick={() => setShowForm(false)}>
+              <button
+                type="button"
+                className="sqb-secondary"
+                onClick={() => setShowForm(false)}
+              >
                 Cancel
               </button>
-              <button type="submit" className="sqb-primary" disabled={saving}>
-                <FiSave /> {saving ? "Saving..." : editingId ? "Update Question" : "Save Question"}
+
+              <button
+                type="submit"
+                className="sqb-primary"
+                disabled={saving}
+              >
+                <FiSave />
+                {saving
+                  ? "Saving..."
+                  : editingId
+                    ? "Update MCQ"
+                    : "Save MCQ"}
               </button>
             </div>
           </form>
@@ -762,57 +598,70 @@ export default function SubjectQuestionBank() {
       <section className="sqb-card">
         <div className="sqb-section-heading">
           <div>
-            <h2>Questions in this subject</h2>
-            <p>{questions.length} total question(s)</p>
+            <h2>MCQs in this Subject</h2>
+            <p>{questions.length} question(s)</p>
           </div>
         </div>
 
         <div className="sqb-filters">
           <input
-            aria-label="Search questions"
-            placeholder="Search question or topic..."
+            aria-label="Search MCQs"
+            placeholder="Search question or option..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <select aria-label="Filter by status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="">All statuses</option>
-            {["Draft", "Active", "Archived"].map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select aria-label="Filter by question type" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-            <option value="">All types</option>
-            {["MCQ", "Multiple Select", "True/False", "Short Answer", "Long Answer"].map((item) => <option key={item}>{item}</option>)}
-          </select>
         </div>
 
         {visibleQuestions.length === 0 ? (
           <div className="sqb-empty">
-            <h3>No questions found</h3>
-            <p>Add a question manually or import one from Excel.</p>
+            <h3>No MCQs found</h3>
+            <p>Add an MCQ manually or import one from Excel.</p>
           </div>
         ) : (
           <div className="sqb-table-wrap">
             <table className="sqb-table">
               <thead>
-                <tr><th>#</th><th>Question</th><th>Type</th><th>Difficulty</th><th>Marks</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th>#</th>
+                  <th>Question</th>
+                  <th>Option A</th>
+                  <th>Option B</th>
+                  <th>Option C</th>
+                  <th>Option D</th>
+                  <th>Correct Answer</th>
+                  <th>Actions</th>
+                </tr>
               </thead>
+
               <tbody>
                 {visibleQuestions.map((question, index) => (
                   <tr key={question._id}>
                     <td>{index + 1}</td>
-                    <td>
-                      <strong>{question.questionText}</strong>
-                      {question.topic && <small>{question.topic}</small>}
-                    </td>
-                    <td>{question.questionType}</td>
-                    <td>{question.difficulty}</td>
-                    <td>{question.marks}</td>
-                    <td><span className={`sqb-status sqb-status-${question.status?.toLowerCase()}`}>{question.status}</span></td>
+                    <td>{question.questionText}</td>
+                    <td>{question.optionA}</td>
+                    <td>{question.optionB}</td>
+                    <td>{question.optionC}</td>
+                    <td>{question.optionD}</td>
+                    <td>{question.correctAnswer}</td>
                     <td>
                       <div className="sqb-inline-actions">
-                        <button type="button" className="sqb-icon-button" onClick={() => startEdit(question)} title="Edit question" aria-label="Edit question">
+                        <button
+                          type="button"
+                          className="sqb-icon-button"
+                          title="Edit MCQ"
+                          aria-label="Edit MCQ"
+                          onClick={() => startEdit(question)}
+                        >
                           <FiEdit2 />
                         </button>
-                        <button type="button" className="sqb-icon-button sqb-delete" onClick={() => handleDelete(question)} title="Delete question" aria-label="Delete question">
+
+                        <button
+                          type="button"
+                          className="sqb-icon-button sqb-delete"
+                          title="Delete MCQ"
+                          aria-label="Delete MCQ"
+                          onClick={() => handleDelete(question)}
+                        >
                           <FiTrash2 />
                         </button>
                       </div>

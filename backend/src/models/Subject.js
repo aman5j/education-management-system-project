@@ -1,22 +1,5 @@
-import mongoose from "mongoose";
 
-const questionOptionSchema = new mongoose.Schema(
-  {
-    optionKey: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 10,
-    },
-    optionText: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 500,
-    },
-  },
-  { _id: false }
-);
+import mongoose from "mongoose";
 
 const subjectQuestionSchema = new mongoose.Schema(
   {
@@ -27,66 +10,38 @@ const subjectQuestionSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 5000,
     },
-    topic: {
+    optionA: {
       type: String,
-      trim: true,
-      maxlength: 150,
-      default: "",
-    },
-    questionType: {
-      type: String,
-      enum: [
-        "MCQ",
-        "Multiple Select",
-        "True/False",
-        "Short Answer",
-        "Long Answer",
-      ],
-      default: "MCQ",
       required: true,
-    },
-    options: {
-      type: [questionOptionSchema],
-      default: [],
-    },
-    correctAnswers: {
-      type: [String],
-      default: [],
-    },
-    expectedAnswer: {
-      type: String,
       trim: true,
-      maxlength: 5000,
-      default: "",
+      maxlength: 1000,
     },
-    explanation: {
+    optionB: {
       type: String,
-      trim: true,
-      maxlength: 3000,
-      default: "",
-    },
-    difficulty: {
-      type: String,
-      enum: ["Easy", "Medium", "Hard"],
-      default: "Medium",
-    },
-    marks: {
-      type: Number,
-      min: 1,
-      max: 1000,
-      default: 1,
       required: true,
+      trim: true,
+      maxlength: 1000,
     },
-    status: {
+    optionC: {
       type: String,
-      enum: ["Draft", "Active", "Archived"],
-      default: "Draft",
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    optionD: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    correctAnswer: {
+      type: String,
+      required: true,
+      enum: ["A", "B", "C", "D"],
     },
   },
   { timestamps: true }
 );
-
-
 
 const subjectSchema = new mongoose.Schema(
   {
@@ -109,7 +64,6 @@ const subjectSchema = new mongoose.Schema(
     },
 
     // Optional legacy field for existing records.
-    // New subjects do not require a course.
     course_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
@@ -130,12 +84,12 @@ const subjectSchema = new mongoose.Schema(
       index: true,
     },
 
+    // Questions are embedded in Subject.
+    // Each MCQ contains exactly the six requested fields.
     questionBank: {
       type: [subjectQuestionSchema],
       default: [],
     },
-
-    
   },
   {
     timestamps: true,
