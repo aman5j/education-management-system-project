@@ -12,13 +12,8 @@ const courseSchema = new mongoose.Schema(
     courseType: {
       type: String,
       required: true,
+      enum: ["Online", "Offline"],
       trim: true,
-    },
-
-    certificateDiploma: {
-      type: String,
-      trim: true,
-      default: "",
     },
 
     courseCategory: {

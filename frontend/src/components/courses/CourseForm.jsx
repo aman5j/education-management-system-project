@@ -11,7 +11,6 @@ import RichTextEditor from "../common/RichTextEditor";
 const initialState = {
   courseTitle: "",
   courseType: "",
-  certificateDiploma: "",
   courseCategory: "",
   mrp: "",
   price: "",
@@ -161,9 +160,6 @@ const CourseForm = ({
 
       courseType:
         initialData.courseType || "",
-
-      certificateDiploma:
-        initialData.certificateDiploma || "",
 
       courseCategory:
         initialData.courseCategory || "",
@@ -674,36 +670,21 @@ const CourseForm = ({
           </div>
 
           <div className="course-field">
-            <label>
-              Course Type *
-            </label>
+            <label htmlFor="courseType">Course Type *</label>
 
-            <input
+            <select
+              id="courseType"
               name="courseType"
               value={form.courseType}
               onChange={handleChange}
-            //   required
-              placeholder="e.g. Online"
-            />
+              required
+            >
+              <option value="">Select course type</option>
+              <option value="Online">Online</option>
+              <option value="Offline">Offline</option>
+            </select>
 
             {fieldError("courseType")}
-          </div>
-
-          <div className="course-field">
-            <label>
-              Certificate / Diploma *
-            </label>
-
-            <input
-              name="certificateDiploma"
-              value={
-                form.certificateDiploma
-              }
-              onChange={handleChange}
-              placeholder="Certificate"
-            />
-
-            {fieldError("certificateDiploma")}
           </div>
 
           <div className="course-field">

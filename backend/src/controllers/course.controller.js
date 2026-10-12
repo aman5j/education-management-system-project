@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import Course from "../models/Course.js";
 import Subject from "../models/Subject.js";
@@ -16,6 +15,19 @@ const parseBoolean = (value, fallback = false) => {
   }
 
   return value === true || value === "true";
+};
+
+const normalizeCourseType = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "online") return "Online";
+  if (normalized === "offline") return "Offline";
+
+  return null;
 };
 
 const parseSubjectIds = (value) => {
@@ -40,12 +52,18 @@ const parseSubjectIds = (value) => {
     return { error: "Subjects must be an array." };
   }
 
-  const normalizedIds = [...new Set(ids.map((id) => String(id)))];
+  const normalizedIds = [
+    ...new Set(ids.map((id) => String(id))),
+  ];
 
   if (
-    !normalizedIds.every((id) => mongoose.isValidObjectId(id))
+    !normalizedIds.every((id) =>
+      mongoose.isValidObjectId(id)
+    )
   ) {
-    return { error: "One or more subject IDs are invalid." };
+    return {
+      error: "One or more subject IDs are invalid.",
+    };
   }
 
   return { ids: normalizedIds };
@@ -67,7 +85,10 @@ const validateSubjectIds = async (ids) => {
 };
 
 const populateCourseSubjects = (query) =>
-  query.populate("subjects", "subjectName subjectCode status syllabus");
+  query.populate(
+    "subjects",
+    "subjectName subjectCode status syllabus"
+  );
 
 // =====================================================
 // GET COURSES
@@ -88,22 +109,37 @@ export const getCourses = async (req, res, next) => {
     } = req.query;
 
     const currentPage = Math.max(Number(page) || 1, 1);
-    const perPage = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const perPage = Math.min(
+      Math.max(Number(limit) || 10, 1),
+      100
+    );
 
     const filter = {};
 
-    if (status) filter.status = status;
-
-    if (courseType.trim()) {
-      filter.courseType = {
-        $regex: courseType.trim(),
-        $options: "i",
-      };
+    if (status) {
+      filter.status = status;
     }
 
-    if (courseCategory.trim()) {
+    // Course Type filter accepts only Online or Offline.
+    if (String(courseType).trim()) {
+      const normalizedType = normalizeCourseType(
+        String(courseType)
+      );
+
+      if (!normalizedType) {
+        return sendError(
+          res,
+          400,
+          "Course type filter must be Online or Offline."
+        );
+      }
+
+      filter.courseType = normalizedType;
+    }
+
+    if (String(courseCategory).trim()) {
       filter.courseCategory = {
-        $regex: courseCategory.trim(),
+        $regex: String(courseCategory).trim(),
         $options: "i",
       };
     }
@@ -115,9 +151,24 @@ export const getCourses = async (req, res, next) => {
 
     if (safeSearch) {
       filter.$or = [
-        { courseTitle: { $regex: safeSearch, $options: "i" } },
-        { courseType: { $regex: safeSearch, $options: "i" } },
-        { courseCategory: { $regex: safeSearch, $options: "i" } },
+        {
+          courseTitle: {
+            $regex: safeSearch,
+            $options: "i",
+          },
+        },
+        {
+          courseType: {
+            $regex: safeSearch,
+            $options: "i",
+          },
+        },
+        {
+          courseCategory: {
+            $regex: safeSearch,
+            $options: "i",
+          },
+        },
       ];
     }
 
@@ -174,7 +225,12 @@ export const getCourses = async (req, res, next) => {
 export const getCourse = async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return sendError(res, 400, "Invalid course ID.", "INVALID_COURSE_ID");
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
     }
 
     const course = await populateCourseSubjects(
@@ -182,7 +238,12 @@ export const getCourse = async (req, res, next) => {
     );
 
     if (!course) {
-      return sendError(res, 404, "Course not found.", "COURSE_NOT_FOUND");
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
     return res.status(200).json({
@@ -203,7 +264,6 @@ export const createCourse = async (req, res, next) => {
     const {
       courseTitle,
       courseType,
-      certificateDiploma,
       courseCategory,
       mrp,
       price,
@@ -226,45 +286,82 @@ export const createCourse = async (req, res, next) => {
       subjects,
     } = req.body;
 
-    if (typeof courseTitle !== "string" || !courseTitle.trim()) {
-      return sendError(res, 400, "Course title is required.");
+    if (
+      typeof courseTitle !== "string" ||
+      !courseTitle.trim()
+    ) {
+      return sendError(
+        res,
+        400,
+        "Course title is required."
+      );
     }
 
-    if (typeof courseType !== "string" || !courseType.trim()) {
-      return sendError(res, 400, "Course type is required.");
+    const normalizedCourseType =
+      normalizeCourseType(courseType);
+
+    if (!normalizedCourseType) {
+      return sendError(
+        res,
+        400,
+        "Course type must be Online or Offline."
+      );
     }
 
     const numericMrp = Number(mrp);
     const numericPrice = Number(price);
 
     if (!Number.isFinite(numericMrp) || numericMrp < 0) {
-      return sendError(res, 400, "Valid MRP is required.");
+      return sendError(
+        res,
+        400,
+        "Valid MRP is required."
+      );
     }
 
     if (!Number.isFinite(numericPrice) || numericPrice < 0) {
-      return sendError(res, 400, "Valid price is required.");
+      return sendError(
+        res,
+        400,
+        "Valid price is required."
+      );
     }
 
     if (numericPrice > numericMrp) {
-      return sendError(res, 400, "Price cannot be greater than MRP.");
+      return sendError(
+        res,
+        400,
+        "Price cannot be greater than MRP."
+      );
     }
 
     const parsedSubjects = parseSubjectIds(subjects);
 
     if (parsedSubjects.error) {
-      return sendError(res, 400, parsedSubjects.error, "INVALID_SUBJECTS");
+      return sendError(
+        res,
+        400,
+        parsedSubjects.error,
+        "INVALID_SUBJECTS"
+      );
     }
 
-    const subjectError = await validateSubjectIds(parsedSubjects.ids);
+    const subjectError = await validateSubjectIds(
+      parsedSubjects.ids
+    );
 
     if (subjectError) {
-      return sendError(res, 400, subjectError, "INVALID_SUBJECTS");
+      return sendError(
+        res,
+        400,
+        subjectError,
+        "INVALID_SUBJECTS"
+      );
     }
 
     const course = await Course.create({
       courseTitle: courseTitle.trim(),
-      courseType: courseType.trim(),
-      certificateDiploma: certificateDiploma || "",
+      courseType: normalizedCourseType,
       courseCategory: courseCategory || "",
       mrp: numericMrp,
       price: numericPrice,
@@ -291,7 +388,7 @@ export const createCourse = async (req, res, next) => {
       hideExamResult: parseBoolean(hideExamResult),
       status: status || "Draft",
 
-      // References existing subjects; does not duplicate them.
+      // References existing subjects without duplicating them.
       subjects: parsedSubjects.ids,
     });
 
@@ -318,13 +415,23 @@ export const createCourse = async (req, res, next) => {
 export const updateCourse = async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return sendError(res, 400, "Invalid course ID.", "INVALID_COURSE_ID");
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
     }
 
     const course = await Course.findById(req.params.id);
 
     if (!course) {
-      return sendError(res, 404, "Course not found.", "COURSE_NOT_FOUND");
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
     const body = req.body;
@@ -334,44 +441,75 @@ export const updateCourse = async (req, res, next) => {
         typeof body.courseTitle !== "string" ||
         !body.courseTitle.trim()
       ) {
-        return sendError(res, 400, "Course title is required.");
+        return sendError(
+          res,
+          400,
+          "Course title is required."
+        );
       }
 
       course.courseTitle = body.courseTitle.trim();
     }
 
     if (body.courseType !== undefined) {
-      if (
-        typeof body.courseType !== "string" ||
-        !body.courseType.trim()
-      ) {
-        return sendError(res, 400, "Course type is required.");
+      const normalizedCourseType =
+        normalizeCourseType(body.courseType);
+
+      if (!normalizedCourseType) {
+        return sendError(
+          res,
+          400,
+          "Course type must be Online or Offline."
+        );
       }
 
-      course.courseType = body.courseType.trim();
+      course.courseType = normalizedCourseType;
     }
 
     const numericMrp =
-      body.mrp !== undefined ? Number(body.mrp) : course.mrp;
+      body.mrp !== undefined
+        ? Number(body.mrp)
+        : course.mrp;
 
     const numericPrice =
-      body.price !== undefined ? Number(body.price) : course.price;
+      body.price !== undefined
+        ? Number(body.price)
+        : course.price;
 
     if (!Number.isFinite(numericMrp) || numericMrp < 0) {
-      return sendError(res, 400, "Valid MRP is required.");
+      return sendError(
+        res,
+        400,
+        "Valid MRP is required."
+      );
     }
 
     if (!Number.isFinite(numericPrice) || numericPrice < 0) {
-      return sendError(res, 400, "Valid price is required.");
+      return sendError(
+        res,
+        400,
+        "Valid price is required."
+      );
     }
 
     if (numericPrice > numericMrp) {
-      return sendError(res, 400, "Price cannot be greater than MRP.");
+      return sendError(
+        res,
+        400,
+        "Price cannot be greater than MRP."
+      );
     }
 
-    // Update subject assignment only when the field is supplied.
-    if (Object.prototype.hasOwnProperty.call(body, "subjects")) {
-      const parsedSubjects = parseSubjectIds(body.subjects);
+    // Update subject assignments only when supplied.
+    if (
+      Object.prototype.hasOwnProperty.call(
+        body,
+        "subjects"
+      )
+    ) {
+      const parsedSubjects = parseSubjectIds(
+        body.subjects
+      );
 
       if (parsedSubjects.error) {
         return sendError(
@@ -382,18 +520,23 @@ export const updateCourse = async (req, res, next) => {
         );
       }
 
-      const subjectError = await validateSubjectIds(parsedSubjects.ids);
+      const subjectError = await validateSubjectIds(
+        parsedSubjects.ids
+      );
 
       if (subjectError) {
-        return sendError(res, 400, subjectError, "INVALID_SUBJECTS");
+        return sendError(
+          res,
+          400,
+          subjectError,
+          "INVALID_SUBJECTS"
+        );
       }
 
       course.subjects = parsedSubjects.ids;
     }
 
-    course.certificateDiploma =
-      body.certificateDiploma ?? course.certificateDiploma;
-
+    // certificateDiploma is intentionally not accepted or updated.
     course.courseCategory =
       body.courseCategory ?? course.courseCategory;
 
@@ -401,34 +544,48 @@ export const updateCourse = async (req, res, next) => {
     course.price = numericPrice;
 
     if (body.displayOrder !== undefined) {
-      course.displayOrder = Number(body.displayOrder) || 0;
+      course.displayOrder =
+        Number(body.displayOrder) || 0;
     }
 
     if (body.duration !== undefined) {
       course.duration = Number(body.duration) || 0;
     }
 
-    if (body.durationUnit !== undefined && body.durationUnit) {
+    if (
+      body.durationUnit !== undefined &&
+      body.durationUnit
+    ) {
       course.durationUnit = body.durationUnit;
     }
 
-    course.previewVideo = body.previewVideo ?? course.previewVideo;
+    course.previewVideo =
+      body.previewVideo ?? course.previewVideo;
 
     if (body.totalLectures !== undefined) {
-      course.totalLectures = Number(body.totalLectures) || 0;
+      course.totalLectures =
+        Number(body.totalLectures) || 0;
     }
 
     if (body.practicalMarks !== undefined) {
-      course.practicalMarks = Number(body.practicalMarks) || 0;
+      course.practicalMarks =
+        Number(body.practicalMarks) || 0;
     }
 
     if (body.objectiveMarks !== undefined) {
-      course.objectiveMarks = Number(body.objectiveMarks) || 0;
+      course.objectiveMarks =
+        Number(body.objectiveMarks) || 0;
     }
 
-    course.description = body.description ?? course.description;
-    course.syllabus = body.syllabus ?? course.syllabus;
-    course.eligibility = body.eligibility ?? course.eligibility;
+    course.description =
+      body.description ?? course.description;
+
+    course.syllabus =
+      body.syllabus ?? course.syllabus;
+
+    course.eligibility =
+      body.eligibility ?? course.eligibility;
+
     course.certificateSubject =
       body.certificateSubject ?? course.certificateSubject;
 
@@ -445,21 +602,32 @@ export const updateCourse = async (req, res, next) => {
     }
 
     if (body.hideExamResult !== undefined) {
-      course.hideExamResult = parseBoolean(body.hideExamResult);
+      course.hideExamResult = parseBoolean(
+        body.hideExamResult
+      );
     }
 
     if (body.status !== undefined) {
-      const validStatuses = ["Published", "Draft", "Archived"];
+      const validStatuses = [
+        "Published",
+        "Draft",
+        "Archived",
+      ];
 
       if (!validStatuses.includes(body.status)) {
-        return sendError(res, 400, "Invalid course status.");
+        return sendError(
+          res,
+          400,
+          "Invalid course status."
+        );
       }
 
       course.status = body.status;
     }
 
     if (req.file) {
-      course.courseImage = `/uploads/courses/${req.file.filename}`;
+      course.courseImage =
+        `/uploads/courses/${req.file.filename}`;
     }
 
     await course.save();
@@ -485,13 +653,23 @@ export const updateCourse = async (req, res, next) => {
 export const deleteCourse = async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return sendError(res, 400, "Invalid course ID.", "INVALID_COURSE_ID");
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
     }
 
     const course = await Course.findById(req.params.id);
 
     if (!course) {
-      return sendError(res, 404, "Course not found.", "COURSE_NOT_FOUND");
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
     await course.deleteOne();
@@ -512,14 +690,28 @@ export const deleteCourse = async (req, res, next) => {
 export const updateCourseStatus = async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return sendError(res, 400, "Invalid course ID.", "INVALID_COURSE_ID");
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
     }
 
     const { status } = req.body;
-    const validStatuses = ["Published", "Draft", "Archived"];
+
+    const validStatuses = [
+      "Published",
+      "Draft",
+      "Archived",
+    ];
 
     if (!validStatuses.includes(status)) {
-      return sendError(res, 400, "Invalid course status.");
+      return sendError(
+        res,
+        400,
+        "Invalid course status."
+      );
     }
 
     const course = await Course.findByIdAndUpdate(
@@ -529,7 +721,12 @@ export const updateCourseStatus = async (req, res, next) => {
     );
 
     if (!course) {
-      return sendError(res, 404, "Course not found.", "COURSE_NOT_FOUND");
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
     const populatedCourse = await populateCourseSubjects(

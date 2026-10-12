@@ -35,15 +35,18 @@ const CourseFilters = ({
       </div>
 
       <div className="course-filter-group">
-        <label>Course Type</label>
+        <label htmlFor="courseType">Course Type</label>
 
-        <input
-          type="text"
+        <select
+          id="courseType"
           name="courseType"
           value={filters.courseType}
           onChange={onChange}
-          placeholder="Course type"
-        />
+        >
+          <option value="">All Types</option>
+          <option value="Online">Online</option>
+          <option value="Offline">Offline</option>
+        </select>
       </div>
 
       <div className="course-filter-group">
