@@ -4,6 +4,7 @@ import React, {
 } from "react";
 
 import { getSubjects } from "../../services/subjectService";
+import { getCategories } from "../../services/categoryService";
 
 import { getAssetUrl } from "../../utils/assetUrl";
 import RichTextEditor from "../common/RichTextEditor";
@@ -66,6 +67,61 @@ const CourseForm = ({
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [subjectsError, setSubjectsError] = useState("");
   const [subjectSearch, setSubjectSearch] = useState("");
+
+
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState("");
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCategories = async () => {
+      setCategoriesLoading(true);
+      setCategoriesError("");
+
+      try {
+        const response = await getCategories({
+          status: "Active",
+          limit: 100,
+          sortBy: "categoryName",
+          sortOrder: "asc",
+        });
+
+        const payload = response?.data;
+
+        // Category API returns:
+        // { success: true, data: { categories: [], pagination: {} } }
+        const categories = Array.isArray(payload?.data?.categories)
+          ? payload.data.categories
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        if (!cancelled) {
+          setAvailableCategories(categories);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCategoriesError(
+            error?.response?.data?.message ||
+              "Unable to load course categories. Please try again."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
 
   const toggleSubject = (subjectId) => {
@@ -687,21 +743,57 @@ const CourseForm = ({
             {fieldError("courseType")}
           </div>
 
+          
           <div className="course-field">
-            <label>
-              Course Category *
-            </label>
+            <label htmlFor="courseCategory">Course Category *</label>
 
-            <input
+            <select
+              id="courseCategory"
               name="courseCategory"
-              value={
-                form.courseCategory
-              }
+              value={form.courseCategory}
               onChange={handleChange}
-              placeholder="Course category"
-            />
+              required
+              disabled={categoriesLoading}
+            >
+              <option value="">
+                {categoriesLoading
+                  ? "Loading categories..."
+                  : "Select course category"}
+              </option>
+
+              {availableCategories.map((category) => (
+                <option
+                  key={category._id}
+                  value={category.categoryName}
+                >
+                  {category.categoryName}
+                </option>
+              ))}
+            </select>
+
+            {categoriesError && (
+              <div className="course-field-error" role="alert">
+                {categoriesError}
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload
+                </button>
+              </div>
+            )}
+
+            {!categoriesLoading &&
+              !categoriesError &&
+              availableCategories.length === 0 && (
+                <p className="course-field-error">
+                  No active categories found. Create a category first in Course Categories.
+                </p>
+              )}
+
             {fieldError("courseCategory")}
           </div>
+
 
           <div className="course-field">
             <label>
