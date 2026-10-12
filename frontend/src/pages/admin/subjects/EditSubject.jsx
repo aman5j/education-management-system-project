@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft, FiSave, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiArrowLeft, FiSave } from "react-icons/fi";
 
 import {
   getSubjectById,
@@ -9,27 +8,18 @@ import {
 } from "../../../services/subjectService";
 import "../../../styles/SubjectManagement.css";
 
-const emptyTopic = () => ({ title: "", description: "" });
-const emptyUnit = () => ({
-  title: "",
-  description: "",
-  durationHours: "0",
-  topics: [emptyTopic()],
-});
-
-const emptyForm = () => ({
+const EMPTY_FORM = {
   subjectName: "",
   subjectCode: "",
   description: "",
   status: "Active",
-  syllabus: [],
-});
+};
 
 export default function EditSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState(emptyForm);
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -47,8 +37,8 @@ export default function EditSubject() {
         const payload = response?.data;
         const subject =
           payload?.data?.subject ||
-          payload?.subject ||
           payload?.data ||
+          payload?.subject ||
           payload;
 
         if (!subject?._id) {
@@ -61,20 +51,6 @@ export default function EditSubject() {
             subjectCode: subject.subjectCode || "",
             description: subject.description || "",
             status: subject.status || "Active",
-            syllabus: (Array.isArray(subject.syllabus) ? subject.syllabus : [])
-              .map((unit) => ({
-                _id: unit._id,
-                title: unit.title || "",
-                description: unit.description || "",
-                durationHours: String(unit.durationHours ?? 0),
-                topics: (Array.isArray(unit.topics) ? unit.topics : []).map(
-                  (topic) => ({
-                    _id: topic._id,
-                    title: topic.title || "",
-                    description: topic.description || "",
-                  })
-                ),
-              })),
           });
         }
       } catch (err) {
@@ -104,44 +80,21 @@ export default function EditSubject() {
 
   const changeField = (event) => {
     const { name, value } = event.target;
+
     setFormData((previous) => ({
       ...previous,
       [name]: name === "subjectCode" ? value.toUpperCase() : value,
     }));
+
     setFieldErrors((previous) => ({ ...previous, [name]: "" }));
     setError("");
   };
 
-  const changeUnit = (unitIndex, field, value) => {
-    setFormData((previous) => ({
-      ...previous,
-      syllabus: previous.syllabus.map((unit, index) =>
-        index === unitIndex ? { ...unit, [field]: value } : unit
-      ),
-    }));
-  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
 
-  const changeTopic = (unitIndex, topicIndex, field, value) => {
-    setFormData((previous) => ({
-      ...previous,
-      syllabus: previous.syllabus.map((unit, index) =>
-        index !== unitIndex
-          ? unit
-          : {
-              ...unit,
-              topics: unit.topics.map((topic, index2) =>
-                index2 === topicIndex
-                  ? { ...topic, [field]: value }
-                  : topic
-              ),
-            }
-      ),
-    }));
-  };
-
-  const validateForm = () => {
     const errors = {};
-
     if (formData.subjectName.trim().length < 2) {
       errors.subjectName = "Subject name must contain at least 2 characters.";
     }
@@ -149,23 +102,8 @@ export default function EditSubject() {
       errors.subjectCode = "Subject code must contain at least 2 characters.";
     }
 
-    formData.syllabus.forEach((unit, index) => {
-      if (!unit.title.trim()) errors[`unit-${index}`] = "Unit title is required.";
-      unit.topics.forEach((topic, topicIndex) => {
-        if (!topic.title.trim()) {
-          errors[`topic-${index}-${topicIndex}`] = "Topic title is required.";
-        }
-      });
-    });
-
     setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setError("");
-    if (!validateForm()) return;
+    if (Object.keys(errors).length) return;
 
     try {
       setSaving(true);
@@ -175,17 +113,6 @@ export default function EditSubject() {
         subjectCode: formData.subjectCode.trim().toUpperCase(),
         description: formData.description.trim(),
         status: formData.status,
-        syllabus: formData.syllabus.map((unit) => ({
-          ...(unit._id ? { _id: unit._id } : {}),
-          title: unit.title.trim(),
-          description: unit.description.trim(),
-          durationHours: Number(unit.durationHours) || 0,
-          topics: unit.topics.map((topic) => ({
-            ...(topic._id ? { _id: topic._id } : {}),
-            title: topic.title.trim(),
-            description: topic.description.trim(),
-          })),
-        })),
       });
 
       navigate("/admin/subjects", {
@@ -205,7 +132,9 @@ export default function EditSubject() {
   if (loading) {
     return (
       <div className="subject-page">
-        <div className="subject-card"><p>Loading subject details...</p></div>
+        <div className="subject-card">
+          <p>Loading subject details...</p>
+        </div>
       </div>
     );
   }
@@ -215,11 +144,17 @@ export default function EditSubject() {
       <div className="subject-page">
         <div className="subject-page-header">
           <div><h1>Edit Subject</h1></div>
-          <button className="subject-secondary-btn" onClick={() => navigate("/admin/subjects")}>
+          <button
+            type="button"
+            className="subject-secondary-btn"
+            onClick={() => navigate("/admin/subjects")}
+          >
             <FiArrowLeft /> Back to Subjects
           </button>
         </div>
-        <div className="subject-alert subject-alert-error" role="alert">{error}</div>
+        <div className="subject-alert subject-alert-error" role="alert">
+          {error}
+        </div>
       </div>
     );
   }
@@ -229,7 +164,7 @@ export default function EditSubject() {
       <div className="subject-page-header">
         <div>
           <h1>Edit Subject</h1>
-          <p>Update subject details and its reusable syllabus.</p>
+          <p>Update subject information.</p>
         </div>
         <button
           type="button"
@@ -240,26 +175,53 @@ export default function EditSubject() {
         </button>
       </div>
 
-      {error && <div className="subject-alert subject-alert-error" role="alert">{error}</div>}
+      {error && (
+        <div className="subject-alert subject-alert-error" role="alert">
+          {error}
+        </div>
+      )}
 
       <div className="subject-card">
         <form onSubmit={handleSubmit} noValidate>
           <div className="subject-form-grid">
             <div className="subject-field">
               <label htmlFor="subjectName">Subject Name *</label>
-              <input id="subjectName" name="subjectName" value={formData.subjectName} onChange={changeField} maxLength={100} required />
-              {fieldErrors.subjectName && <p className="subject-field-error">{fieldErrors.subjectName}</p>}
+              <input
+                id="subjectName"
+                name="subjectName"
+                value={formData.subjectName}
+                onChange={changeField}
+                maxLength={100}
+                required
+              />
+              {fieldErrors.subjectName && (
+                <p className="subject-field-error">{fieldErrors.subjectName}</p>
+              )}
             </div>
 
             <div className="subject-field">
               <label htmlFor="subjectCode">Subject Code *</label>
-              <input id="subjectCode" name="subjectCode" value={formData.subjectCode} onChange={changeField} maxLength={30} required />
-              {fieldErrors.subjectCode && <p className="subject-field-error">{fieldErrors.subjectCode}</p>}
+              <input
+                id="subjectCode"
+                name="subjectCode"
+                value={formData.subjectCode}
+                onChange={changeField}
+                maxLength={30}
+                required
+              />
+              {fieldErrors.subjectCode && (
+                <p className="subject-field-error">{fieldErrors.subjectCode}</p>
+              )}
             </div>
 
             <div className="subject-field">
               <label htmlFor="status">Status</label>
-              <select id="status" name="status" value={formData.status} onChange={changeField}>
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={changeField}
+              >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
@@ -267,74 +229,31 @@ export default function EditSubject() {
 
             <div className="subject-field subject-field-full">
               <label htmlFor="description">Description</label>
-              <textarea id="description" name="description" rows={3} maxLength={1000} value={formData.description} onChange={changeField} />
+              <textarea
+                id="description"
+                name="description"
+                rows={3}
+                maxLength={1000}
+                value={formData.description}
+                onChange={changeField}
+              />
             </div>
           </div>
 
-          <section className="subject-syllabus">
-            <div className="subject-syllabus-heading">
-              <div><h2>Syllabus</h2><p>Manage units and topics for this subject.</p></div>
-              <button type="button" className="subject-secondary-btn" onClick={() => setFormData((p) => ({ ...p, syllabus: [...p.syllabus, emptyUnit()] }))}>
-                <FiPlus /> Add Unit
-              </button>
-            </div>
-
-            {formData.syllabus.map((unit, unitIndex) => (
-              <div className="subject-syllabus-unit" key={unit._id || unitIndex}>
-                <div className="subject-syllabus-unit-heading">
-                  <h3>Unit {unitIndex + 1}</h3>
-                  <button type="button" className="subject-danger-btn" onClick={() => setFormData((p) => ({ ...p, syllabus: p.syllabus.filter((_, i) => i !== unitIndex) }))}>
-                    <FiTrash2 /> Remove Unit
-                  </button>
-                </div>
-
-                <div className="subject-form-grid">
-                  <div className="subject-field">
-                    <label>Unit Title *</label>
-                    <input value={unit.title} maxLength={150} onChange={(e) => changeUnit(unitIndex, "title", e.target.value)} />
-                    {fieldErrors[`unit-${unitIndex}`] && <p className="subject-field-error">{fieldErrors[`unit-${unitIndex}`]}</p>}
-                  </div>
-                  <div className="subject-field">
-                    <label>Duration (hours)</label>
-                    <input type="number" min="0" value={unit.durationHours} onChange={(e) => changeUnit(unitIndex, "durationHours", e.target.value)} />
-                  </div>
-                  <div className="subject-field subject-field-full">
-                    <label>Unit Description</label>
-                    <textarea rows={2} maxLength={2000} value={unit.description} onChange={(e) => changeUnit(unitIndex, "description", e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="subject-syllabus-topics">
-                  <h4>Topics</h4>
-                  {unit.topics.map((topic, topicIndex) => (
-                    <div className="subject-syllabus-topic" key={topic._id || topicIndex}>
-                      <div className="subject-field">
-                        <label>Topic Title *</label>
-                        <input value={topic.title} maxLength={150} onChange={(e) => changeTopic(unitIndex, topicIndex, "title", e.target.value)} />
-                        {fieldErrors[`topic-${unitIndex}-${topicIndex}`] && <p className="subject-field-error">{fieldErrors[`topic-${unitIndex}-${topicIndex}`]}</p>}
-                      </div>
-                      <div className="subject-field">
-                        <label>Topic Description</label>
-                        <input value={topic.description} maxLength={2000} onChange={(e) => changeTopic(unitIndex, topicIndex, "description", e.target.value)} />
-                      </div>
-                      <button type="button" className="subject-icon-remove" aria-label="Remove topic" onClick={() => setFormData((p) => ({ ...p, syllabus: p.syllabus.map((item, i) => i !== unitIndex ? item : { ...item, topics: item.topics.filter((_, j) => j !== topicIndex) }) }))}>
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="subject-secondary-btn" onClick={() => setFormData((p) => ({ ...p, syllabus: p.syllabus.map((item, i) => i !== unitIndex ? item : { ...item, topics: [...item.topics, emptyTopic()] }) }))}>
-                    <FiPlus /> Add Topic
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {formData.syllabus.length === 0 && <p className="subject-syllabus-empty">No syllabus units yet.</p>}
-          </section>
-
           <div className="subject-form-actions">
-            <button type="button" className="subject-secondary-btn" onClick={() => navigate("/admin/subjects")} disabled={saving}>Cancel</button>
-            <button type="submit" className="subject-primary-btn" disabled={saving}>
+            <button
+              type="button"
+              className="subject-secondary-btn"
+              onClick={() => navigate("/admin/subjects")}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="subject-primary-btn"
+              disabled={saving}
+            >
               <FiSave /> {saving ? "Saving..." : "Update Subject"}
             </button>
           </div>

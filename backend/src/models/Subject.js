@@ -1,50 +1,4 @@
-
 import mongoose from "mongoose";
-
-const syllabusTopicSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: [true, "Topic title is required."],
-      trim: true,
-      maxlength: 150,
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: 2000,
-      default: "",
-    },
-  },
-  { _id: true }
-);
-
-const syllabusUnitSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: [true, "Unit title is required."],
-      trim: true,
-      maxlength: 150,
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: 2000,
-      default: "",
-    },
-    durationHours: {
-      type: Number,
-      min: 0,
-      default: 0,
-    },
-    topics: {
-      type: [syllabusTopicSchema],
-      default: [],
-    },
-  },
-  { _id: true }
-);
 
 const subjectSchema = new mongoose.Schema(
   {
@@ -66,8 +20,8 @@ const subjectSchema = new mongoose.Schema(
       unique: true,
     },
 
-    // Optional legacy field. New subjects do not need a course.
-    // Remove this field only after migrating existing records.
+    // Optional legacy field for existing records.
+    // New subjects do not require a course.
     course_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
@@ -79,11 +33,6 @@ const subjectSchema = new mongoose.Schema(
       trim: true,
       maxlength: 1000,
       default: "",
-    },
-
-    syllabus: {
-      type: [syllabusUnitSchema],
-      default: [],
     },
 
     status: {
@@ -99,7 +48,6 @@ const subjectSchema = new mongoose.Schema(
   }
 );
 
-// Subject codes are globally unique, not unique per course.
 subjectSchema.index(
   { subjectCode: 1 },
   { unique: true, name: "unique_subject_code" }

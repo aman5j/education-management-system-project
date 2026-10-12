@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import Subject from "../models/Subject.js";
 
@@ -54,122 +53,7 @@ const handleControllerError = (res, error) => {
   );
 };
 
-// Supports JSON arrays and JSON strings from multipart requests.
-const parseSyllabus = (value) => {
-  if (value === undefined || value === null || value === "") {
-    return { data: [] };
-  }
-
-  let syllabus = value;
-
-  if (typeof syllabus === "string") {
-    try {
-      syllabus = JSON.parse(syllabus);
-    } catch {
-      return { error: "Syllabus must contain valid JSON." };
-    }
-  }
-
-  if (!Array.isArray(syllabus)) {
-    return { error: "Syllabus must be an array of units." };
-  }
-
-  const normalized = [];
-
-  for (const unit of syllabus) {
-    if (!unit || typeof unit !== "object" || Array.isArray(unit)) {
-      return { error: "Each syllabus unit must be an object." };
-    }
-
-    const title =
-      typeof unit.title === "string" ? unit.title.trim() : "";
-
-    const description =
-      typeof unit.description === "string"
-        ? unit.description.trim()
-        : "";
-
-    const durationHours =
-      unit.durationHours === undefined || unit.durationHours === ""
-        ? 0
-        : Number(unit.durationHours);
-
-    if (!title || title.length > 150) {
-      return {
-        error: "Every syllabus unit needs a title of at most 150 characters.",
-      };
-    }
-
-    if (
-      !Number.isFinite(durationHours) ||
-      durationHours < 0
-    ) {
-      return {
-        error: `Invalid duration for syllabus unit "${title}".`,
-      };
-    }
-
-    if (description.length > 2000) {
-      return {
-        error: `Description for "${title}" cannot exceed 2000 characters.`,
-      };
-    }
-
-    const inputTopics = unit.topics ?? [];
-
-    if (!Array.isArray(inputTopics)) {
-      return {
-        error: `Topics for "${title}" must be an array.`,
-      };
-    }
-
-    const topics = [];
-
-    for (const topic of inputTopics) {
-      if (!topic || typeof topic !== "object" || Array.isArray(topic)) {
-        return { error: `Invalid topic in syllabus unit "${title}".` };
-      }
-
-      const topicTitle =
-        typeof topic.title === "string" ? topic.title.trim() : "";
-
-      const topicDescription =
-        typeof topic.description === "string"
-          ? topic.description.trim()
-          : "";
-
-      if (!topicTitle || topicTitle.length > 150) {
-        return {
-          error: `Every topic in "${title}" needs a title of at most 150 characters.`,
-        };
-      }
-
-      if (topicDescription.length > 2000) {
-        return {
-          error: `Topic description in "${title}" cannot exceed 2000 characters.`,
-        };
-      }
-
-      topics.push({
-        ...(topic._id ? { _id: topic._id } : {}),
-        title: topicTitle,
-        description: topicDescription,
-      });
-    }
-
-    normalized.push({
-      ...(unit._id ? { _id: unit._id } : {}),
-      title,
-      description,
-      durationHours,
-      topics,
-    });
-  }
-
-  return { data: normalized };
-};
-
-const normalizeSubjectInput = (body) => {
+const normalizeSubjectInput = (body = {}) => {
   const input = {};
 
   for (const field of [
@@ -183,16 +67,13 @@ const normalizeSubjectInput = (body) => {
     }
   }
 
-  // Syllabus is normalized separately in create/update.
-  if (Object.prototype.hasOwnProperty.call(body, "syllabus")) {
-    input.syllabus = body.syllabus;
-  }
-
-  // Legacy compatibility only. New subjects do not require course_id.
+  // Keep compatibility with older records/clients.
+  // The field is optional and not required to create a subject.
   if (Object.prototype.hasOwnProperty.call(body, "course_id")) {
     input.course_id = body.course_id;
   }
 
+  // Intentionally do not accept syllabus.
   return input;
 };
 
@@ -274,7 +155,6 @@ const validateSubjectFields = (data, { partial = false } = {}) => {
 export const createSubject = async (req, res) => {
   try {
     const input = normalizeSubjectInput(req.body);
-
     const fieldError = validateSubjectFields(input);
 
     if (fieldError) {
@@ -286,8 +166,13 @@ export const createSubject = async (req, res) => {
       );
     }
 
-    // Validate an optional legacy course_id only if supplied.
-    // New subjects are independent and do not need this field.
+    const subjectData = {
+      subjectName: input.subjectName.trim(),
+      subjectCode: input.subjectCode.trim().toUpperCase(),
+      description: (input.description || "").trim(),
+      status: input.status || "Active",
+    };
+
     if (
       input.course_id !== undefined &&
       input.course_id !== null &&
@@ -301,31 +186,7 @@ export const createSubject = async (req, res) => {
           "INVALID_COURSE_ID"
         );
       }
-    } else {
-      delete input.course_id;
-    }
 
-    const syllabusResult = parseSyllabus(input.syllabus);
-
-    if (syllabusResult.error) {
-      return sendError(
-        res,
-        400,
-        syllabusResult.error,
-        "INVALID_SYLLABUS"
-      );
-    }
-
-    const subjectData = {
-      subjectName: input.subjectName.trim(),
-      subjectCode: input.subjectCode.trim().toUpperCase(),
-      description: (input.description || "").trim(),
-      status: input.status || "Active",
-      syllabus: syllabusResult.data,
-    };
-
-    // Retain the legacy association only when an older client sends it.
-    if (input.course_id) {
       subjectData.course_id = input.course_id;
     }
 
@@ -344,8 +205,8 @@ export const createSubject = async (req, res) => {
 // =====================================================
 // GET ALL SUBJECTS
 // GET /api/subjects
-// Supports search, optional legacy course filter, status,
-// sorting and pagination.
+// Supports search, optional legacy course filter,
+// status, sorting and pagination.
 // =====================================================
 export const getSubjects = async (req, res) => {
   try {
@@ -412,7 +273,7 @@ export const getSubjects = async (req, res) => {
 
     const filter = {};
 
-    // This filter is for old records/clients only.
+    // Supports filtering legacy records only.
     if (course_id) {
       if (!isValidObjectId(String(course_id))) {
         return sendError(
@@ -453,11 +314,11 @@ export const getSubjects = async (req, res) => {
     }
 
     const skip = (pageNumber - 1) * pageSize;
-    const sortDirection = order === "asc" ? 1 : -1;
+    const direction = order === "asc" ? 1 : -1;
 
     const [subjects, total] = await Promise.all([
       Subject.find(filter)
-        .sort({ [sortBy]: sortDirection, _id: 1 })
+        .sort({ [sortBy]: direction, _id: 1 })
         .skip(skip)
         .limit(pageSize)
         .lean(),
@@ -509,6 +370,9 @@ export const getSubjectById = async (req, res) => {
         "SUBJECT_NOT_FOUND"
       );
     }
+
+    // Strip legacy syllabus data from the response, if any exists.
+    delete subject.syllabus;
 
     return res.status(200).json({
       success: true,
@@ -590,21 +454,6 @@ export const updateSubject = async (req, res) => {
       }
     }
 
-    if (Object.prototype.hasOwnProperty.call(updates, "syllabus")) {
-      const syllabusResult = parseSyllabus(updates.syllabus);
-
-      if (syllabusResult.error) {
-        return sendError(
-          res,
-          400,
-          syllabusResult.error,
-          "INVALID_SYLLABUS"
-        );
-      }
-
-      updates.syllabus = syllabusResult.data;
-    }
-
     const updateOperation = { $set: { ...updates } };
 
     if (updates.$unset) {
@@ -641,7 +490,7 @@ export const updateSubject = async (req, res) => {
 };
 
 // =====================================================
-// CHANGE SUBJECT STATUS
+// UPDATE SUBJECT STATUS
 // PATCH /api/subjects/:id/status
 // =====================================================
 export const updateSubjectStatus = async (req, res) => {
@@ -723,7 +572,7 @@ export const deleteSubject = async (req, res) => {
       );
     }
 
-    // Prevent deletion while other modules reference the subject.
+    // Preserve safeguards for modules that already reference subjects.
     const Question = mongoose.models.Question;
     const Exam = mongoose.models.Exam;
 

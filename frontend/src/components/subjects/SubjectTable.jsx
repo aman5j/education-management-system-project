@@ -1,4 +1,3 @@
-
 import { FiEye, FiEdit2, FiTrash2, FiBookOpen } from "react-icons/fi";
 
 export default function SubjectTable({
@@ -35,12 +34,12 @@ export default function SubjectTable({
             <th>S. No.</th>
             <th>Subject Name</th>
             <th>Subject Code</th>
-            <th>Syllabus Units</th>
             <th>Description</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {subjects.map((subject, index) => {
             const id = subject._id || subject.id;
@@ -50,31 +49,66 @@ export default function SubjectTable({
               <tr key={id || `${subject.subjectCode}-${index}`}>
                 <td>{index + 1}</td>
                 <td>
-                  <span className="subject-table-name">{subject.subjectName || "—"}</span>
+                  <span className="subject-table-name">
+                    {subject.subjectName || "—"}
+                  </span>
                 </td>
                 <td>
-                  <span className="subject-table-code">{subject.subjectCode || "—"}</span>
+                  <span className="subject-table-code">
+                    {subject.subjectCode || "—"}
+                  </span>
                 </td>
-                <td>{Array.isArray(subject.syllabus) ? subject.syllabus.length : 0}</td>
                 <td>
-                  <span className="subject-table-description" title={subject.description || ""}>
+                  <span
+                    className="subject-table-description"
+                    title={subject.description || ""}
+                  >
                     {subject.description || "—"}
                   </span>
                 </td>
                 <td>
-                  <span className={`subject-status-badge ${active ? "subject-status-active" : "subject-status-inactive"}`}>
+                  <span
+                    className={`subject-status-badge ${
+                      active
+                        ? "subject-status-active"
+                        : "subject-status-inactive"
+                    }`}
+                  >
                     {subject.status || "Inactive"}
                   </span>
                 </td>
                 <td>
                   <div className="subject-actions">
-                    <button type="button" className="subject-action-view" onClick={() => onView?.(id)} disabled={!id} title="View subject" aria-label="View subject">
+                    <button
+                      type="button"
+                      className="subject-action-view"
+                      onClick={() => onView?.(id)}
+                      disabled={!id}
+                      title="View subject"
+                      aria-label="View subject"
+                    >
                       <FiEye />
                     </button>
-                    <button type="button" className="subject-action-edit" onClick={() => onEdit?.(id)} disabled={!id} title="Edit subject" aria-label="Edit subject">
+
+                    <button
+                      type="button"
+                      className="subject-action-edit"
+                      onClick={() => onEdit?.(id)}
+                      disabled={!id}
+                      title="Edit subject"
+                      aria-label="Edit subject"
+                    >
                       <FiEdit2 />
                     </button>
-                    <button type="button" className="subject-action-delete" onClick={() => onDelete?.(subject)} disabled={!id} title="Delete subject" aria-label="Delete subject">
+
+                    <button
+                      type="button"
+                      className="subject-action-delete"
+                      onClick={() => onDelete?.(subject)}
+                      disabled={!id}
+                      title="Delete subject"
+                      aria-label="Delete subject"
+                    >
                       <FiTrash2 />
                     </button>
                   </div>
