@@ -8,7 +8,6 @@ import {
   deleteSubject,
 } from "../../../services/subjectService";
 
-import { getCourses } from "../../../services/courseService";
 
 import SubjectFilters from "../../../components/subjects/SubjectFilters";
 import SubjectTable from "../../../components/subjects/SubjectTable";
@@ -17,7 +16,6 @@ import "../../../styles/SubjectManagement.css";
 
 const INITIAL_FILTERS = {
   search: "",
-  course_id: "",
   status: "",
 };
 
@@ -27,7 +25,6 @@ export default function SubjectManagement() {
   const navigate = useNavigate();
 
   const [subjects, setSubjects] = useState([]);
-  const [courses, setCourses] = useState([]);
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
 
@@ -38,52 +35,11 @@ export default function SubjectManagement() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [coursesLoading, setCoursesLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Load courses once for the course filter.
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadCourses = async () => {
-      try {
-        setCoursesLoading(true);
-
-        const response = await getCourses({ limit: 100 });
-        const payload = response.data;
-
-        const courseList = Array.isArray(payload.data)
-          ? payload.data
-          : Array.isArray(payload)
-            ? payload
-            : [];
-
-        if (!cancelled) {
-          setCourses(courseList);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err.response?.data?.message ||
-              "Unable to load courses. Please refresh the page."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setCoursesLoading(false);
-        }
-      }
-    };
-
-    loadCourses();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Load subjects whenever the page or filters change.
   useEffect(() => {
@@ -99,7 +55,6 @@ export default function SubjectManagement() {
             page,
             limit: PAGE_SIZE,
             search: filters.search.trim(),
-            course_id: filters.course_id,
             status: filters.status,
           },
           {
@@ -213,9 +168,7 @@ export default function SubjectManagement() {
       <div className="subject-page-header">
         <div>
           <h1>Subject Management</h1>
-          <p>
-            Manage subjects and associate them with courses.
-          </p>
+          <p>Manage reusable subjects, syllabus, and subject status.</p>
         </div>
 
         <button
@@ -243,16 +196,10 @@ export default function SubjectManagement() {
       <div className="subject-card">
         <SubjectFilters
           filters={filters}
-          courses={courses}
           onChange={handleFilterChange}
           onReset={handleReset}
         />
 
-        {coursesLoading && (
-          <p className="subject-helper-text">
-            Loading course options...
-          </p>
-        )}
       </div>
 
       <div className="subject-card">

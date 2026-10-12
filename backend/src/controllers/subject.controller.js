@@ -1,32 +1,27 @@
 
 import mongoose from "mongoose";
 import Subject from "../models/Subject.js";
-import Course from "../models/Course.js";
 
-// =====================================================
-// COMMON HELPERS
-// =====================================================
-
-const sendError = (res, statusCode, message, errorCode) => {
-  return res.status(statusCode).json({
+const sendError = (res, statusCode, message, errorCode) =>
+  res.status(statusCode).json({
     success: false,
     message,
     ...(errorCode ? { errorCode } : {}),
   });
-};
+
+const isValidObjectId = (id) =>
+  typeof id === "string" && mongoose.isValidObjectId(id);
 
 const handleControllerError = (res, error) => {
-  // Duplicate subject code within the same course.
   if (error?.code === 11000) {
     return sendError(
       res,
       409,
-      "This subject code already exists for the selected course.",
+      "This subject code already exists. Please use a different code.",
       "DUPLICATE_SUBJECT_CODE"
     );
   }
 
-  // Mongoose validation error.
   if (error instanceof mongoose.Error.ValidationError) {
     const message = Object.values(error.errors)
       .map((item) => item.message)
@@ -40,12 +35,11 @@ const handleControllerError = (res, error) => {
     );
   }
 
-  // Invalid MongoDB ObjectId.
   if (error instanceof mongoose.Error.CastError) {
     return sendError(
       res,
       400,
-      "Invalid subject or course ID.",
+      "Invalid subject ID or field value.",
       "INVALID_ID"
     );
   }
@@ -60,152 +54,287 @@ const handleControllerError = (res, error) => {
   );
 };
 
-const isValidObjectId = (id) => {
-  return mongoose.isValidObjectId(id);
+// Supports JSON arrays and JSON strings from multipart requests.
+const parseSyllabus = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return { data: [] };
+  }
+
+  let syllabus = value;
+
+  if (typeof syllabus === "string") {
+    try {
+      syllabus = JSON.parse(syllabus);
+    } catch {
+      return { error: "Syllabus must contain valid JSON." };
+    }
+  }
+
+  if (!Array.isArray(syllabus)) {
+    return { error: "Syllabus must be an array of units." };
+  }
+
+  const normalized = [];
+
+  for (const unit of syllabus) {
+    if (!unit || typeof unit !== "object" || Array.isArray(unit)) {
+      return { error: "Each syllabus unit must be an object." };
+    }
+
+    const title =
+      typeof unit.title === "string" ? unit.title.trim() : "";
+
+    const description =
+      typeof unit.description === "string"
+        ? unit.description.trim()
+        : "";
+
+    const durationHours =
+      unit.durationHours === undefined || unit.durationHours === ""
+        ? 0
+        : Number(unit.durationHours);
+
+    if (!title || title.length > 150) {
+      return {
+        error: "Every syllabus unit needs a title of at most 150 characters.",
+      };
+    }
+
+    if (
+      !Number.isFinite(durationHours) ||
+      durationHours < 0
+    ) {
+      return {
+        error: `Invalid duration for syllabus unit "${title}".`,
+      };
+    }
+
+    if (description.length > 2000) {
+      return {
+        error: `Description for "${title}" cannot exceed 2000 characters.`,
+      };
+    }
+
+    const inputTopics = unit.topics ?? [];
+
+    if (!Array.isArray(inputTopics)) {
+      return {
+        error: `Topics for "${title}" must be an array.`,
+      };
+    }
+
+    const topics = [];
+
+    for (const topic of inputTopics) {
+      if (!topic || typeof topic !== "object" || Array.isArray(topic)) {
+        return { error: `Invalid topic in syllabus unit "${title}".` };
+      }
+
+      const topicTitle =
+        typeof topic.title === "string" ? topic.title.trim() : "";
+
+      const topicDescription =
+        typeof topic.description === "string"
+          ? topic.description.trim()
+          : "";
+
+      if (!topicTitle || topicTitle.length > 150) {
+        return {
+          error: `Every topic in "${title}" needs a title of at most 150 characters.`,
+        };
+      }
+
+      if (topicDescription.length > 2000) {
+        return {
+          error: `Topic description in "${title}" cannot exceed 2000 characters.`,
+        };
+      }
+
+      topics.push({
+        ...(topic._id ? { _id: topic._id } : {}),
+        title: topicTitle,
+        description: topicDescription,
+      });
+    }
+
+    normalized.push({
+      ...(unit._id ? { _id: unit._id } : {}),
+      title,
+      description,
+      durationHours,
+      topics,
+    });
+  }
+
+  return { data: normalized };
 };
 
 const normalizeSubjectInput = (body) => {
   const input = {};
 
-  if (Object.prototype.hasOwnProperty.call(body, "subjectName")) {
-    input.subjectName = body.subjectName;
+  for (const field of [
+    "subjectName",
+    "subjectCode",
+    "description",
+    "status",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      input[field] = body[field];
+    }
   }
 
-  if (Object.prototype.hasOwnProperty.call(body, "subjectCode")) {
-    input.subjectCode = body.subjectCode;
+  // Syllabus is normalized separately in create/update.
+  if (Object.prototype.hasOwnProperty.call(body, "syllabus")) {
+    input.syllabus = body.syllabus;
   }
 
+  // Legacy compatibility only. New subjects do not require course_id.
   if (Object.prototype.hasOwnProperty.call(body, "course_id")) {
     input.course_id = body.course_id;
   }
 
-  if (Object.prototype.hasOwnProperty.call(body, "description")) {
-    input.description = body.description;
-  }
-
-  if (Object.prototype.hasOwnProperty.call(body, "status")) {
-    input.status = body.status;
-  }
-
   return input;
+};
+
+const validateSubjectFields = (data, { partial = false } = {}) => {
+  if (
+    !partial &&
+    (typeof data.subjectName !== "string" ||
+      !data.subjectName.trim())
+  ) {
+    return {
+      message: "Subject name is required.",
+      code: "SUBJECT_NAME_REQUIRED",
+    };
+  }
+
+  if (
+    !partial &&
+    (typeof data.subjectCode !== "string" ||
+      !data.subjectCode.trim())
+  ) {
+    return {
+      message: "Subject code is required.",
+      code: "SUBJECT_CODE_REQUIRED",
+    };
+  }
+
+  if (
+    data.subjectName !== undefined &&
+    (typeof data.subjectName !== "string" ||
+      data.subjectName.trim().length < 2 ||
+      data.subjectName.trim().length > 100)
+  ) {
+    return {
+      message: "Subject name must contain 2 to 100 characters.",
+      code: "INVALID_SUBJECT_NAME",
+    };
+  }
+
+  if (
+    data.subjectCode !== undefined &&
+    (typeof data.subjectCode !== "string" ||
+      data.subjectCode.trim().length < 2 ||
+      data.subjectCode.trim().length > 30)
+  ) {
+    return {
+      message: "Subject code must contain 2 to 30 characters.",
+      code: "INVALID_SUBJECT_CODE",
+    };
+  }
+
+  if (
+    data.description !== undefined &&
+    (typeof data.description !== "string" ||
+      data.description.trim().length > 1000)
+  ) {
+    return {
+      message: "Description must be a string of at most 1000 characters.",
+      code: "INVALID_DESCRIPTION",
+    };
+  }
+
+  if (
+    data.status !== undefined &&
+    !["Active", "Inactive"].includes(data.status)
+  ) {
+    return {
+      message: "Status must be Active or Inactive.",
+      code: "INVALID_STATUS",
+    };
+  }
+
+  return null;
 };
 
 // =====================================================
 // CREATE SUBJECT
 // POST /api/subjects
 // =====================================================
-
 export const createSubject = async (req, res) => {
   try {
-    const {
-      subjectName,
-      subjectCode,
-      course_id,
-      description,
-      status,
-    } = req.body;
+    const input = normalizeSubjectInput(req.body);
 
-    // Required fields.
+    const fieldError = validateSubjectFields(input);
+
+    if (fieldError) {
+      return sendError(
+        res,
+        400,
+        fieldError.message,
+        fieldError.code
+      );
+    }
+
+    // Validate an optional legacy course_id only if supplied.
+    // New subjects are independent and do not need this field.
     if (
-      typeof subjectName !== "string" ||
-      !subjectName.trim()
+      input.course_id !== undefined &&
+      input.course_id !== null &&
+      input.course_id !== ""
     ) {
+      if (!isValidObjectId(String(input.course_id))) {
+        return sendError(
+          res,
+          400,
+          "Please provide a valid course ID.",
+          "INVALID_COURSE_ID"
+        );
+      }
+    } else {
+      delete input.course_id;
+    }
+
+    const syllabusResult = parseSyllabus(input.syllabus);
+
+    if (syllabusResult.error) {
       return sendError(
         res,
         400,
-        "Subject name is required.",
-        "SUBJECT_NAME_REQUIRED"
+        syllabusResult.error,
+        "INVALID_SYLLABUS"
       );
     }
 
-    if (
-      typeof subjectCode !== "string" ||
-      !subjectCode.trim()
-    ) {
-      return sendError(
-        res,
-        400,
-        "Subject code is required.",
-        "SUBJECT_CODE_REQUIRED"
-      );
+    const subjectData = {
+      subjectName: input.subjectName.trim(),
+      subjectCode: input.subjectCode.trim().toUpperCase(),
+      description: (input.description || "").trim(),
+      status: input.status || "Active",
+      syllabus: syllabusResult.data,
+    };
+
+    // Retain the legacy association only when an older client sends it.
+    if (input.course_id) {
+      subjectData.course_id = input.course_id;
     }
 
-    if (!course_id) {
-      return sendError(
-        res,
-        400,
-        "Please select a course.",
-        "COURSE_REQUIRED"
-      );
-    }
-
-    if (!isValidObjectId(course_id)) {
-      return sendError(
-        res,
-        400,
-        "Please provide a valid course ID.",
-        "INVALID_COURSE_ID"
-      );
-    }
-
-    // Validate field types before saving.
-    if (
-      description !== undefined &&
-      typeof description !== "string"
-    ) {
-      return sendError(
-        res,
-        400,
-        "Description must be a string.",
-        "INVALID_DESCRIPTION"
-      );
-    }
-
-    if (
-      status !== undefined &&
-      !["Active", "Inactive"].includes(status)
-    ) {
-      return sendError(
-        res,
-        400,
-        "Status must be Active or Inactive.",
-        "INVALID_STATUS"
-      );
-    }
-
-    // Ensure the selected course exists.
-    const courseExists = await Course.exists({
-      _id: course_id,
-    });
-
-    if (!courseExists) {
-      return sendError(
-        res,
-        404,
-        "The selected course was not found.",
-        "COURSE_NOT_FOUND"
-      );
-    }
-
-    const subject = await Subject.create({
-      subjectName: subjectName.trim(),
-      subjectCode: subjectCode.trim().toUpperCase(),
-      course_id,
-      description:
-        typeof description === "string"
-          ? description.trim()
-          : "",
-      status: status || "Active",
-    });
-
-    const populatedSubject = await Subject.findById(
-      subject._id
-    ).populate("course_id");
+    const subject = await Subject.create(subjectData);
 
     return res.status(201).json({
       success: true,
       message: "Subject created successfully.",
-      data: populatedSubject,
+      data: subject,
     });
   } catch (error) {
     return handleControllerError(res, error);
@@ -215,9 +344,9 @@ export const createSubject = async (req, res) => {
 // =====================================================
 // GET ALL SUBJECTS
 // GET /api/subjects
-// Supports search, filters, sorting and pagination.
+// Supports search, optional legacy course filter, status,
+// sorting and pagination.
 // =====================================================
-
 export const getSubjects = async (req, res) => {
   try {
     const {
@@ -233,10 +362,7 @@ export const getSubjects = async (req, res) => {
     const pageNumber = Number(page);
     const pageSize = Number(limit);
 
-    if (
-      !Number.isInteger(pageNumber) ||
-      pageNumber < 1
-    ) {
+    if (!Number.isInteger(pageNumber) || pageNumber < 1) {
       return sendError(
         res,
         400,
@@ -286,8 +412,9 @@ export const getSubjects = async (req, res) => {
 
     const filter = {};
 
+    // This filter is for old records/clients only.
     if (course_id) {
-      if (!isValidObjectId(course_id)) {
+      if (!isValidObjectId(String(course_id))) {
         return sendError(
           res,
           400,
@@ -312,8 +439,6 @@ export const getSubjects = async (req, res) => {
       filter.status = status;
     }
 
-    // Escape regex special characters so search input
-    // is treated as plain text, not a regex expression.
     const safeSearch = String(search)
       .trim()
       .slice(0, 100)
@@ -321,42 +446,21 @@ export const getSubjects = async (req, res) => {
 
     if (safeSearch) {
       filter.$or = [
-        {
-          subjectName: {
-            $regex: safeSearch,
-            $options: "i",
-          },
-        },
-        {
-          subjectCode: {
-            $regex: safeSearch,
-            $options: "i",
-          },
-        },
-        {
-          description: {
-            $regex: safeSearch,
-            $options: "i",
-          },
-        },
+        { subjectName: { $regex: safeSearch, $options: "i" } },
+        { subjectCode: { $regex: safeSearch, $options: "i" } },
+        { description: { $regex: safeSearch, $options: "i" } },
       ];
     }
 
     const skip = (pageNumber - 1) * pageSize;
-
     const sortDirection = order === "asc" ? 1 : -1;
 
     const [subjects, total] = await Promise.all([
       Subject.find(filter)
-        .populate("course_id")
-        .sort({
-          [sortBy]: sortDirection,
-          _id: 1,
-        })
+        .sort({ [sortBy]: sortDirection, _id: 1 })
         .skip(skip)
         .limit(pageSize)
         .lean(),
-
       Subject.countDocuments(filter),
     ]);
 
@@ -382,7 +486,6 @@ export const getSubjects = async (req, res) => {
 // GET SUBJECT BY ID
 // GET /api/subjects/:id
 // =====================================================
-
 export const getSubjectById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -396,9 +499,7 @@ export const getSubjectById = async (req, res) => {
       );
     }
 
-    const subject = await Subject.findById(id)
-      .populate("course_id")
-      .lean();
+    const subject = await Subject.findById(id).lean();
 
     if (!subject) {
       return sendError(
@@ -423,7 +524,6 @@ export const getSubjectById = async (req, res) => {
 // UPDATE SUBJECT
 // PATCH /api/subjects/:id
 // =====================================================
-
 export const updateSubject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -439,7 +539,7 @@ export const updateSubject = async (req, res) => {
 
     const updates = normalizeSubjectInput(req.body);
 
-    if (Object.keys(updates).length === 0) {
+    if (!Object.keys(updates).length) {
       return sendError(
         res,
         400,
@@ -448,95 +548,39 @@ export const updateSubject = async (req, res) => {
       );
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "subjectName"
-      ) &&
-      (
-        typeof updates.subjectName !== "string" ||
-        !updates.subjectName.trim()
-      )
-    ) {
+    const fieldError = validateSubjectFields(updates, {
+      partial: true,
+    });
+
+    if (fieldError) {
       return sendError(
         res,
         400,
-        "Subject name cannot be empty.",
-        "INVALID_SUBJECT_NAME"
+        fieldError.message,
+        fieldError.code
       );
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "subjectCode"
-      )
-    ) {
-      if (
-        typeof updates.subjectCode !== "string" ||
-        !updates.subjectCode.trim()
-      ) {
-        return sendError(
-          res,
-          400,
-          "Subject code cannot be empty.",
-          "INVALID_SUBJECT_CODE"
-        );
-      }
-
-      updates.subjectCode =
-        updates.subjectCode.trim().toUpperCase();
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "subjectName"
-      )
-    ) {
+    if (updates.subjectName !== undefined) {
       updates.subjectName = updates.subjectName.trim();
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "description"
-      )
-    ) {
-      if (typeof updates.description !== "string") {
-        return sendError(
-          res,
-          400,
-          "Description must be a string.",
-          "INVALID_DESCRIPTION"
-        );
-      }
+    if (updates.subjectCode !== undefined) {
+      updates.subjectCode = updates.subjectCode.trim().toUpperCase();
+    }
 
+    if (updates.description !== undefined) {
       updates.description = updates.description.trim();
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "status"
-      ) &&
-      !["Active", "Inactive"].includes(updates.status)
-    ) {
-      return sendError(
-        res,
-        400,
-        "Status must be Active or Inactive.",
-        "INVALID_STATUS"
-      );
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "course_id"
-      )
-    ) {
-      if (!isValidObjectId(updates.course_id)) {
+    if (updates.course_id !== undefined) {
+      if (
+        updates.course_id === null ||
+        updates.course_id === ""
+      ) {
+        updates.$unset = { course_id: 1 };
+        delete updates.course_id;
+      } else if (!isValidObjectId(String(updates.course_id))) {
         return sendError(
           res,
           400,
@@ -544,29 +588,38 @@ export const updateSubject = async (req, res) => {
           "INVALID_COURSE_ID"
         );
       }
+    }
 
-      const courseExists = await Course.exists({
-        _id: updates.course_id,
-      });
+    if (Object.prototype.hasOwnProperty.call(updates, "syllabus")) {
+      const syllabusResult = parseSyllabus(updates.syllabus);
 
-      if (!courseExists) {
+      if (syllabusResult.error) {
         return sendError(
           res,
-          404,
-          "The selected course was not found.",
-          "COURSE_NOT_FOUND"
+          400,
+          syllabusResult.error,
+          "INVALID_SYLLABUS"
         );
       }
+
+      updates.syllabus = syllabusResult.data;
+    }
+
+    const updateOperation = { $set: { ...updates } };
+
+    if (updates.$unset) {
+      updateOperation.$unset = updates.$unset;
+      delete updateOperation.$set.$unset;
     }
 
     const subject = await Subject.findByIdAndUpdate(
       id,
-      { $set: updates },
+      updateOperation,
       {
         new: true,
         runValidators: true,
       }
-    ).populate("course_id");
+    );
 
     if (!subject) {
       return sendError(
@@ -591,7 +644,6 @@ export const updateSubject = async (req, res) => {
 // CHANGE SUBJECT STATUS
 // PATCH /api/subjects/:id/status
 // =====================================================
-
 export const updateSubjectStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -622,7 +674,7 @@ export const updateSubjectStatus = async (req, res) => {
         new: true,
         runValidators: true,
       }
-    ).populate("course_id");
+    );
 
     if (!subject) {
       return sendError(
@@ -647,7 +699,6 @@ export const updateSubjectStatus = async (req, res) => {
 // DELETE SUBJECT
 // DELETE /api/subjects/:id
 // =====================================================
-
 export const deleteSubject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -672,16 +723,46 @@ export const deleteSubject = async (req, res) => {
       );
     }
 
-    // Add checks here before deletion if other modules
-    // already reference subjects, such as exams or marks.
+    // Prevent deletion while other modules reference the subject.
+    const Question = mongoose.models.Question;
+    const Exam = mongoose.models.Exam;
+
+    if (Question) {
+      const questionExists = await Question.exists({
+        subject_id: id,
+      });
+
+      if (questionExists) {
+        return sendError(
+          res,
+          409,
+          "This subject is used by questions. Remove or reassign those questions before deleting it.",
+          "SUBJECT_IN_USE"
+        );
+      }
+    }
+
+    if (Exam) {
+      const examExists = await Exam.exists({
+        subject_id: id,
+      });
+
+      if (examExists) {
+        return sendError(
+          res,
+          409,
+          "This subject is used by exams and cannot be deleted.",
+          "SUBJECT_IN_USE"
+        );
+      }
+    }
+
     await subject.deleteOne();
 
     return res.status(200).json({
       success: true,
       message: "Subject deleted successfully.",
-      data: {
-        id: subject._id,
-      },
+      data: { id: subject._id },
     });
   } catch (error) {
     return handleControllerError(res, error);

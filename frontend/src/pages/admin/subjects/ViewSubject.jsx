@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -7,10 +6,11 @@ import {
   FiBookOpen,
   FiCalendar,
   FiLayers,
+  FiClock,
+  FiList,
 } from "react-icons/fi";
 
 import { getSubjectById } from "../../../services/subjectService";
-
 import "../../../styles/SubjectManagement.css";
 
 function formatDate(dateValue) {
@@ -29,14 +29,24 @@ function formatDate(dateValue) {
   });
 }
 
-function getCourseName(course) {
-  if (!course) return "Not assigned";
-
-  if (typeof course === "string") {
-    return course;
+function getSyllabusUnits(subject) {
+  if (Array.isArray(subject?.syllabus)) {
+    return subject.syllabus;
   }
 
-  return course.courseName || course.name || course.title || "Not assigned";
+  return [];
+}
+
+function getUnitTitle(unit, index) {
+  return unit?.title || unit?.unitName || `Unit ${index + 1}`;
+}
+
+function getTopics(unit) {
+  if (!Array.isArray(unit?.topics)) {
+    return [];
+  }
+
+  return unit.topics;
 }
 
 export default function ViewSubject() {
@@ -50,14 +60,20 @@ export default function ViewSubject() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadSubject = async () => {
+    async function loadSubject() {
       try {
         setLoading(true);
         setError("");
+        setSubject(null);
 
         const response = await getSubjectById(id);
-        const payload = response.data;
-        const subjectData = payload.data || payload.subject || payload;
+        const payload = response?.data;
+
+        const subjectData =
+          payload?.data?.subject ||
+          payload?.data ||
+          payload?.subject ||
+          payload;
 
         if (!subjectData || !subjectData._id) {
           throw new Error("Subject details could not be found.");
@@ -79,7 +95,7 @@ export default function ViewSubject() {
           setLoading(false);
         }
       }
-    };
+    }
 
     if (!id) {
       setError("Subject ID is missing.");
@@ -130,18 +146,30 @@ export default function ViewSubject() {
     );
   }
 
-  const courseName = getCourseName(subject.course_id);
+  const syllabusUnits = getSyllabusUnits(subject);
+
   const statusClass =
-    subject.status === "Active"
+    String(subject.status || "").toLowerCase() === "active"
       ? "subject-status-active"
       : "subject-status-inactive";
 
+  const totalTopics = syllabusUnits.reduce(
+    (total, unit) => total + getTopics(unit).length,
+    0
+  );
+
+  const totalDuration = syllabusUnits.reduce(
+    (total, unit) => total + (Number(unit?.durationHours) || 0),
+    0
+  );
+
   return (
     <div className="subject-page subject-view-page">
+      {/* Page header */}
       <div className="subject-page-header">
         <div>
           <h1>Subject Details</h1>
-          <p>View the complete information for this subject.</p>
+          <p>View subject information and its syllabus.</p>
         </div>
 
         <div className="subject-header-actions">
@@ -157,7 +185,9 @@ export default function ViewSubject() {
           <button
             type="button"
             className="subject-primary-btn"
-            onClick={() => navigate(`/admin/subjects/edit/${subject._id}`)}
+            onClick={() =>
+              navigate(`/admin/subjects/edit/${subject._id}`)
+            }
           >
             <FiEdit2 aria-hidden="true" />
             Edit Subject
@@ -165,6 +195,7 @@ export default function ViewSubject() {
         </div>
       </div>
 
+      {/* Subject details */}
       <div className="subject-card">
         <div className="subject-detail-header">
           <div className="subject-detail-icon">
@@ -172,8 +203,8 @@ export default function ViewSubject() {
           </div>
 
           <div className="subject-detail-title">
-            <h2>{subject.subjectName}</h2>
-            <p>{subject.subjectCode}</p>
+            <h2>{subject.subjectName || "Untitled Subject"}</h2>
+            <p>{subject.subjectCode || "No subject code"}</p>
           </div>
 
           <span className={`subject-status-badge ${statusClass}`}>
@@ -196,14 +227,6 @@ export default function ViewSubject() {
               Subject Code
             </span>
             <strong>{subject.subjectCode || "Not available"}</strong>
-          </div>
-
-          <div className="subject-detail-item">
-            <span className="subject-detail-label">
-              <FiLayers aria-hidden="true" />
-              Associated Course
-            </span>
-            <strong>{courseName}</strong>
           </div>
 
           <div className="subject-detail-item">
@@ -234,6 +257,136 @@ export default function ViewSubject() {
             <strong>{formatDate(subject.updatedAt)}</strong>
           </div>
         </div>
+      </div>
+
+      {/* Syllabus summary */}
+      <div className="subject-card subject-view-syllabus">
+        <div className="subject-syllabus-heading">
+          <div>
+            <h2>
+              <FiBookOpen aria-hidden="true" />
+              Subject Syllabus
+            </h2>
+            <p>Units and topics covered by this subject.</p>
+          </div>
+        </div>
+
+        <div className="subject-detail-grid subject-syllabus-summary">
+          <div className="subject-detail-item">
+            <span className="subject-detail-label">
+              <FiLayers aria-hidden="true" />
+              Total Units
+            </span>
+            <strong>{syllabusUnits.length}</strong>
+          </div>
+
+          <div className="subject-detail-item">
+            <span className="subject-detail-label">
+              <FiList aria-hidden="true" />
+              Total Topics
+            </span>
+            <strong>{totalTopics}</strong>
+          </div>
+
+          <div className="subject-detail-item">
+            <span className="subject-detail-label">
+              <FiClock aria-hidden="true" />
+              Total Duration
+            </span>
+            <strong>{totalDuration} hours</strong>
+          </div>
+        </div>
+
+        {syllabusUnits.length === 0 ? (
+          <div className="subject-syllabus-empty">
+            <FiBookOpen aria-hidden="true" />
+            <p>No syllabus has been added to this subject yet.</p>
+            <button
+              type="button"
+              className="subject-secondary-btn"
+              onClick={() =>
+                navigate(`/admin/subjects/edit/${subject._id}`)
+              }
+            >
+              <FiEdit2 aria-hidden="true" />
+              Add Syllabus
+            </button>
+          </div>
+        ) : (
+          <div className="subject-syllabus">
+            {syllabusUnits.map((unit, index) => {
+              const topics = getTopics(unit);
+
+              return (
+                <section
+                  className="subject-syllabus-unit"
+                  key={unit._id || `${getUnitTitle(unit, index)}-${index}`}
+                >
+                  <div className="subject-syllabus-unit-header">
+                    <div className="subject-syllabus-unit-number">
+                      {index + 1}
+                    </div>
+
+                    <div className="subject-syllabus-unit-info">
+                      <h3>{getUnitTitle(unit, index)}</h3>
+                      {unit.description && <p>{unit.description}</p>}
+                    </div>
+
+                    <span className="subject-syllabus-duration">
+                      <FiClock aria-hidden="true" />
+                      {Number(unit.durationHours) || 0} hours
+                    </span>
+                  </div>
+
+                  <div className="subject-syllabus-topics">
+                    <h4>Topics ({topics.length})</h4>
+
+                    {topics.length === 0 ? (
+                      <p className="subject-syllabus-no-topics">
+                        No topics added to this unit.
+                      </p>
+                    ) : (
+                      <ul>
+                        {topics.map((topic, topicIndex) => {
+                          const topicTitle =
+                            typeof topic === "string"
+                              ? topic
+                              : topic?.title || topic?.topicName || "Untitled Topic";
+
+                          const topicDescription =
+                            typeof topic === "object"
+                              ? topic?.description
+                              : "";
+
+                          return (
+                            <li
+                              className="subject-syllabus-topic"
+                              key={
+                                topic?._id ||
+                                `${topicTitle}-${topicIndex}`
+                              }
+                            >
+                              <div>
+                                <span className="subject-syllabus-topic-number">
+                                  {index + 1}.{topicIndex + 1}
+                                </span>
+                                <strong>{topicTitle}</strong>
+                              </div>
+
+                              {topicDescription && (
+                                <p>{topicDescription}</p>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

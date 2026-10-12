@@ -1,42 +1,96 @@
 
 import mongoose from "mongoose";
 
+const syllabusTopicSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, "Topic title is required."],
+      trim: true,
+      maxlength: 150,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: "",
+    },
+  },
+  { _id: true }
+);
+
+const syllabusUnitSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, "Unit title is required."],
+      trim: true,
+      maxlength: 150,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: "",
+    },
+    durationHours: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    topics: {
+      type: [syllabusTopicSchema],
+      default: [],
+    },
+  },
+  { _id: true }
+);
+
 const subjectSchema = new mongoose.Schema(
   {
     subjectName: {
       type: String,
-      required: [true, "Subject name is required"],
+      required: [true, "Subject name is required."],
       trim: true,
-      minlength: [2, "Subject name must contain at least 2 characters"],
-      maxlength: [100, "Subject name cannot exceed 100 characters"],
+      minlength: 2,
+      maxlength: 100,
     },
 
     subjectCode: {
       type: String,
-      required: [true, "Subject code is required"],
+      required: [true, "Subject code is required."],
       trim: true,
       uppercase: true,
-      minlength: [2, "Subject code must contain at least 2 characters"],
-      maxlength: [30, "Subject code cannot exceed 30 characters"],
+      minlength: 2,
+      maxlength: 30,
+      unique: true,
     },
 
+    // Optional legacy field. New subjects do not need a course.
+    // Remove this field only after migrating existing records.
     course_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
-      required: [true, "Please select a course"],
+      default: undefined,
     },
 
     description: {
       type: String,
       trim: true,
-      maxlength: [1000, "Description cannot exceed 1000 characters"],
+      maxlength: 1000,
       default: "",
+    },
+
+    syllabus: {
+      type: [syllabusUnitSchema],
+      default: [],
     },
 
     status: {
       type: String,
       enum: ["Active", "Inactive"],
       default: "Active",
+      index: true,
     },
   },
   {
@@ -45,16 +99,15 @@ const subjectSchema = new mongoose.Schema(
   }
 );
 
-// Subject codes must be unique within a course.
+// Subject codes are globally unique, not unique per course.
 subjectSchema.index(
-  { course_id: 1, subjectCode: 1 },
-  { unique: true, name: "unique_subject_code_per_course" }
+  { subjectCode: 1 },
+  { unique: true, name: "unique_subject_code" }
 );
 
-// Supports course-based status filtering.
 subjectSchema.index(
-  { course_id: 1, status: 1 },
-  { name: "subject_course_status" }
+  { subjectName: 1, status: 1 },
+  { name: "subject_name_status" }
 );
 
 const Subject = mongoose.model("Subject", subjectSchema);

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Subject from "./Subject.js";
 
 const courseSchema = new mongoose.Schema(
   {
@@ -25,6 +26,15 @@ const courseSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+        
+    
+    subjects: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+      },
+    ],
+
 
     mrp: {
       type: Number,

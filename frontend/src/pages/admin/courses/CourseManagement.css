@@ -561,3 +561,56 @@
   color: #b91c1c;
   font-size: 13px;
 }
+
+
+
+
+.course-subject-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.course-subject-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.course-subject-option:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.course-subject-option input {
+  flex: 0 0 auto;
+  accent-color: #2563eb;
+}
+
+.course-subject-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.course-subject-option strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.course-subject-option small {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+@media (max-width: 650px) {
+  .course-subject-list {
+    grid-template-columns: 1fr;
+  }
+}
