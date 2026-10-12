@@ -1,32 +1,26 @@
-
 import mongoose from "mongoose";
 import Subject from "../models/Subject.js";
-import Course from "../models/Course.js";
 
-// =====================================================
-// COMMON HELPERS
-// =====================================================
-
-const sendError = (res, statusCode, message, errorCode) => {
-  return res.status(statusCode).json({
+const sendError = (res, statusCode, message, errorCode) =>
+  res.status(statusCode).json({
     success: false,
     message,
     ...(errorCode ? { errorCode } : {}),
   });
-};
+
+const isValidObjectId = (id) =>
+  typeof id === "string" && mongoose.isValidObjectId(id);
 
 const handleControllerError = (res, error) => {
-  // Duplicate subject code within the same course.
   if (error?.code === 11000) {
     return sendError(
       res,
       409,
-      "This subject code already exists for the selected course.",
+      "This subject code already exists. Please use a different code.",
       "DUPLICATE_SUBJECT_CODE"
     );
   }
 
-  // Mongoose validation error.
   if (error instanceof mongoose.Error.ValidationError) {
     const message = Object.values(error.errors)
       .map((item) => item.message)
@@ -40,12 +34,11 @@ const handleControllerError = (res, error) => {
     );
   }
 
-  // Invalid MongoDB ObjectId.
   if (error instanceof mongoose.Error.CastError) {
     return sendError(
       res,
       400,
-      "Invalid subject or course ID.",
+      "Invalid subject ID or field value.",
       "INVALID_ID"
     );
   }
@@ -60,152 +53,149 @@ const handleControllerError = (res, error) => {
   );
 };
 
-const isValidObjectId = (id) => {
-  return mongoose.isValidObjectId(id);
-};
-
-const normalizeSubjectInput = (body) => {
+const normalizeSubjectInput = (body = {}) => {
   const input = {};
 
-  if (Object.prototype.hasOwnProperty.call(body, "subjectName")) {
-    input.subjectName = body.subjectName;
+  for (const field of [
+    "subjectName",
+    "subjectCode",
+    "description",
+    "status",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      input[field] = body[field];
+    }
   }
 
-  if (Object.prototype.hasOwnProperty.call(body, "subjectCode")) {
-    input.subjectCode = body.subjectCode;
-  }
-
+  // Keep compatibility with older records/clients.
+  // The field is optional and not required to create a subject.
   if (Object.prototype.hasOwnProperty.call(body, "course_id")) {
     input.course_id = body.course_id;
   }
 
-  if (Object.prototype.hasOwnProperty.call(body, "description")) {
-    input.description = body.description;
-  }
-
-  if (Object.prototype.hasOwnProperty.call(body, "status")) {
-    input.status = body.status;
-  }
-
+  // Intentionally do not accept syllabus.
   return input;
+};
+
+const validateSubjectFields = (data, { partial = false } = {}) => {
+  if (
+    !partial &&
+    (typeof data.subjectName !== "string" ||
+      !data.subjectName.trim())
+  ) {
+    return {
+      message: "Subject name is required.",
+      code: "SUBJECT_NAME_REQUIRED",
+    };
+  }
+
+  if (
+    !partial &&
+    (typeof data.subjectCode !== "string" ||
+      !data.subjectCode.trim())
+  ) {
+    return {
+      message: "Subject code is required.",
+      code: "SUBJECT_CODE_REQUIRED",
+    };
+  }
+
+  if (
+    data.subjectName !== undefined &&
+    (typeof data.subjectName !== "string" ||
+      data.subjectName.trim().length < 2 ||
+      data.subjectName.trim().length > 100)
+  ) {
+    return {
+      message: "Subject name must contain 2 to 100 characters.",
+      code: "INVALID_SUBJECT_NAME",
+    };
+  }
+
+  if (
+    data.subjectCode !== undefined &&
+    (typeof data.subjectCode !== "string" ||
+      data.subjectCode.trim().length < 2 ||
+      data.subjectCode.trim().length > 30)
+  ) {
+    return {
+      message: "Subject code must contain 2 to 30 characters.",
+      code: "INVALID_SUBJECT_CODE",
+    };
+  }
+
+  if (
+    data.description !== undefined &&
+    (typeof data.description !== "string" ||
+      data.description.trim().length > 1000)
+  ) {
+    return {
+      message: "Description must be a string of at most 1000 characters.",
+      code: "INVALID_DESCRIPTION",
+    };
+  }
+
+  if (
+    data.status !== undefined &&
+    !["Active", "Inactive"].includes(data.status)
+  ) {
+    return {
+      message: "Status must be Active or Inactive.",
+      code: "INVALID_STATUS",
+    };
+  }
+
+  return null;
 };
 
 // =====================================================
 // CREATE SUBJECT
 // POST /api/subjects
 // =====================================================
-
 export const createSubject = async (req, res) => {
   try {
-    const {
-      subjectName,
-      subjectCode,
-      course_id,
-      description,
-      status,
-    } = req.body;
+    const input = normalizeSubjectInput(req.body);
+    const fieldError = validateSubjectFields(input);
 
-    // Required fields.
-    if (
-      typeof subjectName !== "string" ||
-      !subjectName.trim()
-    ) {
+    if (fieldError) {
       return sendError(
         res,
         400,
-        "Subject name is required.",
-        "SUBJECT_NAME_REQUIRED"
+        fieldError.message,
+        fieldError.code
       );
     }
+
+    const subjectData = {
+      subjectName: input.subjectName.trim(),
+      subjectCode: input.subjectCode.trim().toUpperCase(),
+      description: (input.description || "").trim(),
+      status: input.status || "Active",
+    };
 
     if (
-      typeof subjectCode !== "string" ||
-      !subjectCode.trim()
+      input.course_id !== undefined &&
+      input.course_id !== null &&
+      input.course_id !== ""
     ) {
-      return sendError(
-        res,
-        400,
-        "Subject code is required.",
-        "SUBJECT_CODE_REQUIRED"
-      );
+      if (!isValidObjectId(String(input.course_id))) {
+        return sendError(
+          res,
+          400,
+          "Please provide a valid course ID.",
+          "INVALID_COURSE_ID"
+        );
+      }
+
+      subjectData.course_id = input.course_id;
     }
 
-    if (!course_id) {
-      return sendError(
-        res,
-        400,
-        "Please select a course.",
-        "COURSE_REQUIRED"
-      );
-    }
-
-    if (!isValidObjectId(course_id)) {
-      return sendError(
-        res,
-        400,
-        "Please provide a valid course ID.",
-        "INVALID_COURSE_ID"
-      );
-    }
-
-    // Validate field types before saving.
-    if (
-      description !== undefined &&
-      typeof description !== "string"
-    ) {
-      return sendError(
-        res,
-        400,
-        "Description must be a string.",
-        "INVALID_DESCRIPTION"
-      );
-    }
-
-    if (
-      status !== undefined &&
-      !["Active", "Inactive"].includes(status)
-    ) {
-      return sendError(
-        res,
-        400,
-        "Status must be Active or Inactive.",
-        "INVALID_STATUS"
-      );
-    }
-
-    // Ensure the selected course exists.
-    const courseExists = await Course.exists({
-      _id: course_id,
-    });
-
-    if (!courseExists) {
-      return sendError(
-        res,
-        404,
-        "The selected course was not found.",
-        "COURSE_NOT_FOUND"
-      );
-    }
-
-    const subject = await Subject.create({
-      subjectName: subjectName.trim(),
-      subjectCode: subjectCode.trim().toUpperCase(),
-      course_id,
-      description:
-        typeof description === "string"
-          ? description.trim()
-          : "",
-      status: status || "Active",
-    });
-
-    const populatedSubject = await Subject.findById(
-      subject._id
-    ).populate("course_id");
+    const subject = await Subject.create(subjectData);
 
     return res.status(201).json({
       success: true,
       message: "Subject created successfully.",
-      data: populatedSubject,
+      data: subject,
     });
   } catch (error) {
     return handleControllerError(res, error);
@@ -215,9 +205,9 @@ export const createSubject = async (req, res) => {
 // =====================================================
 // GET ALL SUBJECTS
 // GET /api/subjects
-// Supports search, filters, sorting and pagination.
+// Supports search, optional legacy course filter,
+// status, sorting and pagination.
 // =====================================================
-
 export const getSubjects = async (req, res) => {
   try {
     const {
@@ -233,10 +223,7 @@ export const getSubjects = async (req, res) => {
     const pageNumber = Number(page);
     const pageSize = Number(limit);
 
-    if (
-      !Number.isInteger(pageNumber) ||
-      pageNumber < 1
-    ) {
+    if (!Number.isInteger(pageNumber) || pageNumber < 1) {
       return sendError(
         res,
         400,
@@ -286,8 +273,9 @@ export const getSubjects = async (req, res) => {
 
     const filter = {};
 
+    // Supports filtering legacy records only.
     if (course_id) {
-      if (!isValidObjectId(course_id)) {
+      if (!isValidObjectId(String(course_id))) {
         return sendError(
           res,
           400,
@@ -312,8 +300,6 @@ export const getSubjects = async (req, res) => {
       filter.status = status;
     }
 
-    // Escape regex special characters so search input
-    // is treated as plain text, not a regex expression.
     const safeSearch = String(search)
       .trim()
       .slice(0, 100)
@@ -321,42 +307,22 @@ export const getSubjects = async (req, res) => {
 
     if (safeSearch) {
       filter.$or = [
-        {
-          subjectName: {
-            $regex: safeSearch,
-            $options: "i",
-          },
-        },
-        {
-          subjectCode: {
-            $regex: safeSearch,
-            $options: "i",
-          },
-        },
-        {
-          description: {
-            $regex: safeSearch,
-            $options: "i",
-          },
-        },
+        { subjectName: { $regex: safeSearch, $options: "i" } },
+        { subjectCode: { $regex: safeSearch, $options: "i" } },
+        { description: { $regex: safeSearch, $options: "i" } },
       ];
     }
 
     const skip = (pageNumber - 1) * pageSize;
-
-    const sortDirection = order === "asc" ? 1 : -1;
+    const direction = order === "asc" ? 1 : -1;
 
     const [subjects, total] = await Promise.all([
       Subject.find(filter)
-        .populate("course_id")
-        .sort({
-          [sortBy]: sortDirection,
-          _id: 1,
-        })
+        .select("-questionBank")
+        .sort({ [sortBy]: direction, _id: 1 })
         .skip(skip)
         .limit(pageSize)
         .lean(),
-
       Subject.countDocuments(filter),
     ]);
 
@@ -382,7 +348,6 @@ export const getSubjects = async (req, res) => {
 // GET SUBJECT BY ID
 // GET /api/subjects/:id
 // =====================================================
-
 export const getSubjectById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -396,9 +361,7 @@ export const getSubjectById = async (req, res) => {
       );
     }
 
-    const subject = await Subject.findById(id)
-      .populate("course_id")
-      .lean();
+    const subject = await Subject.findById(id).lean();
 
     if (!subject) {
       return sendError(
@@ -408,6 +371,9 @@ export const getSubjectById = async (req, res) => {
         "SUBJECT_NOT_FOUND"
       );
     }
+
+    // Strip legacy syllabus data from the response, if any exists.
+    delete subject.syllabus;
 
     return res.status(200).json({
       success: true,
@@ -423,7 +389,6 @@ export const getSubjectById = async (req, res) => {
 // UPDATE SUBJECT
 // PATCH /api/subjects/:id
 // =====================================================
-
 export const updateSubject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -439,7 +404,7 @@ export const updateSubject = async (req, res) => {
 
     const updates = normalizeSubjectInput(req.body);
 
-    if (Object.keys(updates).length === 0) {
+    if (!Object.keys(updates).length) {
       return sendError(
         res,
         400,
@@ -448,95 +413,39 @@ export const updateSubject = async (req, res) => {
       );
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "subjectName"
-      ) &&
-      (
-        typeof updates.subjectName !== "string" ||
-        !updates.subjectName.trim()
-      )
-    ) {
+    const fieldError = validateSubjectFields(updates, {
+      partial: true,
+    });
+
+    if (fieldError) {
       return sendError(
         res,
         400,
-        "Subject name cannot be empty.",
-        "INVALID_SUBJECT_NAME"
+        fieldError.message,
+        fieldError.code
       );
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "subjectCode"
-      )
-    ) {
-      if (
-        typeof updates.subjectCode !== "string" ||
-        !updates.subjectCode.trim()
-      ) {
-        return sendError(
-          res,
-          400,
-          "Subject code cannot be empty.",
-          "INVALID_SUBJECT_CODE"
-        );
-      }
-
-      updates.subjectCode =
-        updates.subjectCode.trim().toUpperCase();
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "subjectName"
-      )
-    ) {
+    if (updates.subjectName !== undefined) {
       updates.subjectName = updates.subjectName.trim();
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "description"
-      )
-    ) {
-      if (typeof updates.description !== "string") {
-        return sendError(
-          res,
-          400,
-          "Description must be a string.",
-          "INVALID_DESCRIPTION"
-        );
-      }
+    if (updates.subjectCode !== undefined) {
+      updates.subjectCode = updates.subjectCode.trim().toUpperCase();
+    }
 
+    if (updates.description !== undefined) {
       updates.description = updates.description.trim();
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "status"
-      ) &&
-      !["Active", "Inactive"].includes(updates.status)
-    ) {
-      return sendError(
-        res,
-        400,
-        "Status must be Active or Inactive.",
-        "INVALID_STATUS"
-      );
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        updates,
-        "course_id"
-      )
-    ) {
-      if (!isValidObjectId(updates.course_id)) {
+    if (updates.course_id !== undefined) {
+      if (
+        updates.course_id === null ||
+        updates.course_id === ""
+      ) {
+        updates.$unset = { course_id: 1 };
+        delete updates.course_id;
+      } else if (!isValidObjectId(String(updates.course_id))) {
         return sendError(
           res,
           400,
@@ -544,29 +453,23 @@ export const updateSubject = async (req, res) => {
           "INVALID_COURSE_ID"
         );
       }
+    }
 
-      const courseExists = await Course.exists({
-        _id: updates.course_id,
-      });
+    const updateOperation = { $set: { ...updates } };
 
-      if (!courseExists) {
-        return sendError(
-          res,
-          404,
-          "The selected course was not found.",
-          "COURSE_NOT_FOUND"
-        );
-      }
+    if (updates.$unset) {
+      updateOperation.$unset = updates.$unset;
+      delete updateOperation.$set.$unset;
     }
 
     const subject = await Subject.findByIdAndUpdate(
       id,
-      { $set: updates },
+      updateOperation,
       {
         new: true,
         runValidators: true,
       }
-    ).populate("course_id");
+    );
 
     if (!subject) {
       return sendError(
@@ -588,10 +491,9 @@ export const updateSubject = async (req, res) => {
 };
 
 // =====================================================
-// CHANGE SUBJECT STATUS
+// UPDATE SUBJECT STATUS
 // PATCH /api/subjects/:id/status
 // =====================================================
-
 export const updateSubjectStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -622,7 +524,7 @@ export const updateSubjectStatus = async (req, res) => {
         new: true,
         runValidators: true,
       }
-    ).populate("course_id");
+    );
 
     if (!subject) {
       return sendError(
@@ -647,7 +549,6 @@ export const updateSubjectStatus = async (req, res) => {
 // DELETE SUBJECT
 // DELETE /api/subjects/:id
 // =====================================================
-
 export const deleteSubject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -672,16 +573,46 @@ export const deleteSubject = async (req, res) => {
       );
     }
 
-    // Add checks here before deletion if other modules
-    // already reference subjects, such as exams or marks.
+    // Preserve safeguards for modules that already reference subjects.
+    const Question = mongoose.models.Question;
+    const Exam = mongoose.models.Exam;
+
+    if (Question) {
+      const questionExists = await Question.exists({
+        subject_id: id,
+      });
+
+      if (questionExists) {
+        return sendError(
+          res,
+          409,
+          "This subject is used by questions. Remove or reassign those questions before deleting it.",
+          "SUBJECT_IN_USE"
+        );
+      }
+    }
+
+    if (Exam) {
+      const examExists = await Exam.exists({
+        subject_id: id,
+      });
+
+      if (examExists) {
+        return sendError(
+          res,
+          409,
+          "This subject is used by exams and cannot be deleted.",
+          "SUBJECT_IN_USE"
+        );
+      }
+    }
+
     await subject.deleteOne();
 
     return res.status(200).json({
       success: true,
       message: "Subject deleted successfully.",
-      data: {
-        id: subject._id,
-      },
+      data: { id: subject._id },
     });
   } catch (error) {
     return handleControllerError(res, error);

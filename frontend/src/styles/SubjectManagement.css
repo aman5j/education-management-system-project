@@ -1084,3 +1084,130 @@
     transition: none;
   }
 }
+
+
+.subject-syllabus {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e5eaf2;
+}
+
+.subject-syllabus-heading,
+.subject-syllabus-unit-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.subject-syllabus-heading h2,
+.subject-syllabus-unit-heading h3 {
+  margin: 0;
+  color: #111827;
+}
+
+.subject-syllabus-heading p,
+.subject-syllabus-empty {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.subject-syllabus-unit {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid #e5eaf2;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.subject-syllabus-topics {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e5eaf2;
+}
+
+.subject-syllabus-topics h4 {
+  margin: 0 0 14px;
+  color: #334155;
+}
+
+.subject-syllabus-topic {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.subject-icon-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 1px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.subject-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.subject-view-syllabus {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.subject-view-syllabus-unit {
+  padding: 16px;
+  border: 1px solid #e5eaf2;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.subject-view-syllabus-unit h3 {
+  margin: 0 0 8px;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.subject-view-syllabus-unit p,
+.subject-view-syllabus-unit li {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.subject-view-syllabus-unit ul {
+  padding-left: 22px;
+}
+
+.subject-syllabus-duration {
+  color: #64748b !important;
+  font-size: 12px !important;
+}
+
+@media (max-width: 700px) {
+  .subject-syllabus-topic {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-syllabus-unit {
+    padding: 14px;
+  }
+
+  .subject-form-actions {
+    flex-wrap: wrap;
+  }
+}
+

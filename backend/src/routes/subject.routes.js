@@ -11,6 +11,15 @@ import {
 } from "../controllers/subject.controller.js";
 
 import {
+  getSubjectQuestionBank,
+  addSubjectQuestion,
+  updateSubjectQuestion,
+  deleteSubjectQuestion,
+  importSubjectQuestions,
+} from "../controllers/subjectQuestionBank.controller.js";
+
+
+import {
   authenticate,
   authorizeRoles,
 } from "../middleware/auth.middleware.js";
@@ -28,6 +37,20 @@ router
   .route("/")
   .get(getSubjects)
   .post(createSubject);
+
+
+// Embedded Question Bank: questions are stored in Subject.questionBank.
+router.get("/:id/question-bank", getSubjectQuestionBank);
+router.post("/:id/question-bank", addSubjectQuestion);
+router.post("/:id/question-bank/import", importSubjectQuestions);
+router.patch(
+  "/:id/question-bank/:questionId",
+  updateSubjectQuestion
+);
+router.delete(
+  "/:id/question-bank/:questionId",
+  deleteSubjectQuestion
+);
 
 // GET    /api/subjects/:id
 // PATCH  /api/subjects/:id

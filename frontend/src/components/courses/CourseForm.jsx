@@ -3,13 +3,15 @@ import React, {
   useState,
 } from "react";
 
+import { getSubjects } from "../../services/subjectService";
+import { getCategories } from "../../services/categoryService";
+
 import { getAssetUrl } from "../../utils/assetUrl";
 import RichTextEditor from "../common/RichTextEditor";
 
 const initialState = {
   courseTitle: "",
   courseType: "",
-  certificateDiploma: "",
   courseCategory: "",
   mrp: "",
   price: "",
@@ -29,6 +31,7 @@ const initialState = {
   mrpVisible: true,
   hideExamResult: false,
   status: "Draft",
+  subjects: [],
 };
 
 const CourseForm = ({
@@ -59,6 +62,143 @@ const CourseForm = ({
   const [imagePreview, setImagePreview] =
     useState("");
 
+
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
+  const [subjectsError, setSubjectsError] = useState("");
+  const [subjectSearch, setSubjectSearch] = useState("");
+
+
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState("");
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCategories = async () => {
+      setCategoriesLoading(true);
+      setCategoriesError("");
+
+      try {
+        const response = await getCategories({
+          status: "Active",
+          limit: 100,
+          sortBy: "categoryName",
+          sortOrder: "asc",
+        });
+
+        const payload = response?.data;
+
+        // Category API returns:
+        // { success: true, data: { categories: [], pagination: {} } }
+        const categories = Array.isArray(payload?.data?.categories)
+          ? payload.data.categories
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        if (!cancelled) {
+          setAvailableCategories(categories);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCategoriesError(
+            error?.response?.data?.message ||
+              "Unable to load course categories. Please try again."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  const toggleSubject = (subjectId) => {
+      setForm((previous) => {
+        const selected = previous.subjects || [];
+
+        return {
+          ...previous,
+          subjects: selected.includes(subjectId)
+            ? selected.filter((id) => id !== subjectId)
+            : [...selected, subjectId],
+        };
+      });
+
+      setErrors((previous) => ({
+        ...previous,
+        subjects: "",
+      }));
+
+      setServerError("");
+    };
+
+    const filteredSubjects = availableSubjects.filter((subject) => {
+      const term = subjectSearch.trim().toLowerCase();
+
+      return (
+        !term ||
+        subject.subjectName?.toLowerCase().includes(term) ||
+        subject.subjectCode?.toLowerCase().includes(term)
+      );
+    });
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSubjects = async () => {
+      setSubjectsLoading(true);
+      setSubjectsError("");
+
+      try {
+        const response = await getSubjects({
+          status: "Active",
+          limit: 100,
+          sortBy: "subjectName",
+          order: "asc",
+        });
+
+        const payload = response?.data;
+        const list = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+
+        if (!cancelled) {
+          setAvailableSubjects(list);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setSubjectsError(
+            error?.response?.data?.message ||
+              "Unable to load subjects. Please refresh and try again."
+          );
+        }
+      } finally {
+        if (!cancelled) setSubjectsLoading(false);
+      }
+    };
+
+    loadSubjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     // ADD COURSE
     if (!initialData) {
@@ -76,9 +216,6 @@ const CourseForm = ({
 
       courseType:
         initialData.courseType || "",
-
-      certificateDiploma:
-        initialData.certificateDiploma || "",
 
       courseCategory:
         initialData.courseCategory || "",
@@ -139,6 +276,13 @@ const CourseForm = ({
 
       status:
         initialData.status || "Draft",
+
+        subjects: Array.isArray(initialData.subjects)
+          ? initialData.subjects.map((subject) =>
+              String(subject?._id || subject)
+            )
+          : [],
+
     });
 
     // SHOW EXISTING COURSE IMAGE
@@ -367,19 +511,15 @@ const CourseForm = ({
   const formData =
     new FormData();
 
-  Object.entries(form).forEach(
-    ([key, value]) => {
-      if (
-        value !== null &&
-        value !== undefined
-      ) {
-        formData.append(
-          key,
-          String(value)
-        );
+  Object.entries(form).forEach(([key, value]) => {
+      if (value === null || value === undefined) return;
+
+      if (key === "subjects") {
+        formData.append("subjects", JSON.stringify(value));
+      } else {
+        formData.append(key, String(value));
       }
-    }
-  );
+    });
 
   if (image) {
     formData.append(
@@ -586,53 +726,74 @@ const CourseForm = ({
           </div>
 
           <div className="course-field">
-            <label>
-              Course Type *
-            </label>
+            <label htmlFor="courseType">Course Type *</label>
 
-            <input
+            <select
+              id="courseType"
               name="courseType"
               value={form.courseType}
               onChange={handleChange}
-            //   required
-              placeholder="e.g. Online"
-            />
+              required
+            >
+              <option value="">Select course type</option>
+              <option value="Online">Online</option>
+              <option value="Offline">Offline</option>
+            </select>
 
             {fieldError("courseType")}
           </div>
 
+          
           <div className="course-field">
-            <label>
-              Certificate / Diploma *
-            </label>
+            <label htmlFor="courseCategory">Course Category *</label>
 
-            <input
-              name="certificateDiploma"
-              value={
-                form.certificateDiploma
-              }
-              onChange={handleChange}
-              placeholder="Certificate"
-            />
-
-            {fieldError("certificateDiploma")}
-          </div>
-
-          <div className="course-field">
-            <label>
-              Course Category *
-            </label>
-
-            <input
+            <select
+              id="courseCategory"
               name="courseCategory"
-              value={
-                form.courseCategory
-              }
+              value={form.courseCategory}
               onChange={handleChange}
-              placeholder="Course category"
-            />
+              required
+              disabled={categoriesLoading}
+            >
+              <option value="">
+                {categoriesLoading
+                  ? "Loading categories..."
+                  : "Select course category"}
+              </option>
+
+              {availableCategories.map((category) => (
+                <option
+                  key={category._id}
+                  value={category.categoryName}
+                >
+                  {category.categoryName}
+                </option>
+              ))}
+            </select>
+
+            {categoriesError && (
+              <div className="course-field-error" role="alert">
+                {categoriesError}
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload
+                </button>
+              </div>
+            )}
+
+            {!categoriesLoading &&
+              !categoriesError &&
+              availableCategories.length === 0 && (
+                <p className="course-field-error">
+                  No active categories found. Create a category first in Course Categories.
+                </p>
+              )}
+
             {fieldError("courseCategory")}
           </div>
+
 
           <div className="course-field">
             <label>
@@ -652,6 +813,89 @@ const CourseForm = ({
           </div>
         </div>
       </div>
+
+      
+      {/* COURSE SUBJECTS */}
+
+      <div className="course-form-section">
+        <h2>Course Subjects</h2>
+        <p>
+          Select the subjects included in this course.
+          A subject can be reused in multiple courses.
+        </p>
+
+        <div className="course-field">
+          <label htmlFor="course-subject-search">
+            Search subjects
+          </label>
+
+          <input
+            id="course-subject-search"
+            type="search"
+            value={subjectSearch}
+            onChange={(event) => setSubjectSearch(event.target.value)}
+            placeholder="Search by subject name or code"
+          />
+        </div>
+
+        {subjectsLoading && <p>Loading subjects...</p>}
+
+        {subjectsError && (
+          <div className="course-form-error" role="alert">
+            {subjectsError}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </button>
+          </div>
+        )}
+
+        {!subjectsLoading && !subjectsError && (
+          <div className="course-subject-list">
+            {filteredSubjects.length === 0 ? (
+              <p>
+                No active subjects found. Create a subject first in Subject
+                Management.
+              </p>
+            ) : (
+              filteredSubjects.map((subject) => {
+                const selected = (form.subjects || []).includes(
+                  String(subject._id)
+                );
+
+                return (
+                  <label
+                    key={subject._id}
+                    className="course-subject-option"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleSubject(String(subject._id))}
+                    />
+
+                    <span>
+                      <strong>{subject.subjectName}</strong>
+                      <small>{subject.subjectCode}</small>
+                    </span>
+
+                    {selected && <span>Selected</span>}
+                  </label>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        <p>
+          Selected subjects: {(form.subjects || []).length}
+        </p>
+
+        {fieldError("subjects")}
+      </div>
+
 
       {/* PRICING */}
 

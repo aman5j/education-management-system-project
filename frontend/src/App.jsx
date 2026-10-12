@@ -59,6 +59,8 @@ import SubjectManagement from "./pages/admin/subjects/SubjectManagement";
 import AddSubject from "./pages/admin/subjects/AddSubject";
 import EditSubject from "./pages/admin/subjects/EditSubject";
 import ViewSubject from "./pages/admin/subjects/ViewSubject";
+import SubjectQuestionBank from "./pages/admin/subjects/SubjectQuestionBank";
+
 
 import Attendance from "./pages/admin/attendance/Attendance";
 
@@ -189,6 +191,12 @@ const App = () => {
         <Route path="subjects/add" element={<AddSubject />} />
         <Route path="subjects/edit/:id" element={<EditSubject />} />
         <Route path="subjects/view/:id" element={<ViewSubject />} />
+
+        {/* Subject Question Bank */}
+        <Route
+          path="subjects/:id/question-bank"
+          element={<SubjectQuestionBank />}
+        />
 
         {/* Course categories */}
         <Route path="categories" element={<Categories />} />

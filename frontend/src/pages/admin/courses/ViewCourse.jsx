@@ -149,13 +149,6 @@ const ViewCourse = () => {
               </strong>
             </div>
 
-            <div>
-              <span>Certificate</span>
-              <strong>
-                {course.certificateDiploma ||
-                  "-"}
-              </strong>
-            </div>
           </div>
         </div>
 

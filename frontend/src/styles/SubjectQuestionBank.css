@@ -1,0 +1,390 @@
+
+.sqb-page {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  color: #172033;
+}
+
+.sqb-header,
+.sqb-section-heading,
+.sqb-import-summary,
+.sqb-form-actions,
+.sqb-inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sqb-header h1 {
+  margin: 12px 0 5px;
+  font-size: 27px;
+}
+
+.sqb-header p,
+.sqb-section-heading p,
+.sqb-import-summary p {
+  margin: 4px 0 0;
+  color: #667085;
+}
+
+.sqb-card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(16 24 40 / 4%);
+}
+
+.sqb-section-heading {
+  margin-bottom: 18px;
+}
+
+.sqb-section-heading h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.sqb-primary,
+.sqb-secondary,
+.sqb-back,
+.sqb-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sqb-primary {
+  color: #fff;
+  background: #2458d3;
+}
+
+.sqb-primary:hover {
+  background: #1948b7;
+}
+
+.sqb-primary:disabled,
+.sqb-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sqb-secondary {
+  color: #344054;
+  background: #fff;
+  border-color: #d0d5dd;
+}
+
+.sqb-secondary:hover {
+  background: #f8fafc;
+}
+
+.sqb-back {
+  padding: 0;
+  color: #475467;
+  background: transparent;
+}
+
+.sqb-icon-button {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  color: #475467;
+  background: #fff;
+  border-color: #e4e7ec;
+}
+
+.sqb-delete {
+  color: #c62828;
+}
+
+.sqb-alert {
+  padding: 12px 15px;
+  border: 1px solid;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.sqb-error {
+  color: #a61b1b;
+  background: #fff1f0;
+  border-color: #ffc9c5;
+}
+
+.sqb-success {
+  color: #17663a;
+  background: #edfff3;
+  border-color: #b7ebc6;
+}
+
+.sqb-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 72px;
+  padding: 16px;
+  border: 1px dashed #9aabd0;
+  border-radius: 10px;
+  color: #2458d3;
+  background: #f8faff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sqb-upload input {
+  max-width: 100%;
+  margin-left: auto;
+  color: #475467;
+  font-weight: 400;
+}
+
+.sqb-import-summary {
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+}
+
+.sqb-preview {
+  margin-top: 20px;
+}
+
+.sqb-preview h3 {
+  font-size: 15px;
+}
+
+.sqb-rejected {
+  margin-top: 14px;
+  padding: 12px;
+  color: #8b2424;
+  background: #fff5f5;
+  border-radius: 8px;
+}
+
+.sqb-rejected ul {
+  margin-bottom: 0;
+  padding-left: 22px;
+}
+
+.sqb-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.sqb-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sqb-full {
+  grid-column: 1 / -1;
+}
+
+.sqb-field input,
+.sqb-field textarea,
+.sqb-field select,
+.sqb-filters input,
+.sqb-filters select,
+.sqb-option-row > input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  color: #172033;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+}
+
+.sqb-field textarea {
+  resize: vertical;
+}
+
+.sqb-field input:focus,
+.sqb-field textarea:focus,
+.sqb-field select:focus,
+.sqb-filters input:focus,
+.sqb-filters select:focus,
+.sqb-option-row > input:focus {
+  outline: 2px solid rgb(36 88 211 / 20%);
+  border-color: #2458d3;
+}
+
+.sqb-options {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 12px;
+}
+
+.sqb-option-row {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 10px;
+}
+
+.sqb-correct-choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+
+.sqb-correct-choice input {
+  width: auto;
+}
+
+.sqb-form-actions {
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #eaecf0;
+}
+
+.sqb-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 180px 200px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sqb-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sqb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.sqb-table th,
+.sqb-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #eaecf0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.sqb-table th {
+  color: #475467;
+  background: #f8fafc;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sqb-table td strong {
+  display: block;
+  max-width: 460px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.sqb-table td small {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+}
+
+.sqb-status {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sqb-status-active {
+  color: #17663a;
+  background: #dcfae6;
+}
+
+.sqb-status-draft {
+  color: #854d0e;
+  background: #fef3c7;
+}
+
+.sqb-status-archived {
+  color: #475467;
+  background: #eaecf0;
+}
+
+.sqb-empty {
+  padding: 35px 15px;
+  text-align: center;
+  color: #667085;
+}
+
+.sqb-empty h3 {
+  margin-bottom: 6px;
+  color: #344054;
+}
+
+@media (max-width: 760px) {
+  .sqb-page {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .sqb-card {
+    padding: 15px;
+  }
+
+  .sqb-header,
+  .sqb-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sqb-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sqb-full {
+    grid-column: auto;
+  }
+
+  .sqb-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .sqb-import-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sqb-inline-actions {
+    flex-wrap: wrap;
+  }
+
+  .sqb-upload {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sqb-upload input {
+    margin-left: 0;
+  }
+}

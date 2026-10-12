@@ -1,10 +1,101 @@
+import mongoose from "mongoose";
 import Course from "../models/Course.js";
+import Subject from "../models/Subject.js";
 
-export const getCourses = async (
-  req,
-  res,
-  next
-) => {
+const sendError = (res, status, message, errorCode) =>
+  res.status(status).json({
+    success: false,
+    message,
+    ...(errorCode ? { errorCode } : {}),
+  });
+
+const parseBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  return value === true || value === "true";
+};
+
+const normalizeCourseType = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "online") return "Online";
+  if (normalized === "offline") return "Offline";
+
+  return null;
+};
+
+const parseSubjectIds = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return { ids: [] };
+  }
+
+  let ids = value;
+
+  // FormData sends arrays as strings, so parse JSON arrays.
+  if (typeof ids === "string") {
+    try {
+      ids = JSON.parse(ids);
+    } catch {
+      return {
+        error: "Subjects must be a valid JSON array of subject IDs.",
+      };
+    }
+  }
+
+  if (!Array.isArray(ids)) {
+    return { error: "Subjects must be an array." };
+  }
+
+  const normalizedIds = [
+    ...new Set(ids.map((id) => String(id))),
+  ];
+
+  if (
+    !normalizedIds.every((id) =>
+      mongoose.isValidObjectId(id)
+    )
+  ) {
+    return {
+      error: "One or more subject IDs are invalid.",
+    };
+  }
+
+  return { ids: normalizedIds };
+};
+
+const validateSubjectIds = async (ids) => {
+  if (!ids.length) return null;
+
+  const count = await Subject.countDocuments({
+    _id: { $in: ids },
+    status: "Active",
+  });
+
+  if (count !== ids.length) {
+    return "One or more selected subjects do not exist or are inactive.";
+  }
+
+  return null;
+};
+
+const populateCourseSubjects = (query) =>
+  query.populate(
+    "subjects",
+    "subjectName subjectCode status syllabus"
+  );
+
+// =====================================================
+// GET COURSES
+// GET /api/courses
+// Supports search, filters, sorting and pagination.
+// =====================================================
+export const getCourses = async (req, res, next) => {
   try {
     const {
       search = "",
@@ -17,11 +108,7 @@ export const getCourses = async (
       sortOrder = "asc",
     } = req.query;
 
-    const currentPage = Math.max(
-      Number(page) || 1,
-      1
-    );
-
+    const currentPage = Math.max(Number(page) || 1, 1);
     const perPage = Math.min(
       Math.max(Number(limit) || 10, 1),
       100
@@ -33,37 +120,52 @@ export const getCourses = async (
       filter.status = status;
     }
 
-    if (courseType) {
-      filter.courseType = {
-        $regex: courseType.trim(),
-        $options: "i",
-      };
+    // Course Type filter accepts only Online or Offline.
+    if (String(courseType).trim()) {
+      const normalizedType = normalizeCourseType(
+        String(courseType)
+      );
+
+      if (!normalizedType) {
+        return sendError(
+          res,
+          400,
+          "Course type filter must be Online or Offline."
+        );
+      }
+
+      filter.courseType = normalizedType;
     }
 
-    if (courseCategory) {
+    if (String(courseCategory).trim()) {
       filter.courseCategory = {
-        $regex: courseCategory.trim(),
+        $regex: String(courseCategory).trim(),
         $options: "i",
       };
     }
 
-    if (search.trim()) {
+    const safeSearch = String(search)
+      .trim()
+      .slice(0, 100)
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    if (safeSearch) {
       filter.$or = [
         {
           courseTitle: {
-            $regex: search.trim(),
+            $regex: safeSearch,
             $options: "i",
           },
         },
         {
           courseType: {
-            $regex: search.trim(),
+            $regex: safeSearch,
             $options: "i",
           },
         },
         {
           courseCategory: {
-            $regex: search.trim(),
+            $regex: safeSearch,
             $options: "i",
           },
         },
@@ -81,41 +183,34 @@ export const getCourses = async (
       "createdAt",
     ];
 
-    const safeSortBy = allowedSortFields.includes(
-      sortBy
-    )
+    const safeSortBy = allowedSortFields.includes(sortBy)
       ? sortBy
       : "displayOrder";
 
     const sort = {
-      [safeSortBy]:
-        sortOrder === "desc" ? -1 : 1,
+      [safeSortBy]: sortOrder === "desc" ? -1 : 1,
     };
 
-    const skip =
-      (currentPage - 1) * perPage;
+    const skip = (currentPage - 1) * perPage;
 
-    const [courses, total] =
-      await Promise.all([
+    const [courses, total] = await Promise.all([
+      populateCourseSubjects(
         Course.find(filter)
           .sort(sort)
           .skip(skip)
           .limit(perPage)
-          .lean(),
+      ).lean(),
+      Course.countDocuments(filter),
+    ]);
 
-        Course.countDocuments(filter),
-      ]);
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: courses,
       pagination: {
         page: currentPage,
         limit: perPage,
         total,
-        totalPages: Math.ceil(
-          total / perPage
-        ),
+        totalPages: Math.ceil(total / perPage),
       },
     });
   } catch (error) {
@@ -123,24 +218,35 @@ export const getCourses = async (
   }
 };
 
-export const getCourse = async (
-  req,
-  res,
-  next
-) => {
+// =====================================================
+// GET COURSE BY ID
+// GET /api/courses/:id
+// =====================================================
+export const getCourse = async (req, res, next) => {
   try {
-    const course = await Course.findById(
-      req.params.id
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
+    }
+
+    const course = await populateCourseSubjects(
+      Course.findById(req.params.id)
     );
 
     if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: "Course not found",
-      });
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: course,
     });
@@ -149,16 +255,15 @@ export const getCourse = async (
   }
 };
 
-export const createCourse = async (
-  req,
-  res,
-  next
-) => {
+// =====================================================
+// CREATE COURSE
+// POST /api/courses
+// =====================================================
+export const createCourse = async (req, res, next) => {
   try {
     const {
       courseTitle,
       courseType,
-      certificateDiploma,
       courseCategory,
       mrp,
       price,
@@ -178,169 +283,187 @@ export const createCourse = async (
       mrpVisible,
       hideExamResult,
       status,
+      subjects,
     } = req.body;
 
-    if (!courseTitle?.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Course title is required",
-      });
+    if (
+      typeof courseTitle !== "string" ||
+      !courseTitle.trim()
+    ) {
+      return sendError(
+        res,
+        400,
+        "Course title is required."
+      );
     }
 
-    if (!courseType?.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Course type is required",
-      });
+    const normalizedCourseType =
+      normalizeCourseType(courseType);
+
+    if (!normalizedCourseType) {
+      return sendError(
+        res,
+        400,
+        "Course type must be Online or Offline."
+      );
     }
 
     const numericMrp = Number(mrp);
     const numericPrice = Number(price);
 
-    if (
-      Number.isNaN(numericMrp) ||
-      numericMrp < 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid MRP is required",
-      });
+    if (!Number.isFinite(numericMrp) || numericMrp < 0) {
+      return sendError(
+        res,
+        400,
+        "Valid MRP is required."
+      );
     }
 
-    if (
-      Number.isNaN(numericPrice) ||
-      numericPrice < 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid price is required",
-      });
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      return sendError(
+        res,
+        400,
+        "Valid price is required."
+      );
     }
 
     if (numericPrice > numericMrp) {
-      return res.status(400).json({
-        success: false,
-        message: "Price cannot be greater than MRP",
-      });
+      return sendError(
+        res,
+        400,
+        "Price cannot be greater than MRP."
+      );
+    }
+
+    const parsedSubjects = parseSubjectIds(subjects);
+
+    if (parsedSubjects.error) {
+      return sendError(
+        res,
+        400,
+        parsedSubjects.error,
+        "INVALID_SUBJECTS"
+      );
+    }
+
+    const subjectError = await validateSubjectIds(
+      parsedSubjects.ids
+    );
+
+    if (subjectError) {
+      return sendError(
+        res,
+        400,
+        subjectError,
+        "INVALID_SUBJECTS"
+      );
     }
 
     const course = await Course.create({
       courseTitle: courseTitle.trim(),
-      courseType: courseType.trim(),
-      certificateDiploma:
-        certificateDiploma || "",
-      courseCategory:
-        courseCategory || "",
+      courseType: normalizedCourseType,
+      courseCategory: courseCategory || "",
       mrp: numericMrp,
       price: numericPrice,
-      displayOrder:
-        Number(displayOrder) || 0,
-      duration:
-        Number(duration) || 0,
-      durationUnit:
-        durationUnit || "Months",
+      displayOrder: Number(displayOrder) || 0,
+      duration: Number(duration) || 0,
+      durationUnit: durationUnit || "Months",
 
       courseImage: req.file
         ? `/uploads/courses/${req.file.filename}`
         : "",
 
-      previewVideo:
-        previewVideo || "",
+      previewVideo: previewVideo || "",
+      totalLectures: Number(totalLectures) || 0,
+      practicalMarks: Number(practicalMarks) || 0,
+      objectiveMarks: Number(objectiveMarks) || 0,
+      description: description || "",
+      syllabus: syllabus || "",
+      eligibility: eligibility || "",
+      certificateSubject: certificateSubject || "",
 
-      totalLectures:
-        Number(totalLectures) || 0,
+      popular: parseBoolean(popular),
+      recommended: parseBoolean(recommended),
+      mrpVisible: parseBoolean(mrpVisible, true),
+      hideExamResult: parseBoolean(hideExamResult),
+      status: status || "Draft",
 
-      practicalMarks:
-        Number(practicalMarks) || 0,
-
-      objectiveMarks:
-        Number(objectiveMarks) || 0,
-
-      description:
-        description || "",
-
-      syllabus:
-        syllabus || "",
-
-      eligibility:
-        eligibility || "",
-
-      certificateSubject:
-        certificateSubject || "",
-
-      popular:
-        popular === true ||
-        popular === "true",
-
-      recommended:
-        recommended === true ||
-        recommended === "true",
-
-      mrpVisible:
-        mrpVisible === undefined
-          ? true
-          : mrpVisible === true ||
-            mrpVisible === "true",
-
-      hideExamResult:
-        hideExamResult === true ||
-        hideExamResult === "true",
-
-      status:
-        status || "Draft",
+      // References existing subjects without duplicating them.
+      subjects: parsedSubjects.ids,
     });
 
-    res.status(201).json({
+    const populatedCourse = await populateCourseSubjects(
+      Course.findById(course._id)
+    );
+
+    return res.status(201).json({
       success: true,
-      message: "Course created successfully",
-      data: course,
+      message: "Course created successfully.",
+      data: populatedCourse,
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const updateCourse = async (
-  req,
-  res,
-  next
-) => {
+// =====================================================
+// UPDATE COURSE
+// PUT /api/courses/:id
+// Omitted subjects = keep existing assignments.
+// subjects: [] = remove all subject assignments.
+// =====================================================
+export const updateCourse = async (req, res, next) => {
   try {
-    const course = await Course.findById(
-      req.params.id
-    );
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
+    }
+
+    const course = await Course.findById(req.params.id);
 
     if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: "Course not found",
-      });
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
     const body = req.body;
 
     if (body.courseTitle !== undefined) {
-      if (!body.courseTitle.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Course title is required",
-        });
+      if (
+        typeof body.courseTitle !== "string" ||
+        !body.courseTitle.trim()
+      ) {
+        return sendError(
+          res,
+          400,
+          "Course title is required."
+        );
       }
 
-      course.courseTitle =
-        body.courseTitle.trim();
+      course.courseTitle = body.courseTitle.trim();
     }
 
     if (body.courseType !== undefined) {
-      if (!body.courseType.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Course type is required",
-        });
+      const normalizedCourseType =
+        normalizeCourseType(body.courseType);
+
+      if (!normalizedCourseType) {
+        return sendError(
+          res,
+          400,
+          "Course type must be Online or Offline."
+        );
       }
 
-      course.courseType =
-        body.courseType.trim();
+      course.courseType = normalizedCourseType;
     }
 
     const numericMrp =
@@ -353,118 +476,152 @@ export const updateCourse = async (
         ? Number(body.price)
         : course.price;
 
-    if (
-      Number.isNaN(numericMrp) ||
-      numericMrp < 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid MRP is required",
-      });
+    if (!Number.isFinite(numericMrp) || numericMrp < 0) {
+      return sendError(
+        res,
+        400,
+        "Valid MRP is required."
+      );
     }
 
-    if (
-      Number.isNaN(numericPrice) ||
-      numericPrice < 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid price is required",
-      });
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      return sendError(
+        res,
+        400,
+        "Valid price is required."
+      );
     }
 
     if (numericPrice > numericMrp) {
-      return res.status(400).json({
-        success: false,
-        message: "Price cannot be greater than MRP",
-      });
+      return sendError(
+        res,
+        400,
+        "Price cannot be greater than MRP."
+      );
     }
 
-    course.certificateDiploma =
-      body.certificateDiploma ??
-      course.certificateDiploma;
+    // Update subject assignments only when supplied.
+    if (
+      Object.prototype.hasOwnProperty.call(
+        body,
+        "subjects"
+      )
+    ) {
+      const parsedSubjects = parseSubjectIds(
+        body.subjects
+      );
 
+      if (parsedSubjects.error) {
+        return sendError(
+          res,
+          400,
+          parsedSubjects.error,
+          "INVALID_SUBJECTS"
+        );
+      }
+
+      const subjectError = await validateSubjectIds(
+        parsedSubjects.ids
+      );
+
+      if (subjectError) {
+        return sendError(
+          res,
+          400,
+          subjectError,
+          "INVALID_SUBJECTS"
+        );
+      }
+
+      course.subjects = parsedSubjects.ids;
+    }
+
+    // certificateDiploma is intentionally not accepted or updated.
     course.courseCategory =
-      body.courseCategory ??
-      course.courseCategory;
+      body.courseCategory ?? course.courseCategory;
 
     course.mrp = numericMrp;
     course.price = numericPrice;
 
-    course.displayOrder =
-      body.displayOrder !== undefined
-        ? Number(body.displayOrder) || 0
-        : course.displayOrder;
+    if (body.displayOrder !== undefined) {
+      course.displayOrder =
+        Number(body.displayOrder) || 0;
+    }
 
-    course.duration =
-      body.duration !== undefined
-        ? Number(body.duration) || 0
-        : course.duration;
+    if (body.duration !== undefined) {
+      course.duration = Number(body.duration) || 0;
+    }
 
-    course.durationUnit =
-      body.durationUnit ||
-      course.durationUnit;
+    if (
+      body.durationUnit !== undefined &&
+      body.durationUnit
+    ) {
+      course.durationUnit = body.durationUnit;
+    }
 
     course.previewVideo =
-      body.previewVideo ??
-      course.previewVideo;
+      body.previewVideo ?? course.previewVideo;
 
-    course.totalLectures =
-      body.totalLectures !== undefined
-        ? Number(body.totalLectures) || 0
-        : course.totalLectures;
+    if (body.totalLectures !== undefined) {
+      course.totalLectures =
+        Number(body.totalLectures) || 0;
+    }
 
-    course.practicalMarks =
-      body.practicalMarks !== undefined
-        ? Number(body.practicalMarks) || 0
-        : course.practicalMarks;
+    if (body.practicalMarks !== undefined) {
+      course.practicalMarks =
+        Number(body.practicalMarks) || 0;
+    }
 
-    course.objectiveMarks =
-      body.objectiveMarks !== undefined
-        ? Number(body.objectiveMarks) || 0
-        : course.objectiveMarks;
+    if (body.objectiveMarks !== undefined) {
+      course.objectiveMarks =
+        Number(body.objectiveMarks) || 0;
+    }
 
     course.description =
-      body.description ??
-      course.description;
+      body.description ?? course.description;
 
     course.syllabus =
-      body.syllabus ??
-      course.syllabus;
+      body.syllabus ?? course.syllabus;
 
     course.eligibility =
-      body.eligibility ??
-      course.eligibility;
+      body.eligibility ?? course.eligibility;
 
     course.certificateSubject =
-      body.certificateSubject ??
-      course.certificateSubject;
+      body.certificateSubject ?? course.certificateSubject;
 
     if (body.popular !== undefined) {
-      course.popular =
-        body.popular === true ||
-        body.popular === "true";
+      course.popular = parseBoolean(body.popular);
     }
 
     if (body.recommended !== undefined) {
-      course.recommended =
-        body.recommended === true ||
-        body.recommended === "true";
+      course.recommended = parseBoolean(body.recommended);
     }
 
     if (body.mrpVisible !== undefined) {
-      course.mrpVisible =
-        body.mrpVisible === true ||
-        body.mrpVisible === "true";
+      course.mrpVisible = parseBoolean(body.mrpVisible);
     }
 
     if (body.hideExamResult !== undefined) {
-      course.hideExamResult =
-        body.hideExamResult === true ||
-        body.hideExamResult === "true";
+      course.hideExamResult = parseBoolean(
+        body.hideExamResult
+      );
     }
 
     if (body.status !== undefined) {
+      const validStatuses = [
+        "Published",
+        "Draft",
+        "Archived",
+      ];
+
+      if (!validStatuses.includes(body.status)) {
+        return sendError(
+          res,
+          400,
+          "Invalid course status."
+        );
+      }
+
       course.status = body.status;
     }
 
@@ -475,86 +632,113 @@ export const updateCourse = async (
 
     await course.save();
 
-    res.status(200).json({
+    const populatedCourse = await populateCourseSubjects(
+      Course.findById(course._id)
+    );
+
+    return res.status(200).json({
       success: true,
-      message: "Course updated successfully",
-      data: course,
+      message: "Course updated successfully.",
+      data: populatedCourse,
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const deleteCourse = async (
-  req,
-  res,
-  next
-) => {
+// =====================================================
+// DELETE COURSE
+// DELETE /api/courses/:id
+// =====================================================
+export const deleteCourse = async (req, res, next) => {
   try {
-    const course = await Course.findById(
-      req.params.id
-    );
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
+    }
+
+    const course = await Course.findById(req.params.id);
 
     if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: "Course not found",
-      });
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
     }
 
     await course.deleteOne();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Course deleted successfully",
+      message: "Course deleted successfully.",
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const updateCourseStatus =
-  async (req, res, next) => {
-    try {
-      const { status } = req.body;
-
-      const validStatuses = [
-        "Published",
-        "Draft",
-        "Archived",
-      ];
-
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid course status",
-        });
-      }
-
-      const course =
-        await Course.findByIdAndUpdate(
-          req.params.id,
-          { status },
-          {
-            new: true,
-            runValidators: true,
-          }
-        );
-
-      if (!course) {
-        return res.status(404).json({
-          success: false,
-          message: "Course not found",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message:
-          "Course status updated successfully",
-        data: course,
-      });
-    } catch (error) {
-      next(error);
+// =====================================================
+// UPDATE COURSE STATUS
+// PATCH /api/courses/:id/status
+// =====================================================
+export const updateCourseStatus = async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return sendError(
+        res,
+        400,
+        "Invalid course ID.",
+        "INVALID_COURSE_ID"
+      );
     }
-  };
+
+    const { status } = req.body;
+
+    const validStatuses = [
+      "Published",
+      "Draft",
+      "Archived",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return sendError(
+        res,
+        400,
+        "Invalid course status."
+      );
+    }
+
+    const course = await Course.findByIdAndUpdate(
+      req.params.id,
+      { $set: { status } },
+      { new: true, runValidators: true }
+    );
+
+    if (!course) {
+      return sendError(
+        res,
+        404,
+        "Course not found.",
+        "COURSE_NOT_FOUND"
+      );
+    }
+
+    const populatedCourse = await populateCourseSubjects(
+      Course.findById(course._id)
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Course status updated successfully.",
+      data: populatedCourse,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
