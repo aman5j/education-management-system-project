@@ -220,6 +220,10 @@ export default function SubjectManagement() {
             navigate(`/admin/subjects/edit/${id}`)
           }
           onDelete={handleDelete}
+
+          onQuestionBank={(id) =>
+            navigate(`/admin/subjects/${id}/question-bank`)
+          }
         />
 
         {!loading && totalPages > 0 && (

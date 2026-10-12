@@ -318,6 +318,7 @@ export const getSubjects = async (req, res) => {
 
     const [subjects, total] = await Promise.all([
       Subject.find(filter)
+        .select("-questionBank")
         .sort({ [sortBy]: direction, _id: 1 })
         .skip(skip)
         .limit(pageSize)

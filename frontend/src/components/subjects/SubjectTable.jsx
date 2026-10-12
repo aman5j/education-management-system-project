@@ -1,4 +1,4 @@
-import { FiEye, FiEdit2, FiTrash2, FiBookOpen } from "react-icons/fi";
+import { FiEye, FiEdit2, FiTrash2, FiBookOpen, FiList } from "react-icons/fi";
 
 export default function SubjectTable({
   subjects = [],
@@ -6,6 +6,7 @@ export default function SubjectTable({
   onView,
   onEdit,
   onDelete,
+  onQuestionBank,
 }) {
   if (loading) {
     return (
@@ -79,6 +80,19 @@ export default function SubjectTable({
                 </td>
                 <td>
                   <div className="subject-actions">
+
+                    <button
+                      type="button"
+                      className="subject-action-view"
+                      onClick={() => onQuestionBank?.(id)}
+                      disabled={!id}
+                      title="Manage Question Bank"
+                      aria-label={`Manage Question Bank for ${subject.subjectName}`}
+                    >
+                      <FiList />
+                    </button>
+
+                    
                     <button
                       type="button"
                       className="subject-action-view"

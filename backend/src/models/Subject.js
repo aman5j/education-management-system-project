@@ -1,5 +1,93 @@
 import mongoose from "mongoose";
 
+const questionOptionSchema = new mongoose.Schema(
+  {
+    optionKey: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 10,
+    },
+    optionText: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+const subjectQuestionSchema = new mongoose.Schema(
+  {
+    questionText: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 5000,
+    },
+    topic: {
+      type: String,
+      trim: true,
+      maxlength: 150,
+      default: "",
+    },
+    questionType: {
+      type: String,
+      enum: [
+        "MCQ",
+        "Multiple Select",
+        "True/False",
+        "Short Answer",
+        "Long Answer",
+      ],
+      default: "MCQ",
+      required: true,
+    },
+    options: {
+      type: [questionOptionSchema],
+      default: [],
+    },
+    correctAnswers: {
+      type: [String],
+      default: [],
+    },
+    expectedAnswer: {
+      type: String,
+      trim: true,
+      maxlength: 5000,
+      default: "",
+    },
+    explanation: {
+      type: String,
+      trim: true,
+      maxlength: 3000,
+      default: "",
+    },
+    difficulty: {
+      type: String,
+      enum: ["Easy", "Medium", "Hard"],
+      default: "Medium",
+    },
+    marks: {
+      type: Number,
+      min: 1,
+      max: 1000,
+      default: 1,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["Draft", "Active", "Archived"],
+      default: "Draft",
+    },
+  },
+  { timestamps: true }
+);
+
+
+
 const subjectSchema = new mongoose.Schema(
   {
     subjectName: {
@@ -41,6 +129,13 @@ const subjectSchema = new mongoose.Schema(
       default: "Active",
       index: true,
     },
+
+    questionBank: {
+      type: [subjectQuestionSchema],
+      default: [],
+    },
+
+    
   },
   {
     timestamps: true,
