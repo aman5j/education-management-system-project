@@ -21,6 +21,8 @@ import {
   FiHelpCircle,
   FiX,
 } from "react-icons/fi";
+import { HiOutlineBars3 } from "react-icons/hi2";
+
 
 import {
   NavLink,
@@ -302,11 +304,7 @@ const Sidebar = ({
                 : "Collapse sidebar"
             }
           >
-            {collapsed ? (
-              <FiChevronRight />
-            ) : (
-              <FiChevronLeft />
-            )}
+          <HiOutlineBars3 />
           </button>
         </div>
 
