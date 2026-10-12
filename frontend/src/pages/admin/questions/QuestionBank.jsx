@@ -1,5 +1,12 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import {
   FiBookOpen,
   FiCheckCircle,
@@ -87,6 +94,8 @@ const formatDate = (value) => {
 };
 
 export default function QuestionBank() {
+  const questionFormRef = useRef(null);
+
   const [questions, setQuestions] = useState([]);
   const [courses, setCourses] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -118,6 +127,16 @@ export default function QuestionBank() {
   const [detailQuestion, setDetailQuestion] = useState(null);
 
   const selectedFormCourse = form.course_id;
+
+
+  useEffect(() => {
+    if (!formOpen) return;
+
+    questionFormRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+    });
+    }, [formOpen, editingId]);
 
   const formSubjects = useMemo(
     () =>
@@ -606,7 +625,7 @@ export default function QuestionBank() {
       )}
 
       {formOpen && (
-        <section className="question-card question-form-card">
+        <section  ref={questionFormRef} className="question-card question-form-card">
           <div className="question-section-heading">
             <div>
               <h2>{editingId ? "Edit Question" : "Add New Question"}</h2>
