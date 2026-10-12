@@ -202,15 +202,22 @@ const Login = () => {
                 </div>
               </div>
 
+              
               <button
-                className="primary-auth-button"
-                type="submit"
-                disabled={submitting}
-              >
-                {submitting
-                  ? "Signing in..."
-                  : "Sign In"}
-              </button>
+  className="primary-auth-button"
+  type="submit"
+  disabled={submitting}
+>
+  {submitting ? (
+    <span className="auth-loading">
+      <span className="auth-spinner"></span>
+      Verifying Credentials...
+    </span>
+  ) : (
+    "Sign In"
+  )}
+</button>
+
             </form>
 
             <div className="auth-footer">
