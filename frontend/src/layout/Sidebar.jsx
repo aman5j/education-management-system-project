@@ -74,10 +74,6 @@ const menuItems = [
         label: "Add Student",
         path: "/admin/students/add",
       },
-      {
-        label: "Hall Ticket Management",
-        path: "/admin/hall-tickets",
-      },
     ],
   },
 
@@ -149,6 +145,10 @@ const menuItems = [
       {
         label: "Exam Schedule",
         path: "/admin/exams/schedule",
+      },
+      {
+        label: "Hall Ticket Management",
+        path: "/admin/hall-tickets",
       },
       {
         label: "Exam Review",
