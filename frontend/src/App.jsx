@@ -70,6 +70,7 @@ import Attendance from "./pages/admin/attendance/Attendance";
 import ExamSchedule from "./pages/admin/exams/ExamSchedule";
 import HallTicketManagement from "./pages/admin/students/HallTicketManagement";
 import VerifyHallTicket from "./pages/public/VerifyHallTicket";
+import ExamResults from "./pages/admin/exams/ExamResults";
 
 
 import Expenses from "./pages/admin/expenses/Expenses";
@@ -266,6 +267,8 @@ const App = () => {
           path="hall-tickets"
           element={<HallTicketManagement />}
         />
+
+        <Route path="exams/results" element={<ExamResults />} />
 
         {/* Expenses Management */}
         <Route path="expenses" element={<Expenses />} />

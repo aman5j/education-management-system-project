@@ -155,6 +155,10 @@ const menuItems = [
         path: "/admin/hall-tickets",
       },
       {
+        label: "Exam Results",
+        path: "/admin/exams/results",
+      },
+      {
         label: "Result Reports",
         path: "/admin/result-reports",
       },
