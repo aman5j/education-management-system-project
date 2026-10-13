@@ -114,6 +114,10 @@ const menuItems = [
     icon: FiDollarSign,
     children: [
       {
+        label: "Expenses",
+        path: "/admin/expenses",
+      },
+      {
         label: "Fee Records",
         path: "/admin/fees",
       },

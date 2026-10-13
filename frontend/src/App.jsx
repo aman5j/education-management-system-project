@@ -68,6 +68,12 @@ import ExamSchedule from "./pages/admin/exams/ExamSchedule";
 import HallTicketManagement from "./pages/admin/students/HallTicketManagement";
 import VerifyHallTicket from "./pages/public/VerifyHallTicket";
 
+
+import Expenses from "./pages/admin/expenses/Expenses";
+import AddExpense from "./pages/admin/expenses/AddExpense";
+import EditExpense from "./pages/admin/expenses/EditExpense";
+
+
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
 import RoleRoute from "./components/auth/RoleRoute";
@@ -254,7 +260,12 @@ const App = () => {
           path="hall-tickets"
           element={<HallTicketManagement />}
         />
-           
+
+        {/* Expenses Management */}
+        <Route path="expenses" element={<Expenses />} />
+        <Route path="expenses/add" element={<AddExpense />} />
+        <Route path="expenses/:id/edit" element={<EditExpense />} />
+
 
         {/* Unknown admin route */}
         <Route
