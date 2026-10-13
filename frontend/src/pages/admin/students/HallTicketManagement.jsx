@@ -100,17 +100,23 @@ export default function HallTicketManagement() {
   const selectedExam = exams.find((exam) => exam._id === examId);
 
 
-  const handleDownloadPDF = async (ticket) => {
+  
+    const handleDownloadPDF = async (ticket) => {
     setError("");
+    setSuccess("");
+
     try {
-        // Replace this with the exact Institute Profile response from your
-        // existing settings service so the actual saved logo/address are used.
-        const institute = window.__INSTITUTE_PROFILE__ || {};
-        await generateHallTicketPDF({ ticket, institute });
+        await generateHallTicketPDF({ ticket });
+        setSuccess(`Hall ticket ${ticket.hallTicketNo} downloaded.`);
     } catch (err) {
-        setError(err?.message || "Unable to generate the hall ticket PDF.");
+        setError(
+        err?.response?.data?.message ||
+            err?.message ||
+            "Unable to generate the hall ticket PDF."
+        );
     }
     };
+
 
   const filteredStudents = useMemo(() => {
     const value = studentSearch.trim().toLowerCase();

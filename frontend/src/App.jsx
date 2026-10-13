@@ -66,6 +66,7 @@ import Attendance from "./pages/admin/attendance/Attendance";
 
 import ExamSchedule from "./pages/admin/exams/ExamSchedule";
 import HallTicketManagement from "./pages/admin/students/HallTicketManagement";
+import VerifyHallTicket from "./pages/public/VerifyHallTicket";
 
 import ExamReview from "./pages/admin/exams/ExamReview";
 import QuestionBank from "./pages/admin/questions/QuestionBank";
@@ -152,6 +153,11 @@ const App = () => {
       <Route
         path="/verify-receipt"
         element={<VerifyReceipt />}
+      />
+      
+      <Route
+        path="/verify-hall-ticket/:id"
+        element={<VerifyHallTicket />}
       />
 
       {/* Admin portal */}

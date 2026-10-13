@@ -1,62 +1,73 @@
 
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 
-const CODE39 = {
-  "0": "nnnwwnwnn", "1": "wnnwnnnnw", "2": "nnwwnnnnw",
-  "3": "wnwwnnnnn", "4": "nnnwwnnnw", "5": "wnnwwnnnn",
-  "6": "nnwwwnnnn", "7": "nnnwnnwnw", "8": "wnnwnnwnn",
-  "9": "nnwwnnwnn", A: "wnnnnwnnw", B: "nnwnnwnnw",
-  C: "wnwnnwnnn", D: "nnnnwwnnw", E: "wnnnwwnnn",
-  F: "nnwnwwnnn", G: "nnnnnwwnw", H: "wnnnnwwnn",
-  I: "nnwnnwwnn", J: "nnnnwwwnn", K: "wnnnnnnww",
-  L: "nnwnnnnww", M: "wnwnnnnwn", N: "nnnnwnnww",
-  O: "wnnnwnnwn", P: "nnwnwnnwn", Q: "nnnnnnwww",
-  R: "wnnnnnwwn", S: "nnwnnnwwn", T: "nnnnwnwwn",
-  U: "wwnnnnnnw", V: "nwwnnnnnw", W: "wwwnnnnnn",
-  X: "nwnnwnnnw", Y: "wwnnwnnnn", Z: "nwwnwnnnn",
-  "-": "nwnnnnwnw", ".": "wwnnnnwnn", " ": "nwwnnnwnn",
-  "$": "nwnwnwnnn", "/": "nwnwnnnwn", "+": "nwnnnwnwn",
-  "%": "nnnwnwnwn",
+const COLORS = {
+  navy: [20, 39, 62],
+  blue: [220, 237, 252],
+  blueDark: [36, 91, 145],
+  teal: [13, 148, 136],
+  text: [34, 43, 54],
+  muted: [100, 111, 124],
+  border: [199, 211, 224],
+  white: [255, 255, 255],
 };
 
-function drawCode39(doc, value, x, y, maxWidth, barHeight) {
-  const text = `*${String(value).toUpperCase()}*`;
-  const chars = [...text].map((char) => CODE39[char] ? char : "-");
-  const patterns = chars.map((char) => CODE39[char]);
+const INSTITUTE = {
+  name: "INDIA TECH SAMADHAAN",
+  tagline: "Computer Education & Skill Development",
+  address: "123, Education Street, New Delhi - 110001",
+};
 
-  const narrow = 0.35;
-  const wide = 0.9;
-  const gap = 0.35;
+const INSTRUCTIONS = [
+  "Report to the exam center at the reporting time.",
+  "Carry a valid photo ID along with this hall ticket.",
+  "Electronic devices are not allowed inside the examination hall.",
+  "Maintain silence during the examination.",
+  "Follow all instructions given by the invigilator.",
+];
 
-  const units = patterns.reduce(
-    (sum, pattern) =>
-      sum +
-      [...pattern].reduce((n, width) => n + (width === "w" ? wide : narrow), 0) +
-      gap,
-    0
-  );
+const value = (input, fallback = "—") =>
+  input === undefined || input === null || input === ""
+    ? fallback
+    : String(input);
 
-  const scale = Math.min(1, maxWidth / units);
-  let cursor = x;
+const fullName = (student = {}) =>
+  [
+    student.firstName,
+    student.middleName,
+    student.surname,
+  ]
+    .filter(Boolean)
+    .join(" ") ||
+  student.name ||
+  "—";
 
-  doc.setFillColor(20, 30, 45);
+const formatDate = (dateValue) => {
+  if (!dateValue) return "—";
 
-  patterns.forEach((pattern) => {
-    [...pattern].forEach((width, index) => {
-      const barWidth = (width === "w" ? wide : narrow) * scale;
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "—";
 
-      if (index % 2 === 0) {
-        doc.rect(cursor, y, barWidth, barHeight, "F");
-      }
-
-      cursor += barWidth;
-    });
-
-    cursor += gap * scale;
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
   });
-}
+};
 
-async function imageToDataUrl(url) {
+const formatTime = (time) => {
+  if (!time || !/^\d{2}:\d{2}$/.test(time)) return value(time);
+
+  const [hours, minutes] = time.split(":").map(Number);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 || 12;
+
+  return `${String(hour12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${suffix}`;
+};
+
+async function loadImage(url) {
   if (!url || typeof url !== "string") return null;
   if (url.startsWith("data:image/")) return url;
 
@@ -77,15 +88,38 @@ async function imageToDataUrl(url) {
   }
 }
 
-function text(value, fallback = "—") {
-  return value === undefined || value === null || value === ""
-    ? fallback
-    : String(value);
+function sectionHeader(doc, label, y, x = 9, width = 192) {
+  doc.setFillColor(...COLORS.blue);
+  doc.roundedRect(x, y, width, 8, 1.3, 1.3, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.navy);
+  doc.text(label, x + 3, y + 5.2);
 }
 
-export async function generateHallTicketPDF({ ticket, institute = {} }) {
+function drawLabelValue(doc, label, content, x, y, labelWidth = 30, maxWidth = 70) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.4);
+  doc.setTextColor(...COLORS.text);
+  doc.text(`${label}:`, x, y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.text);
+
+  const lines = doc.splitTextToSize(value(content), maxWidth);
+  doc.text(lines.slice(0, 2), x + labelWidth, y);
+
+  return Math.max(5, lines.slice(0, 2).length * 4.1);
+}
+
+export async function generateHallTicketPDF({ ticket }) {
   if (!ticket?._id || !ticket?.hallTicketNo) {
     throw new Error("Hall ticket details are missing.");
+  }
+
+  if (ticket.status === "Cancelled") {
+    throw new Error("This hall ticket has been cancelled.");
   }
 
   const student = ticket.student_id || {};
@@ -100,243 +134,221 @@ export async function generateHallTicketPDF({ ticket, institute = {} }) {
   });
 
   const pageWidth = 210;
-  const margin = 14;
+  const pageHeight = 297;
+  const margin = 9;
   const contentWidth = pageWidth - margin * 2;
 
-  const instituteName =
-    institute.instituteName ||
-    institute.name ||
-    "Institute";
+  // Main paper frame
+  doc.setDrawColor(...COLORS.border);
+  doc.setLineWidth(0.55);
+  doc.roundedRect(margin, 7, contentWidth, 283, 1.5, 1.5, "S");
 
-  const instituteAddress =
-    institute.address ||
-    institute.instituteAddress ||
-    "";
+  // Temporary institute logo/emblem and institute information.
+  // Replace this header with Institute Profile data when that API is connected.
+  
+  
+const instituteLogo = await loadImage(
+  `${window.location.origin}/india-tech-samadhaan-logo.png`
+);
 
-  const logoUrl =
-    institute.logoUrl ||
-    institute.logo ||
-    institute.logo_url ||
-    "";
+if (instituteLogo) {
+  doc.addImage(
+    instituteLogo,
+    "PNG",
+    12,
+    15,
+    33,
+    10,
+    undefined,
+    "FAST"
+  );
+}
 
-  const logo = await imageToDataUrl(logoUrl);
 
-  // Page border
-  doc.setDrawColor(205, 216, 228);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin, 10, contentWidth, 277, 2, 2, "S");
-
-  // Institute heading and logo
-  let headerTextX = margin + 6;
-
-  if (logo) {
-    try {
-      doc.addImage(logo, "AUTO", margin + 5, 15, 23, 23, undefined, "FAST");
-      headerTextX = margin + 33;
-    } catch {
-      headerTextX = margin + 6;
-    }
-  }
-
-  doc.setTextColor(15, 45, 72);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  doc.text(instituteName, headerTextX, 22, {
-    maxWidth: pageWidth - headerTextX - margin - 5,
-  });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(85, 100, 115);
-
-  if (instituteAddress) {
-    const addressLines = doc.splitTextToSize(
-      instituteAddress,
-      pageWidth - headerTextX - margin - 5
-    );
-    doc.text(addressLines.slice(0, 2), headerTextX, 29);
-  }
-
-  doc.setDrawColor(13, 148, 136);
-  doc.setLineWidth(1.2);
-  doc.line(margin + 5, 43, pageWidth - margin - 5, 43);
-
-  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.navy);
   doc.setFontSize(14);
-  doc.setTextColor(15, 45, 72);
-  doc.text("EXAM HALL TICKET", pageWidth / 2, 51, { align: "center" });
+  doc.text(INSTITUTE.name, 36, 18.5);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(85, 100, 115);
-  doc.text(`Ticket No: ${ticket.hallTicketNo}`, pageWidth / 2, 57, {
+  doc.setFontSize(8.2);
+  doc.setTextColor(...COLORS.text);
+  doc.text(INSTITUTE.tagline, 36, 24);
+
+  doc.setFontSize(7.3);
+  doc.setTextColor(...COLORS.muted);
+  doc.text(INSTITUTE.address, 36, 29);
+
+  // Hall ticket banner
+  doc.setFillColor(...COLORS.blue);
+  doc.roundedRect(14, 35, 182, 22, 1.4, 1.4, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(19);
+  doc.setTextColor(...COLORS.navy);
+  doc.text("HALL TICKET", 105, 45, { align: "center" });
+
+  doc.setFontSize(8);
+  doc.setCharSpace(1);
+  doc.text("END SEMESTER EXAMINATION", 105, 51, {
     align: "center",
   });
+  doc.setCharSpace(0);
 
-  // Student details
-  let y = 67;
+  // Student information and photo
+  const photoUrl =
+    student.photoUrl ||
+    student.profileImage ||
+    student.profilePhoto ||
+    student.photo ||
+    student.image ||
+    "";
 
-  doc.setFillColor(240, 253, 250);
-  doc.roundedRect(margin + 5, y, contentWidth - 10, 9, 1.5, 1.5, "F");
+  const studentPhoto = await loadImage(photoUrl);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(15, 118, 110);
-  doc.text("STUDENT DETAILS", margin + 9, y + 6);
+  const detailsX = 15;
+  let y = 64;
 
-  y += 17;
-
-  const studentName =
-    [student.firstName, student.middleName, student.surname]
-      .filter(Boolean)
-      .join(" ") || student.name;
-
-  const leftX = margin + 8;
-  const rightX = 112;
-  const labelWidth = 29;
-
-  const details = [
-    ["Student Name", text(studentName)],
-    ["Roll Number", text(student.rollNo)],
-    ["Course", text(course.courseTitle)],
+  const studentDetails = [
+    ["Hall Ticket No.", ticket.hallTicketNo],
+    ["Student Name", fullName(student)],
+    ["Roll No.", student.rollNo],
+    ["Course", course.courseTitle],
   ];
 
-  doc.setFontSize(9);
-
-  details.forEach(([label, value]) => {
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(65, 80, 95);
-    doc.text(`${label}:`, leftX, y);
-
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(25, 40, 55);
-    doc.text(value, leftX + labelWidth, y, { maxWidth: 67 });
-
-    y += 8;
+  studentDetails.forEach(([label, content]) => {
+    drawLabelValue(doc, label, content, detailsX, y, 28, 102);
+    y += 6.4;
   });
 
-  // Exam schedule
-  y += 3;
+  if (studentPhoto) {
+    try {
+      doc.addImage(
+        studentPhoto,
+        "AUTO",
+        157,
+        62,
+        39,
+        42,
+        undefined,
+        "FAST"
+      );
 
-  doc.setFillColor(240, 253, 250);
-  doc.roundedRect(margin + 5, y, contentWidth - 10, 9, 1.5, 1.5, "F");
+      doc.setDrawColor(...COLORS.border);
+      doc.rect(157, 62, 39, 42, "S");
+    } catch {
+      // Keep the PDF usable when a photo has an unsupported format.
+    }
+  } else {
+    doc.setDrawColor(...COLORS.border);
+    doc.roundedRect(157, 62, 39, 42, 1, 1, "S");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.muted);
+    doc.text("Student Photo", 176.5, 83, { align: "center" });
+  }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(15, 118, 110);
-  doc.text("EXAM DETAILS", margin + 9, y + 6);
-
-  y += 17;
-
-  const examDate = ticket.examDate
-    ? new Date(ticket.examDate).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      })
-    : "—";
+  // Exam details
+  sectionHeader(doc, "EXAM DETAILS", 94);
 
   const examDetails = [
-    ["Exam Date", examDate],
-    ["Reporting Time", text(ticket.reportingTime)],
-    ["Start Time", text(ticket.startTime)],
-    ["End Time", text(ticket.endTime)],
-    ["Total Questions", text(exam.totalQuestions)],
-    ["Total Marks", text(exam.totalMarks)],
-    ["Marks per Question", text(exam.marksPerQuestion)],
+    ["Exam Date", formatDate(ticket.examDate), "Reporting Time", formatTime(ticket.reportingTime)],
+    ["Exam Start Time", formatTime(ticket.startTime), "Exam End Time", formatTime(ticket.endTime)],
+    ["Total Questions", value(exam.totalQuestions), "Total Marks", value(exam.totalMarks)],
+    ["Marks per Question", value(exam.marksPerQuestion ?? (
+      Number(exam.totalQuestions) > 0
+        ? Number(exam.totalMarks) / Number(exam.totalQuestions)
+        : ""
+    )), "", ""],
   ];
 
-  examDetails.forEach(([label, value], index) => {
-    const x = index % 2 === 0 ? leftX : rightX;
-    const row = Math.floor(index / 2);
-    const rowY = y + row * 10;
+  let examY = 103;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(65, 80, 95);
-    doc.text(`${label}:`, x, rowY);
+  examDetails.forEach(([label1, value1, label2, value2]) => {
+    drawLabelValue(doc, label1, value1, 15, examY, 30, 49);
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(25, 40, 55);
-    doc.text(value, x + 31, rowY, { maxWidth: 48 });
+    if (label2) {
+      drawLabelValue(doc, label2, value2, 105, examY, 29, 43);
+    }
+
+    examY += 8.5;
   });
 
-  y += Math.ceil(examDetails.length / 2) * 10 + 7;
-
-  // Exactly five important instructions
-  doc.setFillColor(240, 253, 250);
-  doc.roundedRect(margin + 5, y, contentWidth - 10, 9, 1.5, 1.5, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(15, 118, 110);
-  doc.text("IMPORTANT INSTRUCTIONS", margin + 9, y + 6);
-
-  y += 15;
-
-  const instructions = [
-    "Arrive at the institute before the reporting time.",
-    "Carry this hall ticket and a valid photo ID.",
-    "Follow all instructions given by the invigilator.",
-    "Mobile phones and unauthorized electronic devices are not allowed.",
-    "Do not leave the examination room without permission.",
-  ];
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(45, 55, 70);
-
-  instructions.forEach((instruction, index) => {
-    doc.setFont("helvetica", "bold");
-    doc.text(`${index + 1}.`, leftX, y);
-
-    doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(instruction, 155);
-    doc.text(lines, leftX + 7, y);
-
-    y += lines.length * 4.5 + 2;
-  });
-
-  // Bottom section: signature on the left, barcode on the right
-  const bottomY = 259;
-
-  doc.setDrawColor(150, 160, 170);
-  doc.line(leftX, bottomY, leftX + 48, bottomY);
+  // Exactly five instructions in the same blue section style
+  sectionHeader(doc, "IMPORTANT INSTRUCTIONS", 143);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.setTextColor(90, 100, 110);
-  doc.text("Authorized Signature", leftX, bottomY + 5);
+  doc.setTextColor(...COLORS.text);
 
-  const barcodeWidth = 48;
-  const barcodeHeight = 12;
-  const barcodeX = pageWidth - margin - 8 - barcodeWidth;
-  const barcodeY = 257;
+  INSTRUCTIONS.forEach((instruction, index) => {
+    const instructionY = 153 + index * 7.1;
 
-  drawCode39(
-    doc,
-    ticket.hallTicketNo,
-    barcodeX,
-    barcodeY,
-    barcodeWidth,
-    barcodeHeight
-  );
+    doc.setFont("helvetica", "bold");
+    doc.text(`${index + 1}.`, 15, instructionY);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(35, 45, 55);
-  doc.text(ticket.hallTicketNo, barcodeX + barcodeWidth / 2, barcodeY + 17, {
+    doc.setFont("helvetica", "normal");
+    doc.text(instruction, 22, instructionY, {
+      maxWidth: 174,
+    });
+  });
+
+  // Footer separator
+  doc.setDrawColor(...COLORS.navy);
+  doc.setLineWidth(0.5);
+  doc.line(14, 224, 196, 224);
+
+  // Issue date
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.4);
+  doc.setTextColor(...COLORS.muted);
+  doc.text(`Date of Issue: ${formatDate(new Date())}`, 105, 242, {
     align: "center",
   });
+
+  // Authorized signature placeholder
+  doc.setDrawColor(...COLORS.muted);
+  doc.setLineWidth(0.35);
+  doc.line(145, 237, 193, 237);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.3);
+  doc.setTextColor(...COLORS.text);
+  doc.text("Authorized Signature", 169, 242, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.text(INSTITUTE.name, 169, 246, { align: "center" });
+
+  // Real QR code that opens the verification page for this ticket.
+  const verificationUrl =
+    `${window.location.origin}/verify-hall-ticket/${encodeURIComponent(ticket._id)}`;
+
+  const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: 180,
+    color: {
+      dark: "#14273e",
+      light: "#ffffff",
+    },
+  });
+
+  doc.addImage(qrDataUrl, "PNG", 166, 251, 22, 22);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.7);
+  doc.setTextColor(...COLORS.text);
+  doc.text(ticket.hallTicketNo, 177, 276, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
-  doc.setTextColor(115, 125, 135);
-  doc.text("Keep this ticket safe for the examination.", pageWidth / 2, 280, {
+  doc.setTextColor(...COLORS.muted);
+  doc.text("Scan QR to verify hall ticket", 177, 280, {
     align: "center",
   });
 
-  const safeNumber = String(ticket.hallTicketNo).replace(/[^a-z0-9_-]/gi, "-");
+  const safeNumber = String(ticket.hallTicketNo).replace(
+    /[^a-z0-9_-]/gi,
+    "-"
+  );
+
   doc.save(`Hall-Ticket-${safeNumber}.pdf`);
 }
