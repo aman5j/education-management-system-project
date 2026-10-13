@@ -5,10 +5,12 @@ import QRCode from "qrcode";
 const COLORS = {
   navy: [20, 39, 62],
   blue: [220, 237, 252],
+  blueDark: [36, 91, 145],
   text: [34, 43, 54],
   muted: [100, 111, 124],
   border: [199, 211, 224],
   white: [255, 255, 255],
+  teal: [13, 148, 136],
 };
 
 const INSTITUTE = {
@@ -32,11 +34,7 @@ const textValue = (value, fallback = "—") =>
     : String(value);
 
 const getStudentName = (student = {}) =>
-  [
-    student.firstName,
-    student.middleName,
-    student.surname,
-  ]
+  [student.firstName, student.middleName, student.surname]
     .filter(Boolean)
     .join(" ") ||
   student.name ||
@@ -46,13 +44,27 @@ const formatDate = (value) => {
   if (!value) return "—";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
+  });
+};
+
+const formatDateWithDay = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    weekday: "long",
     timeZone: "UTC",
   });
 };
@@ -69,47 +81,47 @@ const formatTime = (value) => {
   return `${String(hour12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${suffix}`;
 };
 
-function resolveImageUrl(url) {
-  if (typeof url !== "string" || !url.trim()) return null;
+/**
+ * The project uses VITE_API_URL, normally ending in /api.
+ * Uploaded student images are served from the backend origin,
+ * not the frontend Vite origin.
+ */
+function resolveImageUrl(path) {
+  if (typeof path !== "string" || !path.trim()) return null;
 
-  const cleaned = url.trim();
+  const value = path.trim();
 
-  if (/^(data:image\/|https?:\/\/|blob:)/i.test(cleaned)) {
-    return cleaned;
+  if (/^(data:image\/|https?:\/\/|blob:)/i.test(value)) {
+    return value;
   }
 
-  const apiBase =
-    import.meta.env.VITE_API_BASE_URL ||
-    import.meta.env.VITE_SERVER_BASE_URL ||
-    "";
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
   try {
-    const backendOrigin = apiBase
-      ? new URL(apiBase, window.location.origin).origin
-      : window.location.origin;
+    const backendOrigin = new URL(apiUrl, window.location.origin).origin;
 
     return new URL(
-      cleaned.replace(/\\/g, "/").replace(/^\/+/, ""),
+      value.replace(/\\/g, "/").replace(/^\/+/, ""),
       `${backendOrigin}/`
     ).href;
-  } catch {
+  } catch (error) {
+    console.warn("Unable to resolve image URL:", error);
     return null;
   }
 }
 
-async function loadImage(url) {
-  if (!url || typeof url !== "string") return null;
+async function loadImage(path) {
+  if (!path) return null;
 
-  const resolvedUrl = resolveImageUrl(url);
-
-  if (!resolvedUrl) return null;
-
-  if (resolvedUrl.startsWith("data:image/")) {
-    return resolvedUrl;
+  if (typeof path === "string" && path.startsWith("data:image/")) {
+    return path;
   }
 
+  const url = resolveImageUrl(path);
+  if (!url) return null;
+
   try {
-    const response = await fetch(resolvedUrl, {
+    const response = await fetch(url, {
       credentials: "include",
     });
 
@@ -117,7 +129,7 @@ async function loadImage(url) {
       console.warn(
         "Hall ticket image request failed:",
         response.status,
-        resolvedUrl
+        url
       );
       return null;
     }
@@ -125,7 +137,7 @@ async function loadImage(url) {
     const blob = await response.blob();
 
     if (!blob.type.startsWith("image/")) {
-      console.warn("Hall ticket image URL did not return an image.");
+      console.warn("The image URL did not return an image:", url);
       return null;
     }
 
@@ -143,34 +155,9 @@ async function loadImage(url) {
   }
 }
 
-function getStudentImage(student = {}) {
-  const candidates = [
-    student.photoUrl,
-    student.photoURL,
-    student.profileImage,
-    student.profilePhoto,
-    student.profile_image,
-    student.photo,
-    student.image,
-    student.imageUrl,
-    student.image_url,
-    student.avatar,
-    student.studentImage,
-    student.studentPhoto,
-    student.documents?.photo,
-  ];
-
-  return (
-    candidates.find(
-      (candidate) =>
-        typeof candidate === "string" && candidate.trim().length > 0
-    ) || null
-  );
-}
-
 function sectionHeader(doc, label, y, x = 9, width = 192) {
   doc.setFillColor(...COLORS.blue);
-  doc.roundedRect(x, y, width, 8, 1.3, 1.3, "F");
+  doc.roundedRect(x, y, width, 8, 1.2, 1.2, "F");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
@@ -184,11 +171,11 @@ function drawLabelValue(
   content,
   x,
   y,
-  labelWidth = 30,
-  maxWidth = 70
+  labelWidth = 29,
+  maxWidth = 95
 ) {
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.4);
+  doc.setFontSize(8.2);
   doc.setTextColor(...COLORS.text);
   doc.text(`${label}:`, x, y);
 
@@ -198,22 +185,36 @@ function drawLabelValue(
   const lines = doc.splitTextToSize(textValue(content), maxWidth);
   doc.text(lines.slice(0, 2), x + labelWidth, y);
 
-  return Math.max(5, lines.slice(0, 2).length * 4.1);
+  return Math.max(5, Math.min(lines.length, 2) * 4.1);
 }
 
 function getMarksPerQuestion(exam = {}) {
-  if (exam.marksPerQuestion !== undefined && exam.marksPerQuestion !== null) {
-    return exam.marksPerQuestion;
+  const savedValue = exam.marksPerQuestion;
+
+  if (savedValue !== undefined && savedValue !== null && savedValue !== "") {
+    return Number(savedValue).toFixed(2).replace(/\.?0+$/, "");
   }
 
-  const totalQuestions = Number(exam.totalQuestions);
-  const totalMarks = Number(exam.totalMarks);
+  const questions = Number(exam.totalQuestions);
+  const marks = Number(exam.totalMarks);
 
-  if (totalQuestions > 0 && Number.isFinite(totalMarks)) {
-    return Number((totalMarks / totalQuestions).toFixed(2));
+  if (questions > 0 && Number.isFinite(marks)) {
+    return (marks / questions).toFixed(2).replace(/\.?0+$/, "");
   }
 
   return "—";
+}
+
+function addImageSafely(doc, data, format, x, y, width, height) {
+  if (!data) return false;
+
+  try {
+    doc.addImage(data, format, x, y, width, height, undefined, "FAST");
+    return true;
+  } catch (error) {
+    console.warn("Unable to embed PDF image:", error);
+    return false;
+  }
 }
 
 export async function generateHallTicketPDF({ ticket }) {
@@ -243,63 +244,65 @@ export async function generateHallTicketPDF({ ticket }) {
   // Main page frame
   doc.setDrawColor(...COLORS.border);
   doc.setLineWidth(0.55);
-  doc.roundedRect(margin, 7, contentWidth, 283, 1.5, 1.5, "S");
+  doc.roundedRect(margin, 7, contentWidth, 283, 1.3, 1.3, "S");
 
-  // Institute logo on the top-left
-  const logoUrl = `${window.location.origin}${INSTITUTE.logoPath}`;
-  const instituteLogo = await loadImage(logoUrl);
+  // Institute logo at top-left
+  const instituteLogo = await loadImage(INSTITUTE.logoPath);
 
   if (instituteLogo) {
-    try {
-      doc.addImage(
-        instituteLogo,
-        "PNG",
-        12,
-        14,
-        33,
-        20,
-        undefined,
-        "FAST"
-      );
-    } catch (error) {
-      console.warn("Unable to embed institute logo:", error);
-    }
+    addImageSafely(
+      doc,
+      instituteLogo,
+      "PNG",
+      12,
+      14,
+      33,
+      20
+    );
+  } else {
+    // Keep a simple fallback if the logo file cannot be loaded.
+    doc.setDrawColor(...COLORS.teal);
+    doc.setLineWidth(1);
+    doc.circle(25, 23, 8, "S");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...COLORS.navy);
+    doc.text("ITS", 25, 24, { align: "center" });
   }
 
-  // Institute name, tagline and address on the top-right
-  const instituteTextX = 49;
-  const instituteTextWidth = 146;
+  // Institute information on the top-right
+  const instituteTextX = 48;
+  const instituteTextWidth = 147;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(13.5);
   doc.setTextColor(...COLORS.navy);
-  doc.text(INSTITUTE.name, instituteTextX, 19, {
+  doc.text(INSTITUTE.name, instituteTextX, 18.5, {
     maxWidth: instituteTextWidth,
   });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.2);
   doc.setTextColor(...COLORS.text);
-  doc.text(INSTITUTE.tagline, instituteTextX, 26, {
+  doc.text(INSTITUTE.tagline, instituteTextX, 25, {
     maxWidth: instituteTextWidth,
   });
 
-  doc.setFontSize(7.5);
+  doc.setFontSize(7.2);
   doc.setTextColor(...COLORS.muted);
-  doc.text(INSTITUTE.address, instituteTextX, 32, {
+  doc.text(INSTITUTE.address, instituteTextX, 30.5, {
     maxWidth: instituteTextWidth,
   });
 
   // Hall ticket banner
   doc.setFillColor(...COLORS.blue);
-  doc.roundedRect(14, 35, 182, 22, 1.4, 1.4, "F");
+  doc.roundedRect(14, 35, 182, 22, 1.2, 1.2, "F");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(19);
   doc.setTextColor(...COLORS.navy);
-  doc.text("HALL TICKET", 105, 45, {
-    align: "center",
-  });
+  doc.text("HALL TICKET", 105, 45, { align: "center" });
 
   doc.setFontSize(8);
   doc.setCharSpace(1);
@@ -308,8 +311,7 @@ export async function generateHallTicketPDF({ ticket }) {
   });
   doc.setCharSpace(0);
 
-  // Student details
-  const detailsX = 15;
+  // Student details at the left
   let studentY = 64;
 
   const studentDetails = [
@@ -317,16 +319,24 @@ export async function generateHallTicketPDF({ ticket }) {
     ["Student Name", getStudentName(student)],
     ["Roll No.", student.rollNo],
     ["Course", course.courseTitle],
+    ["Exam Name", exam.examName || exam.title || exam.name || "Examination"],
+    ["Exam Date", formatDateWithDay(ticket.examDate)],
+    ["Reporting Time", formatTime(ticket.reportingTime)],
+    ["Exam Start Time", formatTime(ticket.startTime)],
+    ["Exam End Time", formatTime(ticket.endTime)],
+    ["Total Questions", exam.totalQuestions],
+    ["Total Marks", exam.totalMarks],
+    ["Marks per Question", getMarksPerQuestion(exam)],
   ];
 
   studentDetails.forEach(([label, content]) => {
-    drawLabelValue(doc, label, content, detailsX, studentY, 28, 100);
-    studentY += 6.4;
+    drawLabelValue(doc, label, content, 15, studentY, 29, 96);
+    studentY += 6.1;
   });
 
-  // Student photo: supports common field names and backend-relative paths
-  const photoUrl = getStudentImage(student);
-  const studentPhoto = await loadImage(photoUrl);
+  // Student photo: the actual Student model field is profileImage.
+  // Do not rely on guessed photoUrl or image fields.
+  const studentPhoto = await loadImage(student.profileImage);
 
   const photoX = 157;
   const photoY = 62;
@@ -334,29 +344,26 @@ export async function generateHallTicketPDF({ ticket }) {
   const photoHeight = 42;
 
   if (studentPhoto) {
-    try {
-      doc.addImage(
+    const added = addImageSafely(
+      doc,
+      studentPhoto,
+      "JPEG",
+      photoX,
+      photoY,
+      photoWidth,
+      photoHeight
+    );
+
+    if (!added) {
+      addImageSafely(
+        doc,
         studentPhoto,
-        "AUTO",
+        "PNG",
         photoX,
         photoY,
         photoWidth,
-        photoHeight,
-        undefined,
-        "FAST"
+        photoHeight
       );
-
-      doc.setDrawColor(...COLORS.border);
-      doc.rect(photoX, photoY, photoWidth, photoHeight, "S");
-    } catch (error) {
-      console.warn("Unable to embed student photo:", error);
-      doc.setDrawColor(...COLORS.border);
-      doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 1, 1, "S");
-      doc.setFontSize(8);
-      doc.setTextColor(...COLORS.muted);
-      doc.text("Student Photo", photoX + photoWidth / 2, photoY + 21, {
-        align: "center",
-      });
     }
   } else {
     doc.setDrawColor(...COLORS.border);
@@ -370,44 +377,48 @@ export async function generateHallTicketPDF({ ticket }) {
     });
   }
 
-  // Exam details
-  sectionHeader(doc, "EXAM DETAILS", 94);
+  doc.setDrawColor(...COLORS.border);
+  doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 1, 1, "S");
 
-  const examDetails = [
-    [
-      "Exam Date",
-      formatDate(ticket.examDate),
-      "Reporting Time",
-      formatTime(ticket.reportingTime),
-    ],
-    [
-      "Exam Start Time",
-      formatTime(ticket.startTime),
-      "Exam End Time",
-      formatTime(ticket.endTime),
-    ],
-    [
-      "Total Questions",
-      textValue(exam.totalQuestions),
-      "Total Marks",
-      textValue(exam.totalMarks),
-    ],
-    ["Marks per Question", getMarksPerQuestion(exam), "", ""],
-  ];
+  // Student signature below photo
+  const signatureY = 107;
+  const signatureHeight = 24;
+  const studentSignature = await loadImage(student.signature);
 
-  let examY = 103;
+  doc.setDrawColor(...COLORS.border);
+  doc.roundedRect(
+    photoX,
+    signatureY,
+    photoWidth,
+    signatureHeight,
+    1,
+    1,
+    "S"
+  );
 
-  examDetails.forEach(([label1, value1, label2, value2]) => {
-    drawLabelValue(doc, label1, value1, 15, examY, 30, 49);
+  if (studentSignature) {
+    addImageSafely(
+      doc,
+      studentSignature,
+      "PNG",
+      photoX + 2,
+      signatureY + 1,
+      photoWidth - 4,
+      15
+    );
+  }
 
-    if (label2) {
-      drawLabelValue(doc, label2, value2, 105, examY, 29, 43);
-    }
+  doc.setDrawColor(...COLORS.border);
+  doc.line(photoX, signatureY + 17, photoX + photoWidth, signatureY + 17);
 
-    examY += 8.5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(...COLORS.text);
+  doc.text("Student Signature", photoX + photoWidth / 2, signatureY + 21, {
+    align: "center",
   });
 
-  // Exactly five important instructions
+  // Important instructions: exactly five
   sectionHeader(doc, "IMPORTANT INSTRUCTIONS", 143);
 
   doc.setFont("helvetica", "normal");
@@ -431,39 +442,38 @@ export async function generateHallTicketPDF({ ticket }) {
   doc.setLineWidth(0.5);
   doc.line(14, 224, 196, 224);
 
-  // Actual QR verification URL
+  // QR code for actual hall-ticket verification
   const verificationUrl =
     `${window.location.origin}/verify-hall-ticket/${encodeURIComponent(ticket._id)}`;
 
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
     errorCorrectionLevel: "M",
     margin: 1,
-    width: 180,
+    width: 220,
     color: {
       dark: "#14273e",
       light: "#ffffff",
     },
   });
 
-  // QR code at the bottom-left
+  // QR on bottom-left
   doc.addImage(qrDataUrl, "PNG", 15, 247, 25, 25);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
+  doc.setFontSize(6.8);
   doc.setTextColor(...COLORS.text);
   doc.text(ticket.hallTicketNo, 27.5, 275, {
     align: "center",
-    maxWidth: 48,
   });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
+  doc.setFontSize(6.5);
   doc.setTextColor(...COLORS.muted);
   doc.text("Scan to verify hall ticket", 27.5, 279, {
     align: "center",
   });
 
-  // Issue date centered in the footer
+  // Issue date at the bottom-center
   doc.setFontSize(7.4);
   doc.text(`Date of Issue: ${formatDate(new Date())}`, 105, 263, {
     align: "center",
@@ -482,6 +492,7 @@ export async function generateHallTicketPDF({ ticket }) {
   });
 
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
   doc.text(INSTITUTE.name, 169, 267, {
     align: "center",
   });
