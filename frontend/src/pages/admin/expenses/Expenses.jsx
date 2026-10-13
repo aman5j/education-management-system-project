@@ -11,6 +11,7 @@ import {
   FiTrendingUp,
   FiEdit2,
   FiTrash2,
+  FiFileText,
 } from "react-icons/fi";
 
 
@@ -33,6 +34,20 @@ const CATEGORIES = [
   "Stationery", "Equipment", "Maintenance",
   "Marketing", "Travel", "Software", "Utilities", "Other",
 ];
+
+const getReceiptUrl = (receiptUrl) => {
+  if (!receiptUrl) return "";
+
+  if (/^https?:\/\//i.test(receiptUrl)) {
+    return receiptUrl;
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const serverUrl = apiUrl.replace(/\/api\/?$/, "");
+
+  return `${serverUrl}${receiptUrl.startsWith("/") ? "" : "/"}${receiptUrl}`;
+};
+
 
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
@@ -251,7 +266,7 @@ const Expenses = () => {
                   <th>Vendor</th>
                   <th>Amount</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th>Receipt / Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -281,7 +296,10 @@ const Expenses = () => {
                         {expense.status}
                       </span>
                     </td>
-                    <td>
+                    {/* <td>
+                  
+                     
+
                       <div className="expense-actions">
                         <Link
                           to={`/admin/expenses/${expense._id}/edit`}
@@ -299,7 +317,50 @@ const Expenses = () => {
                           <FiTrash2 />
                         </button>
                       </div>
+                    </td> */}
+
+                    
+                    <td>
+                    <div className="expense-actions">
+                        {expense.receiptUrl ? (
+                        <a
+                            href={getReceiptUrl(expense.receiptUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="View uploaded receipt"
+                            aria-label={`View receipt for ${expense.title}`}
+                            className="expense-receipt-action"
+                        >
+                            <FiFileText />
+                        </a>
+                        ) : (
+                        <span
+                            className="expense-no-receipt"
+                            title="No receipt uploaded"
+                        >
+                            No receipt
+                        </span>
+                        )}
+
+                        <Link
+                        to={`/admin/expenses/${expense._id}/edit`}
+                        title="Edit expense"
+                        aria-label="Edit expense"
+                        >
+                        <FiEdit2 />
+                        </Link>
+
+                        <button
+                        type="button"
+                        title="Delete expense"
+                        aria-label="Delete expense"
+                        onClick={() => handleDelete(expense)}
+                        >
+                        <FiTrash2 />
+                        </button>
+                    </div>
                     </td>
+
                   </tr>
                 ))}
               </tbody>

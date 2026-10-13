@@ -486,3 +486,30 @@
   color: #a12622;
   cursor: pointer;
 }
+
+
+
+
+.expense-receipt-action {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #b8d8ff;
+  border-radius: 6px;
+  color: #1769e0;
+  background: #edf5ff;
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.expense-receipt-action:hover {
+  color: #fff;
+  background: #1769e0;
+}
+
+.expense-no-receipt {
+  color: #829ab1;
+  font-size: 11px;
+  white-space: nowrap;
+}
