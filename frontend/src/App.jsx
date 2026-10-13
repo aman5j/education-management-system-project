@@ -68,10 +68,6 @@ import ExamSchedule from "./pages/admin/exams/ExamSchedule";
 import HallTicketManagement from "./pages/admin/students/HallTicketManagement";
 import VerifyHallTicket from "./pages/public/VerifyHallTicket";
 
-import ExamReview from "./pages/admin/exams/ExamReview";
-import QuestionBank from "./pages/admin/questions/QuestionBank";
-
-
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
 import RoleRoute from "./components/auth/RoleRoute";
@@ -258,19 +254,7 @@ const App = () => {
           path="hall-tickets"
           element={<HallTicketManagement />}
         />
-
-        {/* Exam Review */}
-        <Route
-          path="exams/review"
-          element={<ExamReview />}
-        />
-
-        {/* Question Bank */}
-        <Route
-          path="exams/questions"
-          element={<QuestionBank />}
-        />
-        
+           
 
         {/* Unknown admin route */}
         <Route

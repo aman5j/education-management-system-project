@@ -40,8 +40,6 @@ import examRoutes from "./routes/exam.routes.js";
 import hallTicketRoutes from "./routes/hallTicket.routes.js";
 import publicHallTicketRoutes from "./routes/publicHallTicket.routes.js";
 
-import examReviewRoutes from "./routes/examReview.routes.js";
-import questionRoutes from "./routes/question.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -262,11 +260,6 @@ app.use("/api/exams", examRoutes);
 
 app.use("/api/hall-tickets", hallTicketRoutes);
 app.use("/api/public/hall-tickets", publicHallTicketRoutes);
-
-app.use("/api/exam-review", examReviewRoutes);
-
-app.use("/api/questions", questionRoutes);
-
 
 
 

@@ -151,15 +151,6 @@ const menuItems = [
         path: "/admin/hall-tickets",
       },
       {
-        label: "Exam Review",
-        path: "/admin/exams/review",
-      },
-      {
-        label: "Question Bank",
-        // path: "/admin/question-bank",
-        path: "/admin/exams/questions",
-      },
-      {
         label: "Result Reports",
         path: "/admin/result-reports",
       },
