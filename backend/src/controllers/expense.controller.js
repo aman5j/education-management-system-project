@@ -412,3 +412,25 @@ export const deleteExpense = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+export const uploadExpenseReceiptFile = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "Please select a receipt file.",
+    });
+  }
+
+  return res.status(201).json({
+    success: true,
+    message: "Receipt uploaded successfully.",
+    data: {
+      receiptUrl: `/uploads/expense-receipts/${req.file.filename}`,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+    },
+  });
+};

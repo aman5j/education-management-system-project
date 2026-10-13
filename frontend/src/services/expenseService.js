@@ -18,3 +18,16 @@ export const updateExpense = (id, data) =>
 
 export const deleteExpense = (id) =>
   api.delete(`/expenses/${id}`);
+
+
+export const uploadExpenseReceipt = (file) => {
+  const formData = new FormData();
+  formData.append("receipt", file);
+
+  return api.post("/expenses/upload-receipt", formData, {
+    headers: {
+      "Content-Type": undefined,
+    },
+  });
+};
+

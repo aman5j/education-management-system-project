@@ -412,3 +412,77 @@
     font-size: 20px;
   }
 }
+
+
+
+.expense-receipt-field > label:first-child {
+  display: block;
+  margin-bottom: 9px;
+  color: #334e68;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.expense-upload-box {
+  display: flex;
+  min-height: 125px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px dashed #9fb3c8;
+  border-radius: 9px;
+  background: #f8fbff;
+  color: #1769e0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.expense-upload-box span {
+  color: #627d98;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.expense-upload-box input {
+  display: none;
+}
+
+.expense-receipt-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.expense-receipt-preview img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border: 1px solid #e6edf4;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.expense-receipt-preview a {
+  color: #1769e0;
+  font-weight: 600;
+}
+
+.expense-remove-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid #f2b8b5;
+  border-radius: 6px;
+  background: #fff1f0;
+  color: #a12622;
+  cursor: pointer;
+}

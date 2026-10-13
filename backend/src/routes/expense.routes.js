@@ -1,6 +1,9 @@
 
 import express from "express";
 
+import uploadExpenseReceipt from "../middleware/expenseReceiptUpload.js";
+import { uploadExpenseReceiptFile } from "../controllers/expense.controller.js";
+
 import {
   getExpenses,
   getExpenseSummary,
@@ -22,6 +25,11 @@ router.use(authorizeRoles("admin"));
 
 router.get("/", getExpenses);
 router.get("/summary", getExpenseSummary);
+router.post(
+  "/upload-receipt",
+  uploadExpenseReceipt.single("receipt"),
+  uploadExpenseReceiptFile
+);
 router.get("/:id", getExpense);
 router.post("/", createExpense);
 router.put("/:id", updateExpense);
