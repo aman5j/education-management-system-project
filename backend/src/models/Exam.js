@@ -1,16 +1,22 @@
-
 import mongoose from "mongoose";
+
+const selectedQuestionSchema = new mongoose.Schema(
+  {
+    subject_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+      required: true,
+    },
+    question_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+  },
+  { _id: false }
+);
 
 const examSchema = new mongoose.Schema(
   {
-    examName: {
-      type: String,
-      required: [true, "Exam name is required."],
-      trim: true,
-      minlength: 2,
-      maxlength: 150,
-    },
-
     course_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
@@ -18,109 +24,40 @@ const examSchema = new mongoose.Schema(
       index: true,
     },
 
-    batch_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Batch",
-      required: [true, "Please select a batch."],
-      index: true,
-    },
-
-    subject_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Subject",
-      required: [true, "Please select a subject."],
-      index: true,
-    },
-
-    examType: {
-      type: String,
-      enum: ["Theory", "Practical", "Oral", "Online"],
-      default: "Theory",
-      required: true,
-    },
-
-    examDate: {
-      type: Date,
-      required: [true, "Exam date is required."],
-    },
-
-    startTime: {
-      type: String,
-      required: [true, "Start time is required."],
-      match: [/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:mm format."],
-    },
-
-    endTime: {
-      type: String,
-      required: [true, "End time is required."],
-      match: [/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:mm format."],
-    },
-
-    durationMinutes: {
+    totalQuestions: {
       type: Number,
-      required: [true, "Exam duration is required."],
-      min: [1, "Duration must be at least one minute."],
-      max: [1440, "Duration cannot exceed 24 hours."],
+      required: true,
+      min: [1, "At least one question is required."],
+      validate: {
+        validator: Number.isInteger,
+        message: "Total questions must be a whole number.",
+      },
     },
 
     totalMarks: {
       type: Number,
-      required: [true, "Total marks are required."],
-      min: [1, "Total marks must be greater than zero."],
+      required: true,
+      min: [0.01, "Total marks must be greater than zero."],
     },
 
-    passingMarks: {
+    marksPerQuestion: {
       type: Number,
-      required: [true, "Passing marks are required."],
-      min: [0, "Passing marks cannot be negative."],
+      required: true,
+      min: [0.0001, "Marks per question must be greater than zero."],
     },
 
-    room: {
-      type: String,
-      trim: true,
-      maxlength: 100,
-      default: "",
-    },
-
-    instructions: {
-      type: String,
-      trim: true,
-      maxlength: 2000,
-      default: "",
-    },
-
-    
-    reviewStatus: {
-      type: String,
-      enum: ["Pending", "Approved", "Rejected"],
-      default: "Pending",
-      index: true,
-    },
-
-    reviewComment: {
-      type: String,
-      trim: true,
-      maxlength: 1000,
-      default: "",
-    },
-
-    reviewedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-
-    reviewedAt: {
-      type: Date,
-      default: null,
-    },
-
-
-    status: {
-      type: String,
-      enum: ["Scheduled", "Completed", "Cancelled"],
-      default: "Scheduled",
-      index: true,
+    selectedQuestions: {
+      type: [selectedQuestionSchema],
+      required: true,
+      validate: {
+        validator(questions) {
+          return (
+            Array.isArray(questions) &&
+            questions.length === this.totalQuestions
+          );
+        },
+        message: "Selected question count must equal total questions.",
+      },
     },
   },
   {
@@ -129,47 +66,7 @@ const examSchema = new mongoose.Schema(
   }
 );
 
-examSchema.index({
-  course_id: 1,
-  batch_id: 1,
-  examDate: 1,
-});
-
-examSchema.index({
-  subject_id: 1,
-  examDate: 1,
-});
-
-examSchema.index({
-  reviewStatus: 1,
-  examDate: 1,
-});
-
-examSchema.pre("validate", function (next) {
-  if (
-    this.startTime &&
-    this.endTime &&
-    this.startTime >= this.endTime
-  ) {
-    this.invalidate(
-      "endTime",
-      "End time must be later than start time."
-    );
-  }
-
-  if (
-    this.totalMarks != null &&
-    this.passingMarks != null &&
-    this.passingMarks > this.totalMarks
-  ) {
-    this.invalidate(
-      "passingMarks",
-      "Passing marks cannot exceed total marks."
-    );
-  }
-
-  next();
-});
+examSchema.index({ course_id: 1, createdAt: -1 });
 
 const Exam = mongoose.model("Exam", examSchema);
 

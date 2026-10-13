@@ -1,10 +1,20 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FiCalendar, FiEdit2, FiPlus, FiRefreshCw, FiTrash2, FiX } from "react-icons/fi";
+import {
+  FiBookOpen,
+  FiCheckCircle,
+  FiEdit2,
+  FiPlus,
+  FiRefreshCw,
+  FiSearch,
+  FiTrash2,
+  FiX,
+} from "react-icons/fi";
 
-import { getCourses } from "../../../services/courseService";
-import { getBatches } from "../../../services/batchService";
+import { getCourses, getCourse } from "../../../services/courseService";
 import { getSubjects } from "../../../services/subjectService";
+import {
+  getSubjectQuestionBank,
+} from "../../../services/subjectQuestionBankService";
 import {
   getExams,
   createExam,
@@ -17,24 +27,16 @@ import "../../../styles/ExamSchedule.css";
 const PAGE_SIZE = 10;
 
 const EMPTY_FORM = {
-  examName: "",
   course_id: "",
-  batch_id: "",
-  subject_id: "",
-  examType: "Theory",
-  examDate: "",
-  startTime: "10:00",
-  endTime: "12:00",
-  durationMinutes: 120,
-  totalMarks: 100,
-  passingMarks: 40,
-  room: "",
-  instructions: "",
-  status: "Scheduled",
+  totalQuestions: "10",
+  totalMarks: "10",
+  selectedQuestions: [],
 };
 
-const getList = (response, keys = []) => {
-  const root = response?.data ?? response;
+const unwrap = (response) => response?.data ?? response;
+
+const getArray = (response, keys = []) => {
+  const root = unwrap(response);
   const data = root?.data ?? root;
 
   if (Array.isArray(data)) return data;
@@ -49,112 +51,93 @@ const getList = (response, keys = []) => {
 const getId = (value) =>
   typeof value === "object" ? value?._id : value;
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "—"
-    : date.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-      });
-};
+const getErrorMessage = (error) =>
+  error?.response?.data?.message ||
+  error?.message ||
+  "Something went wrong. Please try again.";
 
-const getDateInput = (value) => {
-  if (!value) return "";
-  return String(value).slice(0, 10);
-};
+const getQuestionText = (question) =>
+  question.questionText || "Untitled question";
 
-const getExamForm = (exam) => ({
-  examName: exam.examName || "",
-  course_id: getId(exam.course_id) || "",
-  batch_id: getId(exam.batch_id) || "",
-  subject_id: getId(exam.subject_id) || "",
-  examType: exam.examType || "Theory",
-  examDate: getDateInput(exam.examDate),
-  startTime: exam.startTime || "10:00",
-  endTime: exam.endTime || "12:00",
-  durationMinutes: exam.durationMinutes ?? 120,
-  totalMarks: exam.totalMarks ?? 100,
-  passingMarks: exam.passingMarks ?? 40,
-  room: exam.room || "",
-  instructions: exam.instructions || "",
-  status: exam.status || "Scheduled",
-});
-
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || fallback;
+const getOptionSummary = (question) =>
+  [question.optionA, question.optionB, question.optionC, question.optionD]
+    .filter(Boolean)
+    .join(" · ");
 
 export default function ExamSchedule() {
-  const [exams, setExams] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-
-  const [loading, setLoading] = useState(true);
-  const [optionsLoading, setOptionsLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
-  const [viewExam, setViewExam] = useState(null);
-
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [formError, setFormError] = useState("");
-
-  const [search, setSearch] = useState("");
-  const [filterCourse, setFilterCourse] = useState("");
-  const [filterBatch, setFilterBatch] = useState("");
-  const [filterSubject, setFilterSubject] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [page, setPage] = useState(1);
-
+  const [exams, setExams] = useState([]);
   const [pagination, setPagination] = useState({
     total: 0,
-    totalPages: 0,
+    totalPages: 1,
   });
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [subjects, setSubjects] = useState([]);
+  const [questions, setQuestions] = useState([]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [search, setSearch] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
+  const [page, setPage] = useState(1);
 
-    const loadOptions = async () => {
-      setOptionsLoading(true);
+  const [editingId, setEditingId] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-      try {
-        const [courseResponse, batchResponse, subjectResponse] =
-          await Promise.all([
-            getCourses({ page: 1, limit: 100 }),
-            getBatches({ page: 1, limit: 100 }),
-            getSubjects({ page: 1, limit: 100 }),
-          ]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-        if (cancelled) return;
+  const totalQuestions = Number(form.totalQuestions);
+  const totalMarks = Number(form.totalMarks);
 
-        setCourses(getList(courseResponse, ["courses"]));
-        setBatches(getList(batchResponse, ["batches"]));
-        setSubjects(getList(subjectResponse, ["subjects"]));
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            getErrorMessage(err, "Unable to load course, batch, and subject options.")
-          );
-        }
-      } finally {
-        if (!cancelled) setOptionsLoading(false);
-      }
-    };
+  const marksPerQuestion =
+    totalQuestions > 0 && totalMarks > 0
+      ? totalMarks / totalQuestions
+      : 0;
 
-    loadOptions();
+  const selectedKeys = useMemo(
+    () => new Set(form.selectedQuestions.map((item) =>
+      `${item.subject_id}:${item.question_id}`
+    )),
+    [form.selectedQuestions]
+  );
 
-    return () => {
-      cancelled = true;
-    };
+  const filteredQuestions = useMemo(() => {
+    const value = search.trim().toLowerCase();
+
+    if (!value) return questions;
+
+    return questions.filter((item) => {
+      const searchable = [
+        item.questionText,
+        item.subjectName,
+        item.optionA,
+        item.optionB,
+        item.optionC,
+        item.optionD,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(value);
+    });
+  }, [questions, search]);
+
+  const loadCourses = useCallback(async () => {
+    setLoadingCourses(true);
+
+    try {
+      const response = await getCourses({ limit: 100 });
+      setCourses(getArray(response, ["courses"]));
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingCourses(false);
+    }
   }, []);
 
   const loadExams = useCallback(async () => {
@@ -162,257 +145,417 @@ export default function ExamSchedule() {
     setError("");
 
     try {
-      const params = {
+      const response = await getExams({
         page,
         limit: PAGE_SIZE,
-        search: search.trim(),
-        course_id: filterCourse,
-        batch_id: filterBatch,
-        subject_id: filterSubject,
-        status: filterStatus,
-        from,
-        to,
-      };
-
-      Object.keys(params).forEach((key) => {
-        if (params[key] === "") delete params[key];
+        course_id: courseSearch || undefined,
       });
 
-      const response = await getExams(params);
-      const payload = response?.data?.data ?? {};
+      const root = unwrap(response);
+      const data = root?.data ?? root;
 
-      setExams(
-        Array.isArray(payload.exams) ? payload.exams : []
-      );
-
+      setExams(Array.isArray(data?.exams) ? data.exams : []);
       setPagination(
-        payload.pagination || { total: 0, totalPages: 0 }
+        data?.pagination || { total: 0, totalPages: 1 }
       );
     } catch (err) {
-      setExams([]);
-      setError(getErrorMessage(err, "Unable to load exam schedules."));
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [
-    page,
-    search,
-    filterCourse,
-    filterBatch,
-    filterSubject,
-    filterStatus,
-    from,
-    to,
-  ]);
+  }, [page, courseSearch]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
 
   useEffect(() => {
     loadExams();
   }, [loadExams]);
 
-  const formBatches = useMemo(
-    () =>
-      batches.filter(
-        (batch) =>
-          !form.course_id ||
-          getId(batch.course_id) === form.course_id
-      ),
-    [batches, form.course_id]
-  );
-
-  const formSubjects = useMemo(
-    () =>
-      subjects.filter(
-        (subject) =>
-          (!form.course_id ||
-            getId(subject.course_id) === form.course_id) &&
-          subject.status === "Active"
-      ),
-    [subjects, form.course_id]
-  );
-
-  const filterBatches = useMemo(
-    () =>
-      batches.filter(
-        (batch) =>
-          !filterCourse ||
-          getId(batch.course_id) === filterCourse
-      ),
-    [batches, filterCourse]
-  );
-
-  const filterSubjects = useMemo(
-    () =>
-      subjects.filter(
-        (subject) =>
-          !filterCourse ||
-          getId(subject.course_id) === filterCourse
-      ),
-    [subjects, filterCourse]
-  );
-
   const resetForm = () => {
-    setForm({ ...EMPTY_FORM });
+    setForm(EMPTY_FORM);
+    setSubjects([]);
+    setQuestions([]);
+    setSearch("");
     setEditingId("");
-    setFormError("");
     setFormOpen(false);
+    setError("");
   };
 
   const openCreate = () => {
-    setNotice("");
-    setError("");
-    setViewExam(null);
-    setEditingId("");
-    setForm({ ...EMPTY_FORM });
-    setFormError("");
+    resetForm();
     setFormOpen(true);
+    setSuccess("");
   };
 
-  const openEdit = (exam) => {
-    setNotice("");
+  const loadCourseQuestions = async (courseId) => {
+    setSubjects([]);
+    setQuestions([]);
+    setForm((current) => ({
+      ...current,
+      course_id: courseId,
+      selectedQuestions: [],
+    }));
+
+    if (!courseId) return;
+
+    setLoadingQuestions(true);
     setError("");
-    setViewExam(null);
+
+    try {
+      let linkedSubjects = [];
+
+      // The course model stores linked subjects in Course.subjects.
+      try {
+        const courseResponse = await getCourse(courseId);
+        const courseRoot = unwrap(courseResponse);
+        const courseData = courseRoot?.data ?? courseRoot;
+        const course = courseData?.course ?? courseData;
+
+        const courseSubjects = course?.subjects;
+
+        if (
+          Array.isArray(courseSubjects) &&
+          courseSubjects.length > 0 &&
+          typeof courseSubjects[0] === "object"
+        ) {
+          linkedSubjects = courseSubjects;
+        } else if (
+          Array.isArray(courseSubjects) &&
+          courseSubjects.length > 0
+        ) {
+          const ids = new Set(courseSubjects.map(String));
+          const allResponse = await getSubjects({
+            page: 1,
+            limit: 100,
+            status: "Active",
+          });
+
+          linkedSubjects = getArray(allResponse, ["subjects"]).filter(
+            (subject) => ids.has(String(subject._id))
+          );
+        }
+      } catch {
+        // Fall back to the subjects API below.
+      }
+
+      if (linkedSubjects.length === 0) {
+        const response = await getSubjects({
+          page: 1,
+          limit: 100,
+          status: "Active",
+        });
+
+        const allSubjects = getArray(response, ["subjects"]);
+
+        // Only use legacy course_id as a fallback when the course's
+        // explicit subjects relationship could not be read.
+        linkedSubjects = allSubjects.filter(
+          (subject) => String(getId(subject.course_id)) === String(courseId)
+        );
+      }
+
+      linkedSubjects = linkedSubjects.filter(
+        (subject) => subject.status !== "Inactive"
+      );
+
+      setSubjects(linkedSubjects);
+
+      const questionResults = await Promise.all(
+        linkedSubjects.map(async (subject) => {
+          const subjectId = subject._id;
+
+          try {
+            const response = await getSubjectQuestionBank(subjectId);
+            const rows = getArray(response, ["questions"]);
+
+            return rows.map((question) => ({
+              ...question,
+              subject_id: subjectId,
+              subjectName: subject.subjectName,
+              subjectCode: subject.subjectCode,
+            }));
+          } catch {
+            return [];
+          }
+        })
+      );
+
+      setQuestions(questionResults.flat());
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  const toggleQuestion = (question) => {
+    const subjectId = String(question.subject_id);
+    const questionId = String(question._id);
+    const key = `${subjectId}:${questionId}`;
+
+    setForm((current) => {
+      const exists = current.selectedQuestions.some(
+        (item) =>
+          `${item.subject_id}:${item.question_id}` === key
+      );
+
+      return {
+        ...current,
+        selectedQuestions: exists
+          ? current.selectedQuestions.filter(
+              (item) =>
+                `${item.subject_id}:${item.question_id}` !== key
+            )
+          : [
+              ...current.selectedQuestions,
+              {
+                subject_id: subjectId,
+                question_id: questionId,
+              },
+            ],
+      };
+    });
+  };
+
+  const selectVisibleQuestions = (checked) => {
+    setForm((current) => {
+      const next = new Map(
+        current.selectedQuestions.map((item) => [
+          `${item.subject_id}:${item.question_id}`,
+          item,
+        ])
+      );
+
+      filteredQuestions.forEach((question) => {
+        const item = {
+          subject_id: String(question.subject_id),
+          question_id: String(question._id),
+        };
+
+        const key = `${item.subject_id}:${item.question_id}`;
+
+        if (checked) next.set(key, item);
+        else next.delete(key);
+      });
+
+      return {
+        ...current,
+        selectedQuestions: Array.from(next.values()),
+      };
+    });
+  };
+
+  const openEdit = async (exam) => {
+    setError("");
+    setSuccess("");
     setEditingId(exam._id);
-    setForm(getExamForm(exam));
-    setFormError("");
     setFormOpen(true);
-  };
+    setSearch("");
 
-  const changeForm = (event) => {
-    const { name, value } = event.target;
+    const courseId = String(getId(exam.course_id) || "");
 
-    setForm((previous) => {
-      const next = { ...previous, [name]: value };
-
-      if (name === "course_id") {
-        next.batch_id = "";
-        next.subject_id = "";
-      }
-
-      if (name === "batch_id") {
-        next.subject_id = "";
-      }
-
-      return next;
+    setForm({
+      course_id: courseId,
+      totalQuestions: String(exam.totalQuestions ?? ""),
+      totalMarks: String(exam.totalMarks ?? ""),
+      selectedQuestions: (exam.selectedQuestions || []).map((item) => ({
+        subject_id: String(getId(item.subject_id)),
+        question_id: String(getId(item.question_id)),
+      })),
     });
 
-    setFormError("");
+    await loadCourseQuestionsForEdit(courseId, exam.selectedQuestions || []);
+  };
+
+  const loadCourseQuestionsForEdit = async (courseId, selected) => {
+    setLoadingQuestions(true);
+
+    try {
+      let linkedSubjects = [];
+      const courseResponse = await getCourse(courseId);
+      const root = unwrap(courseResponse);
+      const course = root?.data?.course ?? root?.data ?? root;
+
+      if (Array.isArray(course?.subjects)) {
+        const ids = course.subjects.map((item) => String(getId(item)));
+
+        if (course.subjects.some((item) => typeof item === "object")) {
+          linkedSubjects = course.subjects;
+        } else {
+          const response = await getSubjects({
+            page: 1,
+            limit: 100,
+            status: "Active",
+          });
+          linkedSubjects = getArray(response, ["subjects"]).filter(
+            (subject) => ids.includes(String(subject._id))
+          );
+        }
+      }
+
+      if (linkedSubjects.length === 0) {
+        const response = await getSubjects({
+          page: 1,
+          limit: 100,
+          status: "Active",
+        });
+        const ids = new Set(
+          selected.map((item) => String(getId(item.subject_id)))
+        );
+        linkedSubjects = getArray(response, ["subjects"]).filter(
+          (subject) =>
+            ids.has(String(subject._id)) ||
+            String(getId(subject.course_id)) === String(courseId)
+        );
+      }
+
+      setSubjects(linkedSubjects);
+
+      const results = await Promise.all(
+        linkedSubjects.map(async (subject) => {
+          try {
+            const response = await getSubjectQuestionBank(subject._id);
+            return getArray(response, ["questions"]).map((question) => ({
+              ...question,
+              subject_id: subject._id,
+              subjectName: subject.subjectName,
+              subjectCode: subject.subjectCode,
+            }));
+          } catch {
+            return [];
+          }
+        })
+      );
+
+      setQuestions(results.flat());
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingQuestions(false);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setFormError("");
     setError("");
-    setNotice("");
+    setSuccess("");
 
-    if (form.startTime >= form.endTime) {
-      setFormError("End time must be later than start time.");
+    if (!form.course_id) {
+      setError("Please select a course.");
       return;
     }
 
-    if (Number(form.passingMarks) > Number(form.totalMarks)) {
-      setFormError("Passing marks cannot exceed total marks.");
+    if (!Number.isInteger(totalQuestions) || totalQuestions < 1) {
+      setError("Total questions must be a positive whole number.");
       return;
     }
 
-    const payload = {
-      ...form,
-      durationMinutes: Number(form.durationMinutes),
-      totalMarks: Number(form.totalMarks),
-      passingMarks: Number(form.passingMarks),
-    };
+    if (!Number.isFinite(totalMarks) || totalMarks <= 0) {
+      setError("Total marks must be greater than zero.");
+      return;
+    }
+
+    if (form.selectedQuestions.length !== totalQuestions) {
+      setError(
+        `Select exactly ${totalQuestions} questions. You selected ${form.selectedQuestions.length}.`
+      );
+      return;
+    }
 
     setSaving(true);
 
     try {
+      const payload = {
+        course_id: form.course_id,
+        totalQuestions,
+        totalMarks,
+        selectedQuestions: form.selectedQuestions,
+      };
+
       if (editingId) {
         await updateExam(editingId, payload);
-        setNotice("Exam schedule updated successfully.");
+        setSuccess("Exam updated successfully.");
       } else {
         await createExam(payload);
-        setNotice("Exam scheduled successfully.");
+        setSuccess("Exam created successfully.");
       }
 
       resetForm();
       setPage(1);
       await loadExams();
     } catch (err) {
-      setFormError(
-        getErrorMessage(err, "Unable to save the exam schedule.")
-      );
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (exam) => {
-    if (!window.confirm(`Delete "${exam.examName}"? This cannot be undone.`)) {
+    if (!window.confirm("Delete this exam? This action cannot be undone.")) {
       return;
     }
 
     setError("");
-    setNotice("");
+    setSuccess("");
 
     try {
       await deleteExam(exam._id);
-      setNotice("Exam schedule deleted successfully.");
-
-      if (exams.length === 1 && page > 1) {
-        setPage((previous) => previous - 1);
-      } else {
-        await loadExams();
-      }
+      setSuccess("Exam deleted successfully.");
+      await loadExams();
     } catch (err) {
-      setError(getErrorMessage(err, "Unable to delete the exam schedule."));
+      setError(getErrorMessage(err));
     }
   };
 
-  const resetFilters = () => {
-    setSearch("");
-    setFilterCourse("");
-    setFilterBatch("");
-    setFilterSubject("");
-    setFilterStatus("");
-    setFrom("");
-    setTo("");
-    setPage(1);
-    setNotice("");
-  };
-
-  const countLabel =
-    pagination.total === 1 ? "exam" : "exams";
+  const filteredCourses = courses;
 
   return (
-    <div className="exam-page">
+    <main className="exam-page">
       <header className="exam-page-header">
         <div>
-          <span className="exam-eyebrow">ASSESSMENT MANAGEMENT</span>
-          <h1>Exam Schedule</h1>
-          <p>Create and manage examinations for your courses and batches.</p>
+          <span className="exam-eyebrow">EXAMS / MANAGEMENT</span>
+          <h1>Create Exam</h1>
+          <p>
+            Create an exam first. Hall tickets and exam timings will be
+            managed separately.
+          </p>
         </div>
 
-        <button
-          type="button"
-          className="exam-primary-btn"
-          onClick={openCreate}
-        >
-          <FiPlus aria-hidden="true" />
-          Schedule Exam
-        </button>
+        <div className="exam-header-actions">
+          <button
+            type="button"
+            className="exam-secondary-btn"
+            onClick={loadExams}
+            disabled={loading}
+          >
+            <FiRefreshCw /> Refresh
+          </button>
+          <button
+            type="button"
+            className="exam-primary-btn"
+            onClick={openCreate}
+          >
+            <FiPlus /> Create Exam
+          </button>
+        </div>
       </header>
 
       {error && (
         <div className="exam-alert exam-alert-error" role="alert">
-          {error}
-          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss">
             <FiX />
           </button>
         </div>
       )}
 
-      {notice && (
+      {success && (
         <div className="exam-alert exam-alert-success" role="status">
-          {notice}
-          <button type="button" onClick={() => setNotice("")} aria-label="Dismiss message">
+          <FiCheckCircle />
+          <span>{success}</span>
+          <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss">
             <FiX />
           </button>
         </div>
@@ -422,9 +565,13 @@ export default function ExamSchedule() {
         <section className="exam-card exam-form-card">
           <div className="exam-section-heading">
             <div>
-              <h2>{editingId ? "Edit Exam Schedule" : "Schedule New Exam"}</h2>
-              <p>Fields marked * are required.</p>
+              <span className="exam-eyebrow">
+                {editingId ? "EDIT EXAM" : "NEW EXAM"}
+              </span>
+              <h2>{editingId ? "Edit Exam" : "Exam Details"}</h2>
+              <p>Select a course, set marks, then choose its MCQs.</p>
             </div>
+
             <button
               type="button"
               className="exam-icon-btn"
@@ -435,247 +582,241 @@ export default function ExamSchedule() {
             </button>
           </div>
 
-          {formError && (
-            <div className="exam-alert exam-alert-error" role="alert">
-              {formError}
+          <form onSubmit={handleSubmit}>
+            <div className="exam-form-grid exam-create-grid">
+              <label className="exam-field exam-field-wide">
+                Select Course <span className="required">*</span>
+                <select
+                  value={form.course_id}
+                  onChange={(event) => loadCourseQuestions(event.target.value)}
+                  disabled={loadingCourses || loadingQuestions || saving}
+                  required
+                >
+                  <option value="">
+                    {loadingCourses ? "Loading courses..." : "Select course"}
+                  </option>
+                  {filteredCourses.map((course) => (
+                    <option key={course._id} value={course._id}>
+                      {course.courseTitle}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="exam-field">
+                Total Questions <span className="required">*</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="500"
+                  step="1"
+                  value={form.totalQuestions}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      totalQuestions: event.target.value,
+                    }))
+                  }
+                  required
+                />
+              </label>
+
+              <label className="exam-field">
+                Total Marks <span className="required">*</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="any"
+                  value={form.totalMarks}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      totalMarks: event.target.value,
+                    }))
+                  }
+                  required
+                />
+              </label>
+
+              <div className="exam-calculated-marks">
+                <span>Marks per Question</span>
+                <strong>
+                  {marksPerQuestion > 0
+                    ? Number(marksPerQuestion.toFixed(4)).toString()
+                    : "—"}
+                </strong>
+                <small>Calculated automatically</small>
+              </div>
+
+              <div className="exam-question-summary">
+                <span>Available questions</span>
+                <strong>{questions.length}</strong>
+                <span>Selected {form.selectedQuestions.length} of {totalQuestions || 0}</span>
+              </div>
             </div>
-          )}
 
-          {optionsLoading ? (
-            <div className="exam-empty">Loading course options...</div>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <div className="exam-form-grid">
-                <label className="exam-field exam-field-wide">
-                  Exam name *
+            <section className="exam-question-section">
+              <div className="exam-section-heading exam-question-heading">
+                <div>
+                  <h2>Select Exam Questions</h2>
+                  <p>
+                    Questions are loaded from the selected course's linked
+                    subjects.
+                  </p>
+                </div>
+                <div className="exam-question-count">
+                  {form.selectedQuestions.length} selected
+                </div>
+              </div>
+
+              <div className="exam-question-toolbar">
+                <label className="exam-search-box">
+                  <FiSearch aria-hidden="true" />
                   <input
-                    name="examName"
-                    value={form.examName}
-                    onChange={changeForm}
-                    required
-                    minLength={2}
-                    maxLength={150}
-                    placeholder="e.g. MERN Stack Mid-Term Examination"
-                  />
-                </label>
-
-                <label className="exam-field">
-                  Course *
-                  <select name="course_id" value={form.course_id} onChange={changeForm} required>
-                    <option value="">Select course</option>
-                    {courses.map((course) => (
-                      <option key={course._id} value={course._id}>
-                        {course.courseTitle}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="exam-field">
-                  Batch *
-                  <select
-                    name="batch_id"
-                    value={form.batch_id}
-                    onChange={changeForm}
-                    required
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search question or subject..."
                     disabled={!form.course_id}
-                  >
-                    <option value="">Select batch</option>
-                    {formBatches.map((batch) => (
-                      <option key={batch._id} value={batch._id}>
-                        {batch.batch_name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
 
-                <label className="exam-field">
-                  Subject *
-                  <select
-                    name="subject_id"
-                    value={form.subject_id}
-                    onChange={changeForm}
-                    required
-                    disabled={!form.course_id}
-                  >
-                    <option value="">Select subject</option>
-                    {formSubjects.map((subject) => (
-                      <option key={subject._id} value={subject._id}>
-                        {subject.subjectName} ({subject.subjectCode})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="exam-field">
-                  Exam type *
-                  <select name="examType" value={form.examType} onChange={changeForm} required>
-                    {["Theory", "Practical", "Oral", "Online"].map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="exam-field">
-                  Exam date *
+                <label className="exam-select-all">
                   <input
-                    type="date"
-                    name="examDate"
-                    value={form.examDate}
-                    onChange={changeForm}
-                    required
+                    type="checkbox"
+                    checked={
+                      filteredQuestions.length > 0 &&
+                      filteredQuestions.every((question) =>
+                        selectedKeys.has(
+                          `${question.subject_id}:${question._id}`
+                        )
+                      )
+                    }
+                    onChange={(event) =>
+                      selectVisibleQuestions(event.target.checked)
+                    }
+                    disabled={filteredQuestions.length === 0}
                   />
-                </label>
-
-                <label className="exam-field">
-                  Start time *
-                  <input
-                    type="time"
-                    name="startTime"
-                    value={form.startTime}
-                    onChange={changeForm}
-                    required
-                  />
-                </label>
-
-                <label className="exam-field">
-                  End time *
-                  <input
-                    type="time"
-                    name="endTime"
-                    value={form.endTime}
-                    onChange={changeForm}
-                    required
-                  />
-                </label>
-
-                <label className="exam-field">
-                  Duration (minutes) *
-                  <input
-                    type="number"
-                    name="durationMinutes"
-                    min="1"
-                    max="1440"
-                    value={form.durationMinutes}
-                    onChange={changeForm}
-                    required
-                  />
-                </label>
-
-                <label className="exam-field">
-                  Total marks *
-                  <input
-                    type="number"
-                    name="totalMarks"
-                    min="1"
-                    step="1"
-                    value={form.totalMarks}
-                    onChange={changeForm}
-                    required
-                  />
-                </label>
-
-                <label className="exam-field">
-                  Passing marks *
-                  <input
-                    type="number"
-                    name="passingMarks"
-                    min="0"
-                    step="1"
-                    value={form.passingMarks}
-                    onChange={changeForm}
-                    required
-                  />
-                </label>
-
-                <label className="exam-field">
-                  Room / venue
-                  <input
-                    name="room"
-                    value={form.room}
-                    onChange={changeForm}
-                    maxLength={100}
-                    placeholder="e.g. Room 101"
-                  />
-                </label>
-
-                <label className="exam-field">
-                  Status *
-                  <select name="status" value={form.status} onChange={changeForm} required>
-                    {["Scheduled", "Completed", "Cancelled"].map((status) => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="exam-field exam-field-wide">
-                  Instructions
-                  <textarea
-                    name="instructions"
-                    value={form.instructions}
-                    onChange={changeForm}
-                    maxLength={2000}
-                    rows={3}
-                    placeholder="Enter exam instructions for students..."
-                  />
+                  Select visible
                 </label>
               </div>
 
-              <div className="exam-form-actions">
-                <button type="button" className="exam-secondary-btn" onClick={resetForm}>
-                  Cancel
-                </button>
-                <button type="submit" className="exam-primary-btn" disabled={saving}>
-                  {saving ? "Saving..." : editingId ? "Save Changes" : "Create Schedule"}
-                </button>
+              {!form.course_id ? (
+                <div className="exam-question-empty">
+                  <FiBookOpen />
+                  <strong>Select a course first</strong>
+                  <span>Its linked subjects and MCQs will appear here.</span>
+                </div>
+              ) : loadingQuestions ? (
+                <div className="exam-question-empty">
+                  Loading subjects and questions...
+                </div>
+              ) : questions.length === 0 ? (
+                <div className="exam-question-empty">
+                  <FiBookOpen />
+                  <strong>No questions found</strong>
+                  <span>
+                    Add MCQs to the selected course's linked subjects first.
+                  </span>
+                </div>
+              ) : filteredQuestions.length === 0 ? (
+                <div className="exam-question-empty">
+                  No questions match your search.
+                </div>
+              ) : (
+                <div className="exam-question-list">
+                  {filteredQuestions.map((question, index) => {
+                    const key = `${question.subject_id}:${question._id}`;
+                    const checked = selectedKeys.has(key);
+
+                    return (
+                      <label
+                        key={key}
+                        className={`exam-question-item ${checked ? "is-selected" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleQuestion(question)}
+                        />
+
+                        <span className="exam-question-number">
+                          {index + 1}
+                        </span>
+
+                        <span className="exam-question-content">
+                          <strong>{getQuestionText(question)}</strong>
+                          <span>{getOptionSummary(question)}</span>
+                          <small>
+                            {question.subjectName}
+                            {question.subjectCode
+                              ? ` (${question.subjectCode})`
+                              : ""}
+                          </small>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="exam-selection-footer">
+                <span>
+                  {form.selectedQuestions.length} of {totalQuestions || 0} required
+                  questions selected
+                </span>
+                {form.selectedQuestions.length !== totalQuestions && (
+                  <span className="exam-selection-warning">
+                    Select the exact number before saving.
+                  </span>
+                )}
               </div>
-            </form>
-          )}
+            </section>
+
+            <div className="exam-form-actions">
+              <button
+                type="button"
+                className="exam-secondary-btn"
+                onClick={resetForm}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="exam-primary-btn"
+                disabled={
+                  saving ||
+                  loadingQuestions ||
+                  !form.course_id ||
+                  form.selectedQuestions.length !== totalQuestions ||
+                  totalQuestions < 1 ||
+                  totalMarks <= 0
+                }
+              >
+                {saving
+                  ? "Saving..."
+                  : editingId
+                    ? "Update Exam"
+                    : "Create Exam"}
+              </button>
+            </div>
+          </form>
         </section>
       )}
 
       <section className="exam-card">
         <div className="exam-section-heading">
           <div>
-            <h2>Scheduled Examinations</h2>
-            <p>
-              {pagination.total} {countLabel} found
-            </p>
+            <h2>Created Exams</h2>
+            <p>{pagination.total} exam(s)</p>
           </div>
-
-          <button
-            type="button"
-            className="exam-secondary-btn"
-            onClick={loadExams}
-            disabled={loading}
-          >
-            <FiRefreshCw aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-
-        <div className="exam-filter-grid">
-          <label className="exam-field">
-            Search exam
-            <input
-              type="search"
-              value={search}
-              placeholder="Search by exam name"
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-          </label>
-
-          <label className="exam-field">
-            Course
+          <label className="exam-list-course-filter">
+            Filter by course
             <select
-              value={filterCourse}
+              value={courseSearch}
               onChange={(event) => {
-                setFilterCourse(event.target.value);
-                setFilterBatch("");
-                setFilterSubject("");
+                setCourseSearch(event.target.value);
                 setPage(1);
               }}
             >
@@ -687,175 +828,53 @@ export default function ExamSchedule() {
               ))}
             </select>
           </label>
-
-          <label className="exam-field">
-            Batch
-            <select
-              value={filterBatch}
-              onChange={(event) => {
-                setFilterBatch(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All batches</option>
-              {filterBatches.map((batch) => (
-                <option key={batch._id} value={batch._id}>
-                  {batch.batch_name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="exam-field">
-            Subject
-            <select
-              value={filterSubject}
-              onChange={(event) => {
-                setFilterSubject(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All subjects</option>
-              {filterSubjects.map((subject) => (
-                <option key={subject._id} value={subject._id}>
-                  {subject.subjectName}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="exam-field">
-            Status
-            <select
-              value={filterStatus}
-              onChange={(event) => {
-                setFilterStatus(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All statuses</option>
-              {["Scheduled", "Completed", "Cancelled"].map((status) => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="exam-field">
-            From date
-            <input
-              type="date"
-              value={from}
-              max={to || undefined}
-              onChange={(event) => {
-                setFrom(event.target.value);
-                setPage(1);
-              }}
-            />
-          </label>
-
-          <label className="exam-field">
-            To date
-            <input
-              type="date"
-              value={to}
-              min={from || undefined}
-              onChange={(event) => {
-                setTo(event.target.value);
-                setPage(1);
-              }}
-            />
-          </label>
-
-          <div className="exam-filter-action">
-            <button type="button" className="exam-secondary-btn" onClick={resetFilters}>
-              Reset filters
-            </button>
-          </div>
         </div>
 
         <div className="exam-table-wrap">
           <table className="exam-table">
             <thead>
               <tr>
-                <th>Exam</th>
-                <th>Course / Subject</th>
-                <th>Batch</th>
-                <th>Date & time</th>
-                <th>Duration</th>
-                <th>Marks</th>
-                <th>Status</th>
+                <th>#</th>
+                <th>Course</th>
+                <th>Total Questions</th>
+                <th>Total Marks</th>
+                <th>Marks / Question</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="exam-empty">Loading exam schedules...</td>
+                  <td colSpan="7" className="exam-empty">Loading exams...</td>
                 </tr>
               ) : exams.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="exam-empty">
-                    <FiCalendar aria-hidden="true" />
-                    <strong>No exam schedules found</strong>
-                    <span>Change your filters or schedule a new exam.</span>
+                  <td colSpan="7" className="exam-empty">
+                    No exams created yet.
                   </td>
                 </tr>
               ) : (
-                exams.map((exam) => (
+                exams.map((exam, index) => (
                   <tr key={exam._id}>
+                    <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="exam-name-link"
-                        onClick={() => setViewExam(exam)}
-                      >
-                        {exam.examName}
-                      </button>
-                      <span className="exam-subtext">{exam.examType}</span>
+                      <strong>{exam.course_id?.courseTitle || "Course"}</strong>
                     </td>
-
+                    <td>{exam.totalQuestions}</td>
+                    <td>{exam.totalMarks}</td>
+                    <td>{exam.marksPerQuestion}</td>
                     <td>
-                      <strong>{exam.course_id?.courseTitle || "—"}</strong>
-                      <span className="exam-subtext">
-                        {exam.subject_id?.subjectName || "—"}
-                        {exam.subject_id?.subjectCode
-                          ? ` (${exam.subject_id.subjectCode})`
-                          : ""}
-                      </span>
+                      {exam.createdAt
+                        ? new Date(exam.createdAt).toLocaleDateString("en-IN")
+                        : "—"}
                     </td>
-
-                    <td>{exam.batch_id?.batch_name || "—"}</td>
-
-                    <td>
-                      <strong>{formatDate(exam.examDate)}</strong>
-                      <span className="exam-subtext">
-                        {exam.startTime}–{exam.endTime}
-                      </span>
-                    </td>
-
-                    <td>{exam.durationMinutes} min</td>
-
-                    <td>
-                      <strong>{exam.totalMarks}</strong>
-                      <span className="exam-subtext">
-                        Pass: {exam.passingMarks}
-                      </span>
-                    </td>
-
-                    <td>
-                      <span className={`exam-status exam-status-${exam.status?.toLowerCase()}`}>
-                        {exam.status}
-                      </span>
-                    </td>
-
                     <td>
                       <div className="exam-row-actions">
                         <button
                           type="button"
                           className="exam-icon-btn"
                           title="Edit exam"
-                          aria-label={`Edit ${exam.examName}`}
                           onClick={() => openEdit(exam)}
                         >
                           <FiEdit2 />
@@ -864,7 +883,6 @@ export default function ExamSchedule() {
                           type="button"
                           className="exam-icon-btn exam-icon-danger"
                           title="Delete exam"
-                          aria-label={`Delete ${exam.examName}`}
                           onClick={() => handleDelete(exam)}
                         >
                           <FiTrash2 />
@@ -878,92 +896,30 @@ export default function ExamSchedule() {
           </table>
         </div>
 
-        {!loading && pagination.totalPages > 0 && (
-          <div className="exam-pagination">
-            <span>
-              Page {page} of {pagination.totalPages}
-            </span>
-            <div>
-              <button
-                type="button"
-                className="exam-secondary-btn"
-                disabled={page <= 1}
-                onClick={() => setPage((previous) => previous - 1)}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                className="exam-secondary-btn"
-                disabled={page >= pagination.totalPages}
-                onClick={() => setPage((previous) => previous + 1)}
-              >
-                Next
-              </button>
-            </div>
+        <div className="exam-pagination">
+          <span>
+            Page {page} of {Math.max(pagination.totalPages || 1, 1)}
+          </span>
+          <div>
+            <button
+              type="button"
+              className="exam-secondary-btn"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((current) => current - 1)}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              className="exam-secondary-btn"
+              disabled={page >= (pagination.totalPages || 1) || loading}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </button>
           </div>
-        )}
-      </section>
-
-      {viewExam && (
-        <div
-          className="exam-modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setViewExam(null);
-          }}
-        >
-          <section
-            className="exam-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="exam-detail-title"
-          >
-            <div className="exam-section-heading">
-              <div>
-                <span className="exam-eyebrow">EXAM DETAILS</span>
-                <h2 id="exam-detail-title">{viewExam.examName}</h2>
-              </div>
-              <button
-                type="button"
-                className="exam-icon-btn"
-                onClick={() => setViewExam(null)}
-                aria-label="Close details"
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <dl className="exam-detail-grid">
-              <div><dt>Course</dt><dd>{viewExam.course_id?.courseTitle || "—"}</dd></div>
-              <div><dt>Batch</dt><dd>{viewExam.batch_id?.batch_name || "—"}</dd></div>
-              <div><dt>Subject</dt><dd>{viewExam.subject_id?.subjectName || "—"}</dd></div>
-              <div><dt>Subject code</dt><dd>{viewExam.subject_id?.subjectCode || "—"}</dd></div>
-              <div><dt>Type</dt><dd>{viewExam.examType}</dd></div>
-              <div><dt>Date</dt><dd>{formatDate(viewExam.examDate)}</dd></div>
-              <div><dt>Time</dt><dd>{viewExam.startTime}–{viewExam.endTime}</dd></div>
-              <div><dt>Duration</dt><dd>{viewExam.durationMinutes} minutes</dd></div>
-              <div><dt>Total marks</dt><dd>{viewExam.totalMarks}</dd></div>
-              <div><dt>Passing marks</dt><dd>{viewExam.passingMarks}</dd></div>
-              <div><dt>Room / venue</dt><dd>{viewExam.room || "—"}</dd></div>
-              <div><dt>Status</dt><dd>{viewExam.status}</dd></div>
-              <div className="exam-detail-wide">
-                <dt>Instructions</dt>
-                <dd>{viewExam.instructions || "No instructions added."}</dd>
-              </div>
-            </dl>
-
-            <div className="exam-form-actions">
-              <button type="button" className="exam-secondary-btn" onClick={() => setViewExam(null)}>
-                Close
-              </button>
-              <button type="button" className="exam-primary-btn" onClick={() => openEdit(viewExam)}>
-                <FiEdit2 /> Edit Schedule
-              </button>
-            </div>
-          </section>
         </div>
-      )}
-    </div>
+      </section>
+    </main>
   );
 }
