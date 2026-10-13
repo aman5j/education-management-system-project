@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiDownload } from "react-icons/fi";
 import { generateHallTicketPDF } from "../../../utils/generateHallTicketPDF";
+import { getExam } from "../../../services/examService";
 
 import {
   FiCheckCircle,
@@ -101,12 +102,42 @@ export default function HallTicketManagement() {
 
 
   
+
     const handleDownloadPDF = async (ticket) => {
     setError("");
     setSuccess("");
 
     try {
-        await generateHallTicketPDF({ ticket });
+        const examId =
+        typeof ticket.exam_id === "object"
+            ? ticket.exam_id?._id
+            : ticket.exam_id;
+
+        if (!examId) {
+        throw new Error("The exam linked to this hall ticket was not found.");
+        }
+
+        const response = await getExam(examId);
+        const examResponse = response?.data?.data ?? response?.data;
+
+        if (!examResponse) {
+        throw new Error("Unable to load exam marks for this hall ticket.");
+        }
+
+        const ticketForPDF = {
+        ...ticket,
+        exam_id: {
+            ...(
+            typeof ticket.exam_id === "object"
+                ? ticket.exam_id
+                : {}
+            ),
+            ...examResponse,
+        },
+        };
+
+        await generateHallTicketPDF({ ticket: ticketForPDF });
+
         setSuccess(`Hall ticket ${ticket.hallTicketNo} downloaded.`);
     } catch (err) {
         setError(
@@ -116,6 +147,7 @@ export default function HallTicketManagement() {
         );
     }
     };
+
 
 
   const filteredStudents = useMemo(() => {
