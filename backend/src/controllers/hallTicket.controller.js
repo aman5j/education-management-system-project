@@ -34,14 +34,37 @@ const makeTicketNo = (studentId) =>
     .slice(-6)
     .toUpperCase()}`;
 
+
 const populateTicket = (query) =>
   query
     .populate("course_id", "courseTitle")
     .populate("exam_id", "totalQuestions totalMarks marksPerQuestion")
     .populate(
       "student_id",
-      "rollNo firstName surname fatherName mobile email course_id status"
+      [
+        "firstName",
+        "middleName",
+        "surname",
+        "rollNo",
+        "mobile",
+        "email",
+        "course_id",
+        "status",
+        "photoUrl",
+        "photoURL",
+        "profileImage",
+        "profilePhoto",
+        "profile_image",
+        "photo",
+        "image",
+        "imageUrl",
+        "image_url",
+        "avatar",
+        "studentImage",
+        "studentPhoto",
+      ].join(" ")
     );
+
 
 export const getHallTickets = async (req, res, next) => {
   try {
