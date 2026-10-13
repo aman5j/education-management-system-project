@@ -196,27 +196,11 @@ const Topbar = ({
                     {user?.email}
                   </span>
                 </div>
-
-               
               </div>
-               <div className="actioncount">
-                  <div className="action-icon">
-                    <span className="action-count-number">12</span>
-                    <label>Pending Task</label>
-                  </div>
-                  <div className="action-icon">
-                    <span className="action-count-number">0</span>
-                    <label>Today Payment</label>
-                  </div>
-                  <div className="action-icon">
-                    <span className="action-count-number">10</span>
-                    <label>Today Action</label>
-                  </div>
-                </div>
-
               <div className="profile-dropdown-divider" />
 
-              <button
+                    <div class="profile-dropdown-item">
+                       <button
                 onClick={() => {
                   setProfileOpen(false);
                   navigate("/admin/profile");
@@ -250,7 +234,7 @@ const Topbar = ({
                 Change Password
               </button>
 
-              <div className="profile-dropdown-divider" />
+            
 
               <button
                 className="profile-logout-button"
@@ -259,6 +243,7 @@ const Topbar = ({
                 <FiLogOut />
                 Logout
               </button>
+                    </div>
             </div>
           )}
         </div>

@@ -48,6 +48,7 @@
   gap: 11px;
   text-decoration: none;
   color: var(--text-primary);
+  padding: 20px 10px;
 }
 
 .sidebar-brand-logo {
@@ -443,13 +444,13 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 300px;
-  padding: 8px;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
-  animation: dropdown-in 0.15s ease;
+  width: 280px;
+  padding: 0px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    box-shadow: 0 0 3px #ddd;
+    animation: dropdown-in 0.15s ease;
 }
 
 @keyframes dropdown-in {
@@ -465,7 +466,7 @@
 }
 
 .profile-dropdown-header {
-  padding: 10px;
+  padding: 15px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -479,15 +480,16 @@
 
 .profile-dropdown-header strong {
   color: var(--text-primary);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
 }
 
 .profile-dropdown-header span {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -495,29 +497,40 @@
 
 .profile-dropdown-divider {
   height: 1px;
-  margin: 5px 0;
   background: var(--border-color);
 }
 
-.profile-dropdown > button {
-  width: 100%;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #596273;
-  text-align: left;
-  cursor: pointer;
-  font-size: 12px;
+.profile-dropdown  button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #596273;
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    font-weight: 600;
 }
 
-.profile-dropdown > button:hover {
-  background: #f7f9fc;
-  color: var(--primary-color);
+.profile-dropdown  button:hover {
+  background: #f7f8fb;
+  color: #000;
+}
+.profile-dropdown-item{
+  padding:10px;
+}
+.profile-dropdown button svg {
+  transition: all 0.5s ease;
+    width: 30px;
+    height: 30px;
+    background: #72727212;
+    border-radius: 3px;
+    padding: 8px;
 }
 
 .profile-dropdown > button svg {
@@ -526,8 +539,13 @@
 
 .profile-dropdown
   .profile-logout-button {
-  color: var(--danger-color);
+  color:#b33d3a !important;
 }
+.profile-dropdown
+  .profile-logout-button svg{
+  background:#f9eae9;
+}
+
 
 .admin-content {
   min-height: calc(
@@ -1403,4 +1421,25 @@ footer p {
   to {
     transform: rotate(360deg);
   }
+}
+
+.actioncount {
+    display: flex;
+    gap: 10px;
+    padding: 5px 10px;
+}
+.action-icon {
+    border: 1px solid #ddd;
+    padding: 5px 5px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    border-radius: 3px;
+    width: 100%;
+    white-space: nowrap;
+}
+.action-count-number {
+    font-size: 15px;
+    font-weight: 600;
 }
