@@ -1,0 +1,508 @@
+.hall-ticket-page {
+  width: 100%;
+  color: #172033;
+}
+
+.hall-ticket-header,
+.hall-ticket-section-heading,
+.hall-ticket-student-heading,
+.hall-ticket-student-toolbar,
+.hall-ticket-form-footer,
+.hall-ticket-pagination,
+.hall-ticket-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hall-ticket-header {
+  margin-bottom: 20px;
+}
+
+.hall-ticket-header h1 {
+  margin: 5px 0;
+  font-size: 25px;
+  font-weight: 750;
+}
+
+.hall-ticket-header p,
+.hall-ticket-section-heading p,
+.hall-ticket-student-heading p {
+  margin: 5px 0 0;
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hall-ticket-eyebrow {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.hall-ticket-card {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #e4eaf2;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.hall-ticket-section-heading {
+  justify-content: flex-start;
+  margin-bottom: 18px;
+}
+
+.hall-ticket-heading-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  background: #e6fffb;
+  color: #0f766e;
+  font-size: 19px;
+}
+
+.hall-ticket-section-heading h2,
+.hall-ticket-student-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.hall-ticket-primary-btn,
+.hall-ticket-secondary-btn,
+.hall-ticket-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.hall-ticket-primary-btn {
+  border-color: #0d9488;
+  background: #0d9488;
+  color: #fff;
+}
+
+.hall-ticket-primary-btn:hover {
+  border-color: #0f766e;
+  background: #0f766e;
+}
+
+.hall-ticket-secondary-btn {
+  border-color: #d8e0eb;
+  background: #fff;
+  color: #334155;
+}
+
+.hall-ticket-secondary-btn:hover {
+  background: #f8fafc;
+  border-color: #b8c4d4;
+}
+
+.hall-ticket-primary-btn:disabled,
+.hall-ticket-secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hall-ticket-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hall-ticket-alert > span {
+  flex: 1;
+}
+
+.hall-ticket-alert button {
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.hall-ticket-alert-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.hall-ticket-alert-success {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.hall-ticket-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.hall-ticket-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.hall-ticket-field > span {
+  display: inline;
+  color: #dc2626;
+}
+
+.hall-ticket-field-wide {
+  grid-column: 1 / -1;
+}
+
+.hall-ticket-field input,
+.hall-ticket-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #d7e0eb;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.hall-ticket-field input:focus,
+.hall-ticket-field select:focus,
+.hall-ticket-search:focus-within {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.hall-ticket-field small {
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.hall-ticket-exam-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #ccfbf1;
+  border-radius: 8px;
+  background: #f0fdfa;
+}
+
+.hall-ticket-exam-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hall-ticket-exam-summary span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.hall-ticket-exam-summary strong {
+  color: #0f766e;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.hall-ticket-student-heading {
+  margin-top: 24px;
+  margin-bottom: 14px;
+}
+
+.hall-ticket-selected-count {
+  padding: 7px 10px;
+  border-radius: 20px;
+  background: #ccfbf1;
+  color: #115e59;
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.hall-ticket-student-toolbar {
+  margin-bottom: 12px;
+}
+
+.hall-ticket-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(430px, 100%);
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d7e0eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #64748b;
+}
+
+.hall-ticket-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1e293b;
+  font: inherit;
+  font-size: 12px;
+}
+
+.hall-ticket-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #475569;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.hall-ticket-select-all input,
+.hall-ticket-table input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #0d9488;
+  cursor: pointer;
+}
+
+.hall-ticket-student-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+}
+
+.hall-ticket-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.hall-ticket-generated-table {
+  min-width: 940px;
+}
+
+.hall-ticket-table th,
+.hall-ticket-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e8edf4;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+.hall-ticket-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hall-ticket-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.hall-ticket-table tbody tr:hover {
+  background: #f8fffe;
+}
+
+.hall-ticket-table td strong,
+.hall-ticket-table td small {
+  display: block;
+}
+
+.hall-ticket-table td strong {
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.hall-ticket-table td small {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.hall-ticket-student-selected {
+  background: #f0fdfa;
+}
+
+.hall-ticket-empty {
+  padding: 30px 14px !important;
+  color: #64748b;
+  text-align: center !important;
+}
+
+.hall-ticket-form-footer {
+  margin-top: 15px;
+  padding-top: 16px;
+  border-top: 1px solid #e8edf4;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.hall-ticket-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.hall-ticket-status-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hall-ticket-status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.hall-ticket-cancel-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  border-color: #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.hall-ticket-cancel-btn:hover {
+  background: #fef2f2;
+}
+
+.hall-ticket-muted {
+  color: #94a3b8;
+}
+
+.hall-ticket-list-heading {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hall-ticket-list-search {
+  width: min(350px, 100%);
+}
+
+.hall-ticket-pagination {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.hall-ticket-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 800px) {
+  .hall-ticket-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hall-ticket-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hall-ticket-field-wide {
+    grid-column: auto;
+  }
+
+  .hall-ticket-student-heading,
+  .hall-ticket-student-toolbar,
+  .hall-ticket-form-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hall-ticket-search {
+    width: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .hall-ticket-card {
+    padding: 13px;
+  }
+
+  .hall-ticket-exam-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .hall-ticket-list-search {
+    width: 100%;
+  }
+
+  .hall-ticket-form-footer .hall-ticket-primary-btn {
+    width: 100%;
+  }
+
+  .hall-ticket-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
+
+.hall-ticket-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  margin-right: 6px;
+  padding: 0 10px;
+  border: 1px solid #99f6e4;
+  border-radius: 6px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hall-ticket-download-btn:hover {
+  border-color: #0d9488;
+  background: #ccfbf1;
+}

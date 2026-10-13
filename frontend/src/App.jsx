@@ -65,6 +65,8 @@ import SubjectQuestionBank from "./pages/admin/subjects/SubjectQuestionBank";
 import Attendance from "./pages/admin/attendance/Attendance";
 
 import ExamSchedule from "./pages/admin/exams/ExamSchedule";
+import HallTicketManagement from "./pages/admin/students/HallTicketManagement";
+
 import ExamReview from "./pages/admin/exams/ExamReview";
 import QuestionBank from "./pages/admin/questions/QuestionBank";
 
@@ -244,6 +246,11 @@ const App = () => {
         <Route
           path="exams/schedule"
           element={<ExamSchedule />}
+        />
+
+        <Route
+          path="hall-tickets"
+          element={<HallTicketManagement />}
         />
 
         {/* Exam Review */}

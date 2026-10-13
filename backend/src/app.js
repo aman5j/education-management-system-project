@@ -35,7 +35,10 @@ import notificationRoutes from "./routes/notification.routes.js";
 
 import subjectRoutes from "./routes/subject.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
+
 import examRoutes from "./routes/exam.routes.js";
+import hallTicketRoutes from "./routes/hallTicket.routes.js";
+
 import examReviewRoutes from "./routes/examReview.routes.js";
 import questionRoutes from "./routes/question.routes.js";
 
@@ -255,6 +258,8 @@ app.use(
 );
 
 app.use("/api/exams", examRoutes);
+
+app.use("/api/hall-tickets", hallTicketRoutes);
 
 app.use("/api/exam-review", examReviewRoutes);
 

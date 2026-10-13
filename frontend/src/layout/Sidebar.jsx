@@ -74,6 +74,10 @@ const menuItems = [
         label: "Add Student",
         path: "/admin/students/add",
       },
+      {
+        label: "Hall Ticket Management",
+        path: "/admin/hall-tickets",
+      },
     ],
   },
 
