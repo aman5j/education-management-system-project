@@ -5,7 +5,6 @@ import QRCode from "qrcode";
 const COLORS = {
   navy: [20, 39, 62],
   blue: [220, 237, 252],
-  blueDark: [36, 91, 145],
   text: [34, 43, 54],
   muted: [100, 111, 124],
   border: [199, 211, 224],
@@ -34,7 +33,11 @@ const textValue = (value, fallback = "—") =>
     : String(value);
 
 const getStudentName = (student = {}) =>
-  [student.firstName, student.middleName, student.surname]
+  [
+    student.firstName,
+    student.middleName,
+    student.surname,
+  ]
     .filter(Boolean)
     .join(" ") ||
   student.name ||
@@ -61,10 +64,10 @@ const formatDateWithDay = (value) => {
   if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleDateString("en-IN", {
+    weekday: "long",
     day: "2-digit",
     month: "short",
     year: "numeric",
-    weekday: "long",
     timeZone: "UTC",
   });
 };
@@ -81,27 +84,51 @@ const formatTime = (value) => {
   return `${String(hour12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${suffix}`;
 };
 
-/**
- * The project uses VITE_API_URL, normally ending in /api.
- * Uploaded student images are served from the backend origin,
- * not the frontend Vite origin.
- */
-function resolveImageUrl(path) {
-  if (typeof path !== "string" || !path.trim()) return null;
+const formatMarks = (value) => {
+  const number = Number(value);
 
-  const value = path.trim();
-
-  if (/^(data:image\/|https?:\/\/|blob:)/i.test(value)) {
-    return value;
+  if (value === undefined || value === null || value === "" ||
+      !Number.isFinite(number)) {
+    return "Not available";
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  return Number(number.toFixed(2)).toString();
+};
+
+/**
+ * Resolve a URL to an absolute URL.
+ *
+ * Frontend public assets must be loaded from the frontend origin.
+ * Student images may be stored on the backend server.
+ */
+function resolveImageUrl(path, source = "backend") {
+  if (typeof path !== "string" || !path.trim()) return null;
+
+  const cleaned = path.trim();
+
+  if (/^(data:image\/|https?:\/\/|blob:)/i.test(cleaned)) {
+    return cleaned;
+  }
+
+  if (source === "frontend") {
+    return new URL(
+      cleaned.replace(/^\/+/, ""),
+      `${window.location.origin}/`
+    ).href;
+  }
+
+  const apiUrl =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api";
 
   try {
-    const backendOrigin = new URL(apiUrl, window.location.origin).origin;
+    const backendOrigin = new URL(
+      apiUrl,
+      window.location.origin
+    ).origin;
 
     return new URL(
-      value.replace(/\\/g, "/").replace(/^\/+/, ""),
+      cleaned.replace(/\\/g, "/").replace(/^\/+/, ""),
       `${backendOrigin}/`
     ).href;
   } catch (error) {
@@ -110,14 +137,16 @@ function resolveImageUrl(path) {
   }
 }
 
-async function loadImage(path) {
-  if (!path) return null;
+/**
+ * Load an image and convert it to a data URL for jsPDF.
+ * No low-quality JPEG recompression is applied here.
+ */
+async function loadImage(path, source = "backend") {
+  if (!path || typeof path !== "string") return null;
 
-  if (typeof path === "string" && path.startsWith("data:image/")) {
-    return path;
-  }
+  if (path.startsWith("data:image/")) return path;
 
-  const url = resolveImageUrl(path);
+  const url = resolveImageUrl(path, source);
   if (!url) return null;
 
   try {
@@ -137,22 +166,65 @@ async function loadImage(path) {
     const blob = await response.blob();
 
     if (!blob.type.startsWith("image/")) {
-      console.warn("The image URL did not return an image:", url);
+      console.warn("URL did not return an image:", url);
       return null;
     }
 
     return await new Promise((resolve) => {
       const reader = new FileReader();
-
       reader.onload = () => resolve(reader.result);
       reader.onerror = () => resolve(null);
-
       reader.readAsDataURL(blob);
     });
   } catch (error) {
     console.warn("Unable to load hall ticket image:", error);
     return null;
   }
+}
+
+function getMarksData(ticket) {
+  const exam =
+    ticket.exam_id && typeof ticket.exam_id === "object"
+      ? ticket.exam_id
+      : {};
+
+  const fallbackExam =
+    ticket.exam && typeof ticket.exam === "object"
+      ? ticket.exam
+      : {};
+
+  const totalQuestions =
+    exam.totalQuestions ??
+    ticket.totalQuestions ??
+    fallbackExam.totalQuestions;
+
+  const totalMarks =
+    exam.totalMarks ??
+    ticket.totalMarks ??
+    fallbackExam.totalMarks;
+
+  const storedMarksPerQuestion =
+    exam.marksPerQuestion ??
+    ticket.marksPerQuestion ??
+    fallbackExam.marksPerQuestion;
+
+  const calculatedMarksPerQuestion =
+    Number(totalQuestions) > 0 &&
+    totalMarks !== undefined &&
+    totalMarks !== null &&
+    totalMarks !== "" &&
+    Number.isFinite(Number(totalMarks))
+      ? Number(totalMarks) / Number(totalQuestions)
+      : null;
+
+  return {
+    exam,
+    totalQuestions,
+    totalMarks,
+    marksPerQuestion:
+      storedMarksPerQuestion ??
+      calculatedMarksPerQuestion,
+  };
 }
 
 function sectionHeader(doc, label, y, x = 9, width = 192) {
@@ -182,39 +254,57 @@ function drawLabelValue(
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...COLORS.text);
 
-  const lines = doc.splitTextToSize(textValue(content), maxWidth);
+  const lines = doc.splitTextToSize(
+    textValue(content),
+    maxWidth
+  );
+
   doc.text(lines.slice(0, 2), x + labelWidth, y);
-
-  return Math.max(5, Math.min(lines.length, 2) * 4.1);
 }
 
-function getMarksPerQuestion(exam = {}) {
-  const savedValue = exam.marksPerQuestion;
-
-  if (savedValue !== undefined && savedValue !== null && savedValue !== "") {
-    return Number(savedValue).toFixed(2).replace(/\.?0+$/, "");
-  }
-
-  const questions = Number(exam.totalQuestions);
-  const marks = Number(exam.totalMarks);
-
-  if (questions > 0 && Number.isFinite(marks)) {
-    return (marks / questions).toFixed(2).replace(/\.?0+$/, "");
-  }
-
-  return "—";
-}
-
-function addImageSafely(doc, data, format, x, y, width, height) {
+function addImageSafely(
+  doc,
+  data,
+  format,
+  x,
+  y,
+  width,
+  height
+) {
   if (!data) return false;
 
   try {
-    doc.addImage(data, format, x, y, width, height, undefined, "FAST");
+    doc.addImage(
+      data,
+      format,
+      x,
+      y,
+      width,
+      height,
+      undefined,
+      "NONE"
+    );
+
     return true;
   } catch (error) {
     console.warn("Unable to embed PDF image:", error);
     return false;
   }
+}
+
+function getImageFormat(dataUrl) {
+  if (typeof dataUrl !== "string") return "PNG";
+
+  if (dataUrl.startsWith("data:image/jpeg") ||
+      dataUrl.startsWith("data:image/jpg")) {
+    return "JPEG";
+  }
+
+  if (dataUrl.startsWith("data:image/webp")) {
+    return "WEBP";
+  }
+
+  return "PNG";
 }
 
 export async function generateHallTicketPDF({ ticket }) {
@@ -228,39 +318,49 @@ export async function generateHallTicketPDF({ ticket }) {
 
   const student = ticket.student_id || {};
   const course = ticket.course_id || {};
-  const exam = ticket.exam_id || {};
+  const { exam, totalQuestions, totalMarks, marksPerQuestion } =
+    getMarksData(ticket);
 
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
     compress: true,
+    putOnlyUsedFonts: true,
+    precision: 16,
   });
 
-  const pageWidth = 210;
   const margin = 9;
-  const contentWidth = pageWidth - margin * 2;
+  const contentWidth = 192;
 
-  // Main page frame
+  // Page border
   doc.setDrawColor(...COLORS.border);
   doc.setLineWidth(0.55);
   doc.roundedRect(margin, 7, contentWidth, 283, 1.3, 1.3, "S");
 
-  // Institute logo at top-left
-  const instituteLogo = await loadImage(INSTITUTE.logoPath);
+  // Institute logo: load from the frontend public directory.
+  const instituteLogo = await loadImage(
+    INSTITUTE.logoPath,
+    "frontend"
+  );
 
   if (instituteLogo) {
+    const logoFormat = getImageFormat(instituteLogo);
+
     addImageSafely(
       doc,
       instituteLogo,
-      "PNG",
+      logoFormat,
       12,
       14,
       33,
       20
     );
   } else {
-    // Keep a simple fallback if the logo file cannot be loaded.
+    console.warn(
+      "Institute logo was not loaded. Check frontend/public/india-tech-samadhaan-logo.png"
+    );
+
     doc.setDrawColor(...COLORS.teal);
     doc.setLineWidth(1);
     doc.circle(25, 23, 8, "S");
@@ -302,7 +402,9 @@ export async function generateHallTicketPDF({ ticket }) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(19);
   doc.setTextColor(...COLORS.navy);
-  doc.text("HALL TICKET", 105, 45, { align: "center" });
+  doc.text("HALL TICKET", 105, 45, {
+    align: "center",
+  });
 
   doc.setFontSize(8);
   doc.setCharSpace(1);
@@ -311,31 +413,33 @@ export async function generateHallTicketPDF({ ticket }) {
   });
   doc.setCharSpace(0);
 
-  // Student details at the left
-  let studentY = 64;
-
+  // Student details
   const studentDetails = [
     ["Hall Ticket No.", ticket.hallTicketNo],
     ["Student Name", getStudentName(student)],
     ["Roll No.", student.rollNo],
     ["Course", course.courseTitle],
-    ["Exam Name", exam.examName || exam.title || exam.name || "Examination"],
+    [
+      "Exam Name",
+      exam.examName || exam.title || exam.name || "Examination",
+    ],
     ["Exam Date", formatDateWithDay(ticket.examDate)],
     ["Reporting Time", formatTime(ticket.reportingTime)],
     ["Exam Start Time", formatTime(ticket.startTime)],
     ["Exam End Time", formatTime(ticket.endTime)],
-    ["Total Questions", exam.totalQuestions],
-    ["Total Marks", exam.totalMarks],
-    ["Marks per Question", getMarksPerQuestion(exam)],
+    ["Total Questions", formatMarks(totalQuestions)],
+    ["Total Marks", formatMarks(totalMarks)],
+    ["Marks per Question", formatMarks(marksPerQuestion)],
   ];
+
+  let studentY = 64;
 
   studentDetails.forEach(([label, content]) => {
     drawLabelValue(doc, label, content, 15, studentY, 29, 96);
     studentY += 6.1;
   });
 
-  // Student photo: the actual Student model field is profileImage.
-  // Do not rely on guessed photoUrl or image fields.
+  // Student photo uses the actual profileImage field.
   const studentPhoto = await loadImage(student.profileImage);
 
   const photoX = 157;
@@ -344,27 +448,15 @@ export async function generateHallTicketPDF({ ticket }) {
   const photoHeight = 42;
 
   if (studentPhoto) {
-    const added = addImageSafely(
+    addImageSafely(
       doc,
       studentPhoto,
-      "JPEG",
+      getImageFormat(studentPhoto),
       photoX,
       photoY,
       photoWidth,
       photoHeight
     );
-
-    if (!added) {
-      addImageSafely(
-        doc,
-        studentPhoto,
-        "PNG",
-        photoX,
-        photoY,
-        photoWidth,
-        photoHeight
-      );
-    }
   } else {
     doc.setDrawColor(...COLORS.border);
     doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 1, 1, "S");
@@ -380,10 +472,10 @@ export async function generateHallTicketPDF({ ticket }) {
   doc.setDrawColor(...COLORS.border);
   doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 1, 1, "S");
 
-  // Student signature below photo
+  // Student signature
+  const studentSignature = await loadImage(student.signature);
   const signatureY = 107;
   const signatureHeight = 24;
-  const studentSignature = await loadImage(student.signature);
 
   doc.setDrawColor(...COLORS.border);
   doc.roundedRect(
@@ -400,7 +492,7 @@ export async function generateHallTicketPDF({ ticket }) {
     addImageSafely(
       doc,
       studentSignature,
-      "PNG",
+      getImageFormat(studentSignature),
       photoX + 2,
       signatureY + 1,
       photoWidth - 4,
@@ -408,7 +500,6 @@ export async function generateHallTicketPDF({ ticket }) {
     );
   }
 
-  doc.setDrawColor(...COLORS.border);
   doc.line(photoX, signatureY + 17, photoX + photoWidth, signatureY + 17);
 
   doc.setFont("helvetica", "normal");
@@ -418,7 +509,7 @@ export async function generateHallTicketPDF({ ticket }) {
     align: "center",
   });
 
-  // Important instructions: exactly five
+  // Exactly five important instructions
   sectionHeader(doc, "IMPORTANT INSTRUCTIONS", 143);
 
   doc.setFont("helvetica", "normal");
@@ -437,26 +528,26 @@ export async function generateHallTicketPDF({ ticket }) {
     });
   });
 
-  // Footer separator
+  // Footer divider
   doc.setDrawColor(...COLORS.navy);
   doc.setLineWidth(0.5);
   doc.line(14, 224, 196, 224);
 
-  // QR code for actual hall-ticket verification
+  // Real QR verification code
   const verificationUrl =
     `${window.location.origin}/verify-hall-ticket/${encodeURIComponent(ticket._id)}`;
 
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
-    errorCorrectionLevel: "M",
-    margin: 1,
-    width: 220,
+    errorCorrectionLevel: "H",
+    margin: 2,
+    width: 600,
     color: {
       dark: "#14273e",
       light: "#ffffff",
     },
   });
 
-  // QR on bottom-left
+  // QR at the bottom-left
   doc.addImage(qrDataUrl, "PNG", 15, 247, 25, 25);
 
   doc.setFont("helvetica", "bold");
@@ -473,13 +564,13 @@ export async function generateHallTicketPDF({ ticket }) {
     align: "center",
   });
 
-  // Issue date at the bottom-center
+  // Issue date at bottom-center
   doc.setFontSize(7.4);
   doc.text(`Date of Issue: ${formatDate(new Date())}`, 105, 263, {
     align: "center",
   });
 
-  // Authorized signature on the bottom-right
+  // Authorized signature at bottom-right
   doc.setDrawColor(...COLORS.muted);
   doc.setLineWidth(0.35);
   doc.line(145, 257, 193, 257);
