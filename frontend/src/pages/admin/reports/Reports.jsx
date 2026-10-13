@@ -7,6 +7,7 @@ import {
   FiCreditCard,
   FiAlertCircle,
   FiArrowRight,
+  FiCalendar,
 } from "react-icons/fi";
 
 import { useNavigate } from "react-router-dom";
@@ -80,6 +81,15 @@ const Reports = () => {
         "Analyze institute expenses, paid and pending amounts, and category-wise spending.",
       icon: FiDollarSign,
       path: "/admin/reports/expenses",
+      status: "Completed",
+    },
+
+    {
+      title: "Attendance Reports",
+      description:
+        "Analyze student attendance, Present, Absent, Leave, Late and attendance percentages.",
+      icon: FiCalendar,
+      path: "/admin/reports/attendance",
       status: "Completed",
     },
 

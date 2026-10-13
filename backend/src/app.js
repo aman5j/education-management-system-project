@@ -30,6 +30,7 @@ import batchReportRoutes from "./routes/batchReport.routes.js";
 import feeReportRoutes from "./routes/feeReport.routes.js";
 import pendingFeeReportRoutes from "./routes/pendingFeeReport.routes.js";
 import expenseReportRoutes from "./routes/expenseReport.routes.js";
+import attendanceReportRoutes from "./routes/attendanceReport.routes.js";
 
 
 import notificationRoutes from "./routes/notification.routes.js";
@@ -272,6 +273,7 @@ app.use(
   expenseRoutes
 );
 
+app.use("/api/reports", attendanceReportRoutes);
 
 
 
