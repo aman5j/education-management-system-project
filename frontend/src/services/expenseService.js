@@ -31,3 +31,6 @@ export const uploadExpenseReceipt = (file) => {
   });
 };
 
+
+export const getExpenseReport = (params = {}) =>
+  api.get("/reports/expenses", { params });

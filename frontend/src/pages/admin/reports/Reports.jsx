@@ -73,6 +73,16 @@ const Reports = () => {
       path: "/admin/reports/pending-fees",
       status: "Completed",
     },
+
+    {
+      title: "Expense Reports",
+      description:
+        "Analyze institute expenses, paid and pending amounts, and category-wise spending.",
+      icon: FiDollarSign,
+      path: "/admin/reports/expenses",
+      status: "Completed",
+    },
+
   ];
 
   const handleReportClick = (report) => {

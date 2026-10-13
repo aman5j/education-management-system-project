@@ -52,6 +52,7 @@ import CourseReports from "./pages/admin/reports/CourseReports";
 import BatchReports from "./pages/admin/reports/BatchReports";
 import FeeReports from "./pages/admin/reports/FeeReports";
 import PendingFeeReports from "./pages/admin/reports/PendingFeeReports";
+import ExpenseReports from "./pages/admin/reports/ExpenseReports";
 
 import Notifications from "./pages/admin/notifications/Notifications";
 
@@ -238,6 +239,8 @@ const App = () => {
         <Route path="reports/courses" element={<CourseReports />} />
         <Route path="reports/batches" element={<BatchReports />} />
         <Route path="reports/fees" element={<FeeReports />} />
+        <Route path="reports/expenses" element={<ExpenseReports />} />
+        
         <Route
           path="reports/pending-fees"
           element={<PendingFeeReports />}
