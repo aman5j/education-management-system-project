@@ -39,11 +39,7 @@ const menuItems = [
     icon: FiGrid,
   },
 
-  {
-    label: "Course Enquiries",
-    path: "/admin/enquiries",
-    icon: FiMessageSquare,
-  },
+  
 
 
   {
@@ -76,6 +72,12 @@ const menuItems = [
     ],
   },
 
+  {
+    label: "Course Enquiries",
+    path: "/admin/enquiries",
+    icon: FiMessageSquare,
+  },
+  
   {
     label: "Courses",
     icon: FiBookOpen,

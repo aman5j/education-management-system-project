@@ -158,31 +158,23 @@ const Admissions = () => {
 
   return (
     <div className="admission-page">
-      <div className="admission-page-header">
+      <div className="page-header">
         <div>
           <h1>
             Manage Admissions
           </h1>
-
-          <p>
-            Manage student
-            admissions, courses,
-            batches and fees.
-          </p>
         </div>
 
         <Link
           to="/admin/admissions/add"
-          className="admission-primary-button"
+          className="themebtn"
         >
           <FiPlus />
           Add Admission
         </Link>
       </div>
-
-      <div className="admission-card">
-        <div className="admission-filters">
-          <div className="admission-search">
+ <div className="common-card-filters">
+          <div className="input-search">
             <FiSearch />
 
             <input
@@ -235,6 +227,9 @@ const Admissions = () => {
           </button>
         </div>
 
+      <div className="common-card">
+       
+
         {error && (
           <div className="admission-error">
             {error}
@@ -251,8 +246,8 @@ const Admissions = () => {
             No admissions found.
           </div>
         ) : (
-          <div className="admission-table-wrapper">
-            <table className="admission-table">
+          <div className="common-table-wrapper">
+            <table className="common-table">
               <thead>
                 <tr>
                   <th>
@@ -368,21 +363,29 @@ const Admissions = () => {
                         </td>
 
                         <td>
+                          <strong className="tag-purple">
                           {money(
                             admission.final_amount
                           )}
+                          </strong>
                         </td>
 
                         <td>
-                          {money(
+                          <strong className="tag-success">
+                           {money(
                             admission.paid_amount
                           )}
+                          </strong>
+                         
                         </td>
 
                         <td>
+                        <strong className="tag-danger">
+
                           {money(
                             remaining
                           )}
+                          </strong>
                         </td>
 
                         <td>
