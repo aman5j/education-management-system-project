@@ -12,9 +12,7 @@ const PendingActions = ({
         <div>
           <h3>Pending Actions</h3>
 
-          <p>
-            Items that may need attention
-          </p>
+         
         </div>
       </div>
 

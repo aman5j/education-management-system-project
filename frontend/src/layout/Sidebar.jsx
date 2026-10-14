@@ -40,6 +40,13 @@ const menuItems = [
   },
 
   {
+    label: "Course Enquiries",
+    path: "/admin/enquiries",
+    icon: FiMessageSquare,
+  },
+
+
+  {
     label: "Admissions",
     icon: FiClipboard,
     children: [
@@ -47,17 +54,9 @@ const menuItems = [
         label: "Manage Admissions",
         path: "/admin/admissions",
       },
-      {
-        label: "Enquiries",
-        path: "/admin/enquiries",
-      },
-      {
-        label: "Admission Forms",
-        path: "/admin/admission-forms",
-      },
-      {
-        label: "Follow-ups",
-        path: "/admin/follow-ups",
+       {
+        label: "Add New Admission",
+        path: "/admin/admissions/add",
       },
     ],
   },
@@ -71,7 +70,7 @@ const menuItems = [
         path: "/admin/students",
       },
       {
-        label: "Add Student",
+        label: "Add New Student",
         path: "/admin/students/add",
       },
     ],
@@ -110,32 +109,23 @@ const menuItems = [
   },
 
   {
-    label: "Fees & Finance",
+    label: "Fees Management",
     icon: FiDollarSign,
     children: [
       {
         label: "Expenses",
         path: "/admin/expenses",
       },
+     
+      
+     
       {
-        label: "Fee Records",
-        path: "/admin/fees",
-      },
-      {
-        label: "Add Fee",
-        path: "/admin/fees/add",
-      },
-      {
-        label: "Fee Structure",
-        path: "/admin/fee-structure",
-      },
-      {
-        label: "Payment Settings",
+        label: "Add Fee Payment",
         // path: "/admin/payment-settings",
         path: "/admin/payments",
       },
       {
-        label: "PaymentReports",
+        label: "Fees Payment Reports",
         // path: "/admin/reports",
         path: "/admin/reports/payments",
       },
