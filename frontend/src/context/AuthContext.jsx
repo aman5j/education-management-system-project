@@ -38,6 +38,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+
+  const updateUser = useCallback((updatedUser) => {
+    setUser(updatedUser);
+  }, []);
+
   useEffect(() => {
     const initializeAuthentication = async () => {
       await refreshSession();
@@ -155,6 +160,7 @@ export const AuthProvider = ({ children }) => {
       resetPassword,
       changePassword,
       refreshSession,
+      updateUser,
     }),
     [
       user,

@@ -78,6 +78,9 @@ import AddExpense from "./pages/admin/expenses/AddExpense";
 import EditExpense from "./pages/admin/expenses/EditExpense";
 
 
+import Profile from "./pages/admin/Profile";
+
+
 import VerifyReceipt from "./pages/public/VerifyReceipt";
 
 import RoleRoute from "./components/auth/RoleRoute";
@@ -274,6 +277,10 @@ const App = () => {
         <Route path="expenses" element={<Expenses />} />
         <Route path="expenses/add" element={<AddExpense />} />
         <Route path="expenses/:id/edit" element={<EditExpense />} />
+
+
+        {/* Admin Profile */}
+        <Route path="profile" element={<Profile />} />
 
 
         {/* Unknown admin route */}

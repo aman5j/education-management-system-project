@@ -301,6 +301,87 @@ export const getMe = async (req, res) => {
   });
 };
 
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const name =
+      typeof req.body.name === "string"
+        ? req.body.name.trim()
+        : "";
+
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+
+    const phone =
+      typeof req.body.phone === "string"
+        ? req.body.phone.trim()
+        : "";
+
+    if (name.length < 2 || name.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must be between 2 and 100 characters.",
+      });
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email) || email.length > 254) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a valid email address.",
+      });
+    }
+
+    if (phone.length > 20) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number cannot exceed 20 characters.",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email,
+      _id: { $ne: req.user._id },
+    }).select("_id");
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "This email address is already in use.",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    user.name = name;
+    user.email = email;
+    user.phone = phone;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      data: {
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;

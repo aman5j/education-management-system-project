@@ -6,6 +6,7 @@ import {
   logout,
   refresh,
   getMe,
+  updateProfile,
   forgotPassword,
   resetPassword,
   changePassword,
@@ -28,6 +29,8 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
 router.get("/me", authenticate, getMe);
+
+router.put("/profile", authenticate, updateProfile);
 
 router.put(
   "/change-password",
