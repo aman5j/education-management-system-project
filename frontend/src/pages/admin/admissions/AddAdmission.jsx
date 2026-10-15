@@ -49,16 +49,16 @@ const AddAdmission = () => {
 
   return (
     <div className="admission-page">
-      <div className="admission-page-header">
+      <div className="page-header">
         <div>
           <h1>
             Add Admission
           </h1>
 
-          <p>
+          {/* <p>
             Create a new student
             admission.
-          </p>
+          </p> */}
         </div>
       </div>
 

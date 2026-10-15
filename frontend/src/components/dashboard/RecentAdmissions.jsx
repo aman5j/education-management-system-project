@@ -18,9 +18,7 @@ const RecentAdmissions = ({
         <div>
           <h3>Recent Admissions</h3>
 
-          <p>
-            Latest student registrations
-          </p>
+         
         </div>
 
         <button

@@ -162,7 +162,15 @@ const Dashboard = () => {
         type: "purple",
       },
 
-     
+     {
+        title: "Fees Collected",
+        value:
+          `₹${(
+            summary?.totalFeeReceived ?? 0
+          ).toLocaleString("en-IN")}`,
+        icon: IoWalletSharp,
+        type: "success",
+      },
 
       {
         title: "Total Expenses",
@@ -174,35 +182,27 @@ const Dashboard = () => {
         type: "danger",
       },
 
-       {
-        title: "Total Fees",
-        value:
-          `₹${(
-            summary?.totalFeeReceived ?? 0
-          ).toLocaleString("en-IN")}`,
-        icon: PiMoneyBold,
-        type: "warning",
-      },
+      //  {
+      //   title: "Total Fees",
+      //   value:
+      //     `₹${(
+      //       summary?.totalFeeReceived ?? 0
+      //     ).toLocaleString("en-IN")}`,
+      //   icon: PiMoneyBold,
+      //   type: "warning",
+      // },
 
-        {
-        title: "Fees Collected",
-        value:
-          `₹${(
-            summary?.totalFeeReceived ?? 0
-          ).toLocaleString("en-IN")}`,
-        icon: IoWalletSharp,
-        type: "success",
-      },
+        
 
-       {
-        title: "Pending Fees",
-        value:
-          `₹${(
-            summary?.totalPending ?? 0
-          ).toLocaleString("en-IN")}`,
-        icon: MdAccessTimeFilled,
-        type: "danger",
-      },
+      //  {
+      //   title: "Pending Fees",
+      //   value:
+      //     `₹${(
+      //       summary?.totalPending ?? 0
+      //     ).toLocaleString("en-IN")}`,
+      //   icon: MdAccessTimeFilled,
+      //   type: "danger",
+      // },
 
        
     ],
@@ -262,7 +262,7 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          <section className="dashboard-panel dashboard-chart-panel ">
+          {/* <section className="dashboard-panel dashboard-chart-panel ">
             <div class="panel-header"><div><h3>Your Institution Overview</h3></div></div>
               <div className="dashboard-stat-grid">
       
@@ -276,26 +276,44 @@ const Dashboard = () => {
               )
             )}
             </div>
-          </section>
+          </section> */}
 
-  <section className="dashboard-panel dashboard-chart-panel ">
-            <div class="panel-header"><div><h3>Student Details Lookup</h3> </div></div>
+            <div class="dashboard-header">
+              <div><h3>Welcome back, Kriti convent school</h3>
+
+ 
+ </div>
+  <h5>{formatDate()}</h5>
+ </div>
+              
+              <div className="dashboard-stat-grid">
+            {statCards.map(
+              (card) => (
+                <StatCard
+                  key={card.title}
+                  {...card}
+                />
+              )
+            )}
+            </div>
+        
+
+
+ 
+          
+
+          <section className="dashboard-main-grid-row">
+            
+            <div className="two-one-grid ">
+                 <div className="dashboard-panel dashboard-chart-panel ">
+            <div class="panel-header"><div><h3>Find Student Details </h3> </div></div>
             <div className="quickaction-main">
               <input type="text" className="inputview" placeholder="Enter Student ID or Name" />
             </div>
-          </section>
-          
+          </div>
 
-          <section className="dashboard-main-grid">
-            <FeeCollection
-              data={feeData}
-            />
 
-            <RecentAdmissions
-              admissions={admissions}
-            />
-          </section>
-           <section className="dashboard-panel dashboard-chart-panel ">
+          <div className="dashboard-panel dashboard-chart-panel ">
             <div class="panel-header"><div><h3>Quick Actions</h3> </div></div>
             <div className="quickaction-main">
               <button className="quickaction-btn card-success"><FiUsers /> <span>Manage Students</span></button>
@@ -304,14 +322,30 @@ const Dashboard = () => {
               <button className="quickaction-btn card-danger"><FiDollarSign /> <span>Manage Fees</span></button>
               <button className="quickaction-btn card-bluewarning"><FiHelpCircle /> <span>Support</span></button>
             </div>
-          </section>
+           </div>
+            </div>
 
-          <section className="dashboard-main-grid">
-            <TodaysClasses />
 
-            <PendingActions
+           <PendingActions
               actions={pendingActions}
             />
+           
+
+            <RecentAdmissions
+              admissions={admissions}
+            />
+            
+          </section>
+          
+
+          <section className="dashboard-main-grid">
+           
+
+           
+             <FeeCollection
+              data={feeData}
+            />
+             <TodaysClasses />
           </section>
 
           
