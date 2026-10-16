@@ -169,6 +169,7 @@ export const updateInstituteSettings = async (req, res, next) => {
   }
 };
 
+
 const saveImageUrl = async (req, res, fieldName, label) => {
   if (!req.file) {
     return sendError(res, 400, `Please select a ${label} image.`);
@@ -183,7 +184,11 @@ const saveImageUrl = async (req, res, fieldName, label) => {
         [fieldName]: imageUrl,
         updatedBy: req.user._id,
       },
-      $setOnInsert: DEFAULT_SETTINGS,
+      // Do not put image fields here. They may conflict
+      // with the image field being updated by $set.
+      $setOnInsert: {
+        key: "default",
+      },
     },
     {
       new: true,
@@ -199,6 +204,7 @@ const saveImageUrl = async (req, res, fieldName, label) => {
     data: { settings },
   });
 };
+
 
 export const uploadInstituteLogo = async (req, res, next) => {
   try {

@@ -12,53 +12,6 @@ const instituteSettingsService = {
     return response.data.data.settings;
   },
 
-//   async uploadLogo(file) {
-//     const formData = new FormData();
-//     formData.append("logo", file);
-
-//     const response = await api.post(
-//       "/institute-settings/logo",
-//       formData
-//     );
-
-//     return response.data.data.settings;
-//   },
-
-//   async uploadAsset(assetType, file) {
-//     const allowedAssets = [
-//       "stamp",
-//       "controllerSignature",
-//       "ownerPhoto",
-//       "ownerSignature",
-//     ];
-
-//     if (!allowedAssets.includes(assetType)) {
-//       throw new Error("Unsupported image type.");
-//     }
-
-//     const formData = new FormData();
-//     formData.append("image", file);
-
-//     const response = await api.post(
-//       `/institute-settings/assets/${assetType}`,
-//       formData
-//     );
-
-//     return response.data.data.settings;
-//   },
-
-// async uploadAsset(assetType, file) {
-//   const formData = new FormData();
-//   formData.append("image", file);
-
-//   const response = await api.post(
-//     `/institute-settings/assets/${assetType}`,
-//     formData
-//   );
-
-//   return response.data.data.settings;
-// }
-
 
 async uploadLogo(file) {
   const formData = new FormData();
@@ -104,7 +57,6 @@ async uploadAsset(assetType, file) {
 
   return response.data.data.settings;
 },
-
 
 
 };
