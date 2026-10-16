@@ -418,7 +418,7 @@
   background: #2447ad;
 }
 
-.themebtn{
+.admin-profile-footer .themebtn{  
   width: 100%;
 }
 .admin-profile-save-button:disabled {
