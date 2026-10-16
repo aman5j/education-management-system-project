@@ -213,10 +213,6 @@ const menuItems = [
         path: "/admin/profile",
       },
       {
-        label: "Institute Settings",
-        path: "/admin/institute-settings",
-      },
-      {
         label: "Users",
         path: "/admin/users",
       },

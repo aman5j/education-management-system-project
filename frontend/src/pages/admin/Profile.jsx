@@ -26,8 +26,7 @@ const EMPTY_SETTINGS = {
   phone: "",
   alternatePhone: "",
   website: "",
-  addressLine1: "",
-  addressLine2: "",
+  address: "",
   city: "",
   state: "",
   postalCode: "",
@@ -56,16 +55,34 @@ const errorMessage = (error) =>
   error?.message ||
   "Something went wrong. Please try again.";
 
+
+
 const getAssetUrl = (assetPath) => {
-  if (!assetPath) return "";
-  if (/^https?:\/\//i.test(assetPath)) return assetPath;
+  if (typeof assetPath !== "string" || !assetPath.trim()) {
+    return "";
+  }
 
-  const baseUrl = (
-    api.defaults.baseURL || "http://localhost:5000/api"
-  ).replace(/\/api\/?$/, "");
+  const value = assetPath.trim();
 
-  return `${baseUrl}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  const apiBase =
+    api.defaults.baseURL || "http://localhost:5000/api";
+
+  try {
+    const backendOrigin = new URL(apiBase).origin;
+    const cleanPath = value.startsWith("/")
+      ? value
+      : `/${value}`;
+
+    return `${backendOrigin}${cleanPath}`;
+  } catch {
+    return "";
+  }
 };
+
 
 const Field = ({ label, name, value, onChange, type = "text", placeholder = "", required = false, maxLength }) => (
   <label className="admin-profile-field">
@@ -108,36 +125,86 @@ const CheckField = ({ label, name, checked, onChange }) => (
   </label>
 );
 
-const ImageUploader = ({ title, previewTitle, value, uploading, onChange }) => (
-  <div className="admin-profile-upload-row">
-    <div className="admin-profile-upload-box">
-      <span className="admin-profile-upload-icon"><FiUpload /></span>
-      <strong>{uploading ? "Uploading..." : `Upload ${title}`}</strong>
-      <small>JPG, PNG or WEBP · Maximum 2 MB</small>
-      <label className="admin-profile-browse-button">
-        Browse files
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          hidden
-          disabled={uploading}
-          onChange={onChange}
-        />
-      </label>
-    </div>
 
-    <div className="admin-profile-preview-box">
-      <span>{previewTitle}</span>
-      <div className="admin-profile-preview-canvas">
-        {value ? (
-          <img src={getAssetUrl(value)} alt={previewTitle} />
-        ) : (
-          <small>No image uploaded</small>
+
+const ImageUploader = ({
+  title,
+  previewTitle,
+  value,
+  uploading,
+  onChange,
+}) => {
+  const [previewError, setPreviewError] = useState(false);
+
+  const imageUrl = getAssetUrl(value);
+
+  useEffect(() => {
+    setPreviewError(false);
+  }, [imageUrl]);
+
+  return (
+    <div className="admin-profile-upload-row">
+      <div className="admin-profile-upload-box">
+        <span className="admin-profile-upload-icon">
+          <FiUpload />
+        </span>
+
+        <strong>
+          {uploading ? "Uploading..." : `Upload ${title}`}
+        </strong>
+
+        <small>JPG, PNG or WEBP · Maximum 2 MB</small>
+
+        <label className="admin-profile-browse-button">
+          Browse files
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            disabled={uploading}
+            onChange={(event) => {
+              setPreviewError(false);
+              onChange(event);
+            }}
+          />
+        </label>
+      </div>
+
+      <div className="admin-profile-preview-box">
+        <span>{previewTitle}</span>
+
+        <div className="admin-profile-preview-canvas">
+          {imageUrl && !previewError ? (
+            <img
+              key={imageUrl}
+              src={imageUrl}
+              alt={previewTitle}
+              onError={() => setPreviewError(true)}
+            />
+          ) : (
+            <small>
+              {previewError
+                ? "Image failed to load. Check the image URL and backend."
+                : "No image uploaded"}
+            </small>
+          )}
+        </div>
+
+        {imageUrl && !previewError && (
+          <a
+            href={imageUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open full image
+          </a>
         )}
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -161,6 +228,28 @@ const Profile = () => {
     confirmPassword: "",
   });
 
+  // useEffect(() => {
+  //   let mounted = true;
+
+  //   const load = async () => {
+  //     try {
+  //       const data = await instituteSettingsService.getSettings();
+  //       if (mounted) {
+  //         setSettings({ ...EMPTY_SETTINGS, ...data });
+  //       }
+  //     } catch (requestError) {
+  //       if (mounted) setError(errorMessage(requestError));
+  //     } finally {
+  //       if (mounted) setLoading(false);
+  //     }
+  //   };
+
+  //   load();
+  //   return () => {
+  //     mounted = false;
+  //   };
+  // }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -168,7 +257,15 @@ const Profile = () => {
       try {
         const data = await instituteSettingsService.getSettings();
         if (mounted) {
-          setSettings({ ...EMPTY_SETTINGS, ...data });
+          setSettings({
+            ...EMPTY_SETTINGS,
+            ...data,
+            address:
+              data.address ||
+              [data.addressLine1, data.addressLine2]
+                .filter(Boolean)
+                .join(", "),
+          });
         }
       } catch (requestError) {
         if (mounted) setError(errorMessage(requestError));
@@ -182,6 +279,7 @@ const Profile = () => {
       mounted = false;
     };
   }, []);
+
 
   useEffect(() => {
     setAdmin({
@@ -207,6 +305,41 @@ const Profile = () => {
     setError("");
     setSuccess("");
   };
+
+  // const handleImageUpload = async (event, assetType) => {
+  //   const file = event.target.files?.[0];
+  //   event.target.value = "";
+
+  //   if (!file) return;
+
+  //   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+  //     setError("Choose a JPG, PNG, or WEBP image.");
+  //     return;
+  //   }
+
+  //   if (file.size > 2 * 1024 * 1024) {
+  //     setError("Image must be 2 MB or smaller.");
+  //     return;
+  //   }
+
+  //   setError("");
+  //   setSuccess("");
+  //   setUploading((previous) => ({ ...previous, [assetType]: true }));
+
+  //   try {
+  //     const updated =
+  //       assetType === "logo"
+  //         ? await instituteSettingsService.uploadLogo(file)
+  //         : await instituteSettingsService.uploadAsset(assetType, file);
+
+  //     setSettings((previous) => ({ ...previous, ...updated }));
+  //     setSuccess(`${assetType === "logo" ? "Institute logo" : assetType.replace(/([A-Z])/g, " $1")} uploaded successfully.`);
+  //   } catch (requestError) {
+  //     setError(errorMessage(requestError));
+  //   } finally {
+  //     setUploading((previous) => ({ ...previous, [assetType]: false }));
+  //   }
+  // };
 
   const handleImageUpload = async (event, assetType) => {
     const file = event.target.files?.[0];
@@ -234,8 +367,35 @@ const Profile = () => {
           ? await instituteSettingsService.uploadLogo(file)
           : await instituteSettingsService.uploadAsset(assetType, file);
 
-      setSettings((previous) => ({ ...previous, ...updated }));
-      setSuccess(`${assetType === "logo" ? "Institute logo" : assetType.replace(/([A-Z])/g, " $1")} uploaded successfully.`);
+      // Map assetType to its corresponding state URL property name
+      const fieldNameMap = {
+        logo: "logoUrl",
+        stamp: "stampUrl",
+        controllerSignature: "controllerSignatureUrl",
+        ownerPhoto: "ownerPhotoUrl",
+        ownerSignature: "ownerSignatureUrl",
+      };
+
+      const targetField = fieldNameMap[assetType] || `${assetType}Url`;
+      const uploadedUrl =
+        updated?.[targetField] ||
+        updated?.[assetType] ||
+        updated?.url ||
+        (typeof updated === "string" ? updated : null);
+
+      setSettings((previous) => ({
+        ...previous,
+        ...updated,
+        ...(uploadedUrl ? { [targetField]: uploadedUrl } : {}),
+      }));
+
+      setSuccess(
+        `${
+          assetType === "logo"
+            ? "Institute logo"
+            : assetType.replace(/([A-Z])/g, " $1")
+        } uploaded successfully.`
+      );
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {
@@ -457,8 +617,12 @@ const Profile = () => {
                 <Field label="Pincode" name="postalCode" value={settings.postalCode} onChange={handleSettingsChange} maxLength={20} />
                 <Field label="Country" name="country" value={settings.country} onChange={handleSettingsChange} maxLength={100} />
                 <Field label="Website" name="website" type="url" value={settings.website} onChange={handleSettingsChange} placeholder="https://example.com" maxLength={300} />
-                <TextAreaField label="Address Line 1" name="addressLine1" value={settings.addressLine1} onChange={handleSettingsChange} />
-                <TextAreaField label="Address Line 2" name="addressLine2" value={settings.addressLine2} onChange={handleSettingsChange} />
+                <TextAreaField
+                  label="Full Institute Address"
+                  name="address"
+                  value={settings.address}
+                  onChange={handleSettingsChange}
+                />
               </div>
             </div>
           </section>

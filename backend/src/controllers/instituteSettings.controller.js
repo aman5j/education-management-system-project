@@ -13,8 +13,7 @@ const DEFAULT_SETTINGS = {
   phone: "",
   alternatePhone: "",
   website: "",
-  addressLine1: "",
-  addressLine2: "",
+  address: "",
   city: "",
   state: "",
   postalCode: "",
@@ -42,8 +41,7 @@ const EDITABLE_FIELDS = [
   "phone",
   "alternatePhone",
   "website",
-  "addressLine1",
-  "addressLine2",
+  "address",
   "city",
   "state",
   "postalCode",
@@ -236,3 +234,5 @@ export const uploadInstituteSettingsAsset = async (req, res, next) => {
     next(error);
   }
 };
+
+
