@@ -59,55 +59,66 @@ const buildAuthResponse = (user) => {
   };
 };
 
-export const register = async (req, res, next) => {
-  try {
-    const { name, email, password, phone } = req.body;
+// export const register = async (req, res, next) => {
+//   try {
+//     const { name, email, password, phone } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email and password are required.",
-      });
-    }
+//     if (!name || !email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Name, email and password are required.",
+//       });
+//     }
 
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must contain at least 8 characters.",
-      });
-    }
+//     if (password.length < 8) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Password must contain at least 8 characters.",
+//       });
+//     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+//     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = await User.findOne({
-      email: normalizedEmail,
-    });
+//     const existingUser = await User.findOne({
+//       email: normalizedEmail,
+//     });
 
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "An account with this email already exists.",
-      });
-    }
+//     if (existingUser) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "An account with this email already exists.",
+//       });
+//     }
 
-    const user = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
-      phone: phone || "",
-      role: ROLES.STUDENT,
-      status: ACCOUNT_STATUS.ACTIVE,
-    });
+//     const user = await User.create({
+//       name: name.trim(),
+//       email: normalizedEmail,
+//       password,
+//       phone: phone || "",
+//       role: ROLES.STUDENT,
+//       status: ACCOUNT_STATUS.ACTIVE,
+//     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Student account created successfully.",
-      user: sanitizeUser(user),
-    });
-  } catch (error) {
-    next(error);
-  }
+//     return res.status(201).json({
+//       success: true,
+//       message: "Student account created successfully.",
+//       user: sanitizeUser(user),
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+
+export const register = async (req, res) => {
+  return res.status(403).json({
+    success: false,
+    message:
+      "Public registration is disabled. Please contact your institute administrator to create an account.",
+  });
 };
+
 
 export const login = async (req, res, next) => {
   try {

@@ -1,10 +1,15 @@
+
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
 export const ROLES = Object.freeze({
   ADMIN: "admin",
-  WEBSITE_EDITOR: "website_editor",
+  STAFF: "staff",
   STUDENT: "student",
+
+  // Temporary compatibility for existing legacy records only.
+  // Do not use this constant when creating new accounts.
+  WEBSITE_EDITOR: "website_editor",
 });
 
 export const ACCOUNT_STATUS = Object.freeze({
@@ -48,13 +53,43 @@ export const generateRandomToken = () => {
   return crypto.randomBytes(32).toString("hex");
 };
 
+const sanitizeAssignedRole = (assignedRole) => {
+  if (!assignedRole) {
+    return null;
+  }
+
+  // When populated, assignedRole is a document containing role data.
+  if (typeof assignedRole === "object" && assignedRole._id) {
+    return {
+      id: assignedRole._id.toString(),
+      name: assignedRole.name,
+      label: assignedRole.label,
+      permissions: Array.isArray(assignedRole.permissions)
+        ? assignedRole.permissions
+        : [],
+      isActive: assignedRole.isActive === true,
+    };
+  }
+
+  // When not populated, expose only its ID.
+  return {
+    id: assignedRole.toString(),
+  };
+};
+
 export const sanitizeUser = (user) => {
   return {
-    id: user._id,
+    id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
     status: user.status,
+    assignedRole: sanitizeAssignedRole(user.assignedRole),
+    studentRecord: user.studentRecord
+      ? user.studentRecord._id
+        ? user.studentRecord._id.toString()
+        : user.studentRecord.toString()
+      : null,
     avatar: user.avatar || null,
     phone: user.phone || "",
     createdAt: user.createdAt,
