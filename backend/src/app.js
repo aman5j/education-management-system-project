@@ -8,6 +8,10 @@ import path from "path";
 import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 
 import authRoutes from "./routes/auth.routes.js";
+
+import roleRoutes from "./routes/role.routes.js";
+
+
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import studentDocumentRoutes from "./routes/studentDocument.routes.js";
@@ -46,6 +50,8 @@ import examResultRoutes from "./routes/examResult.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
 
 import instituteSettingsRoutes from "./routes/instituteSettings.routes.js";
+
+
 
 
 // import receiptUploadRoutes from
@@ -165,6 +171,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/roles", roleRoutes);
 
 app.use(
   "/api/dashboard",
