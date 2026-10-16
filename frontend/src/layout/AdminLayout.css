@@ -241,14 +241,16 @@
   right: -50px;
   width: 40px;
   height: 40px;
+  top: 10px;
+  border: none;
 }
 .admin-sidebar-collapsed
   .sidebar-collapse-button {
   position: absolute;
   right: -50px;
-  top: 20px;
-  background: #ffffff;
-  box-shadow: var(--shadow-sm);
+  top: 10px;
+  /* background: #ffffff;
+  box-shadow: var(--shadow-sm); */
 }
 .sidebar-collapse-button svg {
     min-width: 30px;

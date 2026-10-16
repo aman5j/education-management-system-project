@@ -8,6 +8,7 @@ import {
   FiSave,
   FiUpload,
   FiLock,
+  FiEye,
 } from "react-icons/fi";
 
 import { useAuth } from "../../context/AuthContext";
@@ -203,12 +204,12 @@ const ImageUploader = ({
         </div>
 
         {imageUrl && !previewError && (
-          <a
+          <a className="preview-image tooltip" data-tooltip="View Full Image"
             href={imageUrl}
             target="_blank"
             rel="noreferrer"
           >
-            Open full image
+            <FiEye />
           </a>
         )}
       </div>
@@ -521,9 +522,8 @@ const Profile = () => {
 
   return (
     <div className="admin-profile-page">
-      <header className="admin-profile-page-header">
-        <h1>My Profile</h1>
-      </header>
+      <div class="page-header"><div><h1>My Profile</h1></div></div>
+
 
       {error && (
         <div
@@ -544,7 +544,7 @@ const Profile = () => {
       )}
 
       <div className="admin-profile-layout">
-        <aside className="admin-profile-sidebar-card">
+        <aside className="admin-profile-sidebar-card common-card">
           <span className="admin-profile-account-status">
             {user?.status || "active"}
           </span>
@@ -647,7 +647,7 @@ const Profile = () => {
               </label>
 
               <button
-                className="admin-profile-save-button"
+                className="themebtn"
                 type="submit"
               >
                 Update Password
@@ -660,10 +660,8 @@ const Profile = () => {
           className="admin-profile-form"
           onSubmit={handleSave}
         >
-          <section className="admin-profile-section">
-            <header>
-              <h2>Basic Information</h2>
-            </header>
+          <section className="common-card">
+            <div class="panel-header"><div><h3>Bassic Details</h3> </div></div>
 
             <div className="admin-profile-section-body">
               <div className="admin-profile-grid">
@@ -731,10 +729,9 @@ const Profile = () => {
             </div>
           </section>
 
-          <section className="admin-profile-section">
-            <header>
-              <h2>Contact Information</h2>
-            </header>
+          <section className="common-card">
+                        <div class="panel-header"><div><h3>Contact Details</h3> </div></div>
+
 
             <div className="admin-profile-section-body">
               <div className="admin-profile-grid">
@@ -815,10 +812,10 @@ const Profile = () => {
             </div>
           </section>
 
-          <section className="admin-profile-section">
-            <header>
-              <h2>Certificate Information</h2>
-            </header>
+          <section className="common-card">
+           
+               <div class="panel-header"><div><h3>Certificate Information</h3> </div></div>
+
 
             <div className="admin-profile-section-body">
               <div className="admin-profile-grid">
@@ -893,10 +890,10 @@ const Profile = () => {
             </div>
           </section>
 
-          <section className="admin-profile-section">
-            <header>
-              <h2>Owner Details</h2>
-            </header>
+          <section className="common-card">
+           
+                           <div class="panel-header"><div><h3>Owner Details</h3> </div></div>
+
 
             <div className="admin-profile-section-body">
               <div className="admin-profile-grid">
@@ -937,13 +934,13 @@ const Profile = () => {
 
           <div className="admin-profile-footer">
             <button
-              className="admin-profile-save-button"
+              className="themebtn"
               type="submit"
               disabled={
                 saving || Object.values(uploading).some(Boolean)
               }
             >
-              <FiSave />
+             
               {saving ? "Saving..." : "Save Details"}
             </button>
           </div>
