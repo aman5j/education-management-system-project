@@ -1,12 +1,4 @@
 
-.admin-profile-page {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
-  color: #172033;
-}
-
 .admin-profile-header {
   margin-bottom: 24px;
 }
@@ -26,20 +18,12 @@
 
 .admin-profile-header p,
 .admin-profile-card-heading p {
-  margin: 0;
+  margin: 0;  
   color: #64748b;
   font-size: 14px;
 }
 
-.admin-profile-identity,
-.admin-profile-card {
-  margin-bottom: 22px;
-  padding: 24px;
-  background: #fff;
-  border: 1px solid #e5eaf1;
-  border-radius: 16px;
-  box-shadow: 0 5px 20px rgba(15, 23, 42, 0.035);
-}
+
 
 .admin-profile-identity {
   display: flex;
@@ -48,17 +32,38 @@
 }
 
 .admin-profile-avatar {
-  display: grid;
-  width: 76px;
-  height: 76px;
-  flex: 0 0 76px;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 50%;
-  background: #e8efff;
-  color: #244fc5;
-  font-size: 25px;
-  font-weight: 750;
+ display: grid;
+    width: 120px;
+    height: 120px;
+    flex: 0 0 76px;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #e8efff;
+    color: #244fc5;
+    font-size: 25px;
+    font-weight: 750;
+    margin: auto;
+    border: 3px solid;
+    box-shadow: 1px 5px 2px #a5a5a5;
+    position: relative;
+    z-index: 9;
+    margin-bottom: 25px;
+     margin-top: 15px;
+}
+.admin-profile-identity-info svg{
+    width: 15px;
+    height: 15px
+}
+.admin-profile-left:after {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 110px;
+    content: "";
+    width: 100%;
+    background: linear-gradient(135deg, rgb(30, 58, 138) 0%, rgb(29, 78, 216) 60%, rgb(59, 130, 246) 100%);
+    border-radius: 5px 5px 0 0;
 }
 
 .admin-profile-avatar img {
@@ -73,16 +78,41 @@
 }
 
 .admin-profile-identity-info h2 {
-  margin: 0 0 5px;
+  margin: 0 0 20px;
   overflow-wrap: anywhere;
   font-size: 20px;
+  text-transform: uppercase;
+}
+.actionprofile button {
+    border: none;
+    height: 38px;
+    background: white;
+    border: 1px solid;
+    color: #1e3d94;
+    font-size: 12px;
+    width: 100%;
 }
 
 .admin-profile-identity-info p {
-  margin: 0 0 10px;
-  overflow-wrap: anywhere;
-  color: #64748b;
-  font-size: 14px;
+   margin: 0 0 10px;
+    overflow-wrap: anywhere;
+    color: #64748b;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 4px;
+    border: 1px solid #dddddd99;
+    padding: 10px 13px;
+    border-radius: 6px;
+    background: #dcdcdc21;
+}
+.admin-profile-identity-info h6 {
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    margin: 10px 0;
+    margin-top: 0px;
 }
 
 .admin-profile-role {
@@ -91,19 +121,37 @@
   gap: 6px;
   color: #475569;
   font-size: 12px;
-  text-transform: capitalize;
 }
 
 .admin-profile-account-status {
-  padding: 6px 11px;
-  border-radius: 999px;
-  background: #eaf8ef;
-  color: #187341;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: capitalize;
+  padding: 4px 15px;
+    border-radius: 15px;
+    background: #eaf8ef;
+    color: #187341;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 998;
 }
 
+.profile-forms-right {
+    width: 65%;
+}
+
+.profile-forms-right .common-card {
+    
+  margin-bottom: 20px;
+}
+.common-card.admin-profile-left {
+    width: 35%;
+    padding: 20px;  
+    text-align: center;
+    position: sticky;
+    top: 75px;
+}
 .admin-profile-card-heading {
   display: flex;
   align-items: center;
@@ -127,11 +175,16 @@
   margin: 0 0 5px;
   font-size: 18px;
 }
+.profile-main {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
 
 .admin-profile-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
+  display: flex;
+ flex-wrap: wrap;
+  gap: 20px;
 }
 
 .admin-profile-field {
@@ -142,6 +195,15 @@
   color: #334155;
   font-size: 13px;
   font-weight: 650;
+  width: calc(50% - 10px);
+}
+.fullinput{
+  width: 100%;
+}
+.fullinput textarea{
+  height: 100px;
+  resize: none;
+  padding: 10px;
 }
 
 .admin-profile-input-wrap {
@@ -161,7 +223,7 @@
   box-shadow: 0 0 0 3px rgba(74, 108, 220, 0.1);
 }
 
-.admin-profile-input-wrap input {
+.admin-profile-input-wrap input, .admin-profile-input-wrap select {
   width: 100%;
   min-width: 0;
   height: 46px;
@@ -215,10 +277,7 @@
 
 .admin-profile-form-footer {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid #edf0f5;
+  justify-content: flex-start;
 }
 
 .admin-profile-primary-button {
@@ -315,4 +374,129 @@
   .admin-profile-form-footer .admin-profile-primary-button {
     width: 100%;
   }
+}
+
+
+
+.signature-field {
+  width: 100%;
+  max-width: 100%;
+  font-family: inherit;
+  color: #26374a;
+  display: flex;
+  gap: 20px;
+}
+
+.signature-draw-box {
+  padding: 14px;
+  margin-bottom: 14px;
+  background: #f4faff;
+  border: 1px solid #dce9f5;
+  border-radius: 10px;
+  min-width: 50%;
+  max-width: 50%;
+}
+
+.signature-title {
+  display: block;
+  margin-bottom: 10px;
+  color: #52677e;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.signature-canvas {
+  height: 100px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #dce5ef;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(27, 55, 88, 0.04);
+}
+
+.signature-demo {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.signature-hint {
+  display: block;
+  margin-top: 8px;
+  color: #8b9bad;
+  font-size: 11px;
+}
+
+.signature-upload-box {
+ display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding: 19px 14px;
+    border: 1.5px dashed #8ecdf0;
+    border-radius: 10px;
+    text-align: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    width: 50%;
+    height: 154px;
+}
+
+.signature-upload-box:hover {
+  background: #eff9ff;
+  border-color: #1598df;
+}
+
+.admin-profile-checkbox {
+  float: right;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+.signature-upload-icon {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #e0f3ff;
+  color: #078bd3;
+}
+
+.signature-upload-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.signature-upload-box strong {
+ font-size: 13px;
+    font-weight: 400;
+    color: #b6b6b6;
+}
+
+.signature-upload-desc {
+  margin-top: 5px;
+  color: #8292a4;
+  font-size: 11px;
+}
+
+.signature-browse-btn {
+ margin-top: 13px;
+    padding: 9px 20px;
+    border: none;
+    border-radius: 6px;
+    background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+
+.signature-file-info {
+  margin-top: 10px;
+  color: #8b9bad;
+  font-size: 10px;
 }

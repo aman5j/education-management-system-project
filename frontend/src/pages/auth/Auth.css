@@ -429,6 +429,9 @@ input:-webkit-autofill:active {
     overflow: hidden;
 }
 
+.cardbody {
+    padding: 20px;
+} 
 .common-card-filters {
     display: flex;
     align-items: center;
