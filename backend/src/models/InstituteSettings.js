@@ -13,27 +13,20 @@ const instituteSettingsSchema = new mongoose.Schema(
     // Institute identity
     instituteName: {
       type: String,
-      required: true,
       trim: true,
       maxlength: 150,
-      default: "India Tech Samadhaan",
+      default: "",
     },
     legalName: { type: String, trim: true, maxlength: 150, default: "" },
     registrationNumber: { type: String, trim: true, maxlength: 100, default: "" },
     designation: { type: String, trim: true, maxlength: 100, default: "" },
 
-    // Branding
+    // Institute branding
     logoUrl: { type: String, default: "", maxlength: 1000 },
     stampUrl: { type: String, default: "", maxlength: 1000 },
 
-    // Institute contact details
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      maxlength: 254,
-      default: "",
-    },
+    // Institute contact
+    email: { type: String, trim: true, lowercase: true, maxlength: 254, default: "" },
     phone: { type: String, trim: true, maxlength: 25, default: "" },
     alternatePhone: { type: String, trim: true, maxlength: 25, default: "" },
     website: { type: String, trim: true, maxlength: 300, default: "" },
@@ -44,7 +37,7 @@ const instituteSettingsSchema = new mongoose.Schema(
     postalCode: { type: String, trim: true, maxlength: 20, default: "" },
     country: { type: String, trim: true, maxlength: 100, default: "India" },
 
-    // Examination controller / certificate
+    // Examination controller
     controllerName: { type: String, trim: true, maxlength: 120, default: "" },
     controllerDesignation: {
       type: String,
@@ -52,19 +45,14 @@ const instituteSettingsSchema = new mongoose.Schema(
       maxlength: 100,
       default: "Examination Controller",
     },
-    controllerEmployeeId: {
-      type: String,
-      trim: true,
-      maxlength: 50,
-      default: "",
-    },
+    controllerEmployeeId: { type: String, trim: true, maxlength: 50, default: "" },
     controllerEmail: { type: String, trim: true, lowercase: true, maxlength: 254, default: "" },
     controllerPhone: { type: String, trim: true, maxlength: 25, default: "" },
     controllerSignatureUrl: { type: String, default: "", maxlength: 1000 },
     showControllerNameOnCertificate: { type: Boolean, default: true },
     showControllerSignatureOnCertificate: { type: Boolean, default: true },
 
-    // Owner details / certificate
+    // Owner / certificate details
     ownerName: { type: String, trim: true, maxlength: 120, default: "" },
     ownerPhotoUrl: { type: String, default: "", maxlength: 1000 },
     ownerSignatureUrl: { type: String, default: "", maxlength: 1000 },

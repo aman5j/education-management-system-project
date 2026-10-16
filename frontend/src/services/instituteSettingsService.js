@@ -8,11 +8,7 @@ const instituteSettingsService = {
   },
 
   async updateSettings(payload) {
-    const response = await api.put(
-      "/institute-settings",
-      payload
-    );
-
+    const response = await api.put("/institute-settings", payload);
     return response.data.data.settings;
   },
 
@@ -22,12 +18,30 @@ const instituteSettingsService = {
 
     const response = await api.post(
       "/institute-settings/logo",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      formData
+    );
+
+    return response.data.data.settings;
+  },
+
+  async uploadAsset(assetType, file) {
+    const allowedAssets = [
+      "stamp",
+      "controllerSignature",
+      "ownerPhoto",
+      "ownerSignature",
+    ];
+
+    if (!allowedAssets.includes(assetType)) {
+      throw new Error("Unsupported image type.");
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      `/institute-settings/assets/${assetType}`,
+      formData
     );
 
     return response.data.data.settings;

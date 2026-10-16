@@ -1,789 +1,512 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiUser,
   FiMail,
   FiPhone,
-  FiLock,
-  FiSave,
   FiShield,
+  FiSave,
+  FiUpload,
+  FiLock,
 } from "react-icons/fi";
 
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
+import instituteSettingsService from "../../services/instituteSettingsService";
 import "../../styles/AdminProfile.css";
 
+const EMPTY_SETTINGS = {
+  instituteName: "",
+  legalName: "",
+  registrationNumber: "",
+  designation: "",
+  logoUrl: "",
+  stampUrl: "",
+  email: "",
+  phone: "",
+  alternatePhone: "",
+  website: "",
+  addressLine1: "",
+  addressLine2: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  country: "India",
+  controllerName: "",
+  controllerDesignation: "Examination Controller",
+  controllerEmployeeId: "",
+  controllerEmail: "",
+  controllerPhone: "",
+  controllerSignatureUrl: "",
+  showControllerNameOnCertificate: true,
+  showControllerSignatureOnCertificate: true,
+  ownerName: "",
+  ownerPhotoUrl: "",
+  ownerSignatureUrl: "",
+  showOwnerOnCertificate: false,
+};
+
 const getInitials = (name = "") =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+  name.trim().split(/\s+/).slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "A";
 
-const getError = (error, fallback) =>
-  error?.response?.data?.message || fallback;
+const errorMessage = (error) =>
+  error?.response?.data?.message ||
+  error?.message ||
+  "Something went wrong. Please try again.";
+
+const getAssetUrl = (assetPath) => {
+  if (!assetPath) return "";
+  if (/^https?:\/\//i.test(assetPath)) return assetPath;
+
+  const baseUrl = (
+    api.defaults.baseURL || "http://localhost:5000/api"
+  ).replace(/\/api\/?$/, "");
+
+  return `${baseUrl}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;
+};
+
+const Field = ({ label, name, value, onChange, type = "text", placeholder = "", required = false, maxLength }) => (
+  <label className="admin-profile-field">
+    <span>{label}</span>
+    <input
+      className="admin-profile-input"
+      name={name}
+      type={type}
+      value={value ?? ""}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      maxLength={maxLength}
+    />
+  </label>
+);
+
+const TextAreaField = ({ label, name, value, onChange }) => (
+  <label className="admin-profile-field fullinput">
+    <span>{label}</span>
+    <textarea
+      className="admin-profile-input admin-profile-textarea"
+      name={name}
+      value={value ?? ""}
+      onChange={onChange}
+      rows={3}
+    />
+  </label>
+);
+
+const CheckField = ({ label, name, checked, onChange }) => (
+  <label className="admin-profile-checkbox">
+    <input
+      type="checkbox"
+      name={name}
+      checked={Boolean(checked)}
+      onChange={onChange}
+    />
+    <span>{label}</span>
+  </label>
+);
+
+const ImageUploader = ({ title, previewTitle, value, uploading, onChange }) => (
+  <div className="admin-profile-upload-row">
+    <div className="admin-profile-upload-box">
+      <span className="admin-profile-upload-icon"><FiUpload /></span>
+      <strong>{uploading ? "Uploading..." : `Upload ${title}`}</strong>
+      <small>JPG, PNG or WEBP · Maximum 2 MB</small>
+      <label className="admin-profile-browse-button">
+        Browse files
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          hidden
+          disabled={uploading}
+          onChange={onChange}
+        />
+      </label>
+    </div>
+
+    <div className="admin-profile-preview-box">
+      <span>{previewTitle}</span>
+      <div className="admin-profile-preview-canvas">
+        {value ? (
+          <img src={getAssetUrl(value)} alt={previewTitle} />
+        ) : (
+          <small>No image uploaded</small>
+        )}
+      </div>
+    </div>
+  </div>
+);
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, updateUser, changePassword } = useAuth();
 
-  const [profile, setProfile] = useState({
+  const [admin, setAdmin] = useState({
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
   });
-
+  const [settings, setSettings] = useState(EMPTY_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState({});
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
-  const [profileError, setProfileError] = useState("");
-  const [profileSuccess, setProfileSuccess] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
+  useEffect(() => {
+    let mounted = true;
 
-  const handleProfileChange = (event) => {
+    const load = async () => {
+      try {
+        const data = await instituteSettingsService.getSettings();
+        if (mounted) {
+          setSettings({ ...EMPTY_SETTINGS, ...data });
+        }
+      } catch (requestError) {
+        if (mounted) setError(errorMessage(requestError));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setAdmin({
+      name: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+    });
+  }, [user?.name, user?.email, user?.phone]);
+
+  const handleAdminChange = (event) => {
     const { name, value } = event.target;
-
-    setProfile((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-
-    setProfileError("");
-    setProfileSuccess("");
+    setAdmin((previous) => ({ ...previous, [name]: value }));
+    setError("");
+    setSuccess("");
   };
 
-  const handlePasswordChange = (event) => {
-    const { name, value } = event.target;
-
-    setPasswordForm((previous) => ({
+  const handleSettingsChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setSettings((previous) => ({
       ...previous,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
-
-    setPasswordError("");
-    setPasswordSuccess("");
+    setError("");
+    setSuccess("");
   };
 
-  const handleProfileSubmit = async (event) => {
-    event.preventDefault();
-    setProfileError("");
-    setProfileSuccess("");
+  const handleImageUpload = async (event, assetType) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
 
-    if (profile.name.trim().length < 2) {
-      setProfileError("Name must contain at least 2 characters.");
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Choose a JPG, PNG, or WEBP image.");
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email.trim())) {
-      setProfileError("Enter a valid email address.");
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be 2 MB or smaller.");
       return;
     }
 
-    setSavingProfile(true);
+    setError("");
+    setSuccess("");
+    setUploading((previous) => ({ ...previous, [assetType]: true }));
 
     try {
-      const response = await api.put("/auth/profile", {
-        name: profile.name.trim(),
-        email: profile.email.trim(),
-        phone: profile.phone.trim(),
+      const updated =
+        assetType === "logo"
+          ? await instituteSettingsService.uploadLogo(file)
+          : await instituteSettingsService.uploadAsset(assetType, file);
+
+      setSettings((previous) => ({ ...previous, ...updated }));
+      setSuccess(`${assetType === "logo" ? "Institute logo" : assetType.replace(/([A-Z])/g, " $1")} uploaded successfully.`);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+    } finally {
+      setUploading((previous) => ({ ...previous, [assetType]: false }));
+    }
+  };
+
+  const imageField = (title, previewTitle, fieldName, assetType) => (
+    <div className="admin-profile-field fullinput" key={fieldName}>
+      <span className="admin-profile-field-label">{title}</span>
+      <ImageUploader
+        title={title.replace(/^Upload\s+/i, "")}
+        previewTitle={previewTitle}
+        value={settings[fieldName]}
+        uploading={Boolean(uploading[assetType])}
+        onChange={(event) => handleImageUpload(event, assetType)}
+      />
+    </div>
+  );
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (admin.name.trim().length < 2) {
+      setError("Admin name must contain at least 2 characters.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(admin.email.trim())) {
+      setError("Enter a valid admin email address.");
+      return;
+    }
+
+    if (settings.instituteName.trim().length < 2) {
+      setError("Institute name must contain at least 2 characters.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const adminResponse = await api.put("/auth/profile", {
+        name: admin.name.trim(),
+        email: admin.email.trim(),
+        phone: admin.phone.trim(),
       });
 
-      const updatedUser = response?.data?.data?.user;
-
+      const updatedUser = adminResponse?.data?.data?.user;
       if (!updatedUser) {
-        throw new Error("The server did not return the updated profile.");
+        throw new Error("The server did not return the updated admin account.");
       }
 
       updateUser(updatedUser);
 
-      setProfile({
+      const savedSettings = await instituteSettingsService.updateSettings({
+        ...settings,
+        instituteName: settings.instituteName.trim(),
+      });
+
+      setSettings((previous) => ({ ...previous, ...savedSettings }));
+      setAdmin({
         name: updatedUser.name || "",
         email: updatedUser.email || "",
         phone: updatedUser.phone || "",
       });
-
-      setProfileSuccess(
-        response?.data?.message || "Profile updated successfully."
-      );
-    } catch (error) {
-      setProfileError(
-        getError(error, error.message || "Unable to update your profile.")
-      );
+      setSuccess("Admin profile and institute settings saved successfully.");
+    } catch (requestError) {
+      setError(errorMessage(requestError));
     } finally {
-      setSavingProfile(false);
+      setSaving(false);
     }
   };
 
-  const handlePasswordSubmit = async (event) => {
+  const handlePasswordChange = async (event) => {
     event.preventDefault();
-    setPasswordError("");
-    setPasswordSuccess("");
+    setError("");
+    setSuccess("");
 
-    if (
-      !passwordForm.currentPassword ||
-      !passwordForm.newPassword ||
-      !passwordForm.confirmPassword
-    ) {
-      setPasswordError("Please complete all password fields.");
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Complete all password fields.");
       return;
     }
 
-    if (passwordForm.newPassword.length < 8) {
-      setPasswordError("New password must contain at least 8 characters.");
+    if (newPassword.length < 8) {
+      setError("New password must contain at least 8 characters.");
       return;
     }
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError("New password and confirmation do not match.");
+    if (newPassword !== confirmPassword) {
+      setError("New password and confirmation do not match.");
       return;
     }
-
-    if (passwordForm.currentPassword === passwordForm.newPassword) {
-      setPasswordError("Choose a new password different from the current one.");
-      return;
-    }
-
-    setSavingPassword(true);
 
     try {
-      const response = await changePassword(
-        passwordForm.currentPassword,
-        passwordForm.newPassword
-      );
-
-      setPasswordSuccess(
-        response?.message ||
-          "Password changed. Please sign in again."
-      );
-
-      setPasswordForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-
-      // The existing changePassword function clears the session.
+      await changePassword(currentPassword, newPassword);
       navigate("/login", {
         replace: true,
-        state: {
-          message: "Your password was changed. Please sign in again.",
-        },
+        state: { message: "Password changed. Please sign in again." },
       });
-    } catch (error) {
-      setPasswordError(
-        error?.message || "Unable to change your password."
-      );
-    } finally {
-      setSavingPassword(false);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
     }
   };
+
+  if (loading) {
+    return <div className="admin-profile-page">Loading profile settings...</div>;
+  }
 
   return (
     <div className="admin-profile-page">
-       <div className="page-header">
-        <div>
-          <h1>
-          My Profile
-          </h1>
+      <header className="admin-profile-page-header">
+        <h1>My Profile</h1>
+      </header>
 
-        </div>
-      </div>
+      {error && <div className="admin-profile-alert error" role="alert">{error}</div>}
+      {success && <div className="admin-profile-alert success" role="status">{success}</div>}
 
-    <div class="profile-main">
- <div className="common-card admin-profile-left">
-        <div className="admin-profile-avatar" aria-hidden="true">
-          {user?.avatar ? (
-            <img src={user.avatar} alt="" />
-          ) : (
-            getInitials(user?.name)
+      <div className="admin-profile-layout">
+        <aside className="admin-profile-sidebar-card">
+          <span className="admin-profile-account-status">{user?.status || "active"}</span>
+
+          <div className="admin-profile-avatar">
+            {user?.avatar ? (
+              <img src={getAssetUrl(user.avatar)} alt="Admin avatar" />
+            ) : getInitials(admin.name)}
+          </div>
+
+          <div className="admin-profile-identity">
+            <h2>{admin.name || "System Administrator"}</h2>
+            <p><FiMail /> <span>{admin.email || "No email available"}</span></p>
+            <p><FiPhone /> <span>{admin.phone || "No phone available"}</span></p>
+            <p><FiShield /> <span>{user?.role || "admin"}</span></p>
+            <small>
+              Last login: {user?.lastLoginAt
+                ? new Date(user.lastLoginAt).toLocaleString("en-IN")
+                : "Unavailable"}
+            </small>
+          </div>
+
+          <button
+            type="button"
+            className="admin-profile-password-toggle"
+            onClick={() => setShowPasswordForm((value) => !value)}
+          >
+            <FiLock /> Change Password
+          </button>
+
+          {showPasswordForm && (
+            <form className="admin-profile-password-form" onSubmit={handlePasswordChange}>
+              <label>
+                Current password
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={passwordForm.currentPassword}
+                  onChange={(event) => setPasswordForm((p) => ({ ...p, currentPassword: event.target.value }))}
+                />
+              </label>
+              <label>
+                New password
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordForm.newPassword}
+                  onChange={(event) => setPasswordForm((p) => ({ ...p, newPassword: event.target.value }))}
+                />
+              </label>
+              <label>
+                Confirm new password
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) => setPasswordForm((p) => ({ ...p, confirmPassword: event.target.value }))}
+                />
+              </label>
+              <button className="admin-profile-save-button" type="submit">
+                Update Password
+              </button>
+            </form>
           )}
-        </div>
+        </aside>
 
-        <div className="admin-profile-identity-info">
-          <h2>{user?.name || "Administrator"}</h2>
-          <p className="admin-profile-role"> <FiMail/> {user?.email || "No email available"}</p>
-          <p className="admin-profile-role"> <FiPhone/> {user?.phone || "No phoe available"}</p>
-          <p className="admin-profile-role">
-            <FiShield /> {user?.role || "admin"}
-          </p>
-           <h6>Last login: 15 Oct 2026 21:34:49:657</h6>
-          
-          <div className="actionprofile">
-            <button className="themebtn">Change Password</button>
-          </div>
-         
-        </div>
-
-        <span className="admin-profile-account-status">
-          {user?.status || "active"}
-        </span>
-</div>
-
-     <div className="profile-forms-right">
-       <div className="common-card">
-        <div class="panel-header"><div><h3>Basic Information</h3> </div></div>
-        
-        <div className="cardbody">
-
-        {profileError && (
-          <div className="admin-profile-alert error" role="alert">
-            {profileError}
-          </div>
-        )}
-
-        {profileSuccess && (
-          <div className="admin-profile-alert success" role="status">
-            {profileSuccess}
-          </div>
-        )}
-
-        <form onSubmit={handleProfileSubmit}>
-          <div className="admin-profile-form-grid">
-            <label className="admin-profile-field">
-              <span>Institute Name</span>
-              <span className="admin-profile-input-wrap">
-                
-                <input
-                  name="name"
-                  value={profile.name}
-                  onChange={handleProfileChange}
-                  placeholder="Enter your full name"
-                  minLength={2}
-                  maxLength={100}
-                  autoComplete="name"
-                  required
-                />
-              </span>
-            </label>
-             <label className="admin-profile-field">
-              <span>Desigantion</span>
-              <span className="admin-profile-input-wrap">
-                
-                <input
-                  name="designation"
-                 
-                  placeholder="Enter your designation"
-                  minLength={2}
-                  maxLength={100}
-                  autoComplete="name"
-                  required
-                />
-              </span>
-            </label>
-            
-          
-
-            <label className="admin-profile-field">
-              <span>Email Address</span>
-              <span className="admin-profile-input-wrap">
-               
-                <input
-                  name="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={handleProfileChange}
-                  placeholder="Enter your email"
-                  maxLength={254}
-                  autoComplete="email"
-                  required
-                />
-              </span>
-            </label>
-
-           
-
-            <div className="admin-profile-field">
-              <span>Account Role</span>
-              <div className="admin-profile-readonly">
-               
-                <span>{user?.role || "admin"}</span>
-                <small>Managed by system permissions</small>
+        <form className="admin-profile-form" onSubmit={handleSave}>
+          <section className="admin-profile-section">
+            <header><h2>Basic Information</h2></header>
+            <div className="admin-profile-section-body">
+              <div className="admin-profile-grid">
+                <Field label="Admin Name" name="name" value={admin.name} onChange={handleAdminChange} required maxLength={100} />
+                <Field label="Institute Name" name="instituteName" value={settings.instituteName} onChange={handleSettingsChange} required maxLength={150} />
+                <Field label="Designation" name="designation" value={settings.designation} onChange={handleSettingsChange} placeholder="Enter your designation" maxLength={100} />
+                <Field label="Admin Email Address" name="email" type="email" value={admin.email} onChange={handleAdminChange} required maxLength={254} />
+                <div className="admin-profile-field">
+                  <span>Account Role</span>
+                  <div className="admin-profile-readonly">
+                    <span>{user?.role || "admin"}</span>
+                    <small>Managed by system permissions</small>
+                  </div>
+                </div>
+                {imageField("Upload Institute Logo", "Preview of your Logo", "logoUrl", "logo")}
+                {imageField("Upload Institute Stamp", "Preview of your Stamp", "stampUrl", "stamp")}
               </div>
             </div>
-             <label className="admin-profile-field fullinput">
-              <span>Upload Institute Logo  </span>
-              <div className="signature-field">
-     
+          </section>
 
-      <div className="signature-upload-box">
-        <div className="signature-upload-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
+          <section className="admin-profile-section">
+            <header><h2>Contact Information</h2></header>
+            <div className="admin-profile-section-body">
+              <div className="admin-profile-grid">
+                <Field label="Institute Email" name="email" type="email" value={settings.email} onChange={handleSettingsChange} maxLength={254} />
+                <Field label="Institute Mobile Number" name="phone" value={settings.phone} onChange={handleSettingsChange} maxLength={25} />
+                <Field label="Alternate Mobile" name="alternatePhone" value={settings.alternatePhone} onChange={handleSettingsChange} maxLength={25} />
+                <Field label="State" name="state" value={settings.state} onChange={handleSettingsChange} maxLength={100} />
+                <Field label="City" name="city" value={settings.city} onChange={handleSettingsChange} maxLength={100} />
+                <Field label="Pincode" name="postalCode" value={settings.postalCode} onChange={handleSettingsChange} maxLength={20} />
+                <Field label="Country" name="country" value={settings.country} onChange={handleSettingsChange} maxLength={100} />
+                <Field label="Website" name="website" type="url" value={settings.website} onChange={handleSettingsChange} placeholder="https://example.com" maxLength={300} />
+                <TextAreaField label="Address Line 1" name="addressLine1" value={settings.addressLine1} onChange={handleSettingsChange} />
+                <TextAreaField label="Address Line 2" name="addressLine2" value={settings.addressLine2} onChange={handleSettingsChange} />
+              </div>
+            </div>
+          </section>
 
-        <strong>Upload your Logo</strong>
-        <button type="button" className="signature-browse-btn">
-          Browse files
-        </button>
+          <section className="admin-profile-section">
+            <header><h2>Certificate Information</h2></header>
+            <div className="admin-profile-section-body">
+              <div className="admin-profile-grid">
+                <Field label="Controller of Examiner" name="controllerName" value={settings.controllerName} onChange={handleSettingsChange} maxLength={120} />
+                <Field label="Controller Designation" name="controllerDesignation" value={settings.controllerDesignation} onChange={handleSettingsChange} maxLength={100} />
+                <Field label="Employee ID" name="controllerEmployeeId" value={settings.controllerEmployeeId} onChange={handleSettingsChange} maxLength={50} />
+                <Field label="Controller Email" name="controllerEmail" type="email" value={settings.controllerEmail} onChange={handleSettingsChange} maxLength={254} />
+                <Field label="Controller Phone" name="controllerPhone" value={settings.controllerPhone} onChange={handleSettingsChange} maxLength={25} />
+                <div className="admin-profile-field fullinput">
+                  <CheckField label="Show controller name on certificate" name="showControllerNameOnCertificate" checked={settings.showControllerNameOnCertificate} onChange={handleSettingsChange} />
+                  <CheckField label="Show controller signature on certificate" name="showControllerSignatureOnCertificate" checked={settings.showControllerSignatureOnCertificate} onChange={handleSettingsChange} />
+                </div>
+                {imageField("Upload Controller Examiner Signature", "Preview of your signature", "controllerSignatureUrl", "controllerSignature")}
+              </div>
+            </div>
+          </section>
 
-       
-      </div>
-       <div className="signature-draw-box">
-        <span className="signature-title">
-          Preview of your Logo
-        </span>
+          <section className="admin-profile-section">
+            <header><h2>Owner Details</h2></header>
+            <div className="admin-profile-section-body">
+              <div className="admin-profile-grid">
+                <Field label="Owner Name" name="ownerName" value={settings.ownerName} onChange={handleSettingsChange} maxLength={120} />
+                <div className="admin-profile-field">
+                  <span>Certificate visibility</span>
+                  <CheckField label="Show owner details on certificate" name="showOwnerOnCertificate" checked={settings.showOwnerOnCertificate} onChange={handleSettingsChange} />
+                </div>
+                {imageField("Owner Photo", "Preview of your Profile", "ownerPhotoUrl", "ownerPhoto")}
+                {imageField("Owner Signature", "Preview of your Owner Signature", "ownerSignatureUrl", "ownerSignature")}
+              </div>
+            </div>
+          </section>
 
-        <div className="signature-canvas">
-          <svg
-            viewBox="0 0 280 70"
-            className="signature-demo"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 45 Q35 20 45 38 T70 32 Q80 20 90 40
-                 T115 35 Q130 30 140 36 T165 34
-                 M85 48 Q95 8 105 15 M35 50 Q80 55 130 42
-                 T200 38"
-              fill="none"
-              stroke="#9db2cb"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-            </label>
-
-          <label className="admin-profile-field fullinput">
-              <span>Upload Institute Stamp  </span>
-              <div className="signature-field">
-     
-
-      <div className="signature-upload-box">
-        <div className="signature-upload-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        <strong>Upload your Stamp</strong>
-        <button type="button" className="signature-browse-btn">
-          Browse files
-        </button>
-
-       
-      </div>
-       <div className="signature-draw-box">
-        <span className="signature-title">
-          Preview of your Stamp
-        </span>
-
-        <div className="signature-canvas">
-          <svg
-            viewBox="0 0 280 70"
-            className="signature-demo"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 45 Q35 20 45 38 T70 32 Q80 20 90 40
-                 T115 35 Q130 30 140 36 T165 34
-                 M85 48 Q95 8 105 15 M35 50 Q80 55 130 42
-                 T200 38"
-              fill="none"
-              stroke="#9db2cb"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-            </label>
-
-          </div>
-
-
-          {/* <div className="admin-profile-form-footer">
+          <div className="admin-profile-footer">
             <button
-              className="admin-profile-primary-button"
+              className="admin-profile-save-button"
               type="submit"
-              disabled={savingProfile}
+              disabled={saving || Object.values(uploading).some(Boolean)}
             >
-              <FiSave />
-              {savingProfile ? "Saving..." : "Save Profile"}
-            </button>
-          </div> */}
-          
-        </form>
-        </div>
-      </div>
-      <div className="common-card">
-                <div class="panel-header"><div><h3>Contact Information</h3> </div></div>
-
- <div className="cardbody">
-
-
-        {passwordError && (
-          <div className="admin-profile-alert error" role="alert">
-            {passwordError}
-          </div>
-        )}
-
-        {passwordSuccess && (
-          <div className="admin-profile-alert success" role="status">
-            {passwordSuccess}
-          </div>
-        )}
-
-        <form onSubmit={handlePasswordSubmit}>
-          <div className="admin-profile-form-grid">
-            <label className="admin-profile-field">
-              <span>Mobile Number</span>
-              <span className="admin-profile-input-wrap">
-               
-                <input
-                  name="phone"
-                  type="tel"
-                  value={profile.phone}
-                  onChange={handleProfileChange}
-                  placeholder="Enter your phone number"
-                  maxLength={20}
-                  autoComplete="tel"
-                />
-              </span>
-            </label>
-
-             <label className="admin-profile-field">
-              <span>Alternate Mobile</span>
-              <span className="admin-profile-input-wrap">
-               
-                <input
-                  name="phone"
-                  type="tel"
-                  value={profile.phone}
-                  onChange={handleProfileChange}
-                  placeholder="Enter your phone number"
-                  maxLength={20}
-                  autoComplete="tel"
-                />
-              </span>
-            </label>
-             <label className="admin-profile-field">
-              <span>State</span>
-              <span className="admin-profile-input-wrap">
-               
-               <select>
-  <option value="">Select State</option>
-  <option value="MP">Madhya Pradesh</option>
-  <option value="UP">Uttar Pradesh</option>
-  <option value="BR">Bihar</option>
-</select>
-              </span>
-            </label>
-             <label className="admin-profile-field">
-              <span>City</span>
-              <span className="admin-profile-input-wrap">
-               
-                <input
-                  name="phone"
-                  type="tel"
-                  
-                 
-                  placeholder="Gwalior"
-                 
-                />
-              </span>
-            </label>
-             <label className="admin-profile-field">
-              <span>Pincode</span>
-              <span className="admin-profile-input-wrap">
-               
-                <input
-                  name="phone"
-                  type="tel"
-                  
-                  placeholder="Enter your pincode"
-                  maxLength={6}
-                  autoComplete="tel"
-                />
-              </span>
-            </label>
-
-            <label className="admin-profile-field fullinput">
-              <span>Address</span>
-              <textarea className="admin-profile-password-input"
-                name="address"
-                value={profile.address}
-                onChange={handleProfileChange}
-                placeholder="Enter your address"
-                maxLength={500}
-              />
-            </label>
-          </div>
-        </form>
-        </div>
-      </div>
-
-      <div className="common-card">
-                <div class="panel-header"><div><h3>Certificate Information</h3> </div></div>
-
- <div className="cardbody">
-
-
-        {passwordError && (
-          <div className="admin-profile-alert error" role="alert">
-            {passwordError}
-          </div>
-        )}
-
-        {passwordSuccess && (
-          <div className="admin-profile-alert success" role="status">
-            {passwordSuccess}
-          </div>
-        )}
-
-        <form onSubmit={handlePasswordSubmit}>
-          <div className="admin-profile-form-grid">
-            <label className="admin-profile-field fullinput">
-              <span>Controller of Examiner <span class="admin-profile-checkbox"> <input type="checkbox" /> Show Controller on Certificate</span> </span>
-              <input
-                className="admin-profile-password-input"
-                type="text" placeholder="Enter Controller of Examiner"
-              />
-            </label>
-
-            <label className="admin-profile-field fullinput">
-              <span>Upload Controller Examiner Signature <span class="admin-profile-checkbox"> <input type="checkbox" /> Show Controller on Certificate</span> </span>
-              <div className="signature-field">
-     
-
-      <div className="signature-upload-box">
-        <div className="signature-upload-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        <strong>Upload your signature</strong>
-        <button type="button" className="signature-browse-btn">
-          Browse files
-        </button>
-
-       
-      </div>
-       <div className="signature-draw-box">
-        <span className="signature-title">
-          Preview of your signature
-        </span>
-
-        <div className="signature-canvas">
-          <svg
-            viewBox="0 0 280 70"
-            className="signature-demo"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 45 Q35 20 45 38 T70 32 Q80 20 90 40
-                 T115 35 Q130 30 140 36 T165 34
-                 M85 48 Q95 8 105 15 M35 50 Q80 55 130 42
-                 T200 38"
-              fill="none"
-              stroke="#9db2cb"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-            </label>
-
-            
-          </div>
-
-          
-
-         
-        </form>
-        </div>
-      </div>
-
-       <div className="common-card">
-                <div class="panel-header"><div><h3>Owner Details</h3> </div></div>
-
- <div className="cardbody">
-
-
-        {passwordError && (
-          <div className="admin-profile-alert error" role="alert">
-            {passwordError}
-          </div>
-        )}
-
-        {passwordSuccess && (
-          <div className="admin-profile-alert success" role="status">
-            {passwordSuccess}
-          </div>
-        )}
-
-        <form onSubmit={handlePasswordSubmit}>
-          <div className="admin-profile-form-grid">
-            <label className="admin-profile-field fullinput">
-              <span>Owner Name <span class="admin-profile-checkbox"> <input type="checkbox" /> Show Controller on Certificate</span> </span>
-              <input
-                className="admin-profile-password-input"
-                type="text" placeholder="Enter Controller of Examiner"
-              />
-            </label>
-
-            <label className="admin-profile-field fullinput">
-              <span>Owner Photo  </span>
-              <div className="signature-field">
-     
-
-      <div className="signature-upload-box">
-        <div className="signature-upload-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        <strong>Upload your Photo</strong>
-        <button type="button" className="signature-browse-btn">
-          Browse files
-        </button>
-
-       
-      </div>
-       <div className="signature-draw-box">
-        <span className="signature-title">
-          Preview of your Profile
-        </span>
-
-        <div className="signature-canvas">
-          <svg
-            viewBox="0 0 280 70"
-            className="signature-demo"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 45 Q35 20 45 38 T70 32 Q80 20 90 40
-                 T115 35 Q130 30 140 36 T165 34
-                 M85 48 Q95 8 105 15 M35 50 Q80 55 130 42
-                 T200 38"
-              fill="none"
-              stroke="#9db2cb"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-            </label>
-
-             <label className="admin-profile-field fullinput">
-              <span>Owner Signature  </span>
-              <div className="signature-field">
-     
-
-      <div className="signature-upload-box">
-        <div className="signature-upload-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        <strong>Upload your Signature</strong>
-        <button type="button" className="signature-browse-btn">
-          Browse files
-        </button>
-
-       
-      </div>
-       <div className="signature-draw-box">
-        <span className="signature-title">
-          Preview of your Owner Signature
-        </span>
-
-        <div className="signature-canvas">
-          <svg
-            viewBox="0 0 280 70"
-            className="signature-demo"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 45 Q35 20 45 38 T70 32 Q80 20 90 40
-                 T115 35 Q130 30 140 36 T165 34
-                 M85 48 Q95 8 105 15 M35 50 Q80 55 130 42
-                 T200 38"
-              fill="none"
-              stroke="#9db2cb"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-            </label>
-
-
-            
-          </div>
-
-          
-
-         
-        </form>
-        </div>
-        
-      </div>
- <div className="admin-profile-form-footer">
-            <button
-              className="admin-profile-primary-button"
-              type="submit"
-              disabled={savingPassword}
-            >
-              <FiSave />
-              {savingPassword ? "saving..." : "Save Details"}
+              <FiSave /> {saving ? "Saving..." : "Save Details"}
             </button>
           </div>
-     </div>
-      
-    </div>
-
-    
+        </form>
+      </div>
     </div>
   );
 };
