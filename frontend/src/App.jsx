@@ -79,6 +79,9 @@ import EditExpense from "./pages/admin/expenses/EditExpense";
 
 
 import Profile from "./pages/admin/Profile";
+import InstituteSettings from "./pages/admin/InstituteSettings";
+
+
 
 
 import VerifyReceipt from "./pages/public/VerifyReceipt";
@@ -281,6 +284,14 @@ const App = () => {
 
         {/* Admin Profile */}
         <Route path="profile" element={<Profile />} />
+
+        {/* Institute Settings */}
+        <Route
+          path="institute-settings"
+          element={<InstituteSettings />}
+        />
+
+
 
 
         {/* Unknown admin route */}

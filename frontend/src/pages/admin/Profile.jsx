@@ -359,6 +359,59 @@ const Profile = () => {
       </div>
     </div>
             </label>
+
+          <label className="admin-profile-field fullinput">
+              <span>Upload Institute Stamp  </span>
+              <div className="signature-field">
+     
+
+      <div className="signature-upload-box">
+        <div className="signature-upload-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <strong>Upload your Stamp</strong>
+        <button type="button" className="signature-browse-btn">
+          Browse files
+        </button>
+
+       
+      </div>
+       <div className="signature-draw-box">
+        <span className="signature-title">
+          Preview of your Stamp
+        </span>
+
+        <div className="signature-canvas">
+          <svg
+            viewBox="0 0 280 70"
+            className="signature-demo"
+            aria-hidden="true"
+          >
+            <path
+              d="M20 45 Q35 20 45 38 T70 32 Q80 20 90 40
+                 T115 35 Q130 30 140 36 T165 34
+                 M85 48 Q95 8 105 15 M35 50 Q80 55 130 42
+                 T200 38"
+              fill="none"
+              stroke="#9db2cb"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+            </label>
+
           </div>
 
 

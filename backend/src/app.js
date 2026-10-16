@@ -45,6 +45,8 @@ import examResultRoutes from "./routes/examResult.routes.js";
 
 import expenseRoutes from "./routes/expense.routes.js";
 
+import instituteSettingsRoutes from "./routes/instituteSettings.routes.js";
+
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -277,6 +279,10 @@ app.use(
 
 app.use("/api/reports", attendanceReportRoutes);
 
+app.use(
+  "/api/institute-settings",
+  instituteSettingsRoutes
+);
 
 
 // app.use(
