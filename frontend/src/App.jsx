@@ -79,7 +79,7 @@ import EditExpense from "./pages/admin/expenses/EditExpense";
 
 
 import Profile from "./pages/admin/Profile";
-
+import RoleManagement from "./pages/admin/RoleManagement";
 
 
 
@@ -130,12 +130,12 @@ const AppRedirect = () => {
     return <Navigate to="/login" replace />;
   }
 
-  switch (user?.role) {
+    switch (user?.role) {
     case ROLES.ADMIN:
       return <Navigate to="/admin/dashboard" replace />;
 
-    case ROLES.WEBSITE_EDITOR:
-      return <Navigate to="/website-editor/dashboard" replace />;
+    case ROLES.STAFF:
+      return <Navigate to="/staff/dashboard" replace />;
 
     case ROLES.STUDENT:
       return <Navigate to="/student/dashboard" replace />;
@@ -143,6 +143,7 @@ const AppRedirect = () => {
     default:
       return <Navigate to="/unauthorized" replace />;
   }
+
 };
 
 const App = () => {
@@ -187,6 +188,13 @@ const App = () => {
 
         {/* Dashboard */}
         <Route path="dashboard" element={<Dashboard />} />
+
+
+        {/* Keep all your existing routes here. */}
+        <Route
+          path="roles"
+          element={<RoleManagement />}
+        />
 
         {/* Student management */}
         <Route path="students" element={<Students />} />
@@ -295,11 +303,11 @@ const App = () => {
         />
       </Route>
 
-      {/* Website Editor portal */}
+      {/* Staff portal — dashboard implementation comes later */}
       <Route
-        path="/website-editor/dashboard"
+        path="/staff/dashboard"
         element={
-          <RoleRoute allowedRoles={[ROLES.WEBSITE_EDITOR]}>
+          <RoleRoute allowedRoles={[ROLES.STAFF]}>
             <RoleHome />
           </RoleRoute>
         }
