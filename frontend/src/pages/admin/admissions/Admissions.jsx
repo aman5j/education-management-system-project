@@ -17,11 +17,17 @@ import {
   FiSearch,
   FiTrash2,
 } from "react-icons/fi";
+import { FaIdCard } from "react-icons/fa6";
+import { GrDocument } from "react-icons/gr";
+import { LuIdCard } from "react-icons/lu";
+
+
 
 import {
   getAdmissions,
   deleteAdmission,
 } from "../../../services/admissionService";
+
 
 const money = (value) =>
   `₹${Number(
@@ -281,7 +287,7 @@ const Admissions = () => {
                   <th>
                     Status
                   </th>
-
+                  <th>Download</th>
                   <th>
                     Actions
                   </th>
@@ -402,21 +408,45 @@ const Admissions = () => {
 
                         <td>
                           <div className="admission-actions">
+
+                          <Link className="tooltip" data-tooltip="Download Admission Form"
+                              to={`/admin/admissions/${admission._id}`}
+                              
+                            >
+                              <LuIdCard />
+
+                            </Link>
                             <Link
                               to={`/admin/admissions/${admission._id}`}
-                              title="View"
+                              data-tooltip="Download ID Card" className="tooltip"
+                            >
+                             <GrDocument />
+
+                            </Link>
+
+</div>
+                           
+
+
+                        </td>
+                        <td>
+                          <div className="admission-actions">
+                            
+                            <Link
+                              to={`/admin/admissions/${admission._id}`}
+                             data-tooltip="View" className="tooltip"
                             >
                               <FiEye />
                             </Link>
 
                             <Link
                               to={`/admin/admissions/${admission._id}/edit`}
-                              title="Edit"
+                               data-tooltip="Edit" className="tooltip"
                             >
                               <FiEdit2 />
                             </Link>
 
-                            <button
+                            <button  data-tooltip="Delete" className="tooltip"
                               type="button"
                               title="Delete"
                               onClick={() =>

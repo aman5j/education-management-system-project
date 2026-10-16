@@ -432,6 +432,7 @@ input:-webkit-autofill:active {
 .cardbody {
     padding: 20px;
 } 
+
 .common-card-filters {
     display: flex;
     align-items: center;
@@ -530,3 +531,86 @@ height: 68px;
   background: #fafcff;
 }
     
+/* toltip  */
+
+.tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #172b4d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 9px 12px;
+  border-radius: 70px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 5px 15px rgba(23, 43, 77, 0.18);
+}
+
+/* .tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + -2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #172b4d;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+} */
+
+.tooltip:hover::after,
+.tooltip:hover::before,
+.tooltip:focus-visible::after,
+.tooltip:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip:hover::after,
+.tooltip:focus-visible::after {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Tooltip center arrow */
+.tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #172554;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  z-index: 9999;
+}
+
+.tooltip:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
