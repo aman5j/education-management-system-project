@@ -52,13 +52,14 @@ export const AuthProvider = ({ children }) => {
     initializeAuthentication();
   }, [refreshSession]);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, role) => {
     setAuthError("");
 
     try {
       const response = await api.post("/auth/login", {
         email,
         password,
+        role,
       });
 
       const { accessToken, user: loggedInUser } =
