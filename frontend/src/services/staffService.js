@@ -11,6 +11,22 @@ const staffService = {
     const response = await api.post("/staff", staffData);
     return response.data;
   },
+
+  updateStatus: async (staffId, status) => {
+    const response = await api.patch(
+      `/staff/${staffId}/status`,
+      { status }
+    );
+    return response.data;
+  },
+
+  resetPassword: async (staffId, newPassword) => {
+    const response = await api.patch(
+      `/staff/${staffId}/password`,
+      { newPassword }
+    );
+    return response.data;
+  },
 };
 
 export default staffService;

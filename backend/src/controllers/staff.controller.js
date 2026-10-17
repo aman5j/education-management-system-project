@@ -209,3 +209,119 @@ export const createStaff = async (req, res, next) => {
     return next(error);
   }
 };
+
+
+
+
+const isValidStaffId = (id) =>
+  mongoose.Types.ObjectId.isValid(id);
+
+// PATCH /api/staff/:id/status
+export const updateStaffStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!isValidStaffId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid staff account ID.",
+      });
+    }
+
+    if (!["active", "suspended"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be active or suspended.",
+      });
+    }
+
+    const staff = await User.findOne({
+      _id: id,
+      role: "staff",
+    }).select("+refreshTokenHash");
+
+    if (!staff) {
+      return res.status(404).json({
+        success: false,
+        message: "Staff account not found.",
+      });
+    }
+
+    staff.status = status;
+
+    // Revoke the refresh token when suspending the account.
+    if (status === "suspended") {
+      staff.refreshTokenHash = null;
+    }
+
+    await staff.save();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        status === "suspended"
+          ? "Staff account suspended successfully."
+          : "Staff account activated successfully.",
+      data: {
+        id: staff._id.toString(),
+        name: staff.name,
+        email: staff.email,
+        status: staff.status,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// PATCH /api/staff/:id/password
+export const resetStaffPassword = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!isValidStaffId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid staff account ID.",
+      });
+    }
+
+    if (
+      typeof newPassword !== "string" ||
+      newPassword.length < 12 ||
+      newPassword.length > 128
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must contain 12–128 characters.",
+      });
+    }
+
+    const staff = await User.findOne({
+      _id: id,
+      role: "staff",
+    }).select("+refreshTokenHash");
+
+    if (!staff) {
+      return res.status(404).json({
+        success: false,
+        message: "Staff account not found.",
+      });
+    }
+
+    staff.password = newPassword;
+    staff.refreshTokenHash = null;
+
+    await staff.save();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Staff password reset successfully. Share the new temporary password securely.",
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

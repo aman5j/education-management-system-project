@@ -346,3 +346,32 @@
 .staff-management__password-toggle:hover {
   background: #eef2ff;
 }
+
+
+
+
+.staff-management__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.staff-management__row-actions .staff-management__secondary {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.staff-management__row-actions button:first-child {
+  color: #92400e;
+}
+
+.staff-management__row-actions button:last-child {
+  color: #3156d3;
+}
+
+@media (max-width: 900px) {
+  .staff-management__row-actions {
+    min-width: 160px;
+  }
+}

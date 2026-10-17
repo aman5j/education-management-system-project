@@ -172,6 +172,77 @@ const loadRoles = useCallback(async () => {
     }
   }, [notice, showForm, loadStaff]);
 
+
+  
+const handleStatusChange = async (member) => {
+  const nextStatus =
+    member.status === "active" ? "suspended" : "active";
+
+  const confirmed = window.confirm(
+    nextStatus === "suspended"
+      ? `Suspend ${member.name}'s account? They should lose access to the system.`
+      : `Reactivate ${member.name}'s account?`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+  setNotice("");
+
+  try {
+    await staffService.updateStatus(member.id, nextStatus);
+    setNotice(
+      `${member.name}'s account is now ${nextStatus}.`
+    );
+    await loadStaff();
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+        "Unable to update the staff account status."
+    );
+  }
+};
+
+const handlePasswordReset = async (member) => {
+  const newPassword = window.prompt(
+    `Enter a new temporary password for ${member.name} (minimum 12 characters):`
+  );
+
+  if (newPassword === null) return;
+
+  if (newPassword.length < 12 || newPassword.length > 128) {
+    setError("Password must contain 12–128 characters.");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Reset the password for ${member.name}? The current password cannot be recovered.`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+  setNotice("");
+
+  try {
+    const response = await staffService.resetPassword(
+      member.id,
+      newPassword
+    );
+
+    setNotice(
+      response.message ||
+        `Password reset successfully for ${member.name}.`
+    );
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+        "Unable to reset the staff password."
+    );
+  }
+};
+
+
   return (
     <main className="staff-management">
       <header className="staff-management__header">
@@ -416,6 +487,7 @@ const loadRoles = useCallback(async () => {
                     <th>Assigned role</th>
                     <th>Status</th>
                     <th>Created</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -448,6 +520,28 @@ const loadRoles = useCallback(async () => {
                           ? new Date(member.createdAt).toLocaleDateString()
                           : "—"}
                       </td>
+
+                      
+                        <td>
+                        <div className="staff-management__row-actions">
+                            <button
+                            type="button"
+                            className="staff-management__secondary"
+                            onClick={() => handleStatusChange(member)}
+                            >
+                            {member.status === "active" ? "Suspend" : "Activate"}
+                            </button>
+
+                            <button
+                            type="button"
+                            className="staff-management__secondary"
+                            onClick={() => handlePasswordReset(member)}
+                            >
+                            Reset Password
+                            </button>
+                        </div>
+                        </td>
+
                     </tr>
                   ))}
                 </tbody>
