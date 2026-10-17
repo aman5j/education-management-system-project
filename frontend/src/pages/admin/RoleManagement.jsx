@@ -362,15 +362,13 @@ export default function RoleManagement() {
 
       {showForm && (
         <div
-          className="role-management__modal-backdrop"
+          className="role-management__page-backdrop"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) closeForm();
           }}
         >
           <section
-            className="role-management__modal"
-            role="dialog"
-            aria-modal="true"
+            className="role-management__form-page"
             aria-labelledby="role-form-title"
           >
             <header className="role-management__modal-header">
