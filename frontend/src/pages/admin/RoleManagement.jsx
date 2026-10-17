@@ -69,7 +69,8 @@ export default function RoleManagement() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
-//   const [showForm, setShowForm] = useState(false);
+  const [permissionSearch, setPermissionSearch] = useState("");
+  //   const [showForm, setShowForm] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -108,6 +109,7 @@ export default function RoleManagement() {
 useEffect(() => {
   if (isCreatePage) {
     setEditingRole(null);
+    setPermissionSearch(""); // <-- Add this line here
     setForm({
       name: "",
       label: "",
@@ -141,14 +143,84 @@ useEffect(() => {
 
 
 
-  const permissionGroups = useMemo(() => {
-    return availablePermissions.reduce((groups, permission) => {
+//   const permissionGroups = useMemo(() => {
+//     return availablePermissions.reduce((groups, permission) => {
+//       const group = getPermissionGroup(permission);
+//       if (!groups[group]) groups[group] = [];
+//       groups[group].push(permission);
+//       return groups;
+//     }, {});
+//   }, [availablePermissions]);
+
+
+
+    // const permissionGroups = useMemo(() => {
+    // const query = permissionSearch.trim().toLowerCase();
+
+    // return availablePermissions
+    //     .filter((permission) => {
+    //     if (!query) return true;
+
+    //     const group = getPermissionGroup(permission);
+    //     const groupLabel = GROUP_LABELS[group] || group;
+
+    //     return (
+    //         permission.toLowerCase().includes(query) ||
+    //         groupLabel.toLowerCase().includes(query) ||
+    //         formatPermission(permission).toLowerCase().includes(query)
+    //     );
+    //     })
+    //     .reduce((groups, permission) => {
+    //     const group = getPermissionGroup(permission);
+
+    //     if (!groups[group]) groups[group] = [];
+    //     groups[group].push(permission);
+
+    //     return groups;
+    //     }, {});
+    // }, [availablePermissions, permissionSearch]);
+
+    
+const permissionGroups = useMemo(() => {
+  const query = permissionSearch.trim().toLowerCase();
+
+  // Remove duplicate permission keys before filtering and grouping.
+  const uniquePermissions = [
+    ...new Set(
+      availablePermissions.filter(
+        (permission) =>
+          typeof permission === "string" && permission.trim() !== ""
+      )
+    ),
+  ];
+
+  return uniquePermissions
+    .filter((permission) => {
+      if (!query) return true;
+
       const group = getPermissionGroup(permission);
-      if (!groups[group]) groups[group] = [];
+      const groupLabel = GROUP_LABELS[group] || group;
+
+      return (
+        permission.toLowerCase().includes(query) ||
+        groupLabel.toLowerCase().includes(query) ||
+        formatPermission(permission).toLowerCase().includes(query)
+      );
+    })
+    .reduce((groups, permission) => {
+      const group = getPermissionGroup(permission);
+
+      if (!groups[group]) {
+        groups[group] = [];
+      }
+
       groups[group].push(permission);
+
       return groups;
     }, {});
-  }, [availablePermissions]);
+}, [availablePermissions, permissionSearch]);
+
+
 
   const filteredRoles = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -166,6 +238,7 @@ useEffect(() => {
 const openCreateForm = () => {
   if (saving) return;
 
+  setPermissionSearch("");
   setError("");
   setNotice("");
   setEditingRole(null);
@@ -183,6 +256,8 @@ const openCreateForm = () => {
 
 const openEditForm = (role) => {
   if (saving) return;
+
+  setPermissionSearch("");
   setError("");
   setNotice("");
   navigate(`/admin/roles/${role.id}/edit`);
@@ -510,7 +585,7 @@ const closeForm = () => {
                 </label>
               </div>
 
-              <div className="role-management__permissions-heading">
+              {/* <div className="role-management__permissions-heading">
                 <div>
                   <h3>Permissions</h3>
                   <p>{form.permissions.length} selected</p>
@@ -528,7 +603,103 @@ const closeForm = () => {
                 >
                   Clear selection
                 </button>
-              </div>
+              </div> */}
+
+              
+            <div className="role-management__permissions-heading">
+            <div>
+                <h3>Assign Permissions</h3>
+                <p>
+                {form.permissions.length} of {availablePermissions.length} selected
+                </p>
+            </div>
+
+            <button
+                type="button"
+                className="role-management__text-button"
+                onClick={() =>
+                setForm((current) => ({
+                    ...current,
+                    permissions: [],
+                }))
+                }
+                disabled={saving}
+            >
+                Clear all
+            </button>
+            </div>
+
+            <div className="role-management__permission-search">
+            <input
+                type="search"
+                value={permissionSearch}
+                onChange={(event) => setPermissionSearch(event.target.value)}
+                placeholder="Search permissions, e.g. attendance or reports..."
+                aria-label="Search available permissions"
+            />
+            </div>
+
+            <div className="role-management__permission-groups">
+            {Object.entries(permissionGroups).map(([group, permissions]) => {
+                const selectedCount = permissions.filter((permission) =>
+                form.permissions.includes(permission)
+                ).length;
+
+                const allSelected = selectedCount === permissions.length;
+
+                return (
+                <fieldset
+                    className="role-management__permission-group"
+                    key={group}
+                >
+                    <legend>{GROUP_LABELS[group] || group}</legend>
+
+                    <div className="role-management__group-toolbar">
+                    <span>
+                        {selectedCount} of {permissions.length} selected
+                    </span>
+
+                    <button
+                        type="button"
+                        className="role-management__text-button"
+                        onClick={() => toggleGroup(permissions)}
+                        disabled={saving}
+                    >
+                        {allSelected ? "Clear group" : "Select all"}
+                    </button>
+                    </div>
+
+                    <div className="role-management__permission-options">
+                    {permissions.map((permission) => (
+                        <label
+                        className="role-management__permission-option"
+                        key={permission}
+                        >
+                        <input
+                            type="checkbox"
+                            checked={form.permissions.includes(permission)}
+                            onChange={() => togglePermission(permission)}
+                            disabled={saving}
+                        />
+
+                        <span>
+                            <strong>{formatPermission(permission)}</strong>
+                            <small>{permission}</small>
+                        </span>
+                        </label>
+                    ))}
+                    </div>
+                </fieldset>
+                );
+            })}
+
+            {Object.keys(permissionGroups).length === 0 && (
+                <p className="role-management__no-permissions">
+                No matching permissions. Try another search.
+                </p>
+            )}
+            </div>
+
 
               <div className="role-management__permission-groups">
                 {Object.entries(permissionGroups).map(([group, permissions]) => (
