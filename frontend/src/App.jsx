@@ -13,6 +13,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 
 import Dashboard from "./pages/admin/Dashboard";
 import RoleHome from "./pages/dashboard/RoleHome";
+import StaffDashboard from "./pages/staff/StaffDashboard";
 
 import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
@@ -312,7 +313,7 @@ const App = () => {
         path="/staff/dashboard"
         element={
           <RoleRoute allowedRoles={[ROLES.STAFF]}>
-            <RoleHome />
+            <StaffDashboard />
           </RoleRoute>
         }
       />
