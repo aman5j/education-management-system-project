@@ -143,43 +143,6 @@ useEffect(() => {
 
 
 
-//   const permissionGroups = useMemo(() => {
-//     return availablePermissions.reduce((groups, permission) => {
-//       const group = getPermissionGroup(permission);
-//       if (!groups[group]) groups[group] = [];
-//       groups[group].push(permission);
-//       return groups;
-//     }, {});
-//   }, [availablePermissions]);
-
-
-
-    // const permissionGroups = useMemo(() => {
-    // const query = permissionSearch.trim().toLowerCase();
-
-    // return availablePermissions
-    //     .filter((permission) => {
-    //     if (!query) return true;
-
-    //     const group = getPermissionGroup(permission);
-    //     const groupLabel = GROUP_LABELS[group] || group;
-
-    //     return (
-    //         permission.toLowerCase().includes(query) ||
-    //         groupLabel.toLowerCase().includes(query) ||
-    //         formatPermission(permission).toLowerCase().includes(query)
-    //     );
-    //     })
-    //     .reduce((groups, permission) => {
-    //     const group = getPermissionGroup(permission);
-
-    //     if (!groups[group]) groups[group] = [];
-    //     groups[group].push(permission);
-
-    //     return groups;
-    //     }, {});
-    // }, [availablePermissions, permissionSearch]);
-
     
 const permissionGroups = useMemo(() => {
   const query = permissionSearch.trim().toLowerCase();
@@ -585,26 +548,6 @@ const closeForm = () => {
                 </label>
               </div>
 
-              {/* <div className="role-management__permissions-heading">
-                <div>
-                  <h3>Permissions</h3>
-                  <p>{form.permissions.length} selected</p>
-                </div>
-                <button
-                  type="button"
-                  className="role-management__text-button"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      permissions: [],
-                    }))
-                  }
-                  disabled={saving}
-                >
-                  Clear selection
-                </button>
-              </div> */}
-
               
             <div className="role-management__permissions-heading">
             <div>
@@ -701,46 +644,7 @@ const closeForm = () => {
             </div>
 
 
-              <div className="role-management__permission-groups">
-                {Object.entries(permissionGroups).map(([group, permissions]) => (
-                  <fieldset
-                    className="role-management__permission-group"
-                    key={group}
-                  >
-                    <legend>
-                      <label className="role-management__group-label">
-                        <input
-                          type="checkbox"
-                          checked={permissions.every((permission) =>
-                            form.permissions.includes(permission)
-                          )}
-                          onChange={() => toggleGroup(permissions)}
-                          disabled={saving}
-                        />
-                        <span>{GROUP_LABELS[group] || group}</span>
-                        <small>{permissions.length}</small>
-                      </label>
-                    </legend>
-
-                    <div className="role-management__permission-options">
-                      {permissions.map((permission) => (
-                        <label
-                          className="role-management__permission-option"
-                          key={permission}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={form.permissions.includes(permission)}
-                            onChange={() => togglePermission(permission)}
-                            disabled={saving}
-                          />
-                          <span>{formatPermission(permission)}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                ))}
-              </div>
+              
 
               <footer className="role-management__form-footer">
                 <button
