@@ -104,13 +104,28 @@ export default function RoleManagement() {
   }, [loadData]);
 
   
+
 useEffect(() => {
-  if (!roleId || roles.length === 0) return;
+  if (isCreatePage) {
+    setEditingRole(null);
+    setForm({
+      name: "",
+      label: "",
+      description: "",
+      permissions: [],
+    });
+    setError("");
+    return;
+  }
+
+  if (!roleId) return;
 
   const role = roles.find((item) => item.id === roleId);
 
   if (!role) {
-    setError("Role not found. Return to the role list and try again.");
+    if (roles.length > 0) {
+      setError("Role not found. Return to the role list and try again.");
+    }
     return;
   }
 
@@ -121,7 +136,9 @@ useEffect(() => {
     description: role.description || "",
     permissions: [...(role.permissions || [])],
   });
-}, [roleId, roles]);
+  setError("");
+}, [isCreatePage, roleId, roles]);
+
 
 
   const permissionGroups = useMemo(() => {
@@ -145,12 +162,24 @@ useEffect(() => {
   }, [roles, search]);
 
 
+
 const openCreateForm = () => {
   if (saving) return;
+
   setError("");
   setNotice("");
+  setEditingRole(null);
+
+  setForm({
+    name: "",
+    label: "",
+    description: "",
+    permissions: [],
+  });
+
   navigate("/admin/roles/new");
 };
+
 
 const openEditForm = (role) => {
   if (saving) return;
