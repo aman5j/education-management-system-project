@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiShield, FiUser, FiMail, FiCheckCircle, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
-import { useAuth as useAuthGuard } from "../../context/AuthContext";
 import "./StaffDashboard.css";
 
 const StaffDashboard = () => {
