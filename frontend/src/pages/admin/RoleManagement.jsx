@@ -1,7 +1,15 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import roleService from "../../services/roleService";
 import "./RoleManagement.css";
+
 
 const GROUP_LABELS = {
   dashboard: "Dashboard",
@@ -44,6 +52,14 @@ const emptyForm = {
 };
 
 export default function RoleManagement() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { roleId } = useParams();
+
+    const isCreatePage = location.pathname === "/admin/roles/new";
+    const showForm = isCreatePage || Boolean(roleId);
+
+
   const [roles, setRoles] = useState([]);
   const [availablePermissions, setAvailablePermissions] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -53,7 +69,7 @@ export default function RoleManagement() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
+//   const [showForm, setShowForm] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -87,6 +103,27 @@ export default function RoleManagement() {
     loadData();
   }, [loadData]);
 
+  
+useEffect(() => {
+  if (!roleId || roles.length === 0) return;
+
+  const role = roles.find((item) => item.id === roleId);
+
+  if (!role) {
+    setError("Role not found. Return to the role list and try again.");
+    return;
+  }
+
+  setEditingRole(role);
+  setForm({
+    name: role.name,
+    label: role.label,
+    description: role.description || "",
+    permissions: [...(role.permissions || [])],
+  });
+}, [roleId, roles]);
+
+
   const permissionGroups = useMemo(() => {
     return availablePermissions.reduce((groups, permission) => {
       const group = getPermissionGroup(permission);
@@ -107,33 +144,27 @@ export default function RoleManagement() {
     );
   }, [roles, search]);
 
-  const openCreateForm = () => {
-    setEditingRole(null);
-    setForm(emptyForm);
-    setError("");
-    setNotice("");
-    setShowForm(true);
-  };
 
-  const openEditForm = (role) => {
-    setEditingRole(role);
-    setForm({
-      name: role.name,
-      label: role.label,
-      description: role.description || "",
-      permissions: [...(role.permissions || [])],
-    });
-    setError("");
-    setNotice("");
-    setShowForm(true);
-  };
+const openCreateForm = () => {
+  if (saving) return;
+  setError("");
+  setNotice("");
+  navigate("/admin/roles/new");
+};
 
-  const closeForm = () => {
-    if (saving) return;
-    setShowForm(false);
-    setEditingRole(null);
-    setForm(emptyForm);
-  };
+const openEditForm = (role) => {
+  if (saving) return;
+  setError("");
+  setNotice("");
+  navigate(`/admin/roles/${role.id}/edit`);
+};
+
+const closeForm = () => {
+  if (saving) return;
+  setError("");
+  navigate("/admin/roles");
+};
+
 
   const updateField = (event) => {
     const { name, value } = event.target;
@@ -196,10 +227,18 @@ export default function RoleManagement() {
         setNotice("Role created successfully.");
       }
 
-      setShowForm(false);
       setEditingRole(null);
-      setForm(emptyForm);
-      await loadData();
+    setForm(emptyForm);
+    await loadData();
+    navigate("/admin/roles", {
+    replace: true,
+    state: {
+        notice: editingRole
+        ? "Role updated successfully."
+        : "Role created successfully.",
+    },
+    });
+
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -233,8 +272,10 @@ export default function RoleManagement() {
   };
 
   return (
-    <main className="role-management">
-      <header className="role-management__header">
+  <main className="role-management">
+    {!showForm && (
+      <>
+        <header className="role-management__header">
         <div>
           <p className="role-management__eyebrow">ADMINISTRATION</p>
           <h1>Role Management</h1>
@@ -360,6 +401,10 @@ export default function RoleManagement() {
         )}
       </section>
 
+      {/* Insert them right here */}
+      </>
+    )}
+
       {showForm && (
         <div
           className="role-management__page-backdrop"
@@ -380,12 +425,11 @@ export default function RoleManagement() {
               </div>
               <button
                 type="button"
-                className="role-management__close"
+                className="role-management__secondary-button"
                 onClick={closeForm}
                 disabled={saving}
-                aria-label="Close form"
-              >
-                ×
+                >
+                ← Back to Roles
               </button>
             </header>
 
@@ -524,5 +568,7 @@ export default function RoleManagement() {
         </div>
       )}
     </main>
+    
+    
   );
 }

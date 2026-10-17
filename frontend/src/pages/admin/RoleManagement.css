@@ -563,3 +563,71 @@
 
 
 
+
+.role-management__form-page {
+  width: 100%;
+  max-width: 1100px;
+  min-height: 100%;
+  margin: 0 auto;
+  overflow: visible;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(15 23 42 / 4%);
+}
+
+.role-management__page-backdrop {
+  position: static;
+  inset: auto;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+}
+
+.role-management__form-page .role-management__modal-header {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px;
+  background: #fff;
+}
+
+.role-management__form-page form {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.role-management__form-page .role-management__form-fields {
+  padding: 24px 28px;
+}
+
+.role-management__form-page .role-management__permissions-heading {
+  padding: 18px 28px;
+}
+
+.role-management__form-page .role-management__permission-groups {
+  overflow: visible;
+  padding: 24px 28px;
+}
+
+.role-management__form-page .role-management__form-footer {
+  position: static;
+  padding: 18px 28px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  .role-management__form-page .role-management__modal-header,
+  .role-management__form-page .role-management__form-fields,
+  .role-management__form-page .role-management__permissions-heading,
+  .role-management__form-page .role-management__permission-groups,
+  .role-management__form-page .role-management__form-footer {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}

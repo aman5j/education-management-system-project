@@ -191,10 +191,10 @@ const App = () => {
 
 
         {/* Keep all your existing routes here. */}
-        <Route
-          path="roles"
-          element={<RoleManagement />}
-        />
+        <Route path="roles" element={<RoleManagement />} />
+        <Route path="roles/new" element={<RoleManagement />} />
+        <Route path="roles/:roleId/edit" element={<RoleManagement />} />
+        
 
         {/* Student management */}
         <Route path="students" element={<Students />} />
