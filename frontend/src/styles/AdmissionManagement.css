@@ -120,10 +120,7 @@
   overflow: hidden;
 }
 
-.admission-form-section {
-  padding: 22px;
-  border-bottom: 1px solid #e5e7eb;
-}
+
 
 .admission-section-header {
   margin-bottom: 18px;
@@ -142,82 +139,12 @@
   font-size: 12px;
 }
 
-.admission-form-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
+
 
 .admission-form-full {
   grid-column: 1 / -1;
 }
 
-.admission-form-group {
-  min-width: 0;
-}
-
-.admission-form-group label {
-  display: block;
-  margin-bottom: 7px;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.admission-form-group input,
-.admission-form-group select,
-.admission-form-group textarea {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #d1d5db;
-  border-radius: 7px;
-  outline: 0;
-  background: #ffffff;
-  color: #1e293b;
-  font-family: inherit;
-  font-size: 13px;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.admission-form-group input,
-.admission-form-group select {
-  height: 40px;
-  padding: 0 12px;
-}
-
-.admission-form-group textarea {
-  min-height: 95px;
-  padding: 11px 12px;
-  resize: vertical;
-}
-
-.admission-form-group input:focus,
-.admission-form-group select:focus,
-.admission-form-group textarea:focus {
-  border-color: #2563eb;
-  box-shadow:
-    0 0 0 3px
-    rgba(37, 99, 235, 0.09);
-}
-
-.admission-form-group input:read-only {
-  background: #f8fafc;
-  color: #64748b;
-}
-
-.admission-form-group select:disabled,
-.admission-form-group input:disabled {
-  background: #f8fafc;
-  color: #94a3b8;
-  cursor: not-allowed;
-}
-
-.required {
-  color: #dc2626;
-}
 
 .admission-form-help {
   display: block;
@@ -227,7 +154,7 @@
 }
 
 .admission-checkbox-label {
-  height: 40px;
+
   margin: 0 !important;
   display: flex !important;
   align-items: center;
@@ -236,76 +163,30 @@
 }
 
 .admission-checkbox-label input {
-  width: 16px !important;
-  height: 16px !important;
+  width: 14px !important;
+  height: 14px !important;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: #034584;
+  margin: 0;
 }
 
 /* CALCULATION */
 
 .admission-calculation-card {
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #f8fafc;
-  display: grid;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-  gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 20px; 
 }
-
 .admission-calculation-card > div {
-  padding: 13px;
-  border: 1px solid #e2e8f0;
-  border-radius: 7px;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid;
+    border-radius: 3px;
 }
 
-.admission-calculation-card span {
-  color: #64748b;
-  font-size: 11px;
-}
 
-.admission-calculation-card strong {
-  color: #0f172a;
-  font-size: 14px;
-}
 
-.admission-calculation-card .discount-value {
-  color: #dc2626;
-}
-
-.admission-final-amount {
-  border-color: #bfdbfe !important;
-  background: #eff6ff !important;
-}
-
-.admission-final-amount strong {
-  color: #2563eb;
-  font-size: 17px;
-}
-
-.admission-remaining-amount {
-  border-color: #fed7aa !important;
-  background: #fff7ed !important;
-}
-
-.admission-remaining-amount strong {
-  color: #c2410c;
-  font-size: 17px;
-}
-
-.admission-form-actions {
-  padding: 16px 22px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
 
 .admission-form-error,
 .admission-error {
@@ -533,63 +414,6 @@
   letter-spacing: 0.08em;
 }
 
-/* =========================================================
-   HEADER BUTTONS
-========================================================= */
-
-.admission-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.admission-primary-button,
-.admission-export-button,
-.admission-secondary-button {
-  height: 40px;
-
-  padding: 0 16px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  border-radius: 8px;
-
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-.admission-export-button,
-.admission-secondary-button {
-  border: 1px solid var(--border-color);
-  background: #ffffff;
-  color: var(--text-secondary);
-}
-
-.admission-export-button:hover,
-.admission-secondary-button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-
-.admission-search svg,
-.admission-filter-field svg {
-  flex-shrink: 0;
-
-  color: #94a3b8;
-}
-
 
 /* =========================================================
    ERROR
@@ -798,32 +622,20 @@
   font-size: 11px;
 }
 
-.admission-pagination > div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.admission-calculation-card > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 3px;
+    padding: 11px 6px;
+    border: none;
 }
-
-.admission-pagination button,
-.admission-pagination select {
-  height: 32px;
-
-  padding: 0 10px;
-
-  border: 1px solid var(--border-color);
-  border-radius: 7px;
-
-  background: #ffffff;
-
-  color: #64748b;
-
-  font-family: inherit;
-
-  font-size: 11px;
-}
-
-.admission-pagination button {
-  cursor: pointer;
+.admission-calculation-card > div span {
+    font-size: 11px;
+    color: #000;
+    font-weight: 500;
+    text-transform: uppercase;
+    margin-bottom: 3px;
 }
 
 .admission-pagination button:disabled {
@@ -859,15 +671,9 @@
   padding: 24px;
 }
 
-.admission-form-section {
-  padding: 22px 0;
 
-  border-bottom: 1px solid #eef2f7;
-}
 
-.admission-form-section:first-child {
-  padding-top: 0;
-}
+
 
 .admission-section-header {
   margin-bottom: 20px;
@@ -896,82 +702,18 @@
   display: grid;
 
   grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+    repeat(3, minmax(0, 1fr));
 
   gap: 18px;
 }
 
-.admission-form-group {
-  min-width: 0;
 
-  display: flex;
-  flex-direction: column;
-
-  gap: 7px;
-}
 
 .admission-form-full {
   grid-column: 1 / -1;
 }
 
-.admission-form-group label {
-  color: #475569;
 
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.admission-form-group input,
-.admission-form-group select,
-.admission-form-group textarea {
-  width: 100%;
-
-  box-sizing: border-box;
-
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-
-  outline: none;
-
-  padding: 11px 12px;
-
-  background: #ffffff;
-
-  color: var(--text-primary);
-
-  font-family: inherit;
-  font-size: 13px;
-}
-
-.admission-form-group input,
-.admission-form-group select {
-  height: 42px;
-}
-
-.admission-form-group textarea {
-  resize: vertical;
-}
-
-.admission-form-group input:focus,
-.admission-form-group select:focus,
-.admission-form-group textarea:focus {
-  border-color: #2563eb;
-
-  box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.08);
-}
-
-.admission-form-group select:disabled {
-  background: #f8fafc;
-
-  color: #64748b;
-
-  cursor: not-allowed;
-}
-
-.required {
-  color: #dc2626;
-}
 
 .admission-form-help {
   color: #94a3b8;
@@ -994,64 +736,7 @@
   font-size: 13px;
 }
 
-/* =========================================================
-   CALCULATION
-========================================================= */
 
-.admission-calculation-card {
-  margin-top: 20px;
-
-  padding: 18px;
-
-  border: 1px solid #dbeafe;
-  border-radius: 10px;
-
-  background: #f8fbff;
-}
-
-.admission-calculation-card > div {
-  min-height: 38px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
-
-  border-bottom: 1px solid #e5eefc;
-
-  color: #64748b;
-
-  font-size: 13px;
-}
-
-.admission-calculation-card > div:last-child {
-  border-bottom: 0;
-}
-
-.admission-calculation-card strong {
-  color: #334155;
-}
-
-.admission-calculation-card .discount-value {
-  color: #dc2626;
-}
-
-.admission-calculation-card .admission-final-amount {
-  margin-top: 8px;
-
-  padding-top: 12px;
-
-  color: #0f172a;
-
-  font-size: 15px;
-}
-
-.admission-final-amount strong {
-  color: #2563eb;
-
-  font-size: 18px;
-}
 
 /* =========================================================
    FORM ACTIONS

@@ -483,7 +483,7 @@ position: relative;
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 5px;
   background: #ffffff;
   color: var(--text-secondary);
   display: inline-flex;
@@ -615,3 +615,71 @@ height: 68px;
   opacity: 1;
   visibility: visible;
 }
+
+
+/* input field design css  */
+.input-felid{
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.input-felid label {
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+}
+.input-felid input, .input-felid select, .input-felid textarea {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    outline: none;
+    padding: 11px 12px;
+    background: #ffffff;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+}
+
+
+
+.input-felid input:focus,
+.input-felid select:focus,
+.input-felid textarea:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.input-felid select:disabled {
+  background: #f8fafc;
+
+  color: #64748b;
+
+  cursor: not-allowed;
+}
+
+
+.input-felid input:read-only {
+  background: #f8fafc;
+  color: #64748b;
+  outline: none;
+  border: 1px solid var(--border-color);
+
+}
+.input-felid input:read-only:focus {
+  box-shadow: none;
+}
+
+.input-felid select:disabled,
+.admission-form-group input:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+
+.required {
+  color: #dc2626;
+}
+

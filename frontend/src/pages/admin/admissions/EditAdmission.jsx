@@ -115,18 +115,8 @@ const EditAdmission = () => {
 
   return (
     <div className="admission-page">
-      <div className="admission-page-header">
-        <div>
-          <h1>
-            Edit Admission
-          </h1>
+      <div class="page-header"><div><h1>Edit Admission</h1></div></div>
 
-          <p>
-            Update admission
-            information.
-          </p>
-        </div>
-      </div>
 
       <AdmissionForm
         initialData={
