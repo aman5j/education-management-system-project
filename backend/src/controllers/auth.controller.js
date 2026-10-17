@@ -122,7 +122,16 @@ export const register = async (req, res) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
+
+    const allowedLoginRoles = [ROLES.ADMIN, ROLES.STAFF, ROLES.STUDENT];
+
+    if (!role || !allowedLoginRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a valid portal: Admin, Staff, or Student.",
+      });
+    }
 
     if (!email || !password) {
       return res.status(400).json({
@@ -141,6 +150,13 @@ export const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password.",
+      });
+    }
+
+    if (user.role !== role) {
+      return res.status(401).json({
+        success: false,
+        message: "The selected portal does not match this account. Please choose the correct portal.",
       });
     }
 
