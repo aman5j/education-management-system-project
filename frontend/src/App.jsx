@@ -80,6 +80,7 @@ import EditExpense from "./pages/admin/expenses/EditExpense";
 
 import Profile from "./pages/admin/Profile";
 import RoleManagement from "./pages/admin/RoleManagement";
+import StaffManagement from "./pages/admin/StaffManagement";
 
 
 
@@ -194,7 +195,10 @@ const App = () => {
         <Route path="roles" element={<RoleManagement />} />
         <Route path="roles/new" element={<RoleManagement />} />
         <Route path="roles/:roleId/edit" element={<RoleManagement />} />
-        
+
+        {/* Staff Mangement */}
+        <Route path="staff" element={<StaffManagement />} />
+
 
         {/* Student management */}
         <Route path="students" element={<Students />} />

@@ -165,7 +165,7 @@ const menuItems = [
 
   {
     label: "Faculty & Staff",
-    path: "/admin/faculty-staff",
+    path: "/admin/staff",
     icon: FiUsers,
   },
 

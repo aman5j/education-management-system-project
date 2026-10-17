@@ -1,0 +1,348 @@
+
+.staff-management {
+  width: 100%;
+  min-width: 0;
+  padding: 24px;
+  color: #172033;
+}
+
+.staff-management *,
+.staff-management *::before,
+.staff-management *::after {
+  box-sizing: border-box;
+}
+
+.staff-management__header,
+.staff-management__panel-header,
+.staff-management__toolbar,
+.staff-management__form-footer,
+.staff-management__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.staff-management__header {
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.staff-management__header h1 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 30px);
+}
+
+.staff-management__header p,
+.staff-management__panel-header p,
+.staff-management__toolbar p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.staff-management__primary,
+.staff-management__secondary {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.staff-management__primary {
+  color: #fff;
+  background: #3156d3;
+  border-color: #3156d3;
+}
+
+.staff-management__primary:hover:not(:disabled) {
+  background: #2445b5;
+}
+
+.staff-management__secondary {
+  color: #334155;
+  background: #fff;
+}
+
+.staff-management button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.staff-management__alert {
+  margin-bottom: 16px;
+  padding: 12px 15px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.staff-management__alert--error {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.staff-management__alert--success {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.staff-management__panel {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
+}
+
+.staff-management__panel-header,
+.staff-management__toolbar {
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.staff-management__panel-header h2,
+.staff-management__toolbar h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.staff-management__filters {
+  display: flex;
+  gap: 10px;
+}
+
+.staff-management input,
+.staff-management select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #dbe2ea;
+  border-radius: 7px;
+  outline: none;
+  color: #172033;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.staff-management input:focus,
+.staff-management select:focus {
+  border-color: #5274e8;
+  outline: 3px solid rgb(49 86 211 / 10%);
+}
+
+.staff-management__filters input {
+  width: min(260px, 100%);
+}
+
+.staff-management__filters select {
+  width: 150px;
+}
+
+.staff-management__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 24px 22px;
+}
+
+.staff-management__form-grid label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.staff-management__form-grid small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.staff-management__full-width {
+  grid-column: 1 / -1;
+}
+
+.staff-management__form-footer {
+  justify-content: flex-end;
+  padding: 16px 22px;
+  border-top: 1px solid #edf0f5;
+}
+
+.staff-management__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.staff-management__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.staff-management__table th {
+  padding: 13px 17px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.staff-management__table td {
+  padding: 15px 17px;
+  border-top: 1px solid #edf0f5;
+  color: #475569;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.staff-management__table tbody tr:hover {
+  background: #fbfcfe;
+}
+
+.staff-management__table td:first-child strong,
+.staff-management__table td:first-child small {
+  display: block;
+}
+
+.staff-management__table td:first-child strong {
+  color: #172033;
+}
+
+.staff-management__table td:first-child small {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.staff-management__status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.staff-management__status--active {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.staff-management__status--inactive {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.staff-management__state {
+  padding: 40px 20px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+}
+
+.staff-management__state strong {
+  display: block;
+  color: #334155;
+  font-size: 15px;
+}
+
+.staff-management__state p {
+  margin: 7px 0 0;
+}
+
+.staff-management__pagination {
+  padding: 15px 20px;
+  border-top: 1px solid #edf0f5;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.staff-management__pagination > div {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .staff-management {
+    padding: 15px;
+  }
+
+  .staff-management__header,
+  .staff-management__panel-header,
+  .staff-management__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .staff-management__form-grid {
+    grid-template-columns: 1fr;
+    padding: 18px 16px;
+  }
+
+  .staff-management__full-width {
+    grid-column: auto;
+  }
+
+  .staff-management__filters {
+    flex-direction: column;
+  }
+
+  .staff-management__filters input,
+  .staff-management__filters select {
+    width: 100%;
+  }
+
+  .staff-management__pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
+
+
+
+.staff-management__password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.staff-management__password-field input {
+  padding-right: 65px;
+}
+
+.staff-management__password-toggle {
+  position: absolute;
+  right: 8px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 5px;
+  color: #3156d3;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.staff-management__password-toggle:hover {
+  background: #eef2ff;
+}
