@@ -20,19 +20,14 @@
   display: grid;
   grid-template-columns: minmax(225px, 0.72fr) minmax(0, 1.45fr);
   align-items: start;
-  gap: 14px;
+  gap: 20px;
 }
 
 .admin-profile-sidebar-card {
   position: sticky;
   top: 75px;
-  min-width: 0;
-  padding: 20px 14px 16px;
+  padding: 20px;
   overflow: hidden;
-  border: 1px solid #e5eaf1;
-  border-radius: 5px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(16 24 40 / 5%);
   text-align: center;
 }
 
@@ -41,7 +36,7 @@
   top: 0;
   right: 0;
   left: 0;
-  height: 72px;
+  height: 100px;
   background: linear-gradient(135deg, #1e3a8a, #1d4ed8 60%, #3b82f6);
   content: "";
 }
@@ -60,22 +55,21 @@
 }
 
 .admin-profile-avatar {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  width: 88px;
-  height: 88px;
-  margin: 5px auto 18px;
-  place-items: center;
-  overflow: hidden;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  outline: 2px solid #315fe8;
-  background: #e8efff;
-  color: #244fc5;
-  font-size: 24px;
-  font-weight: 750;
-  box-shadow: 0 2px 4px rgb(16 24 40 / 15%);
+ position: relative;
+    z-index: 1;
+    display: grid;
+    width: 110px;
+    height: 110px;
+    margin: 5px auto 18px;
+    place-items: center;
+    overflow: hidden;
+    border: 4px solid #1d3e9b;
+    border-radius: 50%;
+    background: #e8efff;
+    color: #244fc5;
+    font-size: 24px;
+    font-weight: 750;
+    box-shadow: 0px 7px 3px #1e3d9752;
 }
 
 .admin-profile-avatar img {
@@ -91,29 +85,31 @@
 }
 
 .admin-profile-identity h2 {
-  margin: 0 0 13px;
+  margin: 0 0 20px;
   overflow-wrap: anywhere;
-  font-size: 15px;
+  font-size: 20px;
   text-transform: uppercase;
 }
 
 .admin-profile-identity p {
   display: flex;
-  min-height: 35px;
-  align-items: center;
-  gap: 7px;
-  margin: 0 0 6px;
-  padding: 8px;
-  border: 1px solid #e9edf3;
-  border-radius: 5px;
-  background: #fafbfc;
-  color: #64748b;
-  font-size: 11px;
-  text-align: left;
+    min-height: 35px;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid #dddee0;
+    border-radius: 5px;
+    background: #fafbfc;
+    color: #64748b;
+    font-size: 13px;
+    text-align: left;
 }
 
 .admin-profile-identity p svg {
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
 }
 
 .admin-profile-identity p span {
@@ -124,24 +120,24 @@
   display: block;
   margin: 10px 0;
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .admin-profile-password-toggle {
   display: flex;
-  width: 100%;
-  min-height: 35px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin-top: 8px;
-  border: 1px solid #3158c9;
-  border-radius: 5px;
-  background: #fff;
-  color: #244fc5;
-  font-size: 11px;
-  cursor: pointer;
+    width: 100%;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 12px;
+    border: 1px solid rgb(3 69 132);
+    border-radius: 5px;
+    background: #fff;
+    color: rgb(3 69 132);
+    font-size: 14px;
+    cursor: pointer;
 }
 
 .admin-profile-password-form {
@@ -161,7 +157,7 @@
 .admin-profile-password-form input {
   width: 100%;
   min-height: 34px;
-  padding: 7px;
+  padding: 12px 15px; 
   border: 1px solid #dce3ed;
   border-radius: 5px;
 }
@@ -173,12 +169,7 @@
 }
 
 .admin-profile-section {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid #e5eaf1;
-  border-radius: 5px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(16 24 40 / 4%);
+
 }
 
 .admin-profile-section > header {
@@ -198,9 +189,22 @@
 }
 
 .admin-profile-section-body {
-  padding: 14px;
+  padding: 20px;
 }
-
+.preview-image {
+    position: absolute;
+    top: 40px;
+    right: 20px;
+    z-index: 9;
+    width: 30px;
+    height: 30px;
+    background: #06488f;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 35px;
+}
 .admin-profile-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -213,8 +217,8 @@
   flex-direction: column;
   gap: 7px;
   color: #334155;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .admin-profile-field.fullinput {
@@ -226,22 +230,21 @@
   display: block;
 }
 
-.admin-profile-input {
+.admin-profile-input, .admin-profile-password-form input {
   width: 100%;
   min-width: 0;
   min-height: 36px;
-  padding: 8px 10px;
+  padding: 12px 15px;
   border: 1px solid #dce3ed;
   border-radius: 6px;
   outline: none;
   background: #fff;
   color: #25334a;
-  font: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
 }
 
-.admin-profile-input:focus {
+.admin-profile-input:focus, .admin-profile-password-form input:focus{
   border-color: #4e76e8;
   box-shadow: 0 0 0 2px rgb(49 88 201 / 9%);
 }
@@ -256,7 +259,7 @@
   min-height: 36px;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 12px 15px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   background: #f8fafc;
@@ -293,6 +296,7 @@
   border-radius: 7px;
   background: #fbfdff;
   text-align: center;
+  position: relative;
 }
 
 .admin-profile-upload-icon {
@@ -308,9 +312,10 @@
 }
 
 .admin-profile-upload-box strong {
-  overflow-wrap: anywhere;
-  font-size: 10px;
-  font-weight: 500;
+ overflow-wrap: anywhere;
+    font-size: 10px;
+    font-weight: 500;
+    color: #6b7a90;
 }
 
 .admin-profile-upload-box small {
@@ -318,6 +323,7 @@
   color: #8592a6;
   font-size: 9px;
   line-height: 1.4;
+  font-weight: 400;
 }
 
 .admin-profile-browse-button {
@@ -405,25 +411,16 @@
 }
 
 .admin-profile-save-button {
-  display: inline-flex;
-  min-height: 36px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 6px;
-  background: #3158c9;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 650;
-  cursor: pointer;
+ width: 100%;
 }
 
 .admin-profile-save-button:hover:not(:disabled) {
   background: #2447ad;
 }
 
+.admin-profile-footer .themebtn{  
+  width: 100%;
+}
 .admin-profile-save-button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -435,6 +432,10 @@
   border: 1px solid;
   border-radius: 6px;
   font-size: 12px;
+      position: fixed;
+    top: 70px;
+    z-index: 9999999;
+    right: 19px;
 }
 
 .admin-profile-alert.error {
@@ -507,7 +508,7 @@
 .admin-profile-preview-canvas img {
   display: block;
   width: 100%;
-  height: 110px;
+  max-height: 80px;
   object-fit: contain;
 }
 
