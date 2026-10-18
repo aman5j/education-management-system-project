@@ -23,6 +23,7 @@ import {
 } from "react-icons/fi";
 import { HiOutlineBars3 } from "react-icons/hi2";
 
+import { useAuth } from "../context/AuthContext";
 
 import {
   NavLink,
@@ -250,8 +251,23 @@ const Sidebar = ({
   onCloseMobile,
   openMenus,
   onToggleMenu,
+  dashboardPath = "/admin/dashboard",
 }) => {
   const location = useLocation();
+
+  // 1. Add auth and visible menu calculation here
+  const { user } = useAuth();
+
+const visibleMenuItems =
+  user?.role === "admin"
+    ? menuItems
+    : [
+        {
+          label: "Dashboard",
+          path: dashboardPath,
+          icon: FiGrid,
+        },
+      ];
 
   return (
     <>
@@ -275,7 +291,8 @@ const Sidebar = ({
       >
         <div className="sidebar-header">
           <NavLink
-            to="/admin/dashboard"
+            // to="/admin/dashboard"
+            to={dashboardPath}
             className="sidebar-brand"
             onClick={onCloseMobile}
           >
@@ -306,7 +323,9 @@ const Sidebar = ({
         <div className="sidebar-scroll">
           
           <nav className="sidebar-navigation">
-            {menuItems.map((item) => {
+            
+            {/* {menuItems.map((item) => { */}
+            {visibleMenuItems.map((item) => {
               const Icon = item.icon;
 
               const active =

@@ -309,14 +309,36 @@ const App = () => {
       </Route>
 
       {/* Staff portal — dashboard implementation comes later */}
-      <Route
+      {/* <Route
         path="/staff/dashboard"
         element={
           <RoleRoute allowedRoles={[ROLES.STAFF]}>
             <StaffDashboard />
           </RoleRoute>
         }
-      />
+      /> */}
+
+      <Route
+        path="/staff"
+        element={
+          <RoleRoute allowedRoles={[ROLES.STAFF]}>
+            <AdminLayout />
+          </RoleRoute>
+        }
+      >
+        <Route
+          index
+          element={<Navigate to="dashboard" replace />}
+        />
+        <Route
+          path="dashboard"
+          element={<StaffDashboard />}
+        />
+        <Route
+          path="*"
+          element={<Navigate to="/staff/dashboard" replace />}
+        />
+      </Route>
 
       {/* Student portal */}
       <Route

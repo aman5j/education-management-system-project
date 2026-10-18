@@ -5,6 +5,7 @@ import {
 
 import {
   Outlet,
+  useLocation,
 } from "react-router-dom";
 
 import Sidebar from "./Sidebar";
@@ -16,6 +17,14 @@ const SIDEBAR_STORAGE_KEY =
   "ems_admin_sidebar_collapsed";
 
 const AdminLayout = () => {
+  const location = useLocation();
+
+  const isStaffPortal = location.pathname.startsWith("/staff");
+
+  const dashboardPath = isStaffPortal
+    ? "/staff/dashboard"
+    : "/admin/dashboard";
+
   const [
     collapsed,
     setCollapsed,
@@ -94,29 +103,18 @@ const AdminLayout = () => {
     >
       <Sidebar
         collapsed={collapsed}
-        mobileOpen={
-          mobileSidebarOpen
-        }
-        onToggle={() =>
-          setCollapsed(
-            (previous) =>
-              !previous
-          )
-        }
-        onCloseMobile={() =>
-          setMobileSidebarOpen(false)
-        }
+        mobileOpen={mobileSidebarOpen}
+        onToggle={() => setCollapsed((previous) => !previous)}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
         openMenus={openMenus}
-        onToggleMenu={
-          handleToggleMenu
-        }
+        onToggleMenu={handleToggleMenu}
+        dashboardPath={dashboardPath}
       />
 
       <div className="admin-main">
         <Topbar
-          onOpenMobileSidebar={() =>
-            setMobileSidebarOpen(true)
-          }
+          onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+          dashboardPath={dashboardPath}
         />
 
         <main className="admin-content">

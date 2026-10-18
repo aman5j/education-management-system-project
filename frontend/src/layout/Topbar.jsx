@@ -27,6 +27,7 @@ import "./AdminLayout.css";
 
 const Topbar = ({
   onOpenMobileSidebar,
+  dashboardPath = "/admin/dashboard",
 }) => {
   const navigate = useNavigate();
 
