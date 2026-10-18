@@ -1,4 +1,3 @@
-
 import express from "express";
 
 import {
@@ -7,18 +6,29 @@ import {
   updateAttendance,
 } from "../controllers/attendance.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorizeRoles("admin"));
 
-router.get("/", getAttendance);
-router.post("/", createAttendance);
-router.patch("/:id", updateAttendance);
+router.get(
+  "/",
+  requirePermission("attendance.view"),
+  getAttendance
+);
+
+router.post(
+  "/",
+  requirePermission("attendance.manage"),
+  createAttendance
+);
+
+router.patch(
+  "/:id",
+  requirePermission("attendance.manage"),
+  updateAttendance
+);
 
 export default router;

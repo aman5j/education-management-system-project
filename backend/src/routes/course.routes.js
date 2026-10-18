@@ -9,13 +9,10 @@ import {
   updateCourseStatus,
 } from "../controllers/course.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 import courseUpload from "../middleware/courseUpload.middleware.js";
-
 import validationMiddleware from "../middleware/validationMiddleware.js";
 
 import {
@@ -23,52 +20,45 @@ import {
   updateCourseValidation,
 } from "../validators/course.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 router.use(authenticate);
 
-router.use(
-  authorizeRoles("admin")
-);
+// Read courses
+router.get("/", requirePermission("courses.view"), getCourses);
+router.get("/:id", requirePermission("courses.view"), getCourse);
 
-router.get(
-  "/",
-  getCourses
-);
-
-router.get(
-  "/:id",
-  getCourse
-);
-
+// Create course
 router.post(
   "/",
-  courseUpload.single(
-    "courseImage"
-  ),
+  requirePermission("courses.create"),
+  courseUpload.single("courseImage"),
   createCourseValidation,
   validationMiddleware,
   createCourse
 );
 
+// Update course
 router.put(
   "/:id",
-  courseUpload.single(
-    "courseImage"
-  ),
+  requirePermission("courses.update"),
+  courseUpload.single("courseImage"),
   updateCourseValidation,
   validationMiddleware,
   updateCourse
 );
 
+// Delete course
 router.delete(
   "/:id",
+  requirePermission("courses.delete"),
   deleteCourse
 );
 
+// Status change is an update action
 router.patch(
   "/:id/status",
+  requirePermission("courses.update"),
   updateCourseStatus
 );
 
