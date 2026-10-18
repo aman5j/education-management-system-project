@@ -13,6 +13,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 
 import Dashboard from "./pages/admin/Dashboard";
 import RoleHome from "./pages/dashboard/RoleHome";
+import StaffDashboard from "./pages/staff/StaffDashboard";
 
 import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
@@ -80,6 +81,7 @@ import EditExpense from "./pages/admin/expenses/EditExpense";
 
 import Profile from "./pages/admin/Profile";
 import RoleManagement from "./pages/admin/RoleManagement";
+import StaffManagement from "./pages/admin/StaffManagement";
 
 
 
@@ -194,7 +196,10 @@ const App = () => {
         <Route path="roles" element={<RoleManagement />} />
         <Route path="roles/new" element={<RoleManagement />} />
         <Route path="roles/:roleId/edit" element={<RoleManagement />} />
-        
+
+        {/* Staff Mangement */}
+        <Route path="staff" element={<StaffManagement />} />
+
 
         {/* Student management */}
         <Route path="students" element={<Students />} />
@@ -308,7 +313,7 @@ const App = () => {
         path="/staff/dashboard"
         element={
           <RoleRoute allowedRoles={[ROLES.STAFF]}>
-            <RoleHome />
+            <StaffDashboard />
           </RoleRoute>
         }
       />

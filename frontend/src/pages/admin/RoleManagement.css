@@ -631,3 +631,120 @@
     padding-left: 16px;
   }
 }
+
+
+
+
+
+/* Permission selection usability improvements */
+.role-management__permission-search {
+  padding: 12px 28px 0;
+}
+
+.role-management__permission-search input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 13px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  color: #172033;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.role-management__permission-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 14px;
+}
+
+.role-management__permission-group {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.role-management__permission-group legend {
+  padding: 0 7px;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.role-management__group-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.role-management__group-toolbar > span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.role-management__permission-options {
+  display: grid;
+  gap: 3px;
+}
+
+.role-management__permission-option {
+  align-items: flex-start;
+  padding: 9px 6px;
+  border-radius: 6px;
+}
+
+.role-management__permission-option:hover {
+  background: #f8fafc;
+}
+
+.role-management__permission-option span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.role-management__permission-option strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-management__permission-option small {
+  color: #64748b;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+.role-management__no-permissions {
+  grid-column: 1 / -1;
+  padding: 24px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (min-width: 1100px) {
+  .role-management__permission-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .role-management__permission-search {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .role-management__permission-groups {
+    grid-template-columns: 1fr;
+  }
+}

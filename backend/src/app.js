@@ -10,6 +10,7 @@ import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import authRoutes from "./routes/auth.routes.js";
 
 import roleRoutes from "./routes/role.routes.js";
+import staffRoutes from "./routes/staff.routes.js";
 
 
 import dashboardRoutes from "./routes/dashboard.routes.js";
@@ -172,6 +173,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
+app.use("/api/staff", staffRoutes);
 
 app.use(
   "/api/dashboard",

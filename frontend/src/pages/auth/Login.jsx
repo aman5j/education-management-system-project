@@ -8,7 +8,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import { FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiLock, FiMail, FiShield, FiUsers, FiBookOpen, FiCheckCircle } from "react-icons/fi";
 
 
 import { useAuth } from "../../context/AuthContext";
@@ -31,6 +31,7 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const [selectedRole, setSelectedRole] = useState("admin");
 
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +80,8 @@ const Login = () => {
     try {
       const loggedInUser = await login(
         form.email,
-        form.password
+        form.password,
+        selectedRole
       );
 
       const destination =
@@ -130,6 +132,37 @@ const Login = () => {
             )}
 
             <form onSubmit={handleSubmit}>
+              <fieldset className="auth-role-selector" aria-label="Choose your portal">
+                <legend>Choose your portal</legend>
+                <div className="auth-role-options">
+                  {[
+                    { value: "admin", label: "Admin", Icon: FiShield },
+                    { value: "staff", label: "Staff", Icon: FiUsers },
+                    { value: "student", label: "Student", Icon: FiBookOpen },
+                  ].map(({ value, label, Icon }) => (
+                    <label
+                      className={`auth-role-option ${selectedRole === value ? "is-selected" : ""}`}
+                      key={value}
+                    >
+                      <input
+                        type="radio"
+                        name="portalRole"
+                        value={value}
+                        checked={selectedRole === value}
+                        onChange={() => {
+                          setSelectedRole(value);
+                          setError("");
+                        }}
+                        aria-label={`${label} portal`}
+                      />
+                      <span className="auth-role-option__icon"><Icon aria-hidden="true" /></span>
+                      <span className="auth-role-option__label">{label}</span>
+                      <FiCheckCircle className="auth-role-option__check" aria-hidden="true" />
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              
               
               <div className="form-group">
                 <label htmlFor="email">
