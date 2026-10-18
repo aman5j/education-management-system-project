@@ -9,6 +9,10 @@ import {
   FiPlus,
 } from "react-icons/fi";
 
+import { RiFileExcel2Line } from "react-icons/ri";
+import { FaFileImport } from "react-icons/fa";
+
+
 import {
   getCourses,
 } from "../../../services/courseService";
@@ -579,42 +583,38 @@ const Students = () => {
 
   return (
     <div className="student-management-page">
-      <Breadcrumb
-        currentPage="Students"
-      />
+      
 
-      <div className="student-page-header">
-        <div>
-          <span className="student-page-eyebrow">
-            STUDENT MANAGEMENT
-          </span>
-
-          <h1>
-            Manage Students
-          </h1>
-
-          <p>
-            View, create and manage
-            student records.
-          </p>
-        </div>
-
+    
+       <div class="page-header">
+        <div><h1> Manage Students</h1></div>
         <div className="student-page-actions">
+            <button
+            type="button"
+            className="themebtn excelimport"
+            
+          >
+          <FaFileImport />
+
+
+            Import 
+          </button>
           <button
             type="button"
-            className="student-secondary-button"
+            className="themebtn exceldownload"
             onClick={exportCsv}
             disabled={
               !students.length
             }
           >
-            <FiDownload />
-            Export
+           <RiFileExcel2Line />
+
+            Export 
           </button>
 
           <button
             type="button"
-            className="student-primary-button"
+            className="themebtn"
             onClick={() =>
               navigate(
                 "/admin/students/add"
@@ -625,9 +625,8 @@ const Students = () => {
             Add Student
           </button>
         </div>
-      </div>
-
-      <section className="student-list-card">
+       </div>
+    
         <StudentFilters
           filters={filters}
           courses={courses}
@@ -635,6 +634,10 @@ const Students = () => {
           onChange={handleFilterChange}
           onReset={handleReset}
         />
+      
+
+      <section className="common-card">
+       
 
         {error && (
           <div className="student-page-error">

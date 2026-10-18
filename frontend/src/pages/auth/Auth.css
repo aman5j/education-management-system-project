@@ -404,20 +404,29 @@ input:-webkit-autofill:active {
 }
 
 .themebtn{
-    height: 40px;
-    padding: 0 16px;
+    height: 35px;
+    padding: 0 15px;
     color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border-radius: 8px;
+    border-radius: 3px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     border: none;
     background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);;
+}
+
+.exceldownload{
+  background: green;
+  color: white;
+}
+.excelimport{
+  background: #03A9F4;
+  color: white;
 }
 
 .common-card {
