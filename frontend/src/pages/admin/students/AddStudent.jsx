@@ -2,9 +2,7 @@ import {
   useState,
 } from "react";
 
-import {
-  useNavigate,
-} from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import api from "../../../services/api";
 
@@ -15,8 +13,12 @@ import StudentForm from "../../../components/students/StudentForm";
 import "./StudentManagement.css";
 
 const AddStudent = () => {
-  const navigate =
-    useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const studentsPath = location.pathname.startsWith("/staff")
+    ? "/staff/students"
+    : "/admin/students";
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -37,9 +39,8 @@ const AddStudent = () => {
           }
         );
 
-        navigate(
-          "/admin/students"
-        );
+        navigate(studentsPath);
+        
       } catch (error) {
         throw new Error(
           error.response?.data

@@ -5,6 +5,7 @@ import {
 
 import {
   useNavigate,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
@@ -21,8 +22,14 @@ const EditStudent = () => {
     id,
   } = useParams();
 
+  const location = useLocation();
+
   const navigate =
     useNavigate();
+
+  const studentsPath = location.pathname.startsWith("/staff")
+  ? "/staff/students"
+  : "/admin/students";
 
   const [student, setStudent] =
     useState(null);
@@ -78,9 +85,8 @@ const EditStudent = () => {
           }
         );
 
-        navigate(
-          "/admin/students"
-        );
+        navigate(studentsPath);
+        
       } catch (requestError) {
         throw new Error(
           requestError.response

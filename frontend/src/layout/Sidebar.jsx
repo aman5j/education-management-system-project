@@ -237,6 +237,8 @@ const PATH_PERMISSION_MAP = {
 
   "/admin/students": "students.view",
   "/admin/students/add": "students.create",
+  
+  "/admin/students/:id/edit": "students.update",
 
   "/admin/enquiries": "courses.view",
   "/admin/categories": "courses.view",

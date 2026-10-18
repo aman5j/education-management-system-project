@@ -13,7 +13,6 @@ import {
 
 import {
   authenticate,
-  authorizeRoles,
 } from "../middleware/auth.middleware.js";
 
 import { requirePermission } from "../middleware/permission.middleware.js";
@@ -23,22 +22,30 @@ const router = express.Router();
 
 router.use(authenticate);
 
-// Attendance-only roster: staff with attendance.view can read
-// limited student fields for the selected course and batch.
+// Attendance-only roster. Keep this before "/:id".
 router.get(
   "/attendance-roster",
   requirePermission("attendance.view"),
   getAttendanceRoster
 );
 
-// Keep full Student Management APIs Admin-only.
-router.use(authorizeRoles("admin"));
+// Student list and details
+router.get(
+  "/",
+  requirePermission("students.view"),
+  getStudents
+);
 
-router.get("/", getStudents);
-router.get("/:id", getStudent);
+router.get(
+  "/:id",
+  requirePermission("students.view"),
+  getStudent
+);
 
+// Create student
 router.post(
   "/",
+  requirePermission("students.create"),
   studentUpload.fields([
     { name: "profileImage", maxCount: 1 },
     { name: "signature", maxCount: 1 },
@@ -46,8 +53,10 @@ router.post(
   createStudent
 );
 
+// Update student
 router.put(
   "/:id",
+  requirePermission("students.update"),
   studentUpload.fields([
     { name: "profileImage", maxCount: 1 },
     { name: "signature", maxCount: 1 },
@@ -55,7 +64,18 @@ router.put(
   updateStudent
 );
 
-router.delete("/:id", deleteStudent);
-router.patch("/:id/status", updateStudentStatus);
+// Update student status
+router.patch(
+  "/:id/status",
+  requirePermission("students.update"),
+  updateStudentStatus
+);
+
+// Delete student
+router.delete(
+  "/:id",
+  requirePermission("students.delete"),
+  deleteStudent
+);
 
 export default router;
