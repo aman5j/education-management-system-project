@@ -23,6 +23,7 @@ import {
 
 import {
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -49,6 +50,12 @@ const defaultFilters = {
 const Students = () => {
   const navigate =
     useNavigate();
+  
+  const location = useLocation();
+
+  const studentsPath = location.pathname.startsWith("/staff")
+    ? "/staff/students"
+    : "/admin/students";
 
   const [courses, setCourses] =
   useState([]);
@@ -615,11 +622,7 @@ const Students = () => {
           <button
             type="button"
             className="themebtn"
-            onClick={() =>
-              navigate(
-                "/admin/students/add"
-              )
-            }
+            onClick={() => navigate(`${studentsPath}/add`)}
           >
             <FiPlus />
             Add Student
@@ -661,9 +664,7 @@ const Students = () => {
                 setSelectedStudent
               }
               onEdit={(student) =>
-                navigate(
-                  `/admin/students/${student._id}/edit`
-                )
+                navigate(`${studentsPath}/${student._id}/edit`)
               }
               onDelete={
                 handleDelete
