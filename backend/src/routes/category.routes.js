@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -8,13 +9,10 @@ import {
   deleteCategory,
 } from "../controllers/category.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 import categoryUpload from "../middleware/categoryUpload.middleware.js";
-// import categoryUpload from "../middlewares/categoryUpload.middleware.js";
 
 import {
   createCategoryValidation,
@@ -23,47 +21,48 @@ import {
 
 import validationMiddleware from "../middleware/validationMiddleware.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
+// Authenticate every request before checking permissions.
 router.use(authenticate);
 
-router.use(
-  authorizeRoles("admin")
-);
-
+// View categories
 router.get(
   "/",
+  requirePermission("courses.view"),
   getCategories
 );
 
 router.get(
   "/:id",
+  requirePermission("courses.view"),
   getCategory
 );
 
+// Create a category
 router.post(
   "/",
-  categoryUpload.single(
-    "categoryIcon"
-  ),
+  requirePermission("courses.create"),
+  categoryUpload.single("categoryIcon"),
   createCategoryValidation,
   validationMiddleware,
   createCategory
 );
 
+// Update a category
 router.put(
   "/:id",
-  categoryUpload.single(
-    "categoryIcon"
-  ),
+  requirePermission("courses.update"),
+  categoryUpload.single("categoryIcon"),
   updateCategoryValidation,
   validationMiddleware,
   updateCategory
 );
 
+// Delete a category
 router.delete(
   "/:id",
+  requirePermission("courses.delete"),
   deleteCategory
 );
 

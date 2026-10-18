@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -8,10 +9,8 @@ import {
   deleteBatch,
 } from "../controllers/batch.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 import {
   createBatchValidation,
@@ -20,41 +19,46 @@ import {
 
 import validationMiddleware from "../middleware/validationMiddleware.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
+// Authenticate every request before checking permissions.
 router.use(authenticate);
 
-router.use(
-  authorizeRoles("admin")
-);
-
+// View batches
 router.get(
   "/",
+  requirePermission("batches.view"),
   getBatches
 );
 
 router.get(
   "/:id",
+  requirePermission("batches.view"),
   getBatch
 );
 
+// Create a batch
 router.post(
   "/",
+  requirePermission("batches.create"),
   createBatchValidation,
   validationMiddleware,
   createBatch
 );
 
+// Update a batch
 router.put(
   "/:id",
+  requirePermission("batches.update"),
   updateBatchValidation,
   validationMiddleware,
   updateBatch
 );
 
+// Delete a batch
 router.delete(
   "/:id",
+  requirePermission("batches.delete"),
   deleteBatch
 );
 
