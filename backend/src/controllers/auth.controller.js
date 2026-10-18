@@ -142,9 +142,18 @@ export const login = async (req, res, next) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
+    // const user = await User.findOne({
+    //   email: normalizedEmail,
+    // }).select("+password +refreshTokenHash");
+
     const user = await User.findOne({
       email: normalizedEmail,
-    }).select("+password +refreshTokenHash");
+    })
+      .select("+password +refreshTokenHash")
+      .populate({
+        path: "assignedRole",
+        select: "name label permissions isActive roleType isSystem",
+      });
 
     if (!user) {
       return res.status(401).json({
@@ -224,7 +233,13 @@ export const refresh = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(decoded.sub).select("+refreshTokenHash");
+    // const user = await User.findById(decoded.sub).select("+refreshTokenHash");
+    const user = await User.findById(decoded.sub)
+      .select("+refreshTokenHash")
+      .populate({
+        path: "assignedRole",
+        select: "name label permissions isActive roleType isSystem",
+      });
 
     if (!user) {
       clearRefreshCookie(res);

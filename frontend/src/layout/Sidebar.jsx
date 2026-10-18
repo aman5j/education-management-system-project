@@ -256,18 +256,30 @@ const Sidebar = ({
   const location = useLocation();
 
   // 1. Add auth and visible menu calculation here
-  const { user } = useAuth();
+const { user } = useAuth();
+
+const staffPermissions = Array.isArray(
+  user?.assignedRole?.permissions
+)
+  ? user.assignedRole.permissions
+  : [];
 
 const visibleMenuItems =
   user?.role === "admin"
     ? menuItems
-    : [
-        {
-          label: "Dashboard",
-          path: dashboardPath,
-          icon: FiGrid,
-        },
-      ];
+    : user?.role === "staff"
+      ? filterMenuItemsByPermission(
+          menuItems,
+          staffPermissions,
+          dashboardPath
+        )
+      : [
+          {
+            label: "Dashboard",
+            path: dashboardPath,
+            icon: FiGrid,
+          },
+        ];
 
   return (
     <>
