@@ -26,6 +26,11 @@ import {
 import generatePaymentReceipt from "../../utils/generatePaymentReceipt";
 
 const StudentTable = ({
+  canUpdateStudent = false,
+  canDeleteStudent = false,
+  canManageDocuments = false,
+  canViewPayments = false,
+  
   students,
   onView,
   onEdit,
@@ -502,6 +507,9 @@ const handleDownloadReceipt = async (student) => {
                   </td>
 
                   <td>
+                    {canUpdateStudent ? (
+                    // Keep your existing status <select> here.
+                    // Do not change its options or onChange handler.
                     <select
                       className={`student-status-select student-status-${student.status}`}
                       value={
@@ -530,6 +538,10 @@ const handleDownloadReceipt = async (student) => {
                         Suspended
                       </option>
                     </select>
+
+                    ) : (
+                      <span>{student.status}</span>
+                    )}
                   </td>
 
                   <td>
@@ -549,18 +561,18 @@ const handleDownloadReceipt = async (student) => {
 
                       {/* DOCUMENTS */}
 
-                      <button
-                        type="button"
-                        title="Edit"
-                        onClick={() =>
-                          onEdit(
-                            student
-                          )
-                        }
-                      >
-                        <FiEdit2 />
-                      </button>
+                      {canUpdateStudent && (
+                        <button
+                          type="button"
+                          title="Edit"
+                          onClick={() => onEdit(student)}
+                        >
+                          <FiEdit2 />
+                        </button>
+                      )}
 
+                      {canManageDocuments && (
+                      // Keep the existing Manage Documents button here.
                       <button
                         type="button"
                         title="Manage Documents"
@@ -583,6 +595,7 @@ const handleDownloadReceipt = async (student) => {
                             </span>
                           )}
                       </button>
+                      )}
 
                       {/* <Link
                         to={`/admin/students/${student._id}/payments`}
@@ -592,6 +605,8 @@ const handleDownloadReceipt = async (student) => {
                         <FiCreditCard />
                       </Link> */}
 
+                      {canViewPayments && (
+                      // Keep the existing Payment History <Link> here.
                       <Link
                         to={`/admin/students/${student._id}/payments`}
                         className="student-action-button"
@@ -599,6 +614,7 @@ const handleDownloadReceipt = async (student) => {
                       >
                         <FiCreditCard />
                       </Link>
+                      )}
 
                       <button
                         type="button"
@@ -608,18 +624,17 @@ const handleDownloadReceipt = async (student) => {
                         <FiDownload />
                       </button>
 
-                      <button
-                        type="button"
-                        title="Delete"
-                        className="student-delete-action"
-                        onClick={() =>
-                          onDelete(
-                            student
-                          )
-                        }
-                      >
-                        <FiTrash2 />
-                      </button>
+                      {canDeleteStudent && (
+                        <button
+                          type="button"
+                          title="Delete"
+                          className="student-delete-action"
+                          onClick={() => onDelete(student)}
+                        >
+                          <FiTrash2 />
+                        </button>
+                      )}
+
                     </div>
                   </td>
                 </tr>

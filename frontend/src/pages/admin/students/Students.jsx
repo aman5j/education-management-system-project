@@ -26,6 +26,8 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import { useAuth } from "../../../context/AuthContext";
+
 import { getAssetUrl } from "../../../utils/assetUrl";
 
 import api from "../../../services/api";
@@ -56,6 +58,29 @@ const Students = () => {
   const studentsPath = location.pathname.startsWith("/staff")
     ? "/staff/students"
     : "/admin/students";
+  
+  const { user } = useAuth();
+
+const permissions = Array.isArray(user?.assignedRole?.permissions)
+  ? user.assignedRole.permissions
+  : [];
+
+const isAdmin = user?.role === "admin";
+
+const canCreateStudent =
+  isAdmin || permissions.includes("students.create");
+
+const canUpdateStudent =
+  isAdmin || permissions.includes("students.update");
+
+const canDeleteStudent =
+  isAdmin || permissions.includes("students.delete");
+
+const canViewPayments =
+  isAdmin || permissions.includes("payments.view");
+
+const canManageDocuments =
+  isAdmin || canUpdateStudent;
 
   const [courses, setCourses] =
   useState([]);
@@ -619,14 +644,16 @@ const Students = () => {
             Export 
           </button>
 
-          <button
-            type="button"
-            className="themebtn"
-            onClick={() => navigate(`${studentsPath}/add`)}
-          >
-            <FiPlus />
-            Add Student
-          </button>
+          {canCreateStudent && (
+            <button
+              type="button"
+              className="themebtn"
+              onClick={() => navigate(`${studentsPath}/add`)}
+            >
+              <FiPlus />
+              Add Student
+            </button>
+          )}
         </div>
        </div>
     
@@ -659,6 +686,11 @@ const Students = () => {
         ) : (
           <>
             <StudentTable
+              canUpdateStudent={canUpdateStudent}
+              canDeleteStudent={canDeleteStudent}
+              canManageDocuments={canManageDocuments}
+              canViewPayments={canViewPayments}
+
               students={students}
               onView={
                 setSelectedStudent
@@ -818,14 +850,10 @@ const Students = () => {
             )
           }
           onEdit={(student) => {
-            setSelectedStudent(
-              null
-            );
-
-            navigate(
-              `/admin/students/${student._id}/edit`
-            );
+            setSelectedStudent(null);
+            navigate(`${studentsPath}/${student._id}/edit`);
           }}
+          
         />
       )}
 
