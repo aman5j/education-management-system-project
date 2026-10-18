@@ -133,7 +133,7 @@ const StudentSearchSelect = ({
       className="student-search-select"
       ref={wrapperRef}
     >
-      <div className="student-search-input-wrapper">
+      <div className="input-field">
         <input
           type="text"
           value={search}

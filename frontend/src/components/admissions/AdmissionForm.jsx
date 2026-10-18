@@ -717,9 +717,10 @@ const AdmissionForm = ({
 
   return (
     <form
-      className="admission-form"
-      onSubmit={handleSubmit}
-    >
+      className=""
+      onSubmit={handleSubmit} >
+      <div className="common-card">
+
       {error && (
         <div className="admission-form-error">
           {error}
@@ -728,78 +729,19 @@ const AdmissionForm = ({
 
       {/* STUDENT */}
 
-      <section className="admission-form-section">
-        <div className="admission-section-header">
-          <div>
-            <h3>
-              Student Information
-            </h3>
+     
+        
+        <div class="panel-header"><div><h3>Student Information </h3> </div></div>
 
-            <p>
-              Select the student for
-              this admission.
-            </p>
-          </div>
-        </div>
 
-        <div className="admission-form-grid">
-          <div className="admission-form-group admission-form-full">
+        <div className="admission-form-grid cardbody">
+          <div className="input-felid admission-form-full">
             <label>
-              Student{" "}
+             Student Student{" "}
               <span className="required">
                 *
               </span>
             </label>
-
-            {/* <select
-              name="student_id"
-              value={
-                form.student_id
-              }
-              onChange={
-                handleChange
-              }
-              disabled={
-                loadingStudents ||
-                Boolean(
-                  initialData
-                )
-              }
-            >
-              <option value="">
-                {loadingStudents
-                  ? "Loading students..."
-                  : "Select Student"}
-              </option>
-
-              {students.map(
-                (student) => {
-                  const name =
-                    [
-                      student.firstName,
-                      student.surname,
-                    ]
-                      .filter(Boolean)
-                      .join(" ");
-
-                  return (
-                    <option
-                      key={
-                        student._id
-                      }
-                      value={
-                        student._id
-                      }
-                    >
-                      {student.rollNo}{" "}
-                      - {name} -{" "}
-                      {student.mobile}
-                    </option>
-                  );
-                }
-              )}
-            </select> */}
-
             <StudentSearchSelect
               students={fetchedStudents}
               value={form.student_id}
@@ -842,26 +784,11 @@ const AdmissionForm = ({
             )}
           </div>
         </div>
-      </section>
+     
 
-      {/* COURSE */}
-
-      <section className="admission-form-section">
-        <div className="admission-section-header">
-          <div>
-            <h3>
-              Course Information
-            </h3>
-
-            <p>
-              Select course and
-              batch information.
-            </p>
-          </div>
-        </div>
-
-        <div className="admission-form-grid">
-          <div className="admission-form-group">
+<div className="cardbody admission-form-grid">
+      {/* COURSE */} 
+          <div className="input-felid">
             <label>
               Course Type
             </label>
@@ -877,7 +804,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Course{" "}
               <span className="required">
@@ -922,7 +849,7 @@ const AdmissionForm = ({
             </select>
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Batch{" "}
               <span className="required">
@@ -977,7 +904,7 @@ const AdmissionForm = ({
             </select>
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Available Seats
             </label>
@@ -1003,7 +930,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Course Fee
             </label>
@@ -1021,27 +948,14 @@ const AdmissionForm = ({
               step="0.01"
             />
           </div>
-        </div>
-      </section>
+      
+     
 
       {/* FEES */}
 
-      <section className="admission-form-section">
-        <div className="admission-section-header">
-          <div>
-            <h3>
-              Fee Information
-            </h3>
-
-            <p>
-              Configure discount,
-              GST and admission fee.
-            </p>
-          </div>
-        </div>
-
-        <div className="admission-form-grid">
-          <div className="admission-form-group">
+     
+       
+          <div className="input-felid">
             <label>
               Discount Type
             </label>
@@ -1065,7 +979,7 @@ const AdmissionForm = ({
             </select>
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Discount Value
             </label>
@@ -1090,7 +1004,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label className="admission-checkbox-label">
               <input
                 type="checkbox"
@@ -1104,14 +1018,8 @@ const AdmissionForm = ({
               />
 
               <span>
-                Apply GST
+                Apply GST  (%)
               </span>
-            </label>
-          </div>
-
-          <div className="admission-form-group">
-            <label>
-              GST (%)
             </label>
 
             <input
@@ -1132,7 +1040,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Admission Fee
             </label>
@@ -1152,7 +1060,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Paid Amount
             </label>
@@ -1171,10 +1079,10 @@ const AdmissionForm = ({
               placeholder="0"
             />
           </div>
-        </div>
+        
 
-        <div className="admission-calculation-card">
-          <div>
+        <div className="admission-calculation-card admission-form-full">
+          <div className="card-success">
             <span>
               Course Fee
             </span>
@@ -1187,7 +1095,7 @@ const AdmissionForm = ({
             </strong>
           </div>
 
-          <div>
+          <div className="card-purple">
             <span>
               Discount
             </span>
@@ -1200,7 +1108,7 @@ const AdmissionForm = ({
             </strong>
           </div>
 
-          <div>
+          <div className="card-bluewarning">
             <span>
               GST
             </span>
@@ -1213,7 +1121,7 @@ const AdmissionForm = ({
             </strong>
           </div>
 
-          <div>
+          <div className="card-danger">
             <span>
               Admission Fee
             </span>
@@ -1226,7 +1134,7 @@ const AdmissionForm = ({
             </strong>
           </div>
 
-          <div className="admission-final-amount">
+          <div className=" card-success">
             <span>
               Final Amount
             </span>
@@ -1239,7 +1147,7 @@ const AdmissionForm = ({
             </strong>
           </div>
 
-          <div className="admission-remaining-amount">
+          <div className="card-warning">
             <span>
               Remaining Amount
             </span>
@@ -1252,26 +1160,12 @@ const AdmissionForm = ({
             </strong>
           </div>
         </div>
-      </section>
+     
 
       {/* DETAILS */}
 
-      <section className="admission-form-section">
-        <div className="admission-section-header">
-          <div>
-            <h3>
-              Admission Details
-            </h3>
-
-            <p>
-              Complete admission
-              information.
-            </p>
-          </div>
-        </div>
-
-        <div className="admission-form-grid">
-          <div className="admission-form-group">
+      
+          <div className="input-felid">
             <label>
               Admission Date
             </label>
@@ -1288,7 +1182,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Referral By
             </label>
@@ -1306,7 +1200,7 @@ const AdmissionForm = ({
             />
           </div>
 
-          <div className="admission-form-group">
+          <div className="input-felid">
             <label>
               Status
             </label>
@@ -1334,7 +1228,7 @@ const AdmissionForm = ({
             </select>
           </div>
 
-          <div className="admission-form-group admission-form-full">
+          <div className="input-felid admission-form-full">
             <label>
               Remark
             </label>
@@ -1351,13 +1245,16 @@ const AdmissionForm = ({
               placeholder="Add admission remark"
             />
           </div>
-        </div>
-      </section>
+          </div>
+      
+    
 
+      
+      </div>
       <div className="admission-form-actions">
         <button
           type="submit"
-          className="admission-primary-button"
+          className="themebtn"
           disabled={submitting}
         >
           {submitting
@@ -1366,6 +1263,7 @@ const AdmissionForm = ({
         </button>
       </div>
     </form>
+    
   );
 };
 

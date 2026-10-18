@@ -39,9 +39,9 @@ const StudentFilters = ({
     ]);
 
   return (
-    <div className="student-filters">
+    <div className="common-card-filters">
 
-      <div className="student-search">
+      <div className="input-search">
         <FiSearch />
 
         <input
@@ -53,8 +53,8 @@ const StudentFilters = ({
         />
       </div>
 
-      <div className="student-filter-field">
-        <FiFilter />
+      <div className="input-search">
+        
 
         <select
           name="status"
@@ -80,6 +80,7 @@ const StudentFilters = ({
       </div>
 
       {/* COURSE */}
+      <div className="input-search">
       <select
         className="student-filter-input"
         name="course_id"
@@ -99,8 +100,9 @@ const StudentFilters = ({
           </option>
         ))}
       </select>
-
+</div>
       {/* BATCH */}
+       <div className="input-search">
       <select
         className="student-filter-input"
         name="batch_id"
@@ -126,6 +128,7 @@ const StudentFilters = ({
           )
         )}
       </select>
+      </div>
 
       <button
         type="button"
