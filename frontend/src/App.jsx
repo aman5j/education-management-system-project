@@ -334,6 +334,17 @@ const App = () => {
           path="dashboard"
           element={<StaffDashboard />}
         />
+
+        <Route
+          path="courses"
+          element={<Courses />}
+        />
+
+        <Route
+          path="attendance"
+          element={<Attendance />}
+        />
+        
         <Route
           path="*"
           element={<Navigate to="/staff/dashboard" replace />}

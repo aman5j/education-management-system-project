@@ -283,11 +283,45 @@ const canAccessPath = (path, permissions) => {
   );
 };
 
+// const filterMenuItemsByPermission = (
+//   items,
+//   permissions,
+//   dashboardPath
+// ) => {
+//   return items
+//     .map((item) => {
+//       if (item.label === "Dashboard") {
+//         return {
+//           ...item,
+//           path: dashboardPath,
+//         };
+//       }
+
+//       if (Array.isArray(item.children)) {
+//         const children = item.children.filter((child) =>
+//           canAccessPath(child.path, permissions)
+//         );
+
+//         return children.length
+//           ? { ...item, children }
+//           : null;
+//       }
+
+//       return canAccessPath(item.path, permissions)
+//         ? item
+//         : null;
+//     })
+//     .filter(Boolean);
+// };
+
 const filterMenuItemsByPermission = (
   items,
   permissions,
   dashboardPath
 ) => {
+  const toStaffPath = (path) =>
+    path?.replace(/^\/admin(?=\/|$)/, "/staff");
+
   return items
     .map((item) => {
       if (item.label === "Dashboard") {
@@ -298,21 +332,32 @@ const filterMenuItemsByPermission = (
       }
 
       if (Array.isArray(item.children)) {
-        const children = item.children.filter((child) =>
-          canAccessPath(child.path, permissions)
-        );
+        const children = item.children
+          .filter((child) =>
+            canAccessPath(child.path, permissions)
+          )
+          .map((child) => ({
+            ...child,
+            path: toStaffPath(child.path),
+          }));
 
         return children.length
           ? { ...item, children }
           : null;
       }
 
-      return canAccessPath(item.path, permissions)
-        ? item
-        : null;
+      if (!canAccessPath(item.path, permissions)) {
+        return null;
+      }
+
+      return {
+        ...item,
+        path: toStaffPath(item.path),
+      };
     })
     .filter(Boolean);
 };
+
 
 const hasActiveChild = (
   item,
