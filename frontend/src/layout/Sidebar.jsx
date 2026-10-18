@@ -229,6 +229,91 @@ const menuItems = [
   },
 ];
 
+const PATH_PERMISSION_MAP = {
+  "/admin/dashboard": "dashboard.view",
+
+  "/admin/admissions": "admissions.view",
+  "/admin/admissions/add": "admissions.create",
+
+  "/admin/students": "students.view",
+  "/admin/students/add": "students.create",
+
+  "/admin/enquiries": "courses.view",
+  "/admin/categories": "courses.view",
+  "/admin/subjects": "courses.view",
+  "/admin/courses": "courses.view",
+
+  "/admin/batches": "batches.view",
+  "/admin/attendance": "attendance.view",
+
+  "/admin/expenses": "expenses.view",
+  "/admin/payments": "payments.view",
+  "/admin/reports/payments": "reports.view",
+
+  "/admin/exams/schedule": "exams.view",
+  "/admin/hall-tickets": "exams.view",
+  "/admin/exams/results": "results.view",
+  "/admin/result-reports": "results.view",
+
+  "/admin/certificates": "certificates.view",
+  "/admin/staff": "users.view",
+  "/admin/communication": "settings.manage",
+
+  "/admin/website-editor": "website.view",
+  "/admin/pages": "website.view",
+  "/admin/media": "website.view",
+  "/admin/seo": "website.view",
+
+  "/admin/reports": "reports.view",
+  "/admin/profile": "dashboard.view",
+  "/admin/users": "users.view",
+  "/admin/roles": "roles.view",
+  "/admin/system-settings": "settings.manage",
+};
+
+const canAccessPath = (path, permissions) => {
+  const requiredPermission = PATH_PERMISSION_MAP[path];
+
+  return (
+    Boolean(requiredPermission) &&
+    (
+      permissions.includes("*") ||
+      permissions.includes(requiredPermission)
+    )
+  );
+};
+
+const filterMenuItemsByPermission = (
+  items,
+  permissions,
+  dashboardPath
+) => {
+  return items
+    .map((item) => {
+      if (item.label === "Dashboard") {
+        return {
+          ...item,
+          path: dashboardPath,
+        };
+      }
+
+      if (Array.isArray(item.children)) {
+        const children = item.children.filter((child) =>
+          canAccessPath(child.path, permissions)
+        );
+
+        return children.length
+          ? { ...item, children }
+          : null;
+      }
+
+      return canAccessPath(item.path, permissions)
+        ? item
+        : null;
+    })
+    .filter(Boolean);
+};
+
 const hasActiveChild = (
   item,
   pathname
