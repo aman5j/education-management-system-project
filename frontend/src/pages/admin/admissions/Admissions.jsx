@@ -60,7 +60,7 @@ const Admissions = () => {
     isAdmin || permissions.includes("admissions.update");
 
   const canDeleteAdmission =
-    isAdmin || permissions.includes("admissions.update");
+    isAdmin || permissions.includes("admissions.delete");
   
 
   const [admissions, setAdmissions] =

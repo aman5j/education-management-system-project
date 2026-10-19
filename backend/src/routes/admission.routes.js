@@ -54,12 +54,10 @@ router.put(
   updateAdmission
 );
 
-// Delete admission.
-// The current permission catalog has no admissions.delete key,
-// so use admissions.update until a dedicated permission is added.
+// Delete admission
 router.delete(
   "/:id",
-  requirePermission("admissions.update"),
+  requirePermission("admissions.delete"),
   deleteAdmission
 );
 
