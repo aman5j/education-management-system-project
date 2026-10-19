@@ -39,25 +39,6 @@ const ViewCourse = () => {
   const [loading, setLoading] =
     useState(true);
 
-  // useEffect(() => {
-  //   const loadCourse = async () => {
-  //     try {
-  //       const response =
-  //         await getCourse(id);
-
-  //       setCourse(response.data.data);
-  //     } catch (error) {
-  //       console.error(
-  //         "Failed to load course:",
-  //         error
-  //       );
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   loadCourse();
-  // }, [id]);
 
     useEffect(() => {
     if (!canView || !id) {
