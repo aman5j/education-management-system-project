@@ -1,19 +1,18 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
-
 import { getAssetUrl } from "../../utils/assetUrl";
 
 const CourseTable = ({
-  courses,
+  courses = [],
+  basePath = "/admin/courses",
+  canUpdate = false,
+  canDelete = false,
   onDelete,
   onStatusChange,
 }) => {
   if (!courses.length) {
-    return (
-      <div className="course-empty">
-        No courses found.
-      </div>
-    );
+    return <div className="course-empty">No courses found.</div>;
   }
 
   return (
@@ -56,16 +55,12 @@ const CourseTable = ({
 
               <td>
                 <strong>{course.courseTitle}</strong>
-
                 {course.popular && (
-                  <span className="course-mini-badge">
-                    Popular
-                  </span>
+                  <span className="course-mini-badge">Popular</span>
                 )}
               </td>
 
               <td>{course.courseType || "-"}</td>
-
               <td>{course.courseCategory || "-"}</td>
 
               <td>
@@ -83,51 +78,53 @@ const CourseTable = ({
               <td>{course.totalLectures}</td>
 
               <td>
-                <select
-                  className={`course-status-select status-${course.status.toLowerCase()}`}
-                  value={course.status}
-                  onChange={(e) =>
-                    onStatusChange(
-                      course._id,
-                      e.target.value
-                    )
-                  }
-                >
-                  <option value="Published">
-                    Published
-                  </option>
-                  <option value="Draft">Draft</option>
-                  <option value="Archived">
-                    Archived
-                  </option>
-                </select>
+                {canUpdate ? (
+                  <select
+                    className={`course-status-select status-${(
+                      course.status || "draft"
+                    ).toLowerCase()}`}
+                    value={course.status}
+                    onChange={(event) =>
+                      onStatusChange(course._id, event.target.value)
+                    }
+                    aria-label={`Change status for ${course.courseTitle}`}
+                  >
+                    <option value="Published">Published</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Archived">Archived</option>
+                  </select>
+                ) : (
+                  <span>{course.status || "Draft"}</span>
+                )}
               </td>
 
               <td>
                 <div className="course-actions">
                   <Link
-                    to={`/admin/courses/${course._id}`}
+                    to={`${basePath}/${course._id}`}
                     className="course-action view"
                   >
                     View
                   </Link>
 
-                  <Link
-                    to={`/admin/courses/${course._id}/edit`}
-                    className="course-action edit"
-                  >
-                    Edit
-                  </Link>
+                  {canUpdate && (
+                    <Link
+                      to={`${basePath}/${course._id}/edit`}
+                      className="course-action edit"
+                    >
+                      Edit
+                    </Link>
+                  )}
 
-                  <button
-                    type="button"
-                    className="course-action delete"
-                    onClick={() =>
-                      onDelete(course._id)
-                    }
-                  >
-                    Delete
-                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      className="course-action delete"
+                      onClick={() => onDelete(course._id)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

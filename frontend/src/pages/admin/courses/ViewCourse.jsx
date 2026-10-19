@@ -68,12 +68,12 @@ const ViewCourse = () => {
           <p>Course Details</p>
         </div>
 
-        <Link
+        {/* <Link
           to={`/admin/courses/${course._id}/edit`}
           className="course-primary-btn"
         >
           Edit Course
-        </Link>
+        </Link> */}
       </div>
 
       <div className="course-card">
