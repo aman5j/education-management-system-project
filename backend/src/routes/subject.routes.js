@@ -18,50 +18,64 @@ import {
   importSubjectQuestions,
 } from "../controllers/subjectQuestionBank.controller.js";
 
-
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
-// Protect every Subject Management endpoint.
-// Only the existing admin role can access these routes.
+// Every endpoint requires authentication.
+// Admin access is retained by requirePermission middleware.
 router.use(authenticate);
-router.use(authorizeRoles("admin"));
 
-// GET  /api/subjects
-// POST /api/subjects
+// Subject listing and creation
 router
   .route("/")
-  .get(getSubjects)
-  .post(createSubject);
+  .get(requirePermission("subjects.view"), getSubjects)
+  .post(requirePermission("subjects.create"), createSubject);
 
+// Subject Question Bank
+router.get(
+  "/:id/question-bank",
+  requirePermission("question_bank.view"),
+  getSubjectQuestionBank
+);
 
-// Embedded Question Bank: questions are stored in Subject.questionBank.
-router.get("/:id/question-bank", getSubjectQuestionBank);
-router.post("/:id/question-bank", addSubjectQuestion);
-router.post("/:id/question-bank/import", importSubjectQuestions);
+router.post(
+  "/:id/question-bank",
+  requirePermission("question_bank.manage"),
+  addSubjectQuestion
+);
+
+router.post(
+  "/:id/question-bank/import",
+  requirePermission("question_bank.manage"),
+  importSubjectQuestions
+);
+
 router.patch(
   "/:id/question-bank/:questionId",
+  requirePermission("question_bank.manage"),
   updateSubjectQuestion
 );
+
 router.delete(
   "/:id/question-bank/:questionId",
+  requirePermission("question_bank.manage"),
   deleteSubjectQuestion
 );
 
-// GET    /api/subjects/:id
-// PATCH  /api/subjects/:id
-// DELETE /api/subjects/:id
+// View, update, and delete a subject
 router
   .route("/:id")
-  .get(getSubjectById)
-  .patch(updateSubject)
-  .delete(deleteSubject);
+  .get(requirePermission("subjects.view"), getSubjectById)
+  .patch(requirePermission("subjects.update"), updateSubject)
+  .delete(requirePermission("subjects.delete"), deleteSubject);
 
-// PATCH /api/subjects/:id/status
-router.patch("/:id/status", updateSubjectStatus);
+// Update subject status
+router.patch(
+  "/:id/status",
+  requirePermission("subjects.update"),
+  updateSubjectStatus
+);
 
 export default router;
