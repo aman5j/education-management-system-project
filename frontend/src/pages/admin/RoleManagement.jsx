@@ -18,7 +18,7 @@ const GROUP_LABELS = {
   students: "Students",
   admissions: "Admissions",
   courses: "Courses",
-  
+
   subjects: "Subjects",
   question_bank: "Question Bank",
 
