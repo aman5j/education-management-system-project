@@ -255,51 +255,10 @@
 }
 
 .student-roll {
-  color: var(--primary-color);
-  font-weight: 700;
+  color: #084993;
+  font-weight: 600;
 }
 
-.student-name-cell {
-  min-width: 180px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.student-name-cell > div:last-child {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
-.student-name-cell strong {
-  color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.student-name-cell span {
-  color: var(--text-muted);
-  font-size: 9px;
-}
-
-.student-avatar {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.student-avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e0e7ff;
-  color: #4338ca;
-  font-size: 12px;
-  font-weight: 750;
-}
 
 .student-status-select {
   min-width: 86px;
@@ -313,56 +272,7 @@
   cursor: pointer;
 }
 
-.student-status-active {
-  background: #f0fdf4;
-  color: #15803d;
-}
 
-.student-status-inactive {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.student-status-suspended {
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.student-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.student-actions button {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--border-color);
-  border-radius: 7px;
-  background: #ffffff;
-  color: #7c8697;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.student-actions button:hover {
-  color: var(--primary-color);
-  background: var(--primary-light);
-  border-color: #cbdaf7;
-}
-
-.student-actions .student-delete-action:hover {
-  color: var(--danger-color);
-  background: var(--danger-light);
-  border-color: #fecaca;
-}
-
-.student-actions svg {
-  width: 14px;
-  height: 14px;
-}
 
 .student-table-footer {
   min-height: 64px;
@@ -436,7 +346,7 @@
 }
 
 .student-form-section-header {
-  margin-bottom: 20px;
+  margin-bottom: 0px;
 }
 
 .student-form-section-header h3 {
@@ -454,57 +364,14 @@
 .student-form-grid {
   display: grid;
   grid-template-columns: repeat(
-    2,
+    3,
     minmax(0, 1fr)
   );
   gap: 18px;
 }
 
-.student-form-group {
-  display: grid;
-  gap: 7px;
-}
-
 .student-form-full {
   grid-column: 1 / -1;
-}
-
-.student-form-group label,
-.student-upload-card > label {
-  color: #4b5563;
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.student-form-group input,
-.student-form-group select,
-.student-form-group textarea {
-  width: 100%;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  outline: 0;
-  background: #ffffff;
-  color: var(--text-primary);
-  font-size: 12px;
-}
-
-.student-form-group input,
-.student-form-group select {
-  height: 42px;
-  padding: 0 11px;
-}
-
-.student-form-group textarea {
-  padding: 11px;
-  resize: vertical;
-}
-
-.student-form-group input:focus,
-.student-form-group select:focus,
-.student-form-group textarea:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px
-    rgba(37, 99, 235, 0.06);
 }
 
 .student-upload-grid {
@@ -573,7 +440,7 @@
 .student-checkbox-group {
   display: flex;
   gap: 24px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .student-checkbox {
@@ -858,73 +725,8 @@
 
 /* Student Image Css */
 
-.student-avatar-wrapper {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-}
-
-.student-avatar {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  background: #f1f5f9;
-}
-
-.student-avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e8f0ff;
-  color: #2563eb;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-/* Student View Css */
-
-.student-view-profile-image {
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-}
-
-.student-view-profile-image img,
-.student-view-profile-placeholder {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
-  object-fit: cover;
-  display: block;
-}
-
-.student-view-profile-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e8f0ff;
-  color: #2563eb;
-  font-size: 22px;
-  font-weight: 700;
-}
-
 /* Student Form Css */
 
-.student-form-group input[readonly] {
-  background: #f5f7fa;
-  color: #64748b;
-  cursor: not-allowed;
-  border-color: #e2e8f0;
-}
-
-.student-form-group input[readonly]:focus {
-  outline: none;
-  border-color: #e2e8f0;
-  box-shadow: none;
-}
 
 
 
@@ -1334,4 +1136,35 @@
 .student-close-button svg {
   display: block;
   stroke-width: 2;
+}
+
+.profileuploadinput {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.profileuploadinput .admin-profile-upload-row {
+    width: 50%;
+}
+.profileuploadinput .admin-profile-upload-box input {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    opacity: 0;
+}
+.profileuploadinput .admin-profile-preview-canvas span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    color: #c3bfbf;
+}
+.profileuploadinput .admin-profile-preview-canvas span svg {
+    width: 33px;
+    height: 40px;
+    color: #e4e4e4;
+}
+.profileuploadinput .preview-image {
+    top: 19px;
 }

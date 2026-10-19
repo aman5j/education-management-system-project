@@ -1,4 +1,5 @@
 import React from "react";
+import { FiSearch } from "react-icons/fi";
 
 const CategoryFilters = ({
   filters,
@@ -6,8 +7,8 @@ const CategoryFilters = ({
   onReset,
 }) => {
   return (
-    <div className="category-filters">
-      <div className="category-filter-field">
+    <div className="common-card-filters">
+      <div className="input-search">
         <input
           type="text"
           name="search"
@@ -17,9 +18,11 @@ const CategoryFilters = ({
           onChange={onChange}
           placeholder="Search category..."
         />
+         <FiSearch />
+
       </div>
 
-      <div className="category-filter-field">
+      <div className="input-search">
         <select
           name="status"
           value={
@@ -43,7 +46,7 @@ const CategoryFilters = ({
 
       <button
         type="button"
-        className="category-reset-button"
+        className="admission-reset-button"
         onClick={onReset}
       >
         Reset

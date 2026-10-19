@@ -17,6 +17,7 @@ import {
 } from "../../../services/categoryService";
 
 import "../../../styles/CategoryManagement.css";
+import { FiPlus } from "react-icons/fi";
 
 const Categories = () => {
   const [
@@ -167,26 +168,16 @@ const Categories = () => {
 
   return (
     <div className="category-page">
-      <div className="category-page-header">
-        <div>
-          <h1>
-            Course Categories
-          </h1>
-
-          <p>
-            Manage course categories.
-          </p>
-        </div>
-
-        <Link
+<div class="page-header"><div><h1> Course Categories</h1></div>
+  <Link
           to="/admin/categories/add"
-          className="category-add-button"
+          className="themebtn"
         >
-          + Add Category
+          <FiPlus /> Add Category
         </Link>
-      </div>
+</div>
 
-      <div className="category-card">
+    
         <CategoryFilters
           filters={filters}
           onChange={
@@ -196,6 +187,9 @@ const Categories = () => {
             handleReset
           }
         />
+   
+      <div className="common-card">
+      
 
         {error && (
           <div className="category-list-error">

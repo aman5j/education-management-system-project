@@ -42,19 +42,11 @@ const AddCategory = () => {
 
   return (
     <div className="category-page">
-      <div className="category-page-header">
-        <div>
-          <h1>
-            Add Category
-          </h1>
-
-          <p>
-            Create a new course category.
-          </p>
+       <div class="page-header">
+        <div><h1>Add Category</h1></div>
         </div>
-      </div>
 
-      <div className="category-card">
+      <div className="common-card">
         <CategoryForm
           loading={loading}
           submitLabel="Create Category"

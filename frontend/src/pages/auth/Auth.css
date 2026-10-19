@@ -533,8 +533,8 @@ position: relative;
 height: 68px;
     padding: 8px 14px;
     border-bottom: 1px solid #eef2f7;
-    color: var(--text-secondary);
-    font-size: 12px;
+    color: #5d616c;
+    font-size: 13px;
     white-space: nowrap;
 }
 .common-table tbody tr:hover {
@@ -692,6 +692,12 @@ height: 68px;
   color: #dc2626;
 }
 
+label.admission-checkbox-label span {
+    white-space: nowrap;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+}
 /* Login portal role selector — additive styles; existing auth styles remain unchanged. */
 .auth-role-selector {
   min-width: 0;
@@ -777,4 +783,100 @@ height: 68px;
   .auth-role-options { gap: 6px; }
   .auth-role-option { min-height: 78px; padding: 8px 3px; }
   .auth-role-option__label { font-size: 12px; }
+}
+
+.student-name-cell {
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.student-avatar-wrapper {
+    width:55px;
+    height:55px;
+    flex-shrink: 0;
+}
+.student-avatar {
+    width:55px;
+    height:55px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    object-fit: cover;
+    display: block;
+    background: #f1f5f9;
+    object-position: top;
+    
+}
+.student-name-cell > div:last-child {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+.student-name-cell strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+.student-name-cell span {
+    color: var(--text-muted);
+    font-size: 9px;
+}
+.student-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 750;
+}
+.status-active {
+  /* background: #f0fdf4; */
+  color: #15803d;
+}
+
+.status-inactive {
+  /* background: #f3f4f6; */
+  color: #6b7280;
+}
+
+.status-suspended {
+  /* background: #fef2f2; */
+  color: #b91c1c;
+}
+.dropdown-status {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    height: 32px;
+    cursor: pointer;
+}
+.contact-li svg {
+    width: 22px;
+    height: 22px;
+    border: 1px solid #ddd;
+    padding: 2px;
+    background: #f8fafc;
+    border-radius: 3px;
+    color: #05478c;
+}
+.contact-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.contact-li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.contact-li svg {
+    width: 22px;
+    height: 22px;
+    border: 1px solid #ddd;
+    padding: 2px;
+    background: #f8fafc;
+    border-radius: 3px;
+    /* color: #f8fafc; */
 }
