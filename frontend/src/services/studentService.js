@@ -43,3 +43,13 @@ export const deleteStudent = async (id) => {
   const response = await api.delete(`/students/${id}`);
   return response.data;
 };
+
+
+
+export const getAttendanceRoster = async (params) => {
+  const response = await api.get("/students/attendance-roster", {
+    params,
+  });
+
+  return response.data;
+};

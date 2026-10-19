@@ -3,9 +3,9 @@ import {
   useState,
 } from "react";
 
-import {
-  Link,
-} from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+
 
 import "../../../styles/AdmissionManagement.css";
 
@@ -37,6 +37,32 @@ const money = (value) =>
   })}`;
 
 const Admissions = () => {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  const admissionsPath = location.pathname.startsWith("/staff")
+    ? "/staff/admissions"
+    : "/admin/admissions";
+
+  const permissions = Array.isArray(user?.assignedRole?.permissions)
+    ? user.assignedRole.permissions
+    : [];
+
+  const isAdmin = user?.role === "admin";
+
+  const canViewAdmissions =
+    isAdmin || permissions.includes("admissions.view");
+
+  const canCreateAdmission =
+    isAdmin || permissions.includes("admissions.create");
+
+  const canUpdateAdmission =
+    isAdmin || permissions.includes("admissions.update");
+
+  const canDeleteAdmission =
+    isAdmin || permissions.includes("admissions.delete");
+  
+
   const [admissions, setAdmissions] =
     useState([]);
 
@@ -171,13 +197,16 @@ const Admissions = () => {
           </h1>
         </div>
 
-        <Link
-          to="/admin/admissions/add"
-          className="themebtn"
-        >
-          <FiPlus />
-          Add Admission
-        </Link>
+        {canCreateAdmission && (
+          <Link
+            to={`${admissionsPath}/add`}
+            className="themebtn"
+          >
+            <FiPlus />
+            Add Admission
+          </Link>
+        )}
+
       </div>
  <div className="common-card-filters">
           <div className="input-search">
@@ -409,15 +438,17 @@ const Admissions = () => {
                         <td>
                           <div className="admission-actions">
 
+                          
                           <Link className="tooltip" data-tooltip="Download Admission Form"
-                              to={`/admin/admissions/${admission._id}`}
+                              to={`${admissionsPath}/${admission._id}`}
                               
                             >
                               <LuIdCard />
-
                             </Link>
+                            
+
                             <Link
-                              to={`/admin/admissions/${admission._id}`}
+                              to={`${admissionsPath}/${admission._id}`}
                               data-tooltip="Download ID Card" className="tooltip"
                             >
                              <GrDocument />
@@ -432,31 +463,38 @@ const Admissions = () => {
                         <td>
                           <div className="admission-actions">
                             
-                            <Link
-                              to={`/admin/admissions/${admission._id}`}
-                             data-tooltip="View" className="tooltip"
-                            >
-                              <FiEye />
-                            </Link>
+                            {canViewAdmissions && (
+                              <Link
+                                to={`${admissionsPath}/${admission._id}`}
+                                data-tooltip="View"
+                                className="tooltip"
+                              >
+                                <FiEye />
+                              </Link>
+                            )}
 
-                            <Link
-                              to={`/admin/admissions/${admission._id}/edit`}
-                               data-tooltip="Edit" className="tooltip"
-                            >
-                              <FiEdit2 />
-                            </Link>
+                            {canUpdateAdmission && (
+                              <Link
+                                to={`${admissionsPath}/${admission._id}/edit`}
+                                data-tooltip="Edit"
+                                className="tooltip"
+                              >
+                                <FiEdit2 />
+                              </Link>
+                            )}
 
-                            <button  data-tooltip="Delete" className="tooltip"
-                              type="button"
-                              title="Delete"
-                              onClick={() =>
-                                handleDelete(
-                                  admission._id
-                                )
-                              }
-                            >
-                              <FiTrash2 />
-                            </button>
+                            {canDeleteAdmission && (
+                              <button
+                                data-tooltip="Delete"
+                                className="tooltip"
+                                type="button"
+                                title="Delete"
+                                onClick={() => handleDelete(admission._id)}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            )}
+
                           </div>
                         </td>
                       </tr>

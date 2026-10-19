@@ -89,7 +89,6 @@ import VerifyReceipt from "./pages/public/VerifyReceipt";
 
 import RoleRoute from "./components/auth/RoleRoute";
 import AdminLayout from "./layout/AdminLayout";
-
 import { ROLES } from "./constants/roles";
 
 const Unauthorized = () => (
@@ -318,6 +317,7 @@ const App = () => {
         }
       /> */}
 
+{/* Staff portal: same layout, permission-filtered sidebar */}
       <Route
         path="/staff"
         element={
@@ -335,16 +335,57 @@ const App = () => {
           element={<StaffDashboard />}
         />
 
+        {/* Student management */}
         <Route
-          path="courses"
-          element={<Courses />}
+          path="students"
+          element={<Students />}
+        />
+        <Route
+          path="students/add"
+          element={<AddStudent />}
+        />
+        <Route
+          path="students/:id/edit"
+          element={<EditStudent />}
         />
 
+        {/* Attendance */}
         <Route
           path="attendance"
           element={<Attendance />}
         />
-        
+
+         {/* Course management */}
+        <Route path="courses" element={<Courses />} />
+        <Route path="courses/add" element={<AddCourse />} />
+        <Route path="courses/:id" element={<ViewCourse />} />
+        <Route path="courses/:id/edit" element={<EditCourse />} />
+
+        {/* Categories */}
+        <Route path="categories" element={<Categories />} />
+        <Route path="categories/add" element={<AddCategory />} />
+        <Route path="categories/:id" element={<ViewCategory />} />
+        <Route path="categories/:id/edit" element={<EditCategory />} />
+
+        {/* Subjects */}
+        <Route path="subjects" element={<SubjectManagement />} />
+        <Route path="subjects/add" element={<AddSubject />} />
+        <Route path="subjects/edit/:id" element={<EditSubject />} />
+        <Route path="subjects/view/:id" element={<ViewSubject />} />
+
+        {/* Batches */}
+        <Route path="batches" element={<Batches />} />
+        <Route path="batches/add" element={<AddBatch />} />
+        <Route path="batches/:id" element={<ViewBatch />} />
+        <Route path="batches/:id/edit" element={<EditBatch />} />
+
+        {/* Admissions */}
+        <Route path="admissions" element={<Admissions />} />
+        <Route path="admissions/add" element={<AddAdmission />} />
+        <Route path="admissions/:id" element={<ViewAdmission />} />
+        <Route path="admissions/:id/edit" element={<EditAdmission />} />
+
+
         <Route
           path="*"
           element={<Navigate to="/staff/dashboard" replace />}

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCourses } from "../../../services/courseService";
 import { getBatches } from "../../../services/batchService";
-import { getStudents } from "../../../services/studentService";
+// import { getStudents } from "../../../services/studentService";
+import { getAttendanceRoster } from "../../../services/studentService";
+
 import {
   getAttendance,
   createAttendance,
@@ -93,21 +95,35 @@ const Attendance = () => {
     setMessage("");
 
     try {
+      // const [studentResponse, attendanceResponse] = await Promise.all([
+      //   getStudents({
+      //     course_id: courseId,
+      //     batch_id: batchId,
+      //     page: 1,
+      //     limit: 500,
+      //   }),
+      //   getAttendance({
+      //     course_id: courseId,
+      //     batch_id: batchId,
+      //     date,
+      //     page: 1,
+      //     limit: 500,
+      //   }),
+      // ]);
+
       const [studentResponse, attendanceResponse] = await Promise.all([
-        getStudents({
-          course_id: courseId,
-          batch_id: batchId,
-          page: 1,
-          limit: 500,
-        }),
-        getAttendance({
-          course_id: courseId,
-          batch_id: batchId,
-          date,
-          page: 1,
-          limit: 500,
-        }),
-      ]);
+          getAttendanceRoster({
+            course_id: courseId,
+            batch_id: batchId,
+          }),
+          getAttendance({
+            course_id: courseId,
+            batch_id: batchId,
+            date,
+            page: 1,
+            limit: 500,
+          }),
+        ]);
 
       const studentList = getList(studentResponse, ["students"]);
       const attendanceList = getList(attendanceResponse, ["records"]);

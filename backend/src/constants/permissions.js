@@ -27,6 +27,7 @@ export const PERMISSIONS = Object.freeze({
   ADMISSIONS_VIEW: "admissions.view",
   ADMISSIONS_CREATE: "admissions.create",
   ADMISSIONS_UPDATE: "admissions.update",
+  ADMISSIONS_DELETE: "admissions.delete",
   ADMISSIONS_APPROVE: "admissions.approve",
 
   // Courses

@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -8,10 +9,8 @@ import {
   deleteAdmission,
 } from "../controllers/admission.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 import {
   createAdmissionValidation,
@@ -22,51 +21,43 @@ import validationMiddleware from "../middleware/validationMiddleware.js";
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
-
 router.use(authenticate);
 
-/*
-|--------------------------------------------------------------------------
-| Admin Admission Management
-|--------------------------------------------------------------------------
-*/
-
+// View admissions
 router.get(
   "/",
-  authorizeRoles("admin"),
+  requirePermission("admissions.view"),
   getAdmissions
 );
 
 router.get(
   "/:id",
-  authorizeRoles("admin"),
+  requirePermission("admissions.view"),
   getAdmission
 );
 
+// Create admission
 router.post(
   "/",
-  authorizeRoles("admin"),
+  requirePermission("admissions.create"),
   createAdmissionValidation,
   validationMiddleware,
   createAdmission
 );
 
+// Update admission
 router.put(
   "/:id",
-  authorizeRoles("admin"),
+  requirePermission("admissions.update"),
   updateAdmissionValidation,
   validationMiddleware,
   updateAdmission
 );
 
+// Delete admission
 router.delete(
   "/:id",
-  authorizeRoles("admin"),
+  requirePermission("admissions.delete"),
   deleteAdmission
 );
 

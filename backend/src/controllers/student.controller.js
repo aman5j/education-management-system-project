@@ -69,6 +69,60 @@ const escapeRegex = (
   );
 };
 
+
+export const getAttendanceRoster = async (req, res, next) => {
+  try {
+    const { course_id, batch_id } = req.query;
+
+    if (
+      !course_id ||
+      !batch_id ||
+      !mongoose.Types.ObjectId.isValid(course_id) ||
+      !mongoose.Types.ObjectId.isValid(batch_id)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid course_id and batch_id are required.",
+      });
+    }
+
+    // Verify that the selected batch belongs to the selected course.
+    const batch = await Batch.findOne({
+      _id: batch_id,
+      course_id,
+    })
+      .select("_id")
+      .lean();
+
+    if (!batch) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected batch does not belong to the selected course.",
+      });
+    }
+
+    // Return only active students in this exact course and batch.
+    // Do not expose addresses, phone numbers, documents, or other
+    // private student-management fields to the attendance screen.
+    const students = await Student.find({
+      course_id,
+      batch_id,
+      status: "active",
+    })
+      .select("_id rollNo firstName surname")
+      .sort({ firstName: 1, surname: 1, rollNo: 1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: { students },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const getStudents =
   async (req, res, next) => {
     try {
