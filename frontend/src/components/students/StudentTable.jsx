@@ -8,6 +8,12 @@ import {
 } from "react-icons/fi";
 
 import { Link } from "react-router-dom";
+import { IoIosCall } from "react-icons/io";
+
+import { MdOutgoingMail } from "react-icons/md";
+import { MdDateRange } from "react-icons/md";
+
+
 
 // import { getAssetUrl } from "../../../utils/assetUrl";
 import { getAssetUrl } from "../../utils/assetUrl";
@@ -343,20 +349,11 @@ const handleDownloadReceipt = async (student) => {
 
 
   return (
-    <div className="student-table-wrapper">
-      <table className="student-table">
+    <div className="common-table-wrapper">
+      <table className="common-table">
         <thead>
           <tr>
-            <th
-              onClick={() =>
-                onSort("rollNo")
-              }
-            >
-              Roll No
-              {renderSortIcon(
-                "rollNo"
-              )}
-            </th>
+            
 
             <th
               onClick={() =>
@@ -368,16 +365,26 @@ const handleDownloadReceipt = async (student) => {
                 "firstName"
               )}
             </th>
+            <th
+              onClick={() =>
+                onSort("rollNo")
+              }
+            >
+              Roll No
+              {renderSortIcon(
+                "rollNo"
+              )}
+            </th>
 
-            <th>Father Name</th>
+           
 
-            <th>Mobile</th>
+            <th>Contact</th>
 
-            <th>Email</th>
+           
 
-            <th>Course</th>
+            {/* <th>Course</th> */}
 
-            <th>Batch</th>
+            <th>Create</th>
 
             <th
               onClick={() =>
@@ -410,42 +417,11 @@ const handleDownloadReceipt = async (student) => {
                 <tr
                   key={student._id}
                 >
-                  <td>
-                    <span className="student-roll">
-                      {student.rollNo}
-                    </span>
-                  </td>
+                
 
                   <td>
                     <div className="student-name-cell">
-                      {/* {student.profileImage ? (
-                        // <img
-                        //   src={
-                        //     student.profileImage
-                        //   }
-                        //   alt={
-                        //     student.firstName
-                        //   }
-                        //   className="student-avatar"
-                        // />
-                        <img
-                            src={getAssetUrl(student.profileImage)}
-                            alt={`${student.firstName} ${student.surname || ""}`}
-                            className="student-avatar"
-                            onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                                event.currentTarget.nextElementSibling?.classList.remove(
-                                "student-avatar-fallback-hidden"
-                                );
-                            }}
-                        />
-                      ) : (
-                        <div className="student-avatar student-avatar-placeholder">
-                          {student.firstName
-                            ?.charAt(0)
-                            ?.toUpperCase()}
-                        </div>
-                      )} */}
+                     
 
                       <div className="student-avatar-wrapper">
                         {student.profileImage ? (
@@ -459,6 +435,7 @@ const handleDownloadReceipt = async (student) => {
                                 )}&background=2563eb&color=fff`;
                             }}
                             />
+
                         ) : (
                             <div className="student-avatar student-avatar-placeholder">
                             {(student.firstName || "S").charAt(0).toUpperCase()}
@@ -475,35 +452,56 @@ const handleDownloadReceipt = async (student) => {
                             student.surname
                           }
                         </strong>
+                        {student.fatherName ||
+                      "Father Name -"}
 
-                        <span>
+                        {/* <span>
                           {student.gender ||
                             "Gender not set"}
-                        </span>
+                        </span> */}
+                           {student.signature ? (
+  <img
+    src={getAssetUrl(student.signature)}
+    alt="Student Signature" height="20px"
+    className="student-signature"
+    onError={(event) => {
+      event.currentTarget.style.display = "none";
+    }}
+  />
+) : (
+  <span className="signature-not-available">
+    No Signature
+  </span>
+)}
+
                       </div>
+                    </div>
+                  </td>
+                    <td>
+                    <span className="student-roll">
+                      {student.rollNo}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="contact-details">
+                     <div className="contact-li"> <IoIosCall />  <span>{student.mobile}</span></div>
+                    <div className="contact-li"> <MdOutgoingMail /> <span>{student.email || "-"}</span></div>
                     </div>
                   </td>
 
                   <td>
-                    {student.fatherName ||
-                      "-"}
-                  </td>
 
-                  <td>
-                    {student.mobile}
-                  </td>
+                     <div className="contact-details">
+                     <div className="contact-li"><MdDateRange />  <span>{student.createdAt
+  ? new Date(student.createdAt).toLocaleDateString("en-GB")
+  : "-"}</span></div>
+                    
+                    </div>
 
-                  <td>
-                    {student.email ||
-                      "-"}
-                  </td>
+                    
 
-                  <td>
-                    {student.course_id?.courseTitle || "-"}
-                  </td>
-
-                  <td>
-                    {student.batch_id?.batch_name || "-"}
+ 
                   </td>
 
                   <td>
@@ -511,7 +509,7 @@ const handleDownloadReceipt = async (student) => {
                     // Keep your existing status <select> here.
                     // Do not change its options or onChange handler.
                     <select
-                      className={`student-status-select student-status-${student.status}`}
+                      className={`dropdown-status status-${student.status}`}
                       value={
                         student.status
                       }
@@ -546,7 +544,7 @@ const handleDownloadReceipt = async (student) => {
 
                   <td>
                     <div className="student-actions">
-                      <button
+                      <button className="tooltip" data-tooltip="View Student"
                         type="button"
                         title="View"
                         onClick={() =>
@@ -574,9 +572,9 @@ const handleDownloadReceipt = async (student) => {
                       {canManageDocuments && (
                       // Keep the existing Manage Documents button here.
                       <button
-                        type="button"
+                        type="button" 
                         title="Manage Documents"
-                        className="student-document-table-action"
+                        className="tooltip student-document-table-action" data-tooltip="Upload Document"
                         onClick={() =>
                           onDocuments?.(student)
                         }
@@ -609,16 +607,17 @@ const handleDownloadReceipt = async (student) => {
                       // Keep the existing Payment History <Link> here.
                       <Link
                         to={`/admin/students/${student._id}/payments`}
-                        className="student-action-button"
-                        title="Payment History"
+                        
+                        className="tooltip student-action-button" data-tooltip="Payment History"
+                        
                       >
                         <FiCreditCard />
                       </Link>
                       )}
 
-                      <button
-                        type="button"
-                        title="Download Invoice / Receipt"
+                      <button className="tooltip" data-tooltip="Download Fess Receipt"
+                        type="button" 
+                       
                         onClick={() => handleDownloadReceipt(student)}
                       >
                         <FiDownload />

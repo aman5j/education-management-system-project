@@ -6,6 +6,9 @@ import React, {
 import {
   getAssetUrl,
 } from "../../utils/assetUrl";
+import { FiUpload } from "react-icons/fi";
+
+import { FiEye } from "react-icons/fi";
 
 const initialState = {
   categoryName: "",
@@ -271,16 +274,14 @@ const CategoryForm = ({
           {serverError}
         </div>
       )}
+<div class="panel-header"><div><h3>Category Information</h3> </div></div>
+      <div className="cardbody">
+        
 
-      <div className="category-form-section">
-        <h2>
-          Category Information
-        </h2>
-
-        <div className="category-form-grid">
-          <div className="category-field">
+        <div className="category-form-grid ">
+          <div className="input-felid student-form-full">
             <label>
-              Category Name *
+              Category Name <span className="required">*</span>
             </label>
 
             <input
@@ -300,9 +301,9 @@ const CategoryForm = ({
             )}
           </div>
 
-          <div className="category-field">
+          <div className="input-felid ">
             <label>
-              Display Order *
+              Display Order <span className="required">*</span>
             </label>
 
             <input
@@ -322,9 +323,9 @@ const CategoryForm = ({
             )}
           </div>
 
-          <div className="category-field">
+          <div className="input-felid ">
             <label>
-              Status *
+              Status <span className="required">*</span>
             </label>
 
             <select
@@ -350,9 +351,9 @@ const CategoryForm = ({
             )}
           </div>
 
-          <div className="category-field">
+          {/* <div className="input-felid ">
             <label>
-              Category Icon
+              Category Icon <span className="required">*</span>
             </label>
 
             <input
@@ -389,14 +390,72 @@ const CategoryForm = ({
                 </span>
               </div>
             )}
-          </div>
+          </div> */}
+
+
+ <div class="admin-profile-upload-box">
+                <span class="admin-profile-upload-icon">
+                 <FiUpload />
+
+                </span>
+                <strong>Upload Student Photo</strong>
+                <small>JPG, PNG or WEBP · Maximum 2 MB</small>
+                <label class="admin-profile-browse-button">Browse files
+               <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              onChange={
+                handleImageChange
+              }
+            />
+                </label>
+              </div>
+
+
+              <div class="admin-profile-preview-box">
+                {/* <span>Preview of your Logo</span> */}
+                <div class="admin-profile-preview-canvas">
+                 {fieldError(
+              "categoryIcon"
+            )}
+
+            {imagePreview && (
+              <div className="category-image-preview">
+                <img
+                  src={
+                    imagePreview
+                  }
+                  alt="Category preview"
+                  onError={(
+                    event
+                  ) => {
+                    event.currentTarget.style.display =
+                      "none";
+                  }}
+                />
+
+                <span>
+                  {image
+                    ? "New icon selected"
+                    : "Current category icon"}
+                </span>
+              </div>
+            )}
+                </div>
+                <a class="preview-image tooltip" data-tooltip="View Full Image" href="{profilePreview}" target="_blank" >
+                  <FiEye />
+                </a>
+              </div>
+
+
+          
         </div>
       </div>
 
       <div className="category-form-footer">
         <button
           type="submit"
-          className="category-submit-button"
+          className="themebtn"
           disabled={loading}
         >
           {loading

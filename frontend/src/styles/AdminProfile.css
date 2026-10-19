@@ -299,6 +299,7 @@
   position: relative;
 }
 
+
 .admin-profile-upload-icon {
   display: grid;
   width: 27px;
@@ -338,6 +339,7 @@
   color: #fff;
   font-size: 10px;
   cursor: pointer;
+  width: 80px;
 }
 
 .admin-profile-browse-button:has(input:disabled) {

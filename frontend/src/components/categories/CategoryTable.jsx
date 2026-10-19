@@ -2,11 +2,16 @@ import React from "react";
 import {
   Link,
 } from "react-router-dom";
+import { MdOutlineDateRange } from "react-icons/md";
+import { FiEye } from "react-icons/fi";
 
 import {
   getAssetUrl,
 } from "../../utils/assetUrl";
+import { CiImageOff } from "react-icons/ci";
 
+import { FiEdit2 } from "react-icons/fi";
+import { FiTrash2 } from "react-icons/fi";
 const CategoryTable = ({
   categories,
   onDelete,
@@ -23,8 +28,8 @@ const CategoryTable = ({
   }
 
   return (
-    <div className="category-table-wrapper">
-      <table className="category-table">
+    <div className="common-table-wrapper">
+      <table className="common-table">
         <thead>
           <tr>
             <th>
@@ -64,7 +69,7 @@ const CategoryTable = ({
                 <td>
                   {category.categoryIcon ? (
                     <img
-                      className="category-table-icon"
+                      className="student-avatar"
                       src={getAssetUrl(
                         category.categoryIcon
                       )}
@@ -79,14 +84,15 @@ const CategoryTable = ({
                       }}
                     />
                   ) : (
-                    <div className="category-no-icon">
-                      —
+                    <div className="student-avatar ">
+                      <CiImageOff />
+
                     </div>
                   )}
                 </td>
 
                 <td>
-                  <strong>
+                  <strong className="student-roll">
                     {
                       category.categoryName
                     }
@@ -115,39 +121,47 @@ const CategoryTable = ({
                 </td>
 
                 <td>
-                  {category.createdAt
+
+                  <div class="contact-details">
+                    <div class="contact-li">
+                      <MdOutlineDateRange />
+
+                       <span> {category.createdAt
                     ? new Date(
                         category.createdAt
                       ).toLocaleDateString()
-                    : "—"}
+                    : "—"}</span>
+                       </div></div>
+
+                 
                 </td>
 
                 <td>
-                  <div className="category-actions">
-                    <Link
+                  <div className="student-actions">
+                    <Link className="tooltip" data-tooltip="View"
                       to={`/admin/categories/${category._id}`}
-                      className="category-action view"
+                      
                     >
-                      View
+                      <FiEye />
                     </Link>
 
                     <Link
                       to={`/admin/categories/${category._id}/edit`}
-                      className="category-action edit"
+                      className="tooltip" data-tooltip="Edit"
                     >
-                      Edit
+                     <FiEdit2 />
                     </Link>
 
                     <button
                       type="button"
-                      className="category-action delete"
+                     className="tooltip" data-tooltip="Delete"
                       onClick={() =>
                         onDelete(
                           category._id
                         )
                       }
                     >
-                      Delete
+                       <FiTrash2 />
                     </button>
                   </div>
                 </td>
