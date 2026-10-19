@@ -6,6 +6,7 @@ import {
 import {
   Link,
   useNavigate,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
@@ -41,6 +42,12 @@ const ViewAdmission = () => {
 
   const navigate =
     useNavigate();
+  
+  const location = useLocation();
+
+  const admissionsPath = location.pathname.startsWith("/staff")
+    ? "/staff/admissions"
+    : "/admin/admissions";
 
   const [admission, setAdmission] =
     useState(null);
@@ -139,7 +146,7 @@ const ViewAdmission = () => {
 
         <div className="admission-header-actions">
           <Link
-            to={`/admin/admissions/${id}/edit`}
+            to={`${admissionsPath}/${id}/edit`}
             className="admission-primary-button"
           >
             Edit Admission
@@ -149,9 +156,7 @@ const ViewAdmission = () => {
             type="button"
             className="admission-secondary-button"
             onClick={() =>
-              navigate(
-                "/admin/admissions"
-              )
+              navigate(admissionsPath)
             }
           >
             Back

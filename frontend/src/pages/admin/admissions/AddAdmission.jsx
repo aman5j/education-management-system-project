@@ -4,6 +4,7 @@ import {
 
 import {
   useNavigate,
+  useLocation
 } from "react-router-dom";
 
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
@@ -15,6 +16,12 @@ import {
 const AddAdmission = () => {
   const navigate =
     useNavigate();
+  
+  const location = useLocation();
+
+  const admissionsPath = location.pathname.startsWith("/staff")
+    ? "/staff/admissions"
+    : "/admin/admissions";
 
   const [saving, setSaving] =
     useState(false);
@@ -28,9 +35,8 @@ const AddAdmission = () => {
           formData
         );
 
-        navigate(
-          "/admin/admissions"
-        );
+        navigate(admissionsPath);
+        
       } catch (error) {
         console.error(
           "Create admission error:",

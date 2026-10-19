@@ -5,7 +5,10 @@ import {
 
 import {
   Link,
+  useLocation
 } from "react-router-dom";
+
+import { useAuth } from "../../../context/AuthContext";
 
 import "../../../styles/AdmissionManagement.css";
 
@@ -37,6 +40,31 @@ const money = (value) =>
   })}`;
 
 const Admissions = () => {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  const admissionsPath = location.pathname.startsWith("/staff")
+    ? "/staff/admissions"
+    : "/admin/admissions";
+
+  const permissions = Array.isArray(user?.assignedRole?.permissions)
+    ? user.assignedRole.permissions
+    : [];
+
+  const isAdmin = user?.role === "admin";
+
+  const canCreateAdmission =
+    isAdmin || permissions.includes("admissions.create");
+
+  const canUpdateAdmission =
+    isAdmin || permissions.includes("admissions.update");
+
+  const canDeleteAdmission =
+    isAdmin || permissions.includes("admissions.update");
+
+  const canViewAdmission =
+    isAdmin || permissions.includes("admissions.view");
+    
   const [admissions, setAdmissions] =
     useState([]);
 
@@ -171,6 +199,7 @@ const Admissions = () => {
           </h1>
         </div>
 
+        {canCreateAdmission && (
         <Link
           to="/admin/admissions/add"
           className="themebtn"
@@ -178,6 +207,8 @@ const Admissions = () => {
           <FiPlus />
           Add Admission
         </Link>
+        )}
+
       </div>
  <div className="common-card-filters">
           <div className="input-search">
@@ -409,13 +440,15 @@ const Admissions = () => {
                         <td>
                           <div className="admission-actions">
 
+                          
                           <Link className="tooltip" data-tooltip="Download Admission Form"
                               to={`/admin/admissions/${admission._id}`}
                               
                             >
                               <LuIdCard />
-
                             </Link>
+                            
+
                             <Link
                               to={`/admin/admissions/${admission._id}`}
                               data-tooltip="Download ID Card" className="tooltip"
@@ -432,20 +465,25 @@ const Admissions = () => {
                         <td>
                           <div className="admission-actions">
                             
+                            {canViewAdmission && (
                             <Link
                               to={`/admin/admissions/${admission._id}`}
                              data-tooltip="View" className="tooltip"
                             >
                               <FiEye />
                             </Link>
+                            )}
 
+                            {canUpdateAdmission && (
                             <Link
                               to={`/admin/admissions/${admission._id}/edit`}
                                data-tooltip="Edit" className="tooltip"
                             >
                               <FiEdit2 />
                             </Link>
+                            )}
 
+                            {canDeleteAdmission && (
                             <button  data-tooltip="Delete" className="tooltip"
                               type="button"
                               title="Delete"
@@ -457,6 +495,8 @@ const Admissions = () => {
                             >
                               <FiTrash2 />
                             </button>
+                            )}
+                            
                           </div>
                         </td>
                       </tr>

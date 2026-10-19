@@ -5,6 +5,7 @@ import {
 
 import {
   useNavigate,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
@@ -21,6 +22,12 @@ const EditAdmission = () => {
 
   const navigate =
     useNavigate();
+  
+  const location = useLocation();
+
+  const admissionsPath = location.pathname.startsWith("/staff")
+    ? "/staff/admissions"
+    : "/admin/admissions";
 
   const [admission, setAdmission] =
     useState(null);
@@ -75,9 +82,8 @@ const EditAdmission = () => {
           formData
         );
 
-        navigate(
-          `/admin/admissions/${id}`
-        );
+        navigate(`${admissionsPath}/${id}`);
+
       } catch (submitError) {
         throw new Error(
           submitError?.response
@@ -115,7 +121,7 @@ const EditAdmission = () => {
 
   return (
     <div className="admission-page">
-      <div class="page-header"><div><h1>Edit Admission</h1></div></div>
+      <div className="page-header"><div><h1>Edit Admission</h1></div></div>
 
 
       <AdmissionForm
