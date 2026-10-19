@@ -39,25 +39,76 @@ const ViewCourse = () => {
   const [loading, setLoading] =
     useState(true);
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   const loadCourse = async () => {
+  //     try {
+  //       const response =
+  //         await getCourse(id);
+
+  //       setCourse(response.data.data);
+  //     } catch (error) {
+  //       console.error(
+  //         "Failed to load course:",
+  //         error
+  //       );
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   loadCourse();
+  // }, [id]);
+
+    useEffect(() => {
+    if (!canView || !id) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
     const loadCourse = async () => {
       try {
-        const response =
-          await getCourse(id);
+        setLoading(true);
 
-        setCourse(response.data.data);
+        const response = await getCourse(id);
+
+        if (!cancelled) {
+          setCourse(response.data?.data ?? null);
+        }
       } catch (error) {
-        console.error(
-          "Failed to load course:",
-          error
-        );
+        if (!cancelled) {
+          setCourse(null);
+          console.error("Failed to load course:", error);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadCourse();
-  }, [id]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, canView]);
+
+
+    if (!canView) {
+    return (
+      <div className="course-page">
+        <div className="course-list-error" role="alert">
+          You do not have permission to view this course.
+        </div>
+
+        <Link to={basePath} className="course-primary-btn">
+          Back to Courses
+        </Link>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -103,12 +154,7 @@ const ViewCourse = () => {
           )}
         </div>
 
-        {/* <Link
-          to={`/admin/courses/${course._id}/edit`}
-          className="course-primary-btn"
-        >
-          Edit Course
-        </Link> */}
+
       </div>
 
       <div className="course-card">
