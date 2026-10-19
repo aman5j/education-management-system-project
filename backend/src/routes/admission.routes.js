@@ -23,7 +23,7 @@ const router = express.Router();
 
 router.use(authenticate);
 
-// View admissions list and individual admission
+// View admissions
 router.get(
   "/",
   requirePermission("admissions.view"),
@@ -54,8 +54,9 @@ router.put(
   updateAdmission
 );
 
-// Delete admission: use the existing update permission until
-// a dedicated admissions.delete permission is added.
+// Delete admission.
+// The current permission catalog has no admissions.delete key,
+// so use admissions.update until a dedicated permission is added.
 router.delete(
   "/:id",
   requirePermission("admissions.update"),

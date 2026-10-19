@@ -3,12 +3,9 @@ import {
   useState,
 } from "react";
 
-import {
-  Link,
-  useLocation
-} from "react-router-dom";
-
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+
 
 import "../../../styles/AdmissionManagement.css";
 
@@ -53,6 +50,9 @@ const Admissions = () => {
 
   const isAdmin = user?.role === "admin";
 
+  const canViewAdmissions =
+    isAdmin || permissions.includes("admissions.view");
+
   const canCreateAdmission =
     isAdmin || permissions.includes("admissions.create");
 
@@ -61,10 +61,8 @@ const Admissions = () => {
 
   const canDeleteAdmission =
     isAdmin || permissions.includes("admissions.update");
+  
 
-  const canViewAdmission =
-    isAdmin || permissions.includes("admissions.view");
-    
   const [admissions, setAdmissions] =
     useState([]);
 
@@ -200,13 +198,13 @@ const Admissions = () => {
         </div>
 
         {canCreateAdmission && (
-        <Link
-          to="/admin/admissions/add"
-          className="themebtn"
-        >
-          <FiPlus />
-          Add Admission
-        </Link>
+          <Link
+            to={`${admissionsPath}/add`}
+            className="themebtn"
+          >
+            <FiPlus />
+            Add Admission
+          </Link>
         )}
 
       </div>
@@ -442,7 +440,7 @@ const Admissions = () => {
 
                           
                           <Link className="tooltip" data-tooltip="Download Admission Form"
-                              to={`/admin/admissions/${admission._id}`}
+                              to={`${admissionsPath}/${admission._id}`}
                               
                             >
                               <LuIdCard />
@@ -450,7 +448,7 @@ const Admissions = () => {
                             
 
                             <Link
-                              to={`/admin/admissions/${admission._id}`}
+                              to={`${admissionsPath}/${admission._id}`}
                               data-tooltip="Download ID Card" className="tooltip"
                             >
                              <GrDocument />
@@ -465,38 +463,38 @@ const Admissions = () => {
                         <td>
                           <div className="admission-actions">
                             
-                            {canViewAdmission && (
-                            <Link
-                              to={`/admin/admissions/${admission._id}`}
-                             data-tooltip="View" className="tooltip"
-                            >
-                              <FiEye />
-                            </Link>
+                            {canViewAdmissions && (
+                              <Link
+                                to={`${admissionsPath}/${admission._id}`}
+                                data-tooltip="View"
+                                className="tooltip"
+                              >
+                                <FiEye />
+                              </Link>
                             )}
 
                             {canUpdateAdmission && (
-                            <Link
-                              to={`/admin/admissions/${admission._id}/edit`}
-                               data-tooltip="Edit" className="tooltip"
-                            >
-                              <FiEdit2 />
-                            </Link>
+                              <Link
+                                to={`${admissionsPath}/${admission._id}/edit`}
+                                data-tooltip="Edit"
+                                className="tooltip"
+                              >
+                                <FiEdit2 />
+                              </Link>
                             )}
 
                             {canDeleteAdmission && (
-                            <button  data-tooltip="Delete" className="tooltip"
-                              type="button"
-                              title="Delete"
-                              onClick={() =>
-                                handleDelete(
-                                  admission._id
-                                )
-                              }
-                            >
-                              <FiTrash2 />
-                            </button>
+                              <button
+                                data-tooltip="Delete"
+                                className="tooltip"
+                                type="button"
+                                title="Delete"
+                                onClick={() => handleDelete(admission._id)}
+                              >
+                                <FiTrash2 />
+                              </button>
                             )}
-                            
+
                           </div>
                         </td>
                       </tr>

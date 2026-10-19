@@ -4,8 +4,8 @@ import {
 } from "react";
 
 import {
-  useNavigate,
   useLocation,
+  useNavigate,
   useParams,
 } from "react-router-dom";
 
@@ -121,8 +121,11 @@ const EditAdmission = () => {
 
   return (
     <div className="admission-page">
-      <div className="page-header"><div><h1>Edit Admission</h1></div></div>
-
+      <div className="page-header">
+        <div>
+          <h1>Edit Admission</h1>
+        </div>
+      </div>
 
       <AdmissionForm
         initialData={

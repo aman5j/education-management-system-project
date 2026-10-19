@@ -3,8 +3,8 @@ import {
 } from "react";
 
 import {
+  useLocation,
   useNavigate,
-  useLocation
 } from "react-router-dom";
 
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
@@ -36,7 +36,7 @@ const AddAdmission = () => {
         );
 
         navigate(admissionsPath);
-        
+
       } catch (error) {
         console.error(
           "Create admission error:",
