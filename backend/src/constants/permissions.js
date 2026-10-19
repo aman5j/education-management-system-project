@@ -36,6 +36,18 @@ export const PERMISSIONS = Object.freeze({
   COURSES_UPDATE: "courses.update",
   COURSES_DELETE: "courses.delete",
 
+  
+  // Subjects
+  SUBJECTS_VIEW: "subjects.view",
+  SUBJECTS_CREATE: "subjects.create",
+  SUBJECTS_UPDATE: "subjects.update",
+  SUBJECTS_DELETE: "subjects.delete",
+
+  // Subject Question Bank
+  QUESTION_BANK_VIEW: "question_bank.view",
+  QUESTION_BANK_MANAGE: "question_bank.manage",
+
+
   // Batches
   BATCHES_VIEW: "batches.view",
   BATCHES_CREATE: "batches.create",

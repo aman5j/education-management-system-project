@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Subject from "../models/Subject.js";
+import Course from "../models/Course.js";
 
 const sendError = (res, statusCode, message, errorCode) =>
   res.status(statusCode).json({
@@ -549,6 +550,78 @@ export const updateSubjectStatus = async (req, res) => {
 // DELETE SUBJECT
 // DELETE /api/subjects/:id
 // =====================================================
+// export const deleteSubject = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     if (!isValidObjectId(id)) {
+//       return sendError(
+//         res,
+//         400,
+//         "Invalid subject ID.",
+//         "INVALID_SUBJECT_ID"
+//       );
+//     }
+
+//     const subject = await Subject.findById(id);
+
+//     if (!subject) {
+//       return sendError(
+//         res,
+//         404,
+//         "Subject not found.",
+//         "SUBJECT_NOT_FOUND"
+//       );
+//     }
+
+//     // Preserve safeguards for modules that already reference subjects.
+//     const Question = mongoose.models.Question;
+//     const Exam = mongoose.models.Exam;
+
+//     if (Question) {
+//       const questionExists = await Question.exists({
+//         subject_id: id,
+//       });
+
+//       if (questionExists) {
+//         return sendError(
+//           res,
+//           409,
+//           "This subject is used by questions. Remove or reassign those questions before deleting it.",
+//           "SUBJECT_IN_USE"
+//         );
+//       }
+//     }
+
+//     if (Exam) {
+//       const examExists = await Exam.exists({
+//         subject_id: id,
+//       });
+
+//       if (examExists) {
+//         return sendError(
+//           res,
+//           409,
+//           "This subject is used by exams and cannot be deleted.",
+//           "SUBJECT_IN_USE"
+//         );
+//       }
+//     }
+
+//     await subject.deleteOne();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Subject deleted successfully.",
+//       data: { id: subject._id },
+//     });
+//   } catch (error) {
+//     return handleControllerError(res, error);
+//   }
+// };
+
+
+
 export const deleteSubject = async (req, res) => {
   try {
     const { id } = req.params;
@@ -573,36 +646,56 @@ export const deleteSubject = async (req, res) => {
       );
     }
 
-    // Preserve safeguards for modules that already reference subjects.
-    const Question = mongoose.models.Question;
+    // Do not delete a subject still assigned to a course.
+    const courseUsesSubject = await Course.exists({
+      $or: [
+        { subjects: subject._id },
+        { course_id: subject._id },
+      ],
+    });
+
+    if (courseUsesSubject) {
+      return sendError(
+        res,
+        409,
+        "This subject is assigned to a course. Remove it from the course first.",
+        "SUBJECT_IN_USE_BY_COURSE"
+      );
+    }
+
+    // Keep compatibility with older exam records that reference
+    // a subject directly.
     const Exam = mongoose.models.Exam;
+
+    if (Exam) {
+      const examUsesSubject = await Exam.exists({
+        subject_id: subject._id,
+      });
+
+      if (examUsesSubject) {
+        return sendError(
+          res,
+          409,
+          "This subject is referenced by an exam and cannot be deleted.",
+          "SUBJECT_IN_USE_BY_EXAM"
+        );
+      }
+    }
+
+    // Keep compatibility with any legacy separate Question model.
+    const Question = mongoose.models.Question;
 
     if (Question) {
       const questionExists = await Question.exists({
-        subject_id: id,
+        subject_id: subject._id,
       });
 
       if (questionExists) {
         return sendError(
           res,
           409,
-          "This subject is used by questions. Remove or reassign those questions before deleting it.",
-          "SUBJECT_IN_USE"
-        );
-      }
-    }
-
-    if (Exam) {
-      const examExists = await Exam.exists({
-        subject_id: id,
-      });
-
-      if (examExists) {
-        return sendError(
-          res,
-          409,
-          "This subject is used by exams and cannot be deleted.",
-          "SUBJECT_IN_USE"
+          "Legacy question records still reference this subject.",
+          "SUBJECT_IN_USE_BY_QUESTION"
         );
       }
     }
@@ -618,3 +711,4 @@ export const deleteSubject = async (req, res) => {
     return handleControllerError(res, error);
   }
 };
+
