@@ -398,8 +398,11 @@ const CategoryForm = ({
                  <FiUpload />
 
                 </span>
-                <strong>Upload Student Photo</strong>
-                <small>JPG, PNG or WEBP · Maximum 2 MB</small>
+
+                <strong>Upload Category Icon</strong>
+                <small>JPG, PNG or WEBP · Maximum 5 MB</small>
+
+                
                 <label class="admin-profile-browse-button">Browse files
                <input
               type="file"
@@ -442,9 +445,21 @@ const CategoryForm = ({
               </div>
             )}
                 </div>
-                <a class="preview-image tooltip" data-tooltip="View Full Image" href="{profilePreview}" target="_blank" >
-                  <FiEye />
-                </a>
+
+                {imagePreview && (
+                  <a
+                    className="preview-image tooltip"
+                    data-tooltip="View Full Image"
+                    href={imagePreview}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View category icon"
+                  >
+                    <FiEye />
+                  </a>
+                )}
+
+
               </div>
 
 
