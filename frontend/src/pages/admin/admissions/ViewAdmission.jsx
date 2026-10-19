@@ -145,12 +145,12 @@ const ViewAdmission = () => {
         </div>
 
         <div className="admission-header-actions">
-          <Link
+          {/* <Link
             to={`${admissionsPath}/${id}/edit`}
             className="admission-primary-button"
           >
             Edit Admission
-          </Link>
+          </Link> */}
 
           <button
             type="button"
