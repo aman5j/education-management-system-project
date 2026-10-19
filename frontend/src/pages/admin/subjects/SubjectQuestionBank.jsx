@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
   FiArrowLeft,
@@ -76,6 +76,11 @@ const normalizeExcelRow = (row = {}) => {
 export default function SubjectQuestionBank() {
   const { id: subjectId } = useParams();
   const navigate = useNavigate();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [subject, setSubject] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -408,7 +413,7 @@ export default function SubjectQuestionBank() {
         <button
           type="button"
           className="sqb-secondary"
-          onClick={() => navigate("/admin/subjects")}
+          onClick={() => navigate(`${basePath}/subjects`)}
         >
           <FiArrowLeft /> Back to Subjects
         </button>

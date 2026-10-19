@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiSave } from "react-icons/fi";
 
 import { createSubject } from "../../../services/subjectService";
@@ -14,6 +14,11 @@ const INITIAL_FORM = {
 
 export default function AddSubject() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
+    
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -56,7 +61,7 @@ export default function AddSubject() {
         status: formData.status,
       });
 
-      navigate("/admin/subjects", {
+      navigate(`${basePath}/subjects`, {
         replace: true,
         state: { message: "Subject created successfully." },
       });
@@ -81,7 +86,7 @@ export default function AddSubject() {
         <button
           type="button"
           className="subject-secondary-btn"
-          onClick={() => navigate("/admin/subjects")}
+          onClick={() => navigate(`${basePath}/subjects`)}
         >
           <FiArrowLeft /> Back to Subjects
         </button>
@@ -158,7 +163,7 @@ export default function AddSubject() {
             <button
               type="button"
               className="subject-secondary-btn"
-              onClick={() => navigate("/admin/subjects")}
+              onClick={() => navigate(`${basePath}/subjects`)}
               disabled={saving}
             >
               Cancel

@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 
 import {
@@ -23,6 +23,10 @@ const PAGE_SIZE = 10;
 
 export default function SubjectManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [subjects, setSubjects] = useState([]);
 
@@ -174,7 +178,7 @@ export default function SubjectManagement() {
         <button
           type="button"
           className="subject-primary-btn"
-          onClick={() => navigate("/admin/subjects/add")}
+          onClick={() => navigate(`${basePath}/subjects/add`)}
         >
           <FiPlus aria-hidden="true" />
           Add Subject
@@ -214,15 +218,14 @@ export default function SubjectManagement() {
           subjects={subjects}
           loading={loading}
           onView={(id) =>
-            navigate(`/admin/subjects/view/${id}`)
+            navigate(`${basePath}/subjects/view/${id}`)
           }
           onEdit={(id) =>
-            navigate(`/admin/subjects/edit/${id}`)
+            navigate(`${basePath}/subjects/edit/${id}`)
           }
           onDelete={handleDelete}
-
           onQuestionBank={(id) =>
-            navigate(`/admin/subjects/${id}/question-bank`)
+            navigate(`${basePath}/subjects/${id}/question-bank`)
           }
         />
 
