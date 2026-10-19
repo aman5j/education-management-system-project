@@ -274,7 +274,7 @@ const CategoryForm = ({
           {serverError}
         </div>
       )}
-<div class="panel-header"><div><h3>Category Information</h3> </div></div>
+<div className="panel-header"><div><h3>Category Information</h3> </div></div>
       <div className="cardbody">
         
 
@@ -393,8 +393,8 @@ const CategoryForm = ({
           </div> */}
 
 
- <div class="admin-profile-upload-box">
-                <span class="admin-profile-upload-icon">
+ <div className="admin-profile-upload-box">
+                <span className="admin-profile-upload-icon">
                  <FiUpload />
 
                 </span>
@@ -403,7 +403,7 @@ const CategoryForm = ({
                 <small>JPG, PNG or WEBP · Maximum 5 MB</small>
 
                 
-                <label class="admin-profile-browse-button">Browse files
+                <label className="admin-profile-browse-button">Browse files
                <input
               type="file"
               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
@@ -415,9 +415,9 @@ const CategoryForm = ({
               </div>
 
 
-              <div class="admin-profile-preview-box">
+              <div className="admin-profile-preview-box">
                 {/* <span>Preview of your Logo</span> */}
-                <div class="admin-profile-preview-canvas">
+                <div className="admin-profile-preview-canvas">
                  {fieldError(
               "categoryIcon"
             )}

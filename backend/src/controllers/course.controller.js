@@ -13,6 +13,16 @@ const sendError = (res, status, message, errorCode) =>
 
 
 const validateActiveCourseCategory = async (value) => {
+  if (
+    typeof courseCategory !== "string" ||
+    !courseCategory.trim()
+  ) {
+    return {
+      valid: false,
+      message: "Course category is required. Select an active category.",
+    };
+  }
+
   const categoryName =
     typeof value === "string" ? value.trim() : "";
 

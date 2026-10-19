@@ -211,6 +211,34 @@ export const updateCategory = async (req, res, next) => {
         });
       }
 
+      // Course currently stores category names as strings.
+      // Prevent renaming a category while courses still reference its old name.
+      const isActualRename =
+        normalizedName.toLowerCase() !==
+        category.categoryName.trim().toLowerCase();
+
+      if (isActualRename) {
+        const categoryNameRegex = new RegExp(
+          `^${escapeRegex(category.categoryName.trim())}$`,
+          "i"
+        );
+
+        const coursesUsingCategory = await Course.countDocuments({
+          courseCategory: categoryNameRegex,
+        });
+
+        if (coursesUsingCategory > 0) {
+          return res.status(409).json({
+            success: false,
+            message:
+              `Cannot rename "${category.categoryName}" because ` +
+              `${coursesUsingCategory} course(s) use it. ` +
+              "Reassign those courses first.",
+            data: { coursesUsingCategory },
+          });
+        }
+      }
+
       const duplicateCategory = await Category.findOne({
         _id: { $ne: category._id },
         categoryName: {
