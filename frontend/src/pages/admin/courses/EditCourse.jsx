@@ -1,115 +1,105 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
 
+import React, { useEffect, useState } from "react";
 import {
+  Link,
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
-
+import { useAuth } from "../../../context/AuthContext";
 import CourseForm from "../../../components/courses/CourseForm";
-
-import {
-  getCourse,
-  updateCourse,
-} from "../../../services/courseService";
+import { getCourse, updateCourse } from "../../../services/courseService";
 
 const EditCourse = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
-  const [course, setCourse] =
-    useState(null);
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff/courses"
+    : "/admin/courses";
 
-  const [loading, setLoading] =
-    useState(true);
+  const permissions = user?.assignedRole?.permissions || [];
+  const canUpdate =
+    user?.role === "admin" || permissions.includes("courses.update");
+  const canView =
+    user?.role === "admin" || permissions.includes("courses.view");
 
-  const [saving, setSaving] =
-    useState(false);
+  const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!canView || !canUpdate) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const loadCourse = async () => {
       try {
-        const response =
-          await getCourse(id);
-
-        setCourse(response.data.data);
-      } catch (error) {
-        console.error(
-          "Failed to load course:",
-          error
-        );
+        const response = await getCourse(id);
+        if (!cancelled) {
+          setCourse(response.data?.data ?? null);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(
+            requestError.response?.data?.message ||
+              "Unable to load course."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadCourse();
-  }, [id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, canView, canUpdate]);
 
-  // const handleSubmit = async (formData) => {
-  //   try {
-  //     setSaving(true);
-
-  //     await updateCourse(id, formData);
-
-  //     navigate("/admin/courses");
-  //   } catch (error) {
-  //     console.error(
-  //       "Failed to update course:",
-  //       error
-  //     );
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
-
-  const handleSubmit = async (formData) => {
-  setSaving(true);
-
-  try {
-    await updateCourse(
-      id,
-      formData
-    );
-
-    navigate(
-      "/admin/courses"
-    );
-  } catch (error) {
-    console.error(
-      "Failed to update course:",
-      error
-    );
-
-    /*
-     * IMPORTANT:
-     * Send backend validation error
-     * back to CourseForm.
-     */
-    throw error;
-  } finally {
-    setSaving(false);
-  }
-};
-
-  if (loading) {
+  if (!canUpdate || !canView) {
     return (
       <div className="course-page">
-        <div className="course-loading">
-          Loading course...
-        </div>
+        <h1>Access denied</h1>
+        <p>You need Courses View and Update permissions to edit a course.</p>
+        <Link to={basePath}>Back to Courses</Link>
       </div>
     );
+  }
+
+  const handleSubmit = async (formData) => {
+    setSaving(true);
+    setError("");
+
+    try {
+      await updateCourse(id, formData);
+      navigate(basePath, { replace: true });
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          "Unable to update course."
+      );
+      throw requestError;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="course-page"><p>Loading course...</p></div>;
   }
 
   if (!course) {
     return (
       <div className="course-page">
-        <div className="course-empty">
-          Course not found.
-        </div>
+        <p>{error || "Course not found."}</p>
+        <Link to={basePath}>Back to Courses</Link>
       </div>
     );
   }
@@ -119,11 +109,14 @@ const EditCourse = () => {
       <div className="course-page-header">
         <div>
           <h1>Edit Course</h1>
-          <p>
-            Update course information.
-          </p>
+          <p>Update course information.</p>
         </div>
+        <Link to={basePath} className="course-primary-btn">
+          Back to Courses
+        </Link>
       </div>
+
+      {error && <div className="course-list-error" role="alert">{error}</div>}
 
       <div className="course-card">
         <CourseForm

@@ -5,13 +5,32 @@ import React, {
 
 import {
   Link,
+  useLocation,
+  useNavigate,
   useParams,
 } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+
 
 import { getCourse } from "../../../services/courseService";
 import { getAssetUrl } from "../../../utils/assetUrl";
 
 const ViewCourse = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff/courses"
+    : "/admin/courses";
+
+  const permissions = user?.assignedRole?.permissions || [];
+  const canView =
+    user?.role === "admin" || permissions.includes("courses.view");
+  const canUpdate =
+    user?.role === "admin" || permissions.includes("courses.update");
+
+
   const { id } = useParams();
 
   const [course, setCourse] =
@@ -66,6 +85,22 @@ const ViewCourse = () => {
         <div>
           <h1>{course.courseTitle}</h1>
           <p>Course Details</p>
+        </div>
+
+        <div className="course-page-header-actions">
+          <Link to={basePath} className="course-primary-btn">
+            Back to Courses
+          </Link>
+
+          {canUpdate && (
+            <button
+              type="button"
+              className="course-primary-btn"
+              onClick={() => navigate(`${basePath}/${id}/edit`)}
+            >
+              Edit Course
+            </button>
+          )}
         </div>
 
         {/* <Link
