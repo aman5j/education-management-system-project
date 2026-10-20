@@ -132,7 +132,7 @@ const StudentFilters = ({
 
       <button
         type="button"
-        className="student-reset-button"
+        className="themebtn themebtnline"
         onClick={onReset}
         title="Reset filters"
       >
