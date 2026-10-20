@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Course from "../models/Course.js";
 import Subject from "../models/Subject.js";
+import Category from "../models/Category.js";
+
 
 const sendError = (res, status, message, errorCode) =>
   res.status(status).json({
@@ -8,6 +10,97 @@ const sendError = (res, status, message, errorCode) =>
     message,
     ...(errorCode ? { errorCode } : {}),
   });
+
+
+// const validateActiveCourseCategory = async (value) => {
+//   if (
+//     typeof courseCategory !== "string" ||
+//     !courseCategory.trim()
+//   ) {
+//     return {
+//       valid: false,
+//       message: "Course category is required. Select an active category.",
+//     };
+//   }
+
+//   const categoryName =
+//     typeof value === "string" ? value.trim() : "";
+
+//   // Preserve the existing behavior if category is optional.
+//   if (!categoryName) {
+//     return { categoryName: "" };
+//   }
+
+//   const category = await Category.findOne({
+//     categoryName: {
+//       $regex: `^${categoryName.replace(
+//         /[.*+?^${}()|[\]\\]/g,
+//         "\\$&"
+//       )}$`,
+//       $options: "i",
+//     },
+//   }).select("categoryName status");
+
+//   if (!category) {
+//     return {
+//       error: "The selected course category does not exist.",
+//     };
+//   }
+
+//   if (category.status !== "Active") {
+//     return {
+//       error:
+//         "This category is inactive. Select an active category.",
+//     };
+//   }
+
+//   return { categoryName: category.categoryName };
+// };
+
+
+const validateActiveCourseCategory = async (value) => {
+  const categoryName =
+    typeof value === "string" ? value.trim() : "";
+
+  // Category is mandatory for every new course.
+  if (!categoryName) {
+    return {
+      error:
+        "Course category is required. Select an active category.",
+    };
+  }
+
+  const escapedCategoryName = categoryName.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+
+  const category = await Category.findOne({
+    categoryName: {
+      $regex: `^${escapedCategoryName}$`,
+      $options: "i",
+    },
+  }).select("categoryName status");
+
+  if (!category) {
+    return {
+      error: "The selected course category does not exist.",
+    };
+  }
+
+  if (category.status !== "Active") {
+    return {
+      error:
+        "This category is inactive. Select an active category.",
+    };
+  }
+
+  return {
+    categoryName: category.categoryName,
+  };
+};
+
+
 
 const parseBoolean = (value, fallback = false) => {
   if (value === undefined || value === null || value === "") {
@@ -308,6 +401,16 @@ export const createCourse = async (req, res, next) => {
       );
     }
 
+    
+    const validatedCategory = await validateActiveCourseCategory(
+      courseCategory
+    );
+
+    if (validatedCategory.error) {
+      return sendError(res, 400, validatedCategory.error);
+    }
+
+
     const numericMrp = Number(mrp);
     const numericPrice = Number(price);
 
@@ -362,7 +465,7 @@ export const createCourse = async (req, res, next) => {
     const course = await Course.create({
       courseTitle: courseTitle.trim(),
       courseType: normalizedCourseType,
-      courseCategory: courseCategory || "",
+      courseCategory: validatedCategory.categoryName,
       mrp: numericMrp,
       price: numericPrice,
       displayOrder: Number(displayOrder) || 0,
@@ -537,8 +640,19 @@ export const updateCourse = async (req, res, next) => {
     }
 
     // certificateDiploma is intentionally not accepted or updated.
-    course.courseCategory =
-      body.courseCategory ?? course.courseCategory;
+    
+    if (body.courseCategory !== undefined) {
+      const validatedCategory = await validateActiveCourseCategory(
+        body.courseCategory
+      );
+
+      if (validatedCategory.error) {
+        return sendError(res, 400, validatedCategory.error);
+      }
+
+      course.courseCategory = validatedCategory.categoryName;
+    }
+
 
     course.mrp = numericMrp;
     course.price = numericPrice;

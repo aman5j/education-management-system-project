@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FiArrowLeft, FiSave } from "react-icons/fi";
 
 import {
@@ -18,6 +18,11 @@ const EMPTY_FORM = {
 export default function EditSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
@@ -115,7 +120,7 @@ export default function EditSubject() {
         status: formData.status,
       });
 
-      navigate("/admin/subjects", {
+      navigate(`${basePath}/subjects`, {
         replace: true,
         state: { message: "Subject updated successfully." },
       });
@@ -147,7 +152,7 @@ export default function EditSubject() {
           <button
             type="button"
             className="subject-secondary-btn"
-            onClick={() => navigate("/admin/subjects")}
+            onClick={() => navigate(`${basePath}/subjects`)}
           >
             <FiArrowLeft /> Back to Subjects
           </button>
@@ -169,7 +174,7 @@ export default function EditSubject() {
         <button
           type="button"
           className="subject-secondary-btn"
-          onClick={() => navigate("/admin/subjects")}
+          onClick={() => navigate(`${basePath}/subjects`)}
         >
           <FiArrowLeft /> Back to Subjects
         </button>

@@ -76,12 +76,25 @@ export const listRoles = async (req, res, next) => {
 };
 
 // GET /api/roles/permissions
-export const listAvailablePermissions = async (req, res) => {
-  return res.status(200).json({
-    success: true,
-    data: ALL_PERMISSION_KEYS,
-  });
+// export const listAvailablePermissions = async (req, res) => {
+//   return res.status(200).json({
+//     success: true,
+//     data: ALL_PERMISSION_KEYS,
+//   });
+// };
+
+
+export const listAvailablePermissions = async (req, res, next) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      data: ALL_PERMISSION_KEYS,
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
+
 
 // POST /api/roles
 export const createRole = async (req, res, next) => {

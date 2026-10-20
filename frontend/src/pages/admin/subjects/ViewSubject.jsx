@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   FiArrowLeft,
   FiEdit2,
@@ -27,6 +27,11 @@ function formatDate(value) {
 export default function ViewSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,7 +104,7 @@ export default function ViewSubject() {
           <button
             type="button"
             className="subject-secondary-btn"
-            onClick={() => navigate("/admin/subjects")}
+            onClick={() => navigate(`${basePath}/subjects`)}
           >
             <FiArrowLeft /> Back to Subjects
           </button>
@@ -125,14 +130,16 @@ export default function ViewSubject() {
           <button
             type="button"
             className="subject-secondary-btn"
-            onClick={() => navigate("/admin/subjects")}
+            onClick={() => navigate(`${basePath}/subjects`)}
           >
             <FiArrowLeft /> Back
           </button>
           <button
             type="button"
             className="subject-primary-btn"
-            onClick={() => navigate(`/admin/subjects/edit/${subject._id}`)}
+            onClick={() =>
+              navigate(`${basePath}/subjects/edit/${subject._id}`)
+            }
           >
             <FiEdit2 /> Edit Subject
           </button>

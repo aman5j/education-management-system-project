@@ -274,7 +274,7 @@ const CategoryForm = ({
           {serverError}
         </div>
       )}
-<div class="panel-header"><div><h3>Category Information</h3> </div></div>
+<div className="panel-header"><div><h3>Category Information</h3> </div></div>
       <div className="cardbody">
         
 
@@ -393,14 +393,17 @@ const CategoryForm = ({
           </div> */}
 
 
- <div class="admin-profile-upload-box">
-                <span class="admin-profile-upload-icon">
+ <div className="admin-profile-upload-box">
+                <span className="admin-profile-upload-icon">
                  <FiUpload />
 
                 </span>
-                <strong>Upload Student Photo</strong>
-                <small>JPG, PNG or WEBP · Maximum 2 MB</small>
-                <label class="admin-profile-browse-button">Browse files
+
+                <strong>Upload Category Icon</strong>
+                <small>JPG, PNG or WEBP · Maximum 5 MB</small>
+
+                
+                <label className="admin-profile-browse-button">Browse files
                <input
               type="file"
               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
@@ -412,9 +415,9 @@ const CategoryForm = ({
               </div>
 
 
-              <div class="admin-profile-preview-box">
+              <div className="admin-profile-preview-box">
                 {/* <span>Preview of your Logo</span> */}
-                <div class="admin-profile-preview-canvas">
+                <div className="admin-profile-preview-canvas">
                  {fieldError(
               "categoryIcon"
             )}
@@ -442,9 +445,21 @@ const CategoryForm = ({
               </div>
             )}
                 </div>
-                <a class="preview-image tooltip" data-tooltip="View Full Image" href="{profilePreview}" target="_blank" >
-                  <FiEye />
-                </a>
+
+                {imagePreview && (
+                  <a
+                    className="preview-image tooltip"
+                    data-tooltip="View Full Image"
+                    href={imagePreview}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View category icon"
+                  >
+                    <FiEye />
+                  </a>
+                )}
+
+
               </div>
 
 

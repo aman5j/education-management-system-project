@@ -2,24 +2,37 @@
 import mongoose from "mongoose";
 import Subject from "../models/Subject.js";
 
-const fail = (res, status, message) =>
+const MAX_QUESTIONS_PER_SUBJECT = 1000;
+const MAX_QUESTIONS_PER_IMPORT = 200;
+
+const fail = (res, status, message, errorCode) =>
   res.status(status).json({
     success: false,
     message,
+    ...(errorCode ? { errorCode } : {}),
   });
 
 const validId = (value) =>
-  typeof value === "string" && mongoose.isValidObjectId(value);
+  typeof value === "string" &&
+  mongoose.isValidObjectId(value);
 
 const normalizeQuestion = (input = {}) => ({
-  questionText: String(input.questionText || "").trim(),
-  optionA: String(input.optionA || "").trim(),
-  optionB: String(input.optionB || "").trim(),
-  optionC: String(input.optionC || "").trim(),
-  optionD: String(input.optionD || "").trim(),
-  correctAnswer: String(input.correctAnswer || "")
-    .trim()
-    .toUpperCase(),
+  questionText:
+    typeof input.questionText === "string"
+      ? input.questionText.trim()
+      : "",
+  optionA:
+    typeof input.optionA === "string" ? input.optionA.trim() : "",
+  optionB:
+    typeof input.optionB === "string" ? input.optionB.trim() : "",
+  optionC:
+    typeof input.optionC === "string" ? input.optionC.trim() : "",
+  optionD:
+    typeof input.optionD === "string" ? input.optionD.trim() : "",
+  correctAnswer:
+    typeof input.correctAnswer === "string"
+      ? input.correctAnswer.trim().toUpperCase()
+      : "",
 });
 
 const validateQuestion = (question) => {
@@ -47,9 +60,41 @@ const validateQuestion = (question) => {
   return null;
 };
 
+const questionKey = (question) =>
+  question.questionText.trim().toLocaleLowerCase();
+
 const getSubject = async (id) => {
   if (!validId(id)) return null;
   return Subject.findById(id);
+};
+
+const handleQuestionBankError = (res, error, fallbackMessage) => {
+  if (error instanceof mongoose.Error.ValidationError) {
+    return fail(
+      res,
+      400,
+      Object.values(error.errors)
+        .map((item) => item.message)
+        .join(", "),
+      "VALIDATION_ERROR"
+    );
+  }
+
+  if (error instanceof mongoose.Error.CastError) {
+    return fail(res, 400, "Invalid subject or question ID.", "INVALID_ID");
+  }
+
+  if (error?.name === "DocumentTooLarge" || error?.code === 17419) {
+    return fail(
+      res,
+      413,
+      "Question Bank is too large. Reduce the number or length of questions.",
+      "QUESTION_BANK_TOO_LARGE"
+    );
+  }
+
+  console.error("Subject Question Bank error:", error);
+  return fail(res, 500, fallbackMessage, "QUESTION_BANK_ERROR");
 };
 
 // GET /api/subjects/:id/question-bank
@@ -58,17 +103,19 @@ export const getSubjectQuestionBank = async (req, res) => {
     const subject = await getSubject(req.params.id);
 
     if (!subject) {
-      return fail(res, 404, "Subject not found.");
+      return fail(res, 404, "Subject not found.", "SUBJECT_NOT_FOUND");
     }
 
-    let questions = subject.questionBank || [];
     const search = String(req.query.search || "")
       .trim()
-      .toLowerCase();
+      .slice(0, 100)
+      .toLocaleLowerCase();
+
+    let questions = subject.questionBank || [];
 
     if (search) {
       questions = questions.filter((question) =>
-        question.questionText.toLowerCase().includes(search)
+        question.questionText.toLocaleLowerCase().includes(search)
       );
     }
 
@@ -78,8 +125,11 @@ export const getSubjectQuestionBank = async (req, res) => {
       total: questions.length,
     });
   } catch (error) {
-    console.error("Get subject MCQs error:", error);
-    return fail(res, 500, "Unable to load this subject's MCQs.");
+    return handleQuestionBankError(
+      res,
+      error,
+      "Unable to load this subject's MCQs."
+    );
   }
 };
 
@@ -89,14 +139,37 @@ export const addSubjectQuestion = async (req, res) => {
     const subject = await getSubject(req.params.id);
 
     if (!subject) {
-      return fail(res, 404, "Subject not found.");
+      return fail(res, 404, "Subject not found.", "SUBJECT_NOT_FOUND");
+    }
+
+    if (subject.questionBank.length >= MAX_QUESTIONS_PER_SUBJECT) {
+      return fail(
+        res,
+        409,
+        `A subject cannot contain more than ${MAX_QUESTIONS_PER_SUBJECT} MCQs.`,
+        "QUESTION_BANK_LIMIT_REACHED"
+      );
     }
 
     const question = normalizeQuestion(req.body);
     const validationError = validateQuestion(question);
 
     if (validationError) {
-      return fail(res, 400, validationError);
+      return fail(res, 400, validationError, "INVALID_QUESTION");
+    }
+
+    const key = questionKey(question);
+    const duplicate = subject.questionBank.some(
+      (existing) => questionKey(existing) === key
+    );
+
+    if (duplicate) {
+      return fail(
+        res,
+        409,
+        "A question with the same text already exists in this subject.",
+        "DUPLICATE_QUESTION"
+      );
     }
 
     subject.questionBank.push(question);
@@ -110,31 +183,52 @@ export const addSubjectQuestion = async (req, res) => {
       data: created,
     });
   } catch (error) {
-    console.error("Add subject MCQ error:", error);
-    return fail(res, 500, "Unable to add the MCQ.");
+    return handleQuestionBankError(res, error, "Unable to add the MCQ.");
   }
 };
 
 // PATCH /api/subjects/:id/question-bank/:questionId
 export const updateSubjectQuestion = async (req, res) => {
   try {
-    const subject = await getSubject(req.params.id);
+    const { id, questionId } = req.params;
 
-    if (!subject) {
-      return fail(res, 404, "Subject not found.");
+    if (!validId(questionId)) {
+      return fail(res, 400, "Invalid question ID.", "INVALID_QUESTION_ID");
     }
 
-    const question = subject.questionBank.id(req.params.questionId);
+    const subject = await getSubject(id);
+
+    if (!subject) {
+      return fail(res, 404, "Subject not found.", "SUBJECT_NOT_FOUND");
+    }
+
+    const question = subject.questionBank.id(questionId);
 
     if (!question) {
-      return fail(res, 404, "MCQ not found.");
+      return fail(res, 404, "MCQ not found.", "QUESTION_NOT_FOUND");
     }
 
     const normalized = normalizeQuestion(req.body);
     const validationError = validateQuestion(normalized);
 
     if (validationError) {
-      return fail(res, 400, validationError);
+      return fail(res, 400, validationError, "INVALID_QUESTION");
+    }
+
+    const key = questionKey(normalized);
+    const duplicate = subject.questionBank.some(
+      (existing) =>
+        existing._id.toString() !== questionId &&
+        questionKey(existing) === key
+    );
+
+    if (duplicate) {
+      return fail(
+        res,
+        409,
+        "Another question with the same text already exists in this subject.",
+        "DUPLICATE_QUESTION"
+      );
     }
 
     question.set(normalized);
@@ -146,24 +240,29 @@ export const updateSubjectQuestion = async (req, res) => {
       data: question,
     });
   } catch (error) {
-    console.error("Update subject MCQ error:", error);
-    return fail(res, 500, "Unable to update the MCQ.");
+    return handleQuestionBankError(res, error, "Unable to update the MCQ.");
   }
 };
 
 // DELETE /api/subjects/:id/question-bank/:questionId
 export const deleteSubjectQuestion = async (req, res) => {
   try {
-    const subject = await getSubject(req.params.id);
+    const { id, questionId } = req.params;
 
-    if (!subject) {
-      return fail(res, 404, "Subject not found.");
+    if (!validId(questionId)) {
+      return fail(res, 400, "Invalid question ID.", "INVALID_QUESTION_ID");
     }
 
-    const question = subject.questionBank.id(req.params.questionId);
+    const subject = await getSubject(id);
+
+    if (!subject) {
+      return fail(res, 404, "Subject not found.", "SUBJECT_NOT_FOUND");
+    }
+
+    const question = subject.questionBank.id(questionId);
 
     if (!question) {
-      return fail(res, 404, "MCQ not found.");
+      return fail(res, 404, "MCQ not found.", "QUESTION_NOT_FOUND");
     }
 
     question.deleteOne();
@@ -174,8 +273,7 @@ export const deleteSubjectQuestion = async (req, res) => {
       message: "MCQ deleted successfully.",
     });
   } catch (error) {
-    console.error("Delete subject MCQ error:", error);
-    return fail(res, 500, "Unable to delete the MCQ.");
+    return handleQuestionBankError(res, error, "Unable to delete the MCQ.");
   }
 };
 
@@ -185,35 +283,75 @@ export const importSubjectQuestions = async (req, res) => {
     const subject = await getSubject(req.params.id);
 
     if (!subject) {
-      return fail(res, 404, "Subject not found.");
+      return fail(res, 404, "Subject not found.", "SUBJECT_NOT_FOUND");
     }
 
-    const rows = req.body.questions;
+    const rows = req.body?.questions;
 
     if (!Array.isArray(rows) || rows.length === 0) {
-      return fail(res, 400, "No MCQs were provided for import.");
+      return fail(res, 400, "No MCQs were provided for import.", "EMPTY_IMPORT");
     }
 
-    if (rows.length > 500) {
-      return fail(res, 400, "Import is limited to 500 MCQs per upload.");
+    if (rows.length > MAX_QUESTIONS_PER_IMPORT) {
+      return fail(
+        res,
+        400,
+        `Import is limited to ${MAX_QUESTIONS_PER_IMPORT} rows per upload.`,
+        "IMPORT_LIMIT_EXCEEDED"
+      );
+    }
+
+    const existingCount = subject.questionBank.length;
+    if (existingCount >= MAX_QUESTIONS_PER_SUBJECT) {
+      return fail(
+        res,
+        409,
+        `This subject has reached the ${MAX_QUESTIONS_PER_SUBJECT}-question limit.`,
+        "QUESTION_BANK_LIMIT_REACHED"
+      );
     }
 
     const imported = [];
     const rejected = [];
+    const knownQuestions = new Set(
+      subject.questionBank.map(questionKey)
+    );
 
     rows.forEach((row, index) => {
       const question = normalizeQuestion(row);
       const validationError = validateQuestion(question);
 
       if (validationError) {
-        // Excel row 1 contains the header.
         rejected.push({
           row: index + 2,
           message: validationError,
         });
-      } else {
-        imported.push(question);
+        return;
       }
+
+      const key = questionKey(question);
+
+      if (knownQuestions.has(key)) {
+        rejected.push({
+          row: index + 2,
+          message: "Duplicate question text already exists in this subject or import.",
+        });
+        return;
+      }
+
+      if (
+        existingCount + imported.length >=
+        MAX_QUESTIONS_PER_SUBJECT
+      ) {
+        rejected.push({
+          row: index + 2,
+          message: `Subject limit of ${MAX_QUESTIONS_PER_SUBJECT} MCQs reached.`,
+        });
+        return;
+      }
+
+      knownQuestions.add(key);
+      imported.push(question);
     });
 
     if (imported.length > 0) {
@@ -227,9 +365,13 @@ export const importSubjectQuestions = async (req, res) => {
       importedCount: imported.length,
       rejectedCount: rejected.length,
       rejected,
+      totalQuestions: subject.questionBank.length,
     });
   } catch (error) {
-    console.error("Import subject MCQs error:", error);
-    return fail(res, 500, "Unable to import MCQs into this subject.");
+    return handleQuestionBankError(
+      res,
+      error,
+      "Unable to import MCQs into this subject."
+    );
   }
 };

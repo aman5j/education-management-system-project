@@ -1,114 +1,88 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
 
-import {
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import React, { useCallback, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import CategoryForm from "../../../components/categories/CategoryForm";
-
-import {
-  getCategory,
-  updateCategory,
-} from "../../../services/categoryService";
+import { useAuth } from "../../../context/AuthContext";
+import { getCategory, updateCategory } from "../../../services/categoryService";
 
 const EditCategory = () => {
-  const {
-    id,
-  } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
-  const navigate =
-    useNavigate();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff/categories"
+    : "/admin/categories";
 
-  const [
-    category,
-    setCategory,
-  ] = useState(null);
+  const permissions = user?.assignedRole?.permissions || [];
+  const canUpdate =
+    user?.role === "admin" ||
+    permissions.includes("*") ||
+    permissions.includes("courses.update");
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [category, setCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-  useEffect(() => {
-    const loadCategory =
-      async () => {
-        try {
-          setLoading(true);
-          setError("");
-
-          const response =
-            await getCategory(
-              id
-            );
-
-          setCategory(
-            response?.data?.data
-          );
-        } catch (requestError) {
-          console.error(
-            "Failed to load category:",
-            requestError
-          );
-
-          setError(
-            requestError?.response
-              ?.data?.message ||
-              "Failed to load category."
-          );
-        } finally {
-          setLoading(false);
-        }
-      };
-
-    loadCategory();
+  const loadCategory = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await getCategory(id);
+      setCategory(response?.data?.data || null);
+    } catch (requestError) {
+      setError(
+        requestError?.response?.data?.message ||
+          "Failed to load category."
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
-  const handleSubmit =
-    async (formData) => {
-      setSaving(true);
+  useEffect(() => {
+    loadCategory();
+  }, [loadCategory]);
 
-      try {
-        await updateCategory(
-          id,
-          formData
-        );
+  const handleSubmit = async (formData) => {
+    setSaving(true);
+    setError("");
 
-        navigate(
-          "/admin/categories"
-        );
-      } catch (requestError) {
-        throw requestError;
-      } finally {
-        setSaving(false);
-      }
-    };
+    try {
+      await updateCategory(id, formData);
+      navigate(basePath, { replace: true });
+    } catch (requestError) {
+      setError(
+        requestError?.response?.data?.message ||
+          "Failed to update category."
+      );
+      throw requestError;
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  if (loading) {
+  if (!canUpdate) {
     return (
-      <div className="category-loading">
-        Loading category...
+      <div className="category-list-error" role="alert">
+        You do not have permission to edit categories.
+        <p><Link to={basePath}>Back to Categories</Link></p>
       </div>
     );
   }
 
-  if (error) {
+  if (loading) {
+    return <div className="category-loading">Loading category...</div>;
+  }
+
+  if (!category) {
     return (
       <div className="category-list-error">
-        {error}
+        {error || "Category not found."}
+        <p><Link to={basePath}>Back to Categories</Link></p>
       </div>
     );
   }
@@ -117,26 +91,26 @@ const EditCategory = () => {
     <div className="category-page">
       <div className="category-page-header">
         <div>
-          <h1>
-            Edit Category
-          </h1>
-
-          <p>
-            Update course category.
-          </p>
+          <h1>Edit Category</h1>
+          <p>Update category details and availability.</p>
         </div>
+        <Link to={basePath} className="category-add-button">
+          Back to Categories
+        </Link>
       </div>
+
+      {error && (
+        <div className="category-list-error" role="alert">
+          {error}
+        </div>
+      )}
 
       <div className="category-card">
         <CategoryForm
-          initialData={
-            category
-          }
+          initialData={category}
           loading={saving}
           submitLabel="Update Category"
-          onSubmit={
-            handleSubmit
-          }
+          onSubmit={handleSubmit}
         />
       </div>
     </div>
