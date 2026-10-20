@@ -8,6 +8,9 @@ import {
   FiLayers,
 } from "react-icons/fi";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import { getSubjectById } from "../../../services/subjectService";
 import "../../../styles/SubjectManagement.css";
 
@@ -27,6 +30,18 @@ function formatDate(value) {
 export default function ViewSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+
+  if (!hasPermission(user, "subjects.view")) {
+    return (
+      <div className="subject-page">
+        <div className="subject-alert subject-alert-error" role="alert">
+          You do not have permission to view subjects.
+        </div>
+      </div>
+    );
+  }
 
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")

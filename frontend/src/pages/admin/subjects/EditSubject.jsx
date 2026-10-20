@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FiArrowLeft, FiSave } from "react-icons/fi";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import {
   getSubjectById,
   updateSubject,
@@ -18,6 +21,18 @@ const EMPTY_FORM = {
 export default function EditSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  const { user } = useAuth();
+
+  if (!hasPermission(user, "subjects.update")) {
+    return (
+      <div className="subject-page">
+        <div className="subject-alert subject-alert-error" role="alert">
+          You do not have permission to update subjects.
+        </div>
+      </div>
+    );
+  }
 
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")

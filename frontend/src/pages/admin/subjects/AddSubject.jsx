@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiSave } from "react-icons/fi";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import { createSubject } from "../../../services/subjectService";
 import "../../../styles/SubjectManagement.css";
 
@@ -13,6 +16,7 @@ const INITIAL_FORM = {
 };
 
 export default function AddSubject() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")
@@ -74,6 +78,16 @@ export default function AddSubject() {
       setSaving(false);
     }
   };
+
+  if (!hasPermission(user, "subjects.create")) {
+  return (
+    <div className="subject-page">
+      <div className="subject-alert subject-alert-error" role="alert">
+        You do not have permission to create subjects.
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="subject-page subject-form-page">

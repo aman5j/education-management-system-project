@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import {
   getSubjects,
   deleteSubject,
@@ -27,6 +30,15 @@ export default function SubjectManagement() {
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
     : "/admin";
+  
+  const { user } = useAuth();
+
+  const canView = hasPermission(user, "subjects.view");
+  const canCreate = hasPermission(user, "subjects.create");
+  const canUpdate = hasPermission(user, "subjects.update");
+  const canDelete = hasPermission(user, "subjects.delete");
+  const canViewQuestionBank = hasPermission(user, "question_bank.view");
+  const canManageQuestionBank = hasPermission(user, "question_bank.manage");
 
   const [subjects, setSubjects] = useState([]);
 
@@ -125,6 +137,12 @@ export default function SubjectManagement() {
 
   const handleDelete = useCallback(
     async (subject) => {
+
+      if (!canDelete) {
+        setError("You do not have permission to delete subjects.");
+        return;
+      }
+      
       const subjectId = subject?._id || subject?.id;
 
       if (!subjectId) {
@@ -167,6 +185,16 @@ export default function SubjectManagement() {
 
   const totalPages = pagination.totalPages || 0;
 
+  if (!canView) {
+    return (
+      <div className="subject-page">
+        <div className="subject-alert subject-alert-error" role="alert">
+          You do not have permission to view Subjects.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="subject-page">
       <div className="subject-page-header">
@@ -175,14 +203,16 @@ export default function SubjectManagement() {
           <p>Manage reusable subjects, syllabus, and subject status.</p>
         </div>
 
-        <button
-          type="button"
-          className="subject-primary-btn"
-          onClick={() => navigate(`${basePath}/subjects/add`)}
-        >
-          <FiPlus aria-hidden="true" />
-          Add Subject
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className="subject-primary-btn"
+            onClick={() => navigate(`${basePath}/subjects/add`)}
+          >
+            <FiPlus aria-hidden="true" />
+            Add Subject
+          </button>
+        )}
       </div>
 
       {error && (
@@ -217,16 +247,25 @@ export default function SubjectManagement() {
         <SubjectTable
           subjects={subjects}
           loading={loading}
+          canView={canView}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
+          canViewQuestionBank={canViewQuestionBank}
+          canManageQuestionBank={canManageQuestionBank}
           onView={(id) =>
             navigate(`${basePath}/subjects/view/${id}`)
           }
-          onEdit={(id) =>
-            navigate(`${basePath}/subjects/edit/${id}`)
-          }
+          onEdit={(id) => {
+            if (canUpdate) {
+              navigate(`${basePath}/subjects/edit/${id}`);
+            }
+          }}
           onDelete={handleDelete}
-          onQuestionBank={(id) =>
-            navigate(`${basePath}/subjects/${id}/question-bank`)
-          }
+          onQuestionBank={(id) => {
+            if (canViewQuestionBank) {
+              navigate(`${basePath}/subjects/${id}/question-bank`);
+            }
+          }}
         />
 
         {!loading && totalPages > 0 && (

@@ -7,6 +7,12 @@ export default function SubjectTable({
   onEdit,
   onDelete,
   onQuestionBank,
+
+  canView = false,
+  canUpdate = false,
+  canDelete = false,
+  canViewQuestionBank = false,
+  canManageQuestionBank = false,
 }) {
   if (loading) {
     return (
@@ -81,6 +87,7 @@ export default function SubjectTable({
                 <td>
                   <div className="subject-actions">
 
+                    {canViewQuestionBank && (
                     <button
                       type="button"
                       className="subject-action-view"
@@ -91,8 +98,9 @@ export default function SubjectTable({
                     >
                       <FiList />
                     </button>
+                    )}
 
-                    
+                    {canView && (
                     <button
                       type="button"
                       className="subject-action-view"
@@ -103,7 +111,9 @@ export default function SubjectTable({
                     >
                       <FiEye />
                     </button>
+                    )}
 
+                    {canUpdate && (
                     <button
                       type="button"
                       className="subject-action-edit"
@@ -114,7 +124,9 @@ export default function SubjectTable({
                     >
                       <FiEdit2 />
                     </button>
+                    )}
 
+                    {canDelete && (
                     <button
                       type="button"
                       className="subject-action-delete"
@@ -125,6 +137,8 @@ export default function SubjectTable({
                     >
                       <FiTrash2 />
                     </button>
+                    )}
+
                   </div>
                 </td>
               </tr>
