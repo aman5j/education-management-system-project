@@ -21,7 +21,7 @@ const EMPTY_FORM = {
 export default function EditSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const { user } = useAuth();
 
   if (!hasPermission(user, "subjects.update")) {
@@ -45,7 +45,15 @@ export default function EditSubject() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
+  const canUpdate = hasPermission(user, "subjects.update");
+
   useEffect(() => {
+    if (!canUpdate) {
+      setLoading(false);
+      setError("You do not have permission to update subjects.");
+      return;
+    }
+
     let cancelled = false;
 
     const loadSubject = async () => {
@@ -96,7 +104,7 @@ export default function EditSubject() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, canUpdate]);
 
   const changeField = (event) => {
     const { name, value } = event.target;
@@ -148,6 +156,16 @@ export default function EditSubject() {
       setSaving(false);
     }
   };
+
+  if (!canUpdate) {
+    return (
+      <div className="subject-page">
+        <div className="subject-alert subject-alert-error" role="alert">
+          You do not have permission to update subjects.
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

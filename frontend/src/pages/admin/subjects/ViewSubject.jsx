@@ -52,7 +52,15 @@ export default function ViewSubject() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const canView = hasPermission(user, "subjects.view");
+
   useEffect(() => {
+    if (!canView) {
+      setLoading(false);
+      setError("You do not have permission to view subjects.");
+      return;
+    }
+
     let cancelled = false;
 
     const loadSubject = async () => {
@@ -96,7 +104,17 @@ export default function ViewSubject() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, canView]);
+
+  if (!canView) {
+    return (
+      <div className="subject-page">
+        <div className="subject-alert subject-alert-error" role="alert">
+          You do not have permission to view subjects.
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

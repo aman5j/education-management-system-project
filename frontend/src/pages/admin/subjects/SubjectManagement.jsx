@@ -62,6 +62,14 @@ export default function SubjectManagement() {
     const controller = new AbortController();
 
     const loadSubjects = async () => {
+
+      if (!canView) {
+        setSubjects([]);
+        setLoading(false);
+        setError("You do not have permission to view Subjects.");
+        return;
+      }
+
       try {
         setLoading(true);
         setError("");
@@ -116,7 +124,8 @@ export default function SubjectManagement() {
     return () => {
       controller.abort();
     };
-  }, [filters, page, refreshKey]);
+
+ }, [filters, page, refreshKey, canView]);
 
   const handleFilterChange = useCallback((name, value) => {
     setFilters((previous) => ({
@@ -142,7 +151,7 @@ export default function SubjectManagement() {
         setError("You do not have permission to delete subjects.");
         return;
       }
-      
+
       const subjectId = subject?._id || subject?.id;
 
       if (!subjectId) {
@@ -180,7 +189,7 @@ export default function SubjectManagement() {
         );
       }
     },
-    [subjects.length, page]
+    [subjects.length, page, canDelete]
   );
 
   const totalPages = pagination.totalPages || 0;
