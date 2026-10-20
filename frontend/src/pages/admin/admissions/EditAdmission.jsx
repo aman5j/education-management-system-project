@@ -9,6 +9,10 @@ import {
   useParams,
 } from "react-router-dom";
 
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
 
 import {
@@ -22,6 +26,13 @@ const EditAdmission = () => {
 
   const navigate =
     useNavigate();
+
+  const { user, loading: authLoading } = useAuth();
+
+  const canUpdateAdmission = hasPermission(
+    user,
+    "admissions.update"
+  );
   
   const location = useLocation();
 
@@ -44,6 +55,12 @@ const EditAdmission = () => {
   useEffect(() => {
     const loadAdmission =
       async () => {
+
+        if (authLoading || !user || !canUpdateAdmission) {
+          setLoading(false);
+          return;
+        }
+
         try {
           setLoading(true);
 
@@ -70,11 +87,18 @@ const EditAdmission = () => {
       };
 
     loadAdmission();
-  }, [id]);
+  }, [id, authLoading, user, canUpdateAdmission]);
 
   const handleSubmit =
     async (formData) => {
       try {
+
+        if (!canUpdateAdmission || saving) {
+          throw new Error(
+            "You do not have permission to update admissions."
+          );
+        }
+
         setSaving(true);
 
         await updateAdmission(
@@ -94,6 +118,22 @@ const EditAdmission = () => {
         setSaving(false);
       }
     };
+  
+  if (authLoading) {
+    return (
+      <div className="admission-state">
+        Checking permissions...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canUpdateAdmission) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   if (loading) {
     return (

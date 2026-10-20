@@ -3,8 +3,14 @@ import {
   useState,
 } from "react";
 
-import { Link, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Link,
+  useLocation,
+} from "react-router-dom";
+
 import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 
 
 import "../../../styles/AdmissionManagement.css";
@@ -38,30 +44,31 @@ const money = (value) =>
 
 const Admissions = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const admissionsPath = location.pathname.startsWith("/staff")
     ? "/staff/admissions"
     : "/admin/admissions";
 
-  const permissions = Array.isArray(user?.assignedRole?.permissions)
-    ? user.assignedRole.permissions
-    : [];
+  const canViewAdmissions = hasPermission(
+    user,
+    "admissions.view"
+  );
 
-  const isAdmin = user?.role === "admin";
+  const canCreateAdmission = hasPermission(
+    user,
+    "admissions.create"
+  );
 
-  const canViewAdmissions =
-    isAdmin || permissions.includes("admissions.view");
+  const canUpdateAdmission = hasPermission(
+    user,
+    "admissions.update"
+  );
 
-  const canCreateAdmission =
-    isAdmin || permissions.includes("admissions.create");
-
-  const canUpdateAdmission =
-    isAdmin || permissions.includes("admissions.update");
-
-  const canDeleteAdmission =
-    isAdmin || permissions.includes("admissions.delete");
-  
+  const canDeleteAdmission = hasPermission(
+    user,
+    "admissions.delete"
+  ); 
 
   const [admissions, setAdmissions] =
     useState([]);
@@ -91,6 +98,13 @@ const Admissions = () => {
 
   const loadAdmissions =
     async () => {
+
+      if (authLoading || !user || !canViewAdmissions) {
+        setAdmissions([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError("");
@@ -137,12 +151,26 @@ const Admissions = () => {
       }
     };
 
-  useEffect(() => {
-    loadAdmissions();
-  }, [
-    page,
-    status,
-  ]);
+    useEffect(() => {
+      if (!authLoading && user && canViewAdmissions) {
+        loadAdmissions();
+      }
+    }, [page, status, authLoading, user, canViewAdmissions]);
+
+  //   // insertion start
+  // useEffect(() => {
+  //   const timer =
+  //     setTimeout(() => {
+  //       if (!authLoading && user && canViewAdmissions) {
+  //         setPage(1);
+  //         loadAdmissions();
+  //       }
+  //     }, 400);
+
+  //   return () =>
+  //     clearTimeout(timer);
+  // }, [search, authLoading, user, canViewAdmissions]);
+  // // insertion end
 
   useEffect(() => {
     const timer =
@@ -157,6 +185,12 @@ const Admissions = () => {
 
   const handleDelete =
     async (id) => {
+
+      if (!canDeleteAdmission) {
+        setError("You do not have permission to delete admissions.");
+        return;
+      }
+
       const confirmed =
         window.confirm(
           "Are you sure you want to delete this admission?"
@@ -187,6 +221,18 @@ const Admissions = () => {
       setStatus("");
       setPage(1);
     };
+
+  if (authLoading) {
+    return <div className="admission-state">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canViewAdmissions) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return (
     <div className="admission-page">

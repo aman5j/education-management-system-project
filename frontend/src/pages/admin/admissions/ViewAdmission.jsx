@@ -10,6 +10,10 @@ import {
   useParams,
 } from "react-router-dom";
 
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import {
   getAdmission,
 } from "../../../services/admissionService";
@@ -43,6 +47,13 @@ const ViewAdmission = () => {
   const navigate =
     useNavigate();
   
+  const { user, loading: authLoading } = useAuth();
+
+  const canViewAdmissions = hasPermission(
+    user,
+    "admissions.view"
+  );
+  
   const location = useLocation();
 
   const admissionsPath = location.pathname.startsWith("/staff")
@@ -61,6 +72,12 @@ const ViewAdmission = () => {
   useEffect(() => {
     const loadAdmission =
       async () => {
+
+        if (authLoading || !user || !canViewAdmissions) {
+          setLoading(false);
+          return;
+        }
+
         try {
           const response =
             await getAdmission(id);
@@ -84,7 +101,20 @@ const ViewAdmission = () => {
       };
 
     loadAdmission();
-  }, [id]);
+  }, [id, authLoading, user, canViewAdmissions]);
+
+
+  if (authLoading) {
+    return <div className="admission-state">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canViewAdmissions) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   if (loading) {
     return (

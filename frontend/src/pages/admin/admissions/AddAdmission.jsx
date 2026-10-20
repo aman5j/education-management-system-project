@@ -7,6 +7,10 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
 
 import {
@@ -16,6 +20,13 @@ import {
 const AddAdmission = () => {
   const navigate =
     useNavigate();
+
+  const { user, loading: authLoading } = useAuth();
+
+  const canCreateAdmission = hasPermission(
+    user,
+    "admissions.create"
+  );
   
   const location = useLocation();
 
@@ -28,6 +39,13 @@ const AddAdmission = () => {
 
   const handleSubmit =
     async (formData) => {
+
+      if (!canCreateAdmission || saving) {
+        throw new Error(
+          "You do not have permission to create admissions."
+        );
+      }
+
       try {
         setSaving(true);
 
@@ -52,6 +70,18 @@ const AddAdmission = () => {
         setSaving(false);
       }
     };
+
+  if (authLoading) {
+    return <div className="admission-state">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canCreateAdmission) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return (
     <div className="admission-page">
