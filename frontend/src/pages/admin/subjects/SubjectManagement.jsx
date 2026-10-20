@@ -65,6 +65,7 @@ export default function SubjectManagement() {
 
       if (!canView) {
         setSubjects([]);
+        setPagination({ total: 0, totalPages: 0 });
         setLoading(false);
         setError("You do not have permission to view Subjects.");
         return;
