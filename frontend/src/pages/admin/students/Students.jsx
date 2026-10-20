@@ -72,9 +72,8 @@ const Students = () => {
   const canDeleteStudent = hasPermission(user, "students.delete");
   // const canViewPayments = hasPermission(user, "payments.view");
 
-  // insertion start
+  // Temporary policy until Fees/Payments is audited
   const canViewPayments = user?.role === "admin";
-  // insertion end
 
   const canManageDocuments = canUpdateStudent;
 
