@@ -84,6 +84,8 @@ const Admissions = () => {
   
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const [status, setStatus] =
     useState("");
 
@@ -226,6 +228,8 @@ const Admissions = () => {
       authLoading,
       user,
       canViewAdmissions,
+
+      refreshKey,
     ]);
 
   const handleDelete =
@@ -250,7 +254,14 @@ const Admissions = () => {
           id
         );
 
-        await loadAdmissions();
+        // await loadAdmissions();
+        if (admissions.length === 1 && page > 1) {
+          setPage((currentPage) => currentPage - 1);
+        } else {
+          setRefreshKey((currentKey) => currentKey + 1);
+        }
+
+
       } catch (deleteError) {
         alert(
           deleteError?.response
