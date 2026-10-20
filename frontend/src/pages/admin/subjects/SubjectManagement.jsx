@@ -31,7 +31,7 @@ export default function SubjectManagement() {
     ? "/staff"
     : "/admin";
   
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const canView = hasPermission(user, "subjects.view");
   const canCreate = hasPermission(user, "subjects.create");
@@ -62,6 +62,10 @@ export default function SubjectManagement() {
     const controller = new AbortController();
 
     const loadSubjects = async () => {
+
+      if (authLoading) {
+        return;
+      }
 
       if (!canView) {
         setSubjects([]);
@@ -126,7 +130,7 @@ export default function SubjectManagement() {
       controller.abort();
     };
 
- }, [filters, page, refreshKey, canView]);
+ }, [filters, page, refreshKey, canView, authLoading]);
 
   const handleFilterChange = useCallback((name, value) => {
     setFilters((previous) => ({
