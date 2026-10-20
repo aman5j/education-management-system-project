@@ -367,11 +367,19 @@ const App = () => {
         <Route path="categories/:id" element={<ViewCategory />} />
         <Route path="categories/:id/edit" element={<EditCategory />} />
 
+        
         {/* Subjects */}
         <Route path="subjects" element={<SubjectManagement />} />
         <Route path="subjects/add" element={<AddSubject />} />
         <Route path="subjects/edit/:id" element={<EditSubject />} />
         <Route path="subjects/view/:id" element={<ViewSubject />} />
+
+        {/* Subject Question Bank */}
+        <Route
+          path="subjects/:id/question-bank"
+          element={<SubjectQuestionBank />}
+        />
+
 
         {/* Batches */}
         <Route path="batches" element={<Batches />} />
