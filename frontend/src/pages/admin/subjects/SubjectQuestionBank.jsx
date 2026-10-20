@@ -6,6 +6,9 @@ import {
   useState,
 } from "react";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -73,9 +76,22 @@ const normalizeExcelRow = (row = {}) => {
   };
 };
 
+
 export default function SubjectQuestionBank() {
   const { id: subjectId } = useParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+
+  const canViewQuestionBank = hasPermission(
+    user,
+    "question_bank.view"
+  );
+
+  const canManageQuestionBank = hasPermission(
+    user,
+    "question_bank.manage"
+  );
+
 
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")
@@ -128,23 +144,28 @@ export default function SubjectQuestionBank() {
   }, [subjectId]);
 
   useEffect(() => {
-    if (!showForm) return;
+      if (!showForm) return;
 
-    const frameId = requestAnimationFrame(() => {
-        formSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-        });
+      const frameId = requestAnimationFrame(() => {
+          formSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          });
 
-        questionInputRef.current?.focus({ preventScroll: true });
-    });
+          questionInputRef.current?.focus({ preventScroll: true });
+      });
 
-    return () => cancelAnimationFrame(frameId);
-    }, [showForm, editingId]);
+      return () => cancelAnimationFrame(frameId);
+      }, [showForm, editingId]);
 
   useEffect(() => {
+    if (authLoading || !canViewQuestionBank) {
+      setLoading(false);
+      return;
+    }
+
     loadData();
-  }, [loadData]);
+  }, [authLoading, canViewQuestionBank, loadData]);
 
   const visibleQuestions = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -173,6 +194,9 @@ export default function SubjectQuestionBank() {
   };
 
   const startNewQuestion = () => {
+
+    if (!canManageQuestionBank) return;
+
     setForm({ ...EMPTY_FORM });
     setEditingId("");
     setShowForm(true);
@@ -181,6 +205,9 @@ export default function SubjectQuestionBank() {
   };
 
   const startEdit = (question) => {
+
+    if (!canManageQuestionBank) return;
+
     setForm({
       questionText: question.questionText || "",
       optionA: question.optionA || "",
@@ -197,6 +224,11 @@ export default function SubjectQuestionBank() {
   };
 
   const handleSave = async (event) => {
+    if (!canManageQuestionBank) {
+      setError("You do not have permission to manage MCQs.");
+      return;
+    }
+
     event.preventDefault();
 
     const payload = {
@@ -250,6 +282,11 @@ export default function SubjectQuestionBank() {
   };
 
   const handleDelete = async (question) => {
+    if (!canManageQuestionBank) {
+      setError("You do not have permission to manage MCQs.");
+      return;
+    }
+
     if (!window.confirm("Delete this MCQ permanently?")) {
       return;
     }
@@ -399,6 +436,32 @@ export default function SubjectQuestionBank() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="sqb-page">
+        <div className="sqb-card">Checking permissions...</div>
+      </div>
+    );
+  }
+
+  if (!canViewQuestionBank) {
+    return (
+      <div className="sqb-page">
+        <div className="sqb-card" role="alert">
+          <h2>Access Denied</h2>
+          <p>You do not have permission to view the Question Bank.</p>
+          <button
+            type="button"
+            className="sqb-secondary"
+            onClick={() => navigate(`${basePath}/subjects`)}
+          >
+            <FiArrowLeft /> Back to Subjects
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="sqb-page">
@@ -425,13 +488,16 @@ export default function SubjectQuestionBank() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="sqb-primary"
-          onClick={startNewQuestion}
-        >
-          <FiPlus /> Add MCQ
-        </button>
+        {canManageQuestionBank && (
+          <button
+            type="button"
+            className="sqb-primary"
+            onClick={startNewQuestion}
+          >
+            <FiPlus /> Add MCQ
+          </button>
+        )}
+
       </div>
 
       {error && (
@@ -446,6 +512,7 @@ export default function SubjectQuestionBank() {
         </div>
       )}
 
+      {canManageQuestionBank && (
       <section className="sqb-card">
         <div className="sqb-section-heading">
           <div>
@@ -532,8 +599,9 @@ export default function SubjectQuestionBank() {
           </div>
         )}
       </section>
+      )}
 
-      {showForm && (
+      {canManageQuestionBank && showForm && (
         <section ref={formSectionRef} className="sqb-card">
           <div className="sqb-section-heading">
             <h2>{editingId ? "Edit MCQ" : "Add MCQ Manually"}</h2>
@@ -675,25 +743,33 @@ export default function SubjectQuestionBank() {
                     <td>{question.correctAnswer}</td>
                     <td>
                       <div className="sqb-inline-actions">
-                        <button
-                          type="button"
-                          className="sqb-icon-button"
-                          title="Edit MCQ"
-                          aria-label="Edit MCQ"
-                          onClick={() => startEdit(question)}
-                        >
-                          <FiEdit2 />
-                        </button>
+                        {canManageQuestionBank && (
+                          <>
+                            <button
+                              type="button"
+                              className="sqb-icon-button"
+                              title="Edit MCQ"
+                              aria-label="Edit MCQ"
+                              onClick={() => startEdit(question)}
+                            >
+                              <FiEdit2 />
+                            </button>
 
-                        <button
-                          type="button"
-                          className="sqb-icon-button sqb-delete"
-                          title="Delete MCQ"
-                          aria-label="Delete MCQ"
-                          onClick={() => handleDelete(question)}
-                        >
-                          <FiTrash2 />
-                        </button>
+                            <button
+                              type="button"
+                              className="sqb-icon-button sqb-delete"
+                              title="Delete MCQ"
+                              aria-label="Delete MCQ"
+                              onClick={() => handleDelete(question)}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </>
+                        )}
+
+                        {!canManageQuestionBank && (
+                          <span>Read only</span>
+                        )}
                       </div>
                     </td>
                   </tr>
