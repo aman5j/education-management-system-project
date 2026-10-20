@@ -12,6 +12,9 @@ import {
 import { RiFileExcel2Line } from "react-icons/ri";
 import { FaFileImport } from "react-icons/fa";
 
+import { hasPermission } from "../../../utils/permissions";
+
+
 
 import {
   getCourses,
@@ -24,6 +27,7 @@ import {
 import {
   useNavigate,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -59,28 +63,21 @@ const Students = () => {
     ? "/staff/students"
     : "/admin/students";
   
-  const { user } = useAuth();
+  
+  const { user, loading: authLoading } = useAuth();
 
-const permissions = Array.isArray(user?.assignedRole?.permissions)
-  ? user.assignedRole.permissions
-  : [];
+  const canViewStudents = hasPermission(user, "students.view");
+  const canCreateStudent = hasPermission(user, "students.create");
+  const canUpdateStudent = hasPermission(user, "students.update");
+  const canDeleteStudent = hasPermission(user, "students.delete");
+  // const canViewPayments = hasPermission(user, "payments.view");
 
-const isAdmin = user?.role === "admin";
+  // insertion start
+  const canViewPayments = user?.role === "admin";
+  // insertion end
 
-const canCreateStudent =
-  isAdmin || permissions.includes("students.create");
+  const canManageDocuments = canUpdateStudent;
 
-const canUpdateStudent =
-  isAdmin || permissions.includes("students.update");
-
-const canDeleteStudent =
-  isAdmin || permissions.includes("students.delete");
-
-const canViewPayments =
-  isAdmin || permissions.includes("payments.view");
-
-const canManageDocuments =
-  isAdmin || canUpdateStudent;
 
   const [courses, setCourses] =
   useState([]);
@@ -92,6 +89,9 @@ const canManageDocuments =
   const loadFilterOptions =
     async () => {
       try {
+        
+        if (authLoading || !user || !canViewStudents) return;
+
         const [
           coursesResponse,
           batchesResponse,
@@ -144,7 +144,11 @@ const canManageDocuments =
     };
 
   loadFilterOptions();
-}, []);
+}, [
+  authLoading,
+  user,
+  canViewStudents,
+]);
 
   const [
     students,
@@ -201,6 +205,19 @@ const canManageDocuments =
         requestedPage =
           pagination.page
       ) => {
+
+        
+        if (authLoading || !user || !canViewStudents) {
+          setStudents([]);
+          setPagination((previous) => ({
+            ...previous,
+            total: 0,
+            totalPages: 0,
+          }));
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         setError("");
 
@@ -290,16 +307,26 @@ const canManageDocuments =
         pagination.limit,
         sortBy,
         sortOrder,
+
+        authLoading,
+        user,
+        canViewStudents,
       ]
     );
 
   useEffect(() => {
-    fetchStudents(1);
+    if (!authLoading) {
+      fetchStudents(1);
+    }
   }, [
     filters,
     sortBy,
     sortOrder,
     pagination.limit,
+
+    authLoading,
+    user,
+    canViewStudents,
   ]);
 
   // const handleFilterChange =
@@ -378,6 +405,12 @@ const canManageDocuments =
 
   const handleDelete =
     async (student) => {
+      
+      if (!canDeleteStudent) {
+        setError("You do not have permission to delete students.");
+        return;
+      }
+
       const confirmed =
         window.confirm(
           `Are you sure you want to delete ${student.firstName} ${student.surname || ""}?`
@@ -413,6 +446,12 @@ const canManageDocuments =
       student,
       status
     ) => {
+
+      if (!canUpdateStudent) {
+        setError("You do not have permission to update student status.");
+        return;
+      }
+
       try {
         await api.patch(
           `/students/${student._id}/status`,
@@ -612,6 +651,19 @@ const canManageDocuments =
           );
         }
       };
+
+
+  if (authLoading) {
+    return <div className="student-loading-page">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canViewStudents) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return (
     <div className="student-management-page">
@@ -853,7 +905,7 @@ const canManageDocuments =
             setSelectedStudent(null);
             navigate(`${studentsPath}/${student._id}/edit`);
           }}
-          
+
         />
       )}
 

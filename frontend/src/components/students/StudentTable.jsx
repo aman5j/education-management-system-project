@@ -615,13 +615,18 @@ const handleDownloadReceipt = async (student) => {
                       </Link>
                       )}
 
-                      <button className="tooltip" data-tooltip="Download Fess Receipt"
-                        type="button" 
-                       
-                        onClick={() => handleDownloadReceipt(student)}
-                      >
-                        <FiDownload />
-                      </button>
+                      
+                      {canViewPayments && (
+                        <button
+                          className="tooltip"
+                          data-tooltip="Download Fees Receipt"
+                          type="button"
+                          onClick={() => handleDownloadReceipt(student)}
+                        >
+                          <FiDownload />
+                        </button>
+                      )}
+
 
                       {canDeleteStudent && (
                         <button

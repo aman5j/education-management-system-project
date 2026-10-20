@@ -1,102 +1,100 @@
-import {
-  useEffect,
-  useState,
-} from "react";
 
+import { useCallback, useEffect, useState } from "react";
 import {
+  Navigate,
   useNavigate,
   useLocation,
   useParams,
 } from "react-router-dom";
 
 import api from "../../../services/api";
-
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 import Breadcrumb from "../../../common/Breadcrumb";
-
 import StudentForm from "../../../components/students/StudentForm";
-
 import "./StudentManagement.css";
 
 const EditStudent = () => {
-  const {
-    id,
-  } = useParams();
-
+  const { id } = useParams();
   const location = useLocation();
-
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
   const studentsPath = location.pathname.startsWith("/staff")
-  ? "/staff/students"
-  : "/admin/students";
+    ? "/staff/students"
+    : "/admin/students";
 
-  const [student, setStudent] =
-    useState(null);
+  const canUpdate = hasPermission(user, "students.update");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const [submitting, setSubmitting] =
-    useState(false);
+  const loadStudent = useCallback(async () => {
+    if (authLoading || !user || !canUpdate) return;
 
-  const [error, setError] =
-    useState("");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await api.get(`/students/${id}`);
+      setStudent(response.data.data);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          "Unable to load student."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [authLoading, user, canUpdate, id]);
 
   useEffect(() => {
-    const loadStudent =
-      async () => {
-        try {
-          const response =
-            await api.get(
-              `/students/${id}`
-            );
+    if (authLoading) return;
 
-          setStudent(
-            response.data.data
-          );
-        } catch (requestError) {
-          setError(
-            requestError.response
-              ?.data?.message ||
-              "Unable to load student."
-          );
-        } finally {
-          setLoading(false);
-        }
-      };
+    if (!user || !canUpdate) {
+      setLoading(false);
+      return;
+    }
 
     loadStudent();
-  }, [id]);
+  }, [authLoading, user, canUpdate, loadStudent]);
 
-  const handleSubmit =
-    async (formData) => {
-      setSubmitting(true);
+  const handleSubmit = async (formData) => {
+    if (!canUpdate || submitting) {
+      throw new Error("You do not have permission to update students.");
+    }
 
-      try {
-        await api.put(
-          `/students/${id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type":
-                "multipart/form-data",
-            },
-          }
-        );
+    setSubmitting(true);
 
-        navigate(studentsPath);
-        
-      } catch (requestError) {
-        throw new Error(
-          requestError.response
-            ?.data?.message ||
-            "Unable to update student."
-        );
-      } finally {
-        setSubmitting(false);
-      }
-    };
+    try {
+      await api.put(`/students/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      navigate(studentsPath);
+    } catch (requestError) {
+      throw new Error(
+        requestError.response?.data?.message ||
+          "Unable to update student."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (authLoading) {
+    return <div className="student-loading-page">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canUpdate) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   if (loading) {
     return (
@@ -108,40 +106,28 @@ const EditStudent = () => {
   }
 
   if (error) {
-    return (
-      <div className="student-page-error">
-        {error}
-      </div>
-    );
+    return <div className="student-page-error">{error}</div>;
+  }
+
+  if (!student) {
+    return <div className="student-page-error">Student not found.</div>;
   }
 
   return (
     <div className="student-management-page">
-      <Breadcrumb
-        currentPage="Edit Student"
-      />
+      <Breadcrumb currentPage="Edit Student" />
 
       <div className="student-page-header">
         <div>
-          <span className="student-page-eyebrow">
-            STUDENT MANAGEMENT
-          </span>
-
-          <h1>
-            Edit Student
-          </h1>
-
-          <p>
-            Update student information.
-          </p>
+          <span className="student-page-eyebrow">STUDENT MANAGEMENT</span>
+          <h1>Edit Student</h1>
+          <p>Update student information.</p>
         </div>
       </div>
 
       <StudentForm
         initialData={student}
-        onSubmit={
-          handleSubmit
-        }
+        onSubmit={handleSubmit}
         submitting={submitting}
         submitLabel="Update Student"
       />

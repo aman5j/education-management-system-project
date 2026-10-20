@@ -2,77 +2,66 @@
 import express from "express";
 
 import {
-  createSubject,
-  getSubjects,
-  getSubjectById,
-  updateSubject,
-  updateSubjectStatus,
-  deleteSubject,
-} from "../controllers/subject.controller.js";
-
-import {
-  getSubjectQuestionBank,
-  addSubjectQuestion,
-  updateSubjectQuestion,
-  deleteSubjectQuestion,
-  importSubjectQuestions,
-} from "../controllers/subjectQuestionBank.controller.js";
+  getAttendanceRoster,
+  getStudents,
+  getStudent,
+  createStudent,
+  updateStudent,
+  deleteStudent,
+  updateStudentStatus,
+} from "../controllers/student.controller.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import { requirePermission } from "../middleware/permission.middleware.js";
+import studentUpload from "../middleware/studentUpload.middleware.js";
 
 const router = express.Router();
 
-// Authenticate every endpoint before checking permissions.
+// Authenticate every student-management request first.
 router.use(authenticate);
 
-// Subject CRUD
+// Attendance roster: keep this before /:id.
+router.get(
+  "/attendance-roster",
+  requirePermission("attendance.view"),
+  getAttendanceRoster
+);
+
+// Student list and creation.
 router
   .route("/")
-  .get(requirePermission("subjects.view"), getSubjects)
-  .post(requirePermission("subjects.create"), createSubject);
+  .get(requirePermission("students.view"), getStudents)
+  .post(
+    requirePermission("students.create"),
+    studentUpload.fields([
+      { name: "profileImage", maxCount: 1 },
+      { name: "signature", maxCount: 1 },
+    ]),
+    createStudent
+  );
 
-router
-  .route("/:id")
-  .get(requirePermission("subjects.view"), getSubjectById)
-  .patch(requirePermission("subjects.update"), updateSubject)
-  .delete(requirePermission("subjects.delete"), deleteSubject);
-
+// Update student status.
 router.patch(
   "/:id/status",
-  requirePermission("subjects.update"),
-  updateSubjectStatus
+  requirePermission("students.update"),
+  updateStudentStatus
 );
 
-// Subject-specific Question Bank
-router.get(
-  "/:id/question-bank",
-  requirePermission("question_bank.view"),
-  getSubjectQuestionBank
-);
-
-router.post(
-  "/:id/question-bank",
-  requirePermission("question_bank.manage"),
-  addSubjectQuestion
-);
-
-router.post(
-  "/:id/question-bank/import",
-  requirePermission("question_bank.manage"),
-  importSubjectQuestions
-);
-
-router.patch(
-  "/:id/question-bank/:questionId",
-  requirePermission("question_bank.manage"),
-  updateSubjectQuestion
-);
-
-router.delete(
-  "/:id/question-bank/:questionId",
-  requirePermission("question_bank.manage"),
-  deleteSubjectQuestion
-);
+// Individual student: read, update, delete.
+router
+  .route("/:id")
+  .get(requirePermission("students.view"), getStudent)
+  .put(
+    requirePermission("students.update"),
+    studentUpload.fields([
+      { name: "profileImage", maxCount: 1 },
+      { name: "signature", maxCount: 1 },
+    ]),
+    updateStudent
+  )
+  .delete(
+    requirePermission("students.delete"),
+    deleteStudent
+  );
 
 export default router;
