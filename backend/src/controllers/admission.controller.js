@@ -130,11 +130,205 @@ const getPopulatedAdmission = async (id) => {
 |--------------------------------------------------------------------------
 */
 
-export const getAdmissions = async (
-  req,
-  res,
-  next
-) => {
+// export const getAdmissions = async (
+//   req,
+//   res,
+//   next
+// ) => {
+//   try {
+//     const {
+//       search = "",
+//       student_id = "",
+//       course_id = "",
+//       batch_id = "",
+//       status = "",
+//       admittedFrom = "",
+//       admittedTo = "",
+//       page = 1,
+//       limit = 10,
+//       sortBy = "admission_date",
+//       sortOrder = "desc",
+//     } = req.query;
+
+//     const pageNumber = Math.max(
+//       Number(page) || 1,
+//       1
+//     );
+
+//     const limitNumber = Math.min(
+//       Math.max(Number(limit) || 10, 1),
+//       100
+//     );
+
+//     const skip =
+//       (pageNumber - 1) * limitNumber;
+
+//     const filter = {};
+
+//     if (student_id) {
+//       if (!isValidObjectId(student_id)) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid student ID.",
+//         });
+//       }
+
+//       filter.student_id = student_id;
+//     }
+
+//     if (course_id) {
+//       if (!isValidObjectId(course_id)) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid course ID.",
+//         });
+//       }
+
+//       filter.course_id = course_id;
+//     }
+
+//     if (batch_id) {
+//       if (!isValidObjectId(batch_id)) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid batch ID.",
+//         });
+//       }
+
+//       filter.batch_id = batch_id;
+//     }
+
+//     if (status) {
+//       filter.status = status;
+//     }
+
+//     if (admittedFrom || admittedTo) {
+//       filter.admission_date = {};
+
+//       if (admittedFrom) {
+//         filter.admission_date.$gte =
+//           new Date(`${admittedFrom}T00:00:00.000Z`);
+//       }
+
+//       if (admittedTo) {
+//         filter.admission_date.$lte =
+//           new Date(`${admittedTo}T23:59:59.999Z`);
+//       }
+//     }
+
+//     const allowedSortFields = [
+//       "admission_date",
+//       "createdAt",
+//       "final_amount",
+//       "paid_amount",
+//       "status",
+//     ];
+
+//     const safeSortBy =
+//       allowedSortFields.includes(sortBy)
+//         ? sortBy
+//         : "admission_date";
+
+//     const safeSortOrder =
+//       sortOrder === "asc" ? 1 : -1;
+
+//     /*
+//      * Search is handled after population-friendly
+//      * filtering using aggregation when necessary.
+//      *
+//      * For the normal listing, we populate and then
+//      * filter search terms on the admission-level
+//      * fields as well as referenced names.
+//      */
+
+//     let admissionsQuery =
+//       StudentAdmission.find(filter)
+//         .populate(
+//           "student_id",
+//           "rollNo firstName surname mobile email profileImage"
+//         )
+//         .populate(
+//           "course_id",
+//           "courseTitle courseType certificateDiploma price mrp"
+//         )
+//         .populate(
+//           "batch_id",
+//           "batch_name max_seats available_seats status course_id"
+//         )
+//         .sort({
+//           [safeSortBy]: safeSortOrder,
+//         })
+//         .skip(skip)
+//         .limit(limitNumber);
+
+//     let admissions =
+//       await admissionsQuery;
+
+//     if (search.trim()) {
+//       const normalizedSearch =
+//         search.trim().toLowerCase();
+
+//       admissions =
+//         admissions.filter((admission) => {
+//           const student =
+//             admission.student_id;
+
+//           const course =
+//             admission.course_id;
+
+//           const batch =
+//             admission.batch_id;
+
+//           const values = [
+//             student?.rollNo,
+//             student?.firstName,
+//             student?.surname,
+//             student?.mobile,
+//             student?.email,
+//             course?.courseTitle,
+//             batch?.batch_name,
+//             admission.course_type,
+//             admission.referral_source,
+//             admission.remark,
+//           ];
+
+//           return values.some((value) =>
+//             String(value || "")
+//               .toLowerCase()
+//               .includes(normalizedSearch)
+//           );
+//         });
+//     }
+
+//     const total =
+//       await StudentAdmission.countDocuments(
+//         filter
+//       );
+
+//     const totalPages = Math.ceil(
+//       total / limitNumber
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       data: {
+//         admissions,
+//         pagination: {
+//           page: pageNumber,
+//           limit: limitNumber,
+//           total,
+//           totalPages,
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+
+export const getAdmissions = async (req, res, next) => {
   try {
     const {
       search = "",
@@ -150,70 +344,137 @@ export const getAdmissions = async (
       sortOrder = "desc",
     } = req.query;
 
-    const pageNumber = Math.max(
-      Number(page) || 1,
-      1
-    );
-
+    const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
     const limitNumber = Math.min(
-      Math.max(Number(limit) || 10, 1),
+      Math.max(parseInt(limit, 10) || 10, 1),
       100
     );
-
-    const skip =
-      (pageNumber - 1) * limitNumber;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const filter = {};
 
-    if (student_id) {
-      if (!isValidObjectId(student_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid student ID.",
-        });
+    for (const [field, value] of [
+      ["student_id", student_id],
+      ["course_id", course_id],
+      ["batch_id", batch_id],
+    ]) {
+      if (value) {
+        if (!isValidObjectId(value)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid ${field.replace("_", " ")}.`,
+          });
+        }
+        filter[field] = value;
       }
-
-      filter.student_id = student_id;
-    }
-
-    if (course_id) {
-      if (!isValidObjectId(course_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid course ID.",
-        });
-      }
-
-      filter.course_id = course_id;
-    }
-
-    if (batch_id) {
-      if (!isValidObjectId(batch_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid batch ID.",
-        });
-      }
-
-      filter.batch_id = batch_id;
     }
 
     if (status) {
+      if (!["Active", "Completed", "Dropped"].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid admission status.",
+        });
+      }
       filter.status = status;
     }
 
     if (admittedFrom || admittedTo) {
-      filter.admission_date = {};
+      const dateFilter = {};
 
       if (admittedFrom) {
-        filter.admission_date.$gte =
-          new Date(`${admittedFrom}T00:00:00.000Z`);
+        const from = new Date(`${admittedFrom}T00:00:00.000Z`);
+        if (Number.isNaN(from.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid start date.",
+          });
+        }
+        dateFilter.$gte = from;
       }
 
       if (admittedTo) {
-        filter.admission_date.$lte =
-          new Date(`${admittedTo}T23:59:59.999Z`);
+        const to = new Date(`${admittedTo}T23:59:59.999Z`);
+        if (Number.isNaN(to.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid end date.",
+          });
+        }
+        dateFilter.$lte = to;
       }
+
+      if (
+        dateFilter.$gte &&
+        dateFilter.$lte &&
+        dateFilter.$gte > dateFilter.$lte
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Start date cannot be after end date.",
+        });
+      }
+
+      filter.admission_date = dateFilter;
+    }
+
+    const normalizedSearch = String(search).trim();
+
+    if (normalizedSearch) {
+      const escapedSearch = normalizedSearch.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      const [students, courses, batches] = await Promise.all([
+        Student.find({
+          $or: [
+            { rollNo: searchRegex },
+            { firstName: searchRegex },
+            { surname: searchRegex },
+            { mobile: searchRegex },
+            { email: searchRegex },
+          ],
+        }).select("_id"),
+
+        Course.find({
+          courseTitle: searchRegex,
+        }).select("_id"),
+
+        Batch.find({
+          batch_name: searchRegex,
+        }).select("_id"),
+      ]);
+
+      const searchConditions = [
+        { course_type: searchRegex },
+        { referral_source: searchRegex },
+        { remark: searchRegex },
+      ];
+
+      if (students.length) {
+        searchConditions.push({
+          student_id: { $in: students.map((item) => item._id) },
+        });
+      }
+
+      if (courses.length) {
+        searchConditions.push({
+          course_id: { $in: courses.map((item) => item._id) },
+        });
+      }
+
+      if (batches.length) {
+        searchConditions.push({
+          batch_id: { $in: batches.map((item) => item._id) },
+        });
+      }
+
+      filter.$and = [
+        ...(filter.$and || []),
+        { $or: searchConditions },
+      ];
     }
 
     const allowedSortFields = [
@@ -224,24 +485,15 @@ export const getAdmissions = async (
       "status",
     ];
 
-    const safeSortBy =
-      allowedSortFields.includes(sortBy)
-        ? sortBy
-        : "admission_date";
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : "admission_date";
 
-    const safeSortOrder =
-      sortOrder === "asc" ? 1 : -1;
+    const safeSortOrder = sortOrder === "asc" ? 1 : -1;
 
-    /*
-     * Search is handled after population-friendly
-     * filtering using aggregation when necessary.
-     *
-     * For the normal listing, we populate and then
-     * filter search terms on the admission-level
-     * fields as well as referenced names.
-     */
+    const [total, admissions] = await Promise.all([
+      StudentAdmission.countDocuments(filter),
 
-    let admissionsQuery =
       StudentAdmission.find(filter)
         .populate(
           "student_id",
@@ -257,57 +509,11 @@ export const getAdmissions = async (
         )
         .sort({
           [safeSortBy]: safeSortOrder,
+          _id: safeSortOrder,
         })
         .skip(skip)
-        .limit(limitNumber);
-
-    let admissions =
-      await admissionsQuery;
-
-    if (search.trim()) {
-      const normalizedSearch =
-        search.trim().toLowerCase();
-
-      admissions =
-        admissions.filter((admission) => {
-          const student =
-            admission.student_id;
-
-          const course =
-            admission.course_id;
-
-          const batch =
-            admission.batch_id;
-
-          const values = [
-            student?.rollNo,
-            student?.firstName,
-            student?.surname,
-            student?.mobile,
-            student?.email,
-            course?.courseTitle,
-            batch?.batch_name,
-            admission.course_type,
-            admission.referral_source,
-            admission.remark,
-          ];
-
-          return values.some((value) =>
-            String(value || "")
-              .toLowerCase()
-              .includes(normalizedSearch)
-          );
-        });
-    }
-
-    const total =
-      await StudentAdmission.countDocuments(
-        filter
-      );
-
-    const totalPages = Math.ceil(
-      total / limitNumber
-    );
+        .limit(limitNumber),
+    ]);
 
     return res.status(200).json({
       success: true,
@@ -317,7 +523,7 @@ export const getAdmissions = async (
           page: pageNumber,
           limit: limitNumber,
           total,
-          totalPages,
+          totalPages: Math.ceil(total / limitNumber),
         },
       },
     });
@@ -325,6 +531,8 @@ export const getAdmissions = async (
     next(error);
   }
 };
+
+
 
 /*
 |--------------------------------------------------------------------------

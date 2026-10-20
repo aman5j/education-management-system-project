@@ -81,6 +81,8 @@ const Admissions = () => {
 
   const [search, setSearch] =
     useState("");
+  
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [status, setStatus] =
     useState("");
@@ -152,36 +154,79 @@ const Admissions = () => {
     };
 
     useEffect(() => {
-      if (!authLoading && user && canViewAdmissions) {
-        loadAdmissions();
-      }
-    }, [page, status, authLoading, user, canViewAdmissions]);
-
-  //   // insertion start
-  // useEffect(() => {
-  //   const timer =
-  //     setTimeout(() => {
-  //       if (!authLoading && user && canViewAdmissions) {
-  //         setPage(1);
-  //         loadAdmissions();
-  //       }
-  //     }, 400);
-
-  //   return () =>
-  //     clearTimeout(timer);
-  // }, [search, authLoading, user, canViewAdmissions]);
-  // // insertion end
-
-  useEffect(() => {
-    const timer =
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearch(search.trim());
         setPage(1);
-        loadAdmissions();
       }, 400);
 
-    return () =>
-      clearTimeout(timer);
-  }, [search]);
+      return () => clearTimeout(timer);
+    }, [search]);
+
+    useEffect(() => {
+      if (authLoading || !user || !canViewAdmissions) {
+        setAdmissions([]);
+        setLoading(false);
+        return;
+      }
+
+      let cancelled = false;
+
+      const fetchAdmissions = async () => {
+        try {
+          setLoading(true);
+          setError("");
+
+          const response = await getAdmissions({
+            search: debouncedSearch,
+            status,
+            page,
+            limit: 10,
+          });
+
+          if (cancelled) return;
+
+          const data = response?.data?.data;
+
+          setAdmissions(
+            Array.isArray(data?.admissions) ? data.admissions : []
+          );
+
+          setPagination(
+            data?.pagination || {
+              page,
+              limit: 10,
+              total: 0,
+              totalPages: 0,
+            }
+          );
+        } catch (requestError) {
+          if (cancelled) return;
+
+          setAdmissions([]);
+          setError(
+            requestError?.response?.data?.message ||
+              "Unable to load admissions."
+          );
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
+      };
+
+      fetchAdmissions();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [
+      debouncedSearch,
+      status,
+      page,
+      authLoading,
+      user,
+      canViewAdmissions,
+    ]);
 
   const handleDelete =
     async (id) => {
