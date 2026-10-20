@@ -24,16 +24,6 @@ export default function EditSubject() {
 
   const { user } = useAuth();
 
-  if (!hasPermission(user, "subjects.update")) {
-    return (
-      <div className="subject-page">
-        <div className="subject-alert subject-alert-error" role="alert">
-          You do not have permission to update subjects.
-        </div>
-      </div>
-    );
-  }
-
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"

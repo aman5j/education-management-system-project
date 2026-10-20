@@ -393,6 +393,12 @@ export default function SubjectQuestionBank() {
   };
 
   const handleImport = async () => {
+
+    if (!canManageQuestionBank) {
+      setError("You do not have permission to import MCQs.");
+      return;
+    }
+    
     if (!excelRows.length) return;
 
     try {

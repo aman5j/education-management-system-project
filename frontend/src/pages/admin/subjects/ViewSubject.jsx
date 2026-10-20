@@ -33,16 +33,6 @@ export default function ViewSubject() {
 
   const { user } = useAuth();
 
-  if (!hasPermission(user, "subjects.view")) {
-    return (
-      <div className="subject-page">
-        <div className="subject-alert subject-alert-error" role="alert">
-          You do not have permission to view subjects.
-        </div>
-      </div>
-    );
-  }
-
   const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
