@@ -24,6 +24,8 @@ import {
 } from "../../../utils/assetUrl";
 
 import "../../../styles/CourseReports.css";
+import { RiFileExcel2Line } from "react-icons/ri";
+import { FaFilePdf } from "react-icons/fa";
 
 /*
 |--------------------------------------------------------------------------
@@ -862,38 +864,23 @@ const CourseReports = () => {
 
       {/* HEADER */}
 
-      <div className="course-reports-header">
+      <div className="page-header">
 
         <div>
           <h1>
             Course Reports
           </h1>
 
-          <p>
-            View complete course,
-            admission and financial
-            performance information.
-          </p>
+         
         </div>
 
-        <div className="course-report-actions">
+        <div className="admission-report-actions">
+
+       
 
           <button
             type="button"
-            className="course-report-btn secondary"
-            onClick={() =>
-              loadReport()
-            }
-            disabled={loading}
-          >
-            <FiRefreshCw />
-
-            Refresh
-          </button>
-
-          <button
-            type="button"
-            className="course-report-btn excel"
+            className="themebtn exceldownload"
             onClick={
               exportExcel
             }
@@ -901,14 +888,14 @@ const CourseReports = () => {
               !courses.length
             }
           >
-            <FiDownload />
+             <RiFileExcel2Line />
 
             Excel
           </button>
 
           <button
             type="button"
-            className="course-report-btn pdf"
+            className="themebtn pdfdownload"
             onClick={
               exportPDF
             }
@@ -916,7 +903,7 @@ const CourseReports = () => {
               !courses.length
             }
           >
-            <FiFileText />
+            <FaFilePdf />
 
             PDF
           </button>
@@ -924,6 +911,7 @@ const CourseReports = () => {
         </div>
 
       </div>
+
 
       {/* ERROR */}
 
@@ -1043,9 +1031,9 @@ const CourseReports = () => {
 
       {/* FILTERS */}
 
-      <div className="course-report-filters">
+      <div className="common-card-filters">
 
-        <div className="course-filter-field">
+        <div className="input-search noicon">
 
           <label>
             Search Course
@@ -1065,7 +1053,7 @@ const CourseReports = () => {
 
         </div>
 
-        <div className="course-filter-field">
+        <div className="input-search">
 
           <label>
             Status
@@ -1099,7 +1087,7 @@ const CourseReports = () => {
 
         </div>
 
-        <div className="course-filter-field">
+        <div className="input-search noicon">
 
           <label>
             Course Type
@@ -1119,7 +1107,7 @@ const CourseReports = () => {
 
         </div>
 
-        <div className="course-filter-field">
+        <div className="input-search noicon">
 
           <label>
             Category
@@ -1139,27 +1127,27 @@ const CourseReports = () => {
 
         </div>
 
-        <div className="course-filter-actions">
+        <div className="student-filter-actions">
 
           <button
             type="button"
-            className="course-report-btn primary"
+            className="themebtn"
             onClick={
               handleApply
             }
             disabled={loading}
           >
-            Apply
+            Apply Filter
           </button>
 
           <button
             type="button"
-            className="course-report-btn secondary"
+            className="themebtn themebtnline"
             onClick={
               handleReset
             }
           >
-            Reset
+            <FiRefreshCw />  Reset
           </button>
 
         </div>
@@ -1167,440 +1155,453 @@ const CourseReports = () => {
       </div>
 
       {/* TABLE */}
+      <div className="common-card">
+            <div className="common-table-wrapper">
 
-      <div className="course-report-table-wrapper">
+              <table className="common-table">
 
-        <table className="course-report-table">
+                <thead>
+                  <tr>
 
-          <thead>
-            <tr>
+                    {/* <th>
+                      #
+                    </th> */}
 
-              <th>
-                #
-              </th>
+                    <th>
+                      Image
+                    </th>
 
-              <th>
-                Image
-              </th>
+                    <th>
+                      Course
+                    </th>
 
-              <th>
-                Course
-              </th>
+                  
 
-              <th>
-                Type
-              </th>
+                  
 
-              <th>
-                Certificate
-              </th>
+                    <th>
+                      Category
+                    </th>
 
-              <th>
-                Category
-              </th>
+                    <th>
+                      MRP
+                    </th>
 
-              <th>
-                MRP
-              </th>
+                    <th>
+                      Price
+                    </th>
 
-              <th>
-                Price
-              </th>
+                    <th>
+                      Duration
+                    </th>
 
-              <th>
-                Duration
-              </th>
+                    <th>
+                      Lectures
+                    </th>
 
-              <th>
-                Lectures
-              </th>
+                    <th>
+                      Practical
+                    </th>
 
-              <th>
-                Practical
-              </th>
+                    <th>
+                      Objective
+                    </th>
 
-              <th>
-                Objective
-              </th>
+                    <th>
+                      Students
+                    </th>
 
-              <th>
-                Students
-              </th>
+                    <th>
+                      Admissions
+                    </th>
 
-              <th>
-                Admissions
-              </th>
+                    <th>
+                      Active
+                    </th>
 
-              <th>
-                Active
-              </th>
+                    <th>
+                      Completed
+                    </th>
 
-              <th>
-                Completed
-              </th>
+                    <th>
+                      Dropped
+                    </th>
 
-              <th>
-                Dropped
-              </th>
+                    <th>
+                      Course Fees
+                    </th>
 
-              <th>
-                Course Fees
-              </th>
+                    <th>
+                      Paid
+                    </th>
 
-              <th>
-                Paid
-              </th>
+                    <th>
+                      Remaining
+                    </th>
 
-              <th>
-                Remaining
-              </th>
+                    <th>
+                      Popular
+                    </th>
 
-              <th>
-                Popular
-              </th>
+                    <th>
+                      Recommended
+                    </th>
 
-              <th>
-                Recommended
-              </th>
+                    <th>
+                      MRP Visible
+                    </th>
 
-              <th>
-                MRP Visible
-              </th>
+                    <th>
+                      Exam Result
+                    </th>
 
-              <th>
-                Exam Result
-              </th>
+                    <th>
+                      Status
+                    </th>
 
-              <th>
-                Status
-              </th>
+                  </tr>
+                </thead>
 
-            </tr>
-          </thead>
+                <tbody>
 
-          <tbody>
-
-            {loading ? (
-              <tr>
-                <td colSpan="25">
-                  Loading course
-                  report...
-                </td>
-              </tr>
-            ) : !courses.length ? (
-              <tr>
-                <td colSpan="25">
-                  No course records
-                  found.
-                </td>
-              </tr>
-            ) : (
-              courses.map(
-                (
-                  item,
-                  index
-                ) => {
-                  const course =
-                    item.course ||
-                    {};
-
-                  return (
-                    <tr
-                      key={
-                        course._id ||
-                        index
-                      }
-                    >
-
-                      {/* # */}
-
-                      <td>
-                        {index + 1}
+                  {loading ? (
+                    <tr>
+                      <td colSpan="25">
+                        Loading course
+                        report...
                       </td>
-
-                      {/* IMAGE */}
-
-                      <td>
-
-                        {course.courseImage ? (
-                          <img
-                            className="course-report-image"
-                            src={getAssetUrl(
-                              course.courseImage
-                            )}
-                            alt={
-                              course.courseTitle ||
-                              "Course"
-                            }
-                            onError={(
-                              event
-                            ) => {
-                              event.currentTarget.style.display =
-                                "none";
-                            }}
-                          />
-                        ) : (
-                          <div className="course-report-image-placeholder">
-                            —
-                          </div>
-                        )}
-
-                      </td>
-
-                      {/* COURSE */}
-
-                      <td className="course-name-cell">
-
-                        <strong>
-                          {course.courseTitle ||
-                            "-"}
-                        </strong>
-
-                        <span>
-                          Order:{" "}
-                          {Number(
-                            course.displayOrder ||
-                              0
-                          )}
-                        </span>
-
-                      </td>
-
-                      {/* TYPE */}
-
-                      <td>
-                        {course.courseType ||
-                          "-"}
-                      </td>
-
-                      {/* CERTIFICATE */}
-
-                      <td>
-                        {course.certificateDiploma ||
-                          "-"}
-                      </td>
-
-                      {/* CATEGORY */}
-
-                      <td>
-                        {course.courseCategory ||
-                          "-"}
-                      </td>
-
-                      {/* MRP */}
-
-                      <td>
-                        {formatCurrency(
-                          course.mrp
-                        )}
-                      </td>
-
-                      {/* PRICE */}
-
-                      <td>
-                        {formatCurrency(
-                          course.price
-                        )}
-                      </td>
-
-                      {/* DURATION */}
-
-                      <td>
-                        {formatDuration(
-                          course.duration,
-                          course.durationUnit
-                        )}
-                      </td>
-
-                      {/* LECTURES */}
-
-                      <td>
-                        {Number(
-                          course.totalLectures ||
-                            0
-                        )}
-                      </td>
-
-                      {/* PRACTICAL */}
-
-                      <td>
-                        {Number(
-                          course.practicalMarks ||
-                            0
-                        )}
-                      </td>
-
-                      {/* OBJECTIVE */}
-
-                      <td>
-                        {Number(
-                          course.objectiveMarks ||
-                            0
-                        )}
-                      </td>
-
-                      {/* STUDENTS */}
-
-                      <td>
-                        {Number(
-                          item.totalStudents ||
-                            0
-                        )}
-                      </td>
-
-                      {/* ADMISSIONS */}
-
-                      <td>
-                        {Number(
-                          item.totalAdmissions ||
-                            0
-                        )}
-                      </td>
-
-                      {/* ACTIVE */}
-
-                      <td>
-                        {Number(
-                          item.activeAdmissions ||
-                            0
-                        )}
-                      </td>
-
-                      {/* COMPLETED */}
-
-                      <td>
-                        {Number(
-                          item.completedAdmissions ||
-                            0
-                        )}
-                      </td>
-
-                      {/* DROPPED */}
-
-                      <td>
-                        {Number(
-                          item.droppedAdmissions ||
-                            0
-                        )}
-                      </td>
-
-                      {/* COURSE FEES */}
-
-                      <td>
-                        {formatCurrency(
-                          item.totalCourseFees
-                        )}
-                      </td>
-
-                      {/* PAID */}
-
-                      <td>
-                        {formatCurrency(
-                          item.totalPaidAmount
-                        )}
-                      </td>
-
-                      {/* REMAINING */}
-
-                      <td>
-                        {formatCurrency(
-                          item.totalRemainingAmount
-                        )}
-                      </td>
-
-                      {/* POPULAR */}
-
-                      <td>
-                        <span
-                          className={
-                            course.popular
-                              ? "report-badge yes"
-                              : "report-badge no"
-                          }
-                        >
-                          {course.popular
-                            ? "Yes"
-                            : "No"}
-                        </span>
-                      </td>
-
-                      {/* RECOMMENDED */}
-
-                      <td>
-                        <span
-                          className={
-                            course.recommended
-                              ? "report-badge yes"
-                              : "report-badge no"
-                          }
-                        >
-                          {course.recommended
-                            ? "Yes"
-                            : "No"}
-                        </span>
-                      </td>
-
-                      {/* MRP VISIBLE */}
-
-                      <td>
-                        <span
-                          className={
-                            course.mrpVisible
-                              ? "report-badge yes"
-                              : "report-badge no"
-                          }
-                        >
-                          {course.mrpVisible
-                            ? "Yes"
-                            : "No"}
-                        </span>
-                      </td>
-
-                      {/* EXAM RESULT */}
-
-                      <td>
-                        <span
-                          className={
-                            course.hideExamResult
-                              ? "report-badge no"
-                              : "report-badge yes"
-                          }
-                        >
-                          {course.hideExamResult
-                            ? "Hidden"
-                            : "Visible"}
-                        </span>
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td>
-                        <span
-                          className={`course-status-badge ${String(
-                            course.status ||
-                              ""
-                          )
-                            .toLowerCase()
-                            .replace(
-                              /\s+/g,
-                              "-"
-                            )}`}
-                        >
-                          {course.status ||
-                            "-"}
-                        </span>
-                      </td>
-
                     </tr>
-                  );
-                }
-              )
-            )}
+                  ) : !courses.length ? (
+                    <tr>
+                      <td colSpan="25">
+                        No course records
+                        found.
+                      </td>
+                    </tr>
+                  ) : (
+                    courses.map(
+                      (
+                        item,
+                        index
+                      ) => {
+                        const course =
+                          item.course ||
+                          {};
 
-          </tbody>
+                        return (
+                          <tr
+                            key={
+                              course._id ||
+                              index
+                            }
+                          >
 
-        </table>
+                            {/* # */}
 
+                            {/* <td>
+                              {index + 1}
+                            </td> */}
+
+                            {/* IMAGE */}
+
+                            <td>
+
+                              {course.courseImage ? (
+                                <img
+                                  className="student-avatar"
+                                  src={getAssetUrl(
+                                    course.courseImage
+                                  )}
+                                  alt={
+                                    course.courseTitle ||
+                                    "Course"
+                                  }
+                                  onError={(
+                                    event
+                                  ) => {
+                                    event.currentTarget.style.display =
+                                      "none";
+                                  }}
+                                />
+                              ) : (
+                                <div className=".student-avatar-placeholder">
+                                  —
+                                </div>
+                              )}
+
+                            </td>
+
+                            {/* COURSE */}
+
+                            <td className="course-name-cell">
+
+                              <strong>
+                                {course.courseTitle ||
+                                  "-"}
+                              </strong>
+                                  <div>
+
+                             <span className={` ${course.courseType || ""}`}>
+  {course.courseType || "-"}
+</span>
+                                </div>
+                               
+
+                              {/* <span>
+                                Order:{" "}
+                                {Number(
+                                  course.displayOrder ||
+                                    0
+                                )}
+                              </span> */}
+
+                            </td>
+
+                            {/* TYPE */}
+
+                         
+
+                            {/* CERTIFICATE */}
+
+                          
+
+                            {/* CATEGORY */}
+
+                            <td>
+                              {course.courseCategory ||
+                                "-"}
+                            </td>
+
+                            {/* MRP */}
+
+                            <td>
+                             
+
+                              <span className="tag-purple">
+                                {formatCurrency(
+                                course.mrp
+                              )}
+                              </span>
+                            </td>
+
+                            {/* PRICE */}
+
+                            <td>
+                              <span className="tag-success">
+ {formatCurrency(
+                                course.price
+                              )}
+                              </span>
+                             
+                            </td>
+
+                            {/* DURATION */}
+
+                            <td>
+                              {formatDuration(
+                                course.duration,
+                                course.durationUnit
+                              )}
+                            </td>
+
+                            {/* LECTURES */}
+
+                            <td>
+                              {Number(
+                                course.totalLectures ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* PRACTICAL */}
+
+                            <td>
+                              {Number(
+                                course.practicalMarks ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* OBJECTIVE */}
+
+                            <td>
+                              {Number(
+                                course.objectiveMarks ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* STUDENTS */}
+
+                            <td>
+                              {Number(
+                                item.totalStudents ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* ADMISSIONS */}
+
+                            <td>
+                              {Number(
+                                item.totalAdmissions ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* ACTIVE */}
+
+                            <td>
+                              {Number(
+                                item.activeAdmissions ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* COMPLETED */}
+
+                            <td>
+                              {Number(
+                                item.completedAdmissions ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* DROPPED */}
+
+                            <td>
+                              {Number(
+                                item.droppedAdmissions ||
+                                  0
+                              )}
+                            </td>
+
+                            {/* COURSE FEES */}
+
+                            <td>
+                             
+                              <span className=" tag-purple"> {formatCurrency(
+                                item.totalCourseFees
+                              )}</span>
+                             
+                            </td>
+
+                            {/* PAID */}
+
+                            <td>
+                             
+                               <span className="tag-success">
+                               {formatCurrency(
+                                item.totalPaidAmount
+                              )}
+                             </span>
+
+                            </td>
+
+                            {/* REMAINING */}
+
+                            <td>
+                             <span className="tag-danger">
+                               {formatCurrency(
+                                item.totalRemainingAmount
+                              )}
+                             </span>
+                            </td>
+
+                            {/* POPULAR */}
+
+                            <td>
+                              <span
+                                className={
+                                  course.popular
+                                    ? "report-badge yes"
+                                    : "report-badge no"
+                                }
+                              >
+                                {course.popular
+                                  ? "Yes"
+                                  : "No"}
+                              </span>
+                            </td>
+
+                            {/* RECOMMENDED */}
+
+                            <td>
+                              <span
+                                className={
+                                  course.recommended
+                                    ? "report-badge yes"
+                                    : "report-badge no"
+                                }
+                              >
+                                {course.recommended
+                                  ? "Yes"
+                                  : "No"}
+                              </span>
+                            </td>
+
+                            {/* MRP VISIBLE */}
+
+                            <td>
+                              <span
+                                className={
+                                  course.mrpVisible
+                                    ? "report-badge yes"
+                                    : "report-badge no"
+                                }
+                              >
+                                {course.mrpVisible
+                                  ? "Yes"
+                                  : "No"}
+                              </span>
+                            </td>
+
+                            {/* EXAM RESULT */}
+
+                            <td>
+                              <span
+                                className={
+                                  course.hideExamResult
+                                    ? "report-badge no"
+                                    : "report-badge yes"
+                                }
+                              >
+                                {course.hideExamResult
+                                  ? "Hidden"
+                                  : "Visible"}
+                              </span>
+                            </td>
+
+                            {/* STATUS */}
+
+                            <td>
+                              <span
+                                className={`course-status-badge ${String(
+                                  course.status ||
+                                    ""
+                                )
+                                  .toLowerCase()
+                                  .replace(
+                                    /\s+/g,
+                                    "-"
+                                  )}`}
+                              >
+                                {course.status ||
+                                  "-"}
+                              </span>
+                            </td>
+
+                          </tr>
+                        );
+                      }
+                    )
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
       </div>
 
     </div>

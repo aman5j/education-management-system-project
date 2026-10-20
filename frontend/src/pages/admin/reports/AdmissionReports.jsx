@@ -10,6 +10,13 @@ import {
   FiRefreshCw,
   FiSearch,
 } from "react-icons/fi";
+import { IoIosCall } from "react-icons/io";
+
+import { MdOutgoingMail } from "react-icons/md";
+import { MdDateRange } from "react-icons/md";
+import { FaFilePdf, FaUserFriends } from "react-icons/fa";
+import { RiFileExcel2Line } from "react-icons/ri";
+import { MdCurrencyRupee } from "react-icons/md";
 
 import * as XLSX from "xlsx";
 
@@ -747,56 +754,40 @@ const AdmissionReports = () => {
 
   return (
     <div className="admission-reports-page">
-      <div className="admission-reports-header">
-        <div>
-          <h1>
-            Admission Reports
-          </h1>
+      
+  <div class="page-header"><div><h1> Admission Reports</h1></div>
 
-          <p>
-            View, filter and export
-            admission records.
-          </p>
-        </div>
-
-        <div className="admission-report-actions">
-          <button
-            type="button"
-            className="admission-report-btn secondary"
-            onClick={() =>
-              loadReport()
-            }
-            disabled={loading}
-          >
-            <FiRefreshCw />
-            Refresh
-          </button>
+   <div className="admission-report-actions">
+        
 
           <button
             type="button"
-            className="admission-report-btn excel"
+            className="themebtn exceldownload"
             onClick={exportExcel}
             disabled={
               !admissions.length
             }
           >
-            <FiDownload />
+            <RiFileExcel2Line />
             Excel
           </button>
 
           <button
             type="button"
-            className="admission-report-btn pdf"
+            className="themebtn pdfdownload"
             onClick={exportPDF}
             disabled={
               !admissions.length
             }
           >
-            <FiFileText />
+           <FaFilePdf />
             PDF
           </button>
         </div>
+
+      
       </div>
+
 
       {error && (
         <div className="admission-report-error">
@@ -805,60 +796,90 @@ const AdmissionReports = () => {
       )}
 
       <div className="admission-report-summary">
-        <div className="admission-summary-card">
-          <span>
-            Total Admissions
-          </span>
+       
+        <div className="dashboard-stat-card card-success">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-success">
+           <FaUserFriends /> 
+           </div> 
+           </div>
 
-          <strong>
+            <div className="stat-card-body">
+              <span class="stat-card-title">Total Admissions</span>
+             
+               <strong class="stat-card-value">
             {Number(
               summary.totalAdmissions ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="admission-summary-card">
-          <span>
-            Active
-          </span>
+  <div className="dashboard-stat-card card-purple">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-purple">
+           <FaUserFriends /> 
+           </div> 
+           </div>
 
-          <strong>
+            <div className="stat-card-body">
+              <span class="stat-card-title">Active Admissions</span>
+             
+               <strong class="stat-card-value">
             {Number(
-              summary.activeAdmissions ||
+              summary.totalAdmissions ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="admission-summary-card">
-          <span>
-            Completed
-          </span>
+          <div className="dashboard-stat-card card-danger">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-danger">
+          <MdCurrencyRupee />
 
-          <strong>
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title"> Remaining Fees</span>
+             
+               <strong class="stat-card-value">
+            {formatCurrency(
+              summary.totalRemainingAmount
+            )}
+          </strong>
+            </div>
+         
+        </div>
+
+ <div className="dashboard-stat-card card-success">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-success">
+           <FaUserFriends /> 
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title">Completed</span>
+               <strong class="stat-card-value">
             {Number(
               summary.completedAdmissions ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
-
-        <div className="admission-summary-card">
-          <span>
-            Remaining Fees
-          </span>
-
-          <strong>
-            {formatCurrency(
-              summary.totalRemainingAmount
-            )}
-          </strong>
-        </div>
+       
       </div>
 
-      <div className="admission-report-filters">
-        <div className="admission-filter-field">
+      <div className="common-card-filters">
+        <div className="input-search noicon">
           <label>
             From Date
           </label>
@@ -875,7 +896,7 @@ const AdmissionReports = () => {
           />
         </div>
 
-        <div className="admission-filter-field">
+        <div className="input-search noicon">
           <label>
             To Date
           </label>
@@ -892,7 +913,7 @@ const AdmissionReports = () => {
           />
         </div>
 
-        <div className="admission-filter-field">
+        <div className="input-search">
           <label>
             Course
           </label>
@@ -932,7 +953,7 @@ const AdmissionReports = () => {
           </select>
         </div>
 
-        <div className="admission-filter-field">
+        <div className="input-search">
           <label>
             Batch
           </label>
@@ -973,7 +994,7 @@ const AdmissionReports = () => {
           </select>
         </div>
 
-        <div className="admission-filter-field">
+        <div className="input-search">
           <label>
             Status
           </label>
@@ -1005,29 +1026,31 @@ const AdmissionReports = () => {
           </select>
         </div>
 
-        <div className="admission-filter-actions">
-          <button
+       
+         <div className="student-filter-actions" >
+          <button className="themebtn"
             type="button"
             onClick={
               handleApply
             }
           >
-            <FiSearch />
-            Apply
+          
+            Apply Filter
           </button>
 
-          <button
+          <button className="themebtn themebtnline"
             type="button"
             onClick={
               handleReset
             }
           >
+             <FiRefreshCw />
             Reset
           </button>
         </div>
       </div>
 
-      <div className="admission-report-table-wrapper">
+      <div className="common-card">
         {loading ? (
           <div className="admission-report-state">
             Loading admission report...
@@ -1037,7 +1060,8 @@ const AdmissionReports = () => {
             No admission records found.
           </div>
         ) : (
-          <table className="admission-report-table">
+          <div className="common-table-wrapper">
+          <table className="common-table">
             <thead>
               <tr>
                 <th>
@@ -1053,11 +1077,11 @@ const AdmissionReports = () => {
                 </th>
 
                 <th>
-                  Course
+                  Course / Batch
                 </th>
 
                 <th>
-                  Batch
+                  Contact
                 </th>
 
                 <th>
@@ -1099,33 +1123,27 @@ const AdmissionReports = () => {
 
                     <td>
                       <div className="admission-report-student">
-                        <strong>
-                          {
+
+                        <div class="student-name-cell">
+  <div class="student-avatar-wrapper">
+    <img alt="Rahul Lodhi" class="student-avatar" src="http://localhost:5000/uploads/students/1791094170853-711uU2sdLaL-_SY741_.jpg" /></div><div><strong>{
                             admission
                               .student
                               ?.name ||
                             "-"
-                          }
-                        </strong>
+                          }</strong>father name<img alt="Student Signature" height="20px" class="student-signature" src="http://localhost:5000/uploads/students/1792320152276-images.png" /></div></div>
 
-                        <small>
-                          {
-                            admission
-                              .student
-                              ?.mobile ||
-                            "-"
-                          }
-                        </small>
+                       
                       </div>
                     </td>
 
                     <td>
-                      {
+                      <span className="student-roll">{
                         admission
                           .student
                           ?.rollNo ||
                         "-"
-                      }
+                      }</span>
                     </td>
 
                     <td>
@@ -1135,37 +1153,69 @@ const AdmissionReports = () => {
                           ?.courseTitle ||
                         "-"
                       }
-                    </td>
 
-                    <td>
-                      {
+                      <br></br>
+
+                          <span className="batchtag">
+                           {
                         admission
                           .batch
                           ?.batch_name ||
                         "-"
                       }
+                          </span>
+
                     </td>
 
                     <td>
-                      {formatDate(
+                     
+                        <div className="contact-details">
+                     <div className="contact-li"> <IoIosCall />  <span> {
+                            admission
+                              .student
+                              ?.mobile ||
+                            "-"
+                          }</span></div>
+                    <div className="contact-li"> <MdOutgoingMail /> <span> {
+                            admission
+                              .student
+                              ?.email ||
+                            "-"
+                          }</span></div>
+                    </div>
+                    </td>
+
+                    <td>
+                     
+
+                            <div className="contact-details">
+                                           <div className="contact-li"> <MdDateRange />  <span>  {formatDate(
                         admission.admissionDate
-                      )}
+                      )}</span></div>
+                                          </div>
+
                     </td>
 
                     <td>
-                      {formatCurrency(
+
+<strong className="tag-purple"> {formatCurrency(
                         admission.finalAmount
-                      )}
+                      )}</strong>
+
+                     
                     </td>
 
                     <td>
+                      <strong className="tag-success">
                       {formatCurrency(
                         admission.paidAmount
                       )}
+                      </strong>
+                      
                     </td>
 
                     <td>
-                      <strong>
+                      <strong className="tag-danger">
                         {formatCurrency(
                           admission.remainingAmount
                         )}
@@ -1188,6 +1238,7 @@ const AdmissionReports = () => {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

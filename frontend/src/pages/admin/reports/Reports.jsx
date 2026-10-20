@@ -25,6 +25,7 @@ const Reports = () => {
       icon: FiUsers,
       path: "/admin/reports/students",
       status: "Completed",
+       className: "studentreport"
     },
     {
       title: "Admission Reports",
@@ -33,6 +34,7 @@ const Reports = () => {
       icon: FiClipboard,
       path: "/admin/reports/admissions",
       status: "Completed",
+      className: "admision"
     },
     {
       title: "Course Reports",
@@ -41,6 +43,7 @@ const Reports = () => {
       icon: FiBookOpen,
       path: "/admin/reports/courses",
       status: "Completed",
+      className: "batch"
     },
     {
       title: "Batch Reports",
@@ -49,6 +52,7 @@ const Reports = () => {
       icon: FiLayers,
       path: "/admin/reports/batches",
       status: "Completed",
+      className: "batch"
     },
     {
       title: "Fee Reports",
@@ -57,6 +61,7 @@ const Reports = () => {
       icon: FiDollarSign,
       path: "/admin/reports/fees",
       status: "Completed",
+      className: "fees"
     },
     {
       title: "Payment Reports",
@@ -65,6 +70,7 @@ const Reports = () => {
       icon: FiCreditCard,
       path: "/admin/reports/payments",
       status: "Completed",
+      className: "payment"
     },
     {
       title: "Pending Fee Reports",
@@ -73,6 +79,7 @@ const Reports = () => {
       icon: FiAlertCircle,
       path: "/admin/reports/pending-fees",
       status: "Completed",
+      className: "pendingfess"
     },
 
     {
@@ -82,6 +89,7 @@ const Reports = () => {
       icon: FiDollarSign,
       path: "/admin/reports/expenses",
       status: "Completed",
+      className: "exprences"
     },
 
     {
@@ -91,6 +99,7 @@ const Reports = () => {
       icon: FiCalendar,
       path: "/admin/reports/attendance",
       status: "Completed",
+      className: "aatendance"
     },
 
   ];
@@ -104,18 +113,14 @@ const Reports = () => {
 
   return (
     <div className="reports-page">
-      <div className="reports-page-header">
+     
+      <div className="page-header">
         <div>
           <h1>Reports</h1>
-
-          <p>
-            View and analyze academic, admission and financial
-            reports.
-          </p>
         </div>
       </div>
 
-      <div className="reports-summary">
+      {/* <div className="reports-summary">
         <div className="reports-summary-card">
           <span>Total Reports</span>
           <strong>{reports.length}</strong>
@@ -142,7 +147,7 @@ const Reports = () => {
             }
           </strong>
         </div>
-      </div>
+      </div> */}
 
       <div className="reports-grid">
         {reports.map((report) => {
@@ -153,16 +158,14 @@ const Reports = () => {
           return (
             <div
               key={report.title}
-              className={`report-module-card ${
-                completed ? "completed" : "upcoming"
-              }`}
+              className={`common-card reportcard ${report.className || ""}`}
             >
               <div className="report-card-top">
-                <div className="report-card-icon">
+                {/* <div className="report-card-icon">
                   <Icon />
-                </div>
+                </div> */}
 
-                <span
+                {/* <span
                   className={`report-card-status ${
                     completed
                       ? "completed"
@@ -172,18 +175,16 @@ const Reports = () => {
                   {completed
                     ? "Completed"
                     : "Coming Next"}
-                </span>
+                </span> */}
               </div>
 
               <div className="report-card-content">
                 <h2>{report.title}</h2>
 
                 <p>{report.description}</p>
-              </div>
-
-              <button
+                  <button
                 type="button"
-                className={`report-card-button ${
+                className={`themebtn ${
                   !completed ? "disabled" : ""
                 }`}
                 onClick={() =>
@@ -192,11 +193,13 @@ const Reports = () => {
                 disabled={!completed}
               >
                 {completed
-                  ? "Open Report"
+                  ? "View Report"
                   : "Coming Next"}
 
-                <FiArrowRight />
               </button>
+              </div>
+
+            
             </div>
           );
         })}

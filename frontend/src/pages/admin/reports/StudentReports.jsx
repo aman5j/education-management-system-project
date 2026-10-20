@@ -11,6 +11,29 @@ import {
   FiFileText,
   FiRefreshCw,
 } from "react-icons/fi";
+import { IoIosCall } from "react-icons/io";
+
+import { MdOutgoingMail } from "react-icons/md";
+import { MdDateRange } from "react-icons/md";
+import {
+  FiBookOpen,
+  FiClipboard,
+  FiDollarSign,
+  FiHelpCircle,
+  FiUsers,
+
+
+} 
+from "react-icons/fi";
+import {FaGraduationCap} from "react-icons/fa";
+import { GiExpense } from "react-icons/gi";
+import { PiMoneyBold } from "react-icons/pi";
+import { IoWalletSharp } from "react-icons/io5";
+import { FaUserFriends } from "react-icons/fa";
+import { FaBookOpen } from "react-icons/fa6";
+
+
+import { FaFilePdf } from "react-icons/fa";
 
 import * as XLSX from "xlsx";
 
@@ -23,6 +46,7 @@ import {
 } from "../../../services/studentReportService";
 
 import "../../../styles/StudentReports.css";
+import { RiFileExcel2Line } from "react-icons/ri";
 
 /*
 |--------------------------------------------------------------------------
@@ -816,22 +840,12 @@ useEffect(() => {
 
   return (
     <div className="student-reports-page">
-      <div className="student-reports-header">
-        <div>
-          <h1>
-            Student Reports
-          </h1>
-
-          <p>
-            View, filter and export
-            student reports.
-          </p>
-        </div>
-
-        <div className="student-report-actions">
-          <button
+     
+      <div class="page-header"><div><h1> Student Reports</h1></div>
+       <div className="student-report-actions">
+          {/* <button
             type="button"
-            className="student-report-btn secondary"
+            className="themebtn"
             onClick={() =>
               loadReport()
             }
@@ -839,29 +853,29 @@ useEffect(() => {
           >
             <FiRefreshCw />
             Refresh
-          </button>
+          </button> */}
 
           <button
             type="button"
-            className="student-report-btn excel"
+            className="themebtn exceldownload"
             onClick={exportExcel}
             disabled={
               !students.length
             }
           >
-            <FiDownload />
+            <RiFileExcel2Line />
             Excel
           </button>
 
           <button
             type="button"
-            className="student-report-btn pdf"
+            className="themebtn pdfdownload "
             onClick={exportPDF}
             disabled={
               !students.length
             }
           >
-            <FiFileText />
+           <FaFilePdf />
             PDF
           </button>
         </div>
@@ -873,8 +887,91 @@ useEffect(() => {
         </div>
       )}
 
-      <div className="student-report-filters">
-        <div className="student-filter-field">
+ <div className="student-report-summary">
+        <div className="dashboard-stat-card card-success">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-success">
+           <FaUserFriends /> 
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title">Total Students</span>
+             
+               <strong class="stat-card-value">
+            {Number(
+              summary.totalStudents ||
+                0
+            )}
+          </strong>
+            </div>
+         
+        </div>
+         <div className="dashboard-stat-card card-purple">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-purple">
+           <FaUserFriends /> 
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title">Active Students</span>
+             
+               <strong class="stat-card-value">
+            {Number(
+              summary.activeStudents ||
+                0
+            )}
+          </strong>
+            </div>
+         
+        </div>
+
+          <div className="dashboard-stat-card card-danger">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-danger">
+           <FaUserFriends /> 
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title">Inactive Students</span>
+             
+               <strong class="stat-card-value">
+            {Number(
+              summary.inactiveStudents ||
+                0
+            )}
+          </strong>
+            </div>
+         
+        </div>
+
+         
+         <div className="dashboard-stat-card card-bluewarning">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-bluewarning">
+           <FaUserFriends /> 
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title">New Students</span>
+             
+               <strong class="stat-card-value">
+            {Number(
+              summary.newStudents ||
+                0
+            )}
+          </strong>
+            </div>
+         
+        </div>
+
+       
+      </div>
+      <div className="common-card-filters">
+        <div className="input-search">
           <label>
             From Date
           </label>
@@ -891,7 +988,7 @@ useEffect(() => {
           />
         </div>
 
-        <div className="student-filter-field">
+        <div className="input-search themebtn">
           <label>
             To Date
           </label>
@@ -908,7 +1005,7 @@ useEffect(() => {
           />
         </div>
 
-        <div className="student-filter-field">
+        <div className="input-search ">
           <label>
             Course
           </label>
@@ -948,7 +1045,7 @@ useEffect(() => {
           </select>
         </div>
 
-        <div className="student-filter-field">
+        <div className="input-search">
           <label>
             Batch
           </label>
@@ -989,7 +1086,7 @@ useEffect(() => {
           </select>
         </div>
 
-        <div className="student-filter-field">
+        <div className="input-search">
           <label>
             Status
           </label>
@@ -1024,7 +1121,7 @@ useEffect(() => {
         <div className="student-filter-actions">
           <button
             type="button"
-            className="student-report-btn primary"
+            className="themebtn"
             onClick={
               handleApply
             }
@@ -1035,99 +1132,20 @@ useEffect(() => {
 
           <button
             type="button"
-            className="student-report-btn secondary"
+            className="themebtn themebtnline"
             onClick={
               handleReset
             }
           >
+            <FiRefreshCw />
             Reset
           </button>
         </div>
       </div>
 
-      <div className="student-report-summary">
-        <div className="student-summary-card">
-          <span>
-            Total Students
-          </span>
+     
 
-          <strong>
-            {Number(
-              summary.totalStudents ||
-                0
-            )}
-          </strong>
-        </div>
-
-        <div className="student-summary-card">
-          <span>
-            Active Students
-          </span>
-
-          <strong>
-            {Number(
-              summary.activeStudents ||
-                0
-            )}
-          </strong>
-        </div>
-
-        <div className="student-summary-card">
-          <span>
-            Inactive Students
-          </span>
-
-          <strong>
-            {Number(
-              summary.inactiveStudents ||
-                0
-            )}
-          </strong>
-        </div>
-
-        <div className="student-summary-card">
-          <span>
-            Suspended Students
-          </span>
-
-          <strong>
-            {Number(
-              summary.suspendedStudents ||
-                0
-            )}
-          </strong>
-        </div>
-
-        <div className="student-summary-card">
-          <span>
-            Students in Period
-          </span>
-
-          <strong>
-            {Number(
-              summary.newStudents ||
-                0
-            )}
-          </strong>
-        </div>
-      </div>
-
-      <div className="student-report-table-card">
-        <div className="student-report-table-header">
-          <div>
-            <h2>
-              Student Records
-            </h2>
-
-            <span>
-              {students.length} student
-              {students.length !== 1
-                ? "s"
-                : ""}
-            </span>
-          </div>
-        </div>
-
+      <div className="common-card">
         {loading ? (
           <div className="student-report-empty">
             Loading student report...
@@ -1139,8 +1157,8 @@ useEffect(() => {
             for the selected filters.
           </div>
         ) : (
-          <div className="student-report-table-wrapper">
-            <table className="student-report-table">
+          <div className="common-table-wrapper">
+            <table className="common-table">
               <thead>
                 <tr>
                   <th>
@@ -1156,15 +1174,11 @@ useEffect(() => {
                   </th>
 
                   <th>
-                    Mobile
+                    Contact
                   </th>
 
                   <th>
-                    Course
-                  </th>
-
-                  <th>
-                    Batch
+                    Course / Batch
                   </th>
 
                   <th>
@@ -1186,15 +1200,20 @@ useEffect(() => {
                       }
                     >
                       <td>
-                        <strong>
-                          {student.studentName ||
-                            "-"}
-                        </strong>
+                        
+
+<div class="student-name-cell">
+  <div class="student-avatar-wrapper">
+    <img alt="Rahul Lodhi" class="student-avatar" src="http://localhost:5000/uploads/students/1791094170853-711uU2sdLaL-_SY741_.jpg" /></div><div><strong>{student.studentName ||
+                            "-"}</strong>erere<img alt="Student Signature" height="20px" class="student-signature" src="http://localhost:5000/uploads/students/1792320152276-images.png" /></div></div>
+
+                        
                       </td>
 
                       <td>
-                        {student.rollNo ||
-                          "-"}
+                        <span className="student-roll"> {student.rollNo ||
+                          "-"}</span>
+                       
                       </td>
 
                       <td>
@@ -1203,24 +1222,38 @@ useEffect(() => {
                       </td>
 
                       <td>
-                        {student.mobile ||
-                          "-"}
+
+                        <div className="contact-details">
+                     <div className="contact-li"> <IoIosCall />  <span>{student.mobile}</span></div>
+                    <div className="contact-li"> <MdOutgoingMail /> <span>{student.email || "-"}</span></div>
+                    </div>
+                                               
+                       
                       </td>
 
                       <td>
                         {student.course ||
                           "-"}
-                      </td>
+                          <br></br>
 
-                      <td>
-                        {student.batch ||
+                          <span className="batchtag">
+                            {student.batch ||
                           "-"}
+                          </span>
                       </td>
 
+                     
+
                       <td>
-                        {formatDate(
+                        
+                            <div className="contact-details">
+                     <div className="contact-li"> <MdDateRange />  <span> {formatDate(
                           student.admissionDate
-                        )}
+                        )}</span></div>
+                    </div>
+
+
+                       
                       </td>
 
                       <td>

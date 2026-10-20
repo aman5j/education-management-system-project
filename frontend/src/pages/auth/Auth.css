@@ -417,6 +417,7 @@ input:-webkit-autofill:active {
     cursor: pointer;
     text-decoration: none;
     border: none;
+    white-space: nowrap;
     background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);;
 }
 
@@ -442,10 +443,29 @@ input:-webkit-autofill:active {
 .cardbody {
     padding: 20px;
 } 
-
+.input-search label {
+    font-size: 11px;
+    font-weight: 400;
+    background: #2563eb;
+    color: white;
+    padding: 2px 7px;
+    border-radius: 4px 4px 0 0;
+    margin-left: 0px;
+}
+.input-search.noicon input{
+  padding-left: 15px;
+}
+.themebtnline {
+    background: white;
+    border: 1px solid;
+    color: #084a94;
+}
+.pdfdownload {
+    background: #d50000;
+}
 .common-card-filters {
     display: flex;
-    align-items: center;
+    align-items: end;
     gap: 10px;
     padding: 15px;
     background: #fff;
@@ -475,7 +495,7 @@ position: relative;
 .common-card-filters input,
 .common-card-filters select {
   width: 100%;
-  height: 40px;
+  height: 37px;
   border: 1px solid var(--border-color);
   outline: 0;
   color: var(--text-primary);
@@ -483,6 +503,17 @@ position: relative;
   border-radius: 6px;
   padding: 10px 15px;
   
+}
+.batchtag {
+    background: #f8fafc;
+    padding: 2px 6px;
+    color: #05478c;
+    border-radius: 3px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 5px;
 }
 .common-card-filters  input {
  padding-left: 40px;
@@ -799,6 +830,10 @@ label.admission-checkbox-label span {
 .student-avatar {
     width:55px;
     height:55px;
+    min-width:55px;
+    min-height:55px;
+    max-width:55px;
+    max-height:55px;
     flex-shrink: 0;
     border-radius: 6px;
     object-fit: cover;
@@ -829,9 +864,25 @@ label.admission-checkbox-label span {
   color: #4338ca;
   font-size: 12px;
   font-weight: 750;
+
+}
+.online, .Online {
+    background: #F44336;
+    padding: 3px 7px;
+    border-radius: 3px;
+    color: white !important;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+}
+.Offline, .offline  {
+    background: #673ab7;
+    padding: 3px 7px;
+    border-radius: 3px;
+    color: white !important;
+    font-size: 11px;
+    letter-spacing: 0.4px;
 }
 .status-active {
-  /* background: #f0fdf4; */
   color: #15803d;
 }
 
@@ -880,3 +931,4 @@ label.admission-checkbox-label span {
     border-radius: 3px;
     /* color: #f8fafc; */
 }
+
