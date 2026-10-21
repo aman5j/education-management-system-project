@@ -1,22 +1,38 @@
 
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 import { getBatch } from "../../../services/batchService";
 
 const ViewBatch = () => {
   const { id } = useParams();
   const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/batches"
     : "/admin/batches";
+
+  const canView = hasPermission(user, "batches.view");
+  const canUpdate = hasPermission(user, "batches.update");
 
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (authLoading || !user || !canView) {
+      setLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
 
     const loadBatch = async () => {
@@ -25,7 +41,14 @@ const ViewBatch = () => {
 
       try {
         const response = await getBatch(id);
-        if (!cancelled) setBatch(response?.data?.data || null);
+
+        if (!cancelled) {
+          setBatch(response?.data?.data || null);
+
+          if (!response?.data?.data) {
+            setError("Batch not found.");
+          }
+        }
       } catch (requestError) {
         if (!cancelled) {
           setError(
@@ -43,7 +66,25 @@ const ViewBatch = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, authLoading, user, canView]);
+
+  if (authLoading) {
+    return <div className="batch-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canView) {
+    return (
+      <div className="batch-page">
+        <div className="batch-list-error" role="alert">
+          You do not have permission to view batches.
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="batch-loading">Loading batch...</div>;
@@ -58,7 +99,10 @@ const ViewBatch = () => {
   }
 
   const maxSeats = Number(batch.max_seats) || 0;
-  const availableSeats = Number(batch.available_seats) || 0;
+  const availableSeats = Math.min(
+    maxSeats,
+    Math.max(Number(batch.available_seats) || 0, 0)
+  );
   const occupiedSeats = Math.max(maxSeats - availableSeats, 0);
 
   return (
@@ -69,12 +113,14 @@ const ViewBatch = () => {
           <p>Batch details.</p>
         </div>
 
-        <Link
-          to={`${basePath}/${id}/edit`}
-          className="batch-add-button"
-        >
-          Edit Batch
-        </Link>
+        {canUpdate && (
+          <Link
+            to={`${basePath}/${id}/edit`}
+            className="batch-add-button"
+          >
+            Edit Batch
+          </Link>
+        )}
       </div>
 
       <div className="batch-card">

@@ -1,7 +1,13 @@
 
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 import BatchForm from "../../../components/batches/BatchForm";
 import { createBatch } from "../../../services/batchService";
 import { getCourses } from "../../../services/courseService";
@@ -9,9 +15,13 @@ import { getCourses } from "../../../services/courseService";
 const AddBatch = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
+
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/batches"
     : "/admin/batches";
+
+  const canCreate = hasPermission(user, "batches.create");
 
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -19,14 +29,23 @@ const AddBatch = () => {
   const [courseError, setCourseError] = useState("");
 
   useEffect(() => {
+    if (authLoading || !user || !canCreate) {
+      setLoadingCourses(false);
+      return undefined;
+    }
+
     let cancelled = false;
 
     const loadCourses = async () => {
-      try {
-        setLoadingCourses(true);
-        setCourseError("");
+      setLoadingCourses(true);
+      setCourseError("");
 
-        const response = await getCourses({ page: 1, limit: 100 });
+      try {
+        const response = await getCourses({
+          page: 1,
+          limit: 100,
+        });
+
         if (cancelled) return;
 
         const payload = response?.data?.data;
@@ -39,13 +58,16 @@ const AddBatch = () => {
         setCourses(courseList);
 
         if (courseList.length === 0) {
-          setCourseError("No courses found. Please create a course first.");
+          setCourseError(
+            "No courses found. Please create a course first."
+          );
         }
       } catch (error) {
         if (!cancelled) {
           setCourses([]);
           setCourseError(
-            error?.response?.data?.message || "Unable to load courses."
+            error?.response?.data?.message ||
+              "Unable to load courses."
           );
         }
       } finally {
@@ -58,10 +80,11 @@ const AddBatch = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, user, canCreate]);
 
   const handleSubmit = async (formData) => {
     setSaving(true);
+
     try {
       await createBatch(formData);
       navigate(basePath, { replace: true });
@@ -69,6 +92,24 @@ const AddBatch = () => {
       setSaving(false);
     }
   };
+
+  if (authLoading) {
+    return <div className="batch-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canCreate) {
+    return (
+      <div className="batch-page">
+        <div className="batch-list-error" role="alert">
+          You do not have permission to create batches.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="batch-page">
