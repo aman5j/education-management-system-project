@@ -1,7 +1,5 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+
+import React, { useEffect, useState } from "react";
 
 const initialState = {
   course_id: "",
@@ -18,57 +16,32 @@ const BatchForm = ({
   submitLabel = "Create Batch",
   onSubmit,
 }) => {
-  const [form, setForm] =
-    useState(initialState);
+  const [form, setForm] = useState(initialState);
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
 
-  const [errors, setErrors] =
-    useState({});
-
-  const [serverError, setServerError] =
-    useState("");
-
-  /*
-   * Load initial values
-   * when editing a batch.
-   */
   useEffect(() => {
     if (!initialData) {
       setForm(initialState);
-      setErrors({});
-      setServerError("");
-
-      return;
+    } else {
+      setForm({
+        course_id:
+          initialData.course_id?._id ||
+          initialData.course_id?.id ||
+          initialData.course_id ||
+          "",
+        batch_name: initialData.batch_name || "",
+        max_seats: initialData.max_seats ?? 1,
+        status: initialData.status || "Upcoming",
+      });
     }
-
-    setForm({
-      course_id:
-        initialData.course_id?._id ||
-        initialData.course_id?.id ||
-        initialData.course_id ||
-        "",
-
-      batch_name:
-        initialData.batch_name || "",
-
-      max_seats:
-        initialData.max_seats || 1,
-
-      status:
-        initialData.status || "Upcoming",
-    });
 
     setErrors({});
     setServerError("");
   }, [initialData]);
 
-  /*
-   * Handle input/select changes
-   */
   const handleChange = (event) => {
-    const {
-      name,
-      value,
-    } = event.target;
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
@@ -83,114 +56,89 @@ const BatchForm = ({
     setServerError("");
   };
 
-  /*
-   * Submit batch
-   */
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    setErrors({});
-    setServerError("");
+    const nextErrors = {};
+    const batchName = form.batch_name.trim();
+    const maxSeats = Number(form.max_seats);
 
     if (!form.course_id) {
-      setErrors({
-        course_id:
-          "Please select a course.",
-      });
-
-      return;
+      nextErrors.course_id = "Please select a course.";
     }
 
-    if (!form.batch_name.trim()) {
-      setErrors({
-        batch_name:
-          "Batch name is required.",
-      });
-
-      return;
+    if (!batchName) {
+      nextErrors.batch_name = "Batch name is required.";
+    } else if (batchName.length < 2) {
+      nextErrors.batch_name =
+        "Batch name must contain at least 2 characters.";
+    } else if (batchName.length > 100) {
+      nextErrors.batch_name =
+        "Batch name cannot exceed 100 characters.";
     }
 
     if (
-      !form.max_seats ||
-      Number(form.max_seats) < 1
+      form.max_seats === "" ||
+      !Number.isInteger(maxSeats) ||
+      maxSeats < 1
     ) {
-      setErrors({
-        max_seats:
-          "Maximum seats must be at least 1.",
-      });
+      nextErrors.max_seats =
+        "Maximum seats must be a positive whole number.";
+    }
 
+    if (!["Upcoming", "Ongoing", "Closed"].includes(form.status)) {
+      nextErrors.status = "Please select a valid status.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
 
     const formData = {
       course_id: form.course_id,
-
-      batch_name:
-        form.batch_name.trim(),
-
-      max_seats:
-        Number(form.max_seats),
-
+      batch_name: batchName,
+      max_seats: maxSeats,
       status: form.status,
     };
 
-    console.log(
-      "Batch form data:",
-      formData
-    );
+    setErrors({});
+    setServerError("");
 
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error(
-        "Batch submit error:",
-        error
-      );
-
-      const response =
-        error?.response?.data;
-
-      const validationErrors =
-        response?.errors || [];
-
+      const response = error?.response?.data;
       const fieldErrors = {};
+      const validationErrors = response?.errors;
 
-      if (
-        Array.isArray(
-          validationErrors
-        )
-      ) {
-        validationErrors.forEach(
-          (item) => {
-            const field =
-              item.field ||
-              item.path ||
-              item.param;
+      if (Array.isArray(validationErrors)) {
+        validationErrors.forEach((item) => {
+          const field = item.field || item.path || item.param;
+          const message = item.message || item.msg;
 
-            const message =
-              item.message ||
-              item.msg;
-
-            if (
-              field &&
-              message &&
-              !fieldErrors[field]
-            ) {
-              fieldErrors[field] =
-                message;
-            }
+          if (field && message && !fieldErrors[field]) {
+            fieldErrors[field] = message;
           }
-        );
+        });
       }
 
       setErrors(fieldErrors);
-
       setServerError(
-        response?.message ||
-          "Unable to save batch."
+        response?.message || "Unable to save batch."
       );
     }
   };
+
+  const safeCourses = Array.isArray(courses) ? courses : [];
+
+  const occupiedSeats = initialData
+    ? Math.max(
+        Number(initialData.max_seats || 0) -
+          Number(initialData.available_seats || 0),
+        0
+      )
+    : 0;
 
   return (
     <form
@@ -199,24 +147,18 @@ const BatchForm = ({
       noValidate
     >
       {serverError && (
-        <div className="batch-form-error">
+        <div className="batch-form-error" role="alert">
           {serverError}
         </div>
       )}
 
       <div className="batch-form-section">
-        <h2>
-          Batch Information
-        </h2>
+        <h2>Batch Information</h2>
 
         <div className="batch-form-grid">
-
-          {/* =========================
-              COURSE
-          ========================== */}
-          {/* <div className="batch-field">
+          <div className="batch-field">
             <label htmlFor="course_id">
-              Course *
+              Course <span className="required">*</span>
             </label>
 
             <select
@@ -224,170 +166,46 @@ const BatchForm = ({
               name="course_id"
               value={form.course_id}
               onChange={handleChange}
-              disabled={
-                loadingCourses ||
-                loading
-              }
+              disabled={loading || loadingCourses}
+              required
             >
               <option value="">
                 {loadingCourses
                   ? "Loading courses..."
-                  : courses.length === 0
-                  ? "No courses available"
-                  : "Select Course"}
+                  : safeCourses.length === 0
+                    ? "No courses available"
+                    : "Select Course"}
               </option>
 
-              {!loadingCourses &&
-                Array.isArray(courses) &&
-                courses.map(
-                  (course) => {
-                    const courseId =
-                      course?._id ||
-                      course?.id;
+              {safeCourses.map((course) => {
+                const courseId = course?._id || course?.id;
 
-                    const courseTitle =
-                      course?.courseTitle ||
-                      course?.title ||
-                      "Untitled Course";
+                if (!courseId) return null;
 
-                    if (!courseId) {
-                      return null;
-                    }
-
-                    return (
-                      <option
-                        key={courseId}
-                        value={courseId}
-                      >
-                        {courseTitle}
-                      </option>
-                    );
-                  }
-                )}
+                return (
+                  <option key={courseId} value={courseId}>
+                    {course.courseTitle || course.title || "Untitled Course"}
+                  </option>
+                );
+              })}
             </select>
 
-            {loadingCourses && (
+            {!loadingCourses && safeCourses.length === 0 && (
               <small className="batch-help-text">
-                Fetching courses from
-                database...
+                No courses found. Please create a course first.
               </small>
             )}
-
-            {!loadingCourses &&
-              courses.length === 0 && (
-                <small className="batch-help-text">
-                  No courses found. Please
-                  create a course first.
-                </small>
-              )}
 
             {errors.course_id && (
               <div className="batch-field-error">
                 {errors.course_id}
               </div>
             )}
-          </div> */}
+          </div>
 
-          {/* <div className="batch-field">
-            <label htmlFor="course_id">
-                Course <span className="required">*</span>
-            </label>
-
-            <select
-                id="course_id"
-                name="course_id"
-                value={form.course_id}
-                onChange={handleChange}
-                disabled={loadingCourses || courses.length === 0}
-            >
-                <option value="">
-                {loadingCourses
-                    ? "Loading courses..."
-                    : courses.length === 0
-                    ? "No courses available"
-                    : "Select Course"}
-                </option>
-
-                {Array.isArray(courses) &&
-                courses.map((course) => (
-                    <option
-                    key={course._id}
-                    value={course._id}
-                    >
-                    {course.courseTitle}
-                    </option>
-                ))}
-            </select>
-
-            {!loadingCourses && courses.length === 0 && (
-                <small className="form-help error-text">
-                No courses found. Please create a course first.
-                </small>
-            )}
-
-            {!loadingCourses && courses.length > 0 && (
-                <small className="form-help">
-                Select the course for this batch.
-                </small>
-            )}
-            </div> */}
-
-          <div className="batch-field">
-            <label htmlFor="course_id">
-                Course <span className="required">*</span>
-            </label>
-
-            <select
-                id="course_id"
-                name="course_id"
-                value={form.course_id}
-                onChange={handleChange}
-                disabled={loadingCourses || courses.length === 0}
-            >
-                <option value="">
-                {loadingCourses
-                    ? "Loading courses..."
-                    : courses.length === 0
-                    ? "No courses available"
-                    : "Select Course"}
-                </option>
-
-                {Array.isArray(courses) &&
-                courses.map((course) => (
-                    <option
-                    key={course._id}
-                    value={course._id}
-                    >
-                    {course.courseTitle}
-                    </option>
-                ))}
-            </select>
-
-            {!loadingCourses && courses.length === 0 && (
-                <small className="batch-help-text">
-                No courses found. Please create a course first.
-                </small>
-            )}
-
-            {!loadingCourses && courses.length > 0 && (
-                <small className="batch-help-text">
-                Select the course for this batch.
-                </small>
-            )}
-
-            {errors.course_id && (
-                <div className="batch-field-error">
-                {errors.course_id}
-                </div>
-            )}
-            </div>
-
-          {/* =========================
-              BATCH NAME
-          ========================== */}
           <div className="batch-field">
             <label htmlFor="batch_name">
-              Batch Name *
+              Batch Name <span className="required">*</span>
             </label>
 
             <input
@@ -397,7 +215,10 @@ const BatchForm = ({
               value={form.batch_name}
               onChange={handleChange}
               placeholder="Enter batch name"
+              minLength={2}
+              maxLength={100}
               disabled={loading}
+              required
             />
 
             {errors.batch_name && (
@@ -407,12 +228,9 @@ const BatchForm = ({
             )}
           </div>
 
-          {/* =========================
-              MAX SEATS
-          ========================== */}
           <div className="batch-field">
             <label htmlFor="max_seats">
-              Maximum Seats *
+              Maximum Seats <span className="required">*</span>
             </label>
 
             <input
@@ -420,9 +238,11 @@ const BatchForm = ({
               type="number"
               name="max_seats"
               min="1"
+              step="1"
               value={form.max_seats}
               onChange={handleChange}
               disabled={loading}
+              required
             />
 
             {errors.max_seats && (
@@ -433,18 +253,14 @@ const BatchForm = ({
 
             {initialData && (
               <small className="batch-help-text">
-                Available seats are
-                calculated automatically.
+                Available seats are calculated automatically.
               </small>
             )}
           </div>
 
-          {/* =========================
-              STATUS
-          ========================== */}
           <div className="batch-field">
             <label htmlFor="status">
-              Status *
+              Status <span className="required">*</span>
             </label>
 
             <select
@@ -453,18 +269,11 @@ const BatchForm = ({
               value={form.status}
               onChange={handleChange}
               disabled={loading}
+              required
             >
-              <option value="Upcoming">
-                Upcoming
-              </option>
-
-              <option value="Ongoing">
-                Ongoing
-              </option>
-
-              <option value="Closed">
-                Closed
-              </option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Closed">Closed</option>
             </select>
 
             {errors.status && (
@@ -476,55 +285,27 @@ const BatchForm = ({
         </div>
       </div>
 
-      {/* =========================
-          EDIT SEAT SUMMARY
-      ========================== */}
       {initialData && (
         <div className="batch-seat-summary">
+          <div>
+            <span>Maximum Seats</span>
+            <strong>{Number(initialData.max_seats) || 0}</strong>
+          </div>
 
           <div>
-            <span>
-              Maximum Seats
-            </span>
-
+            <span>Available Seats</span>
             <strong>
-              {initialData.max_seats}
+              {Number(initialData.available_seats) || 0}
             </strong>
           </div>
 
           <div>
-            <span>
-              Available Seats
-            </span>
-
-            <strong>
-              {initialData.available_seats}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Occupied Seats
-            </span>
-
-            <strong>
-              {Math.max(
-                Number(
-                  initialData.max_seats
-                ) -
-                  Number(
-                    initialData.available_seats
-                  ),
-                0
-              )}
-            </strong>
+            <span>Occupied Seats</span>
+            <strong>{occupiedSeats}</strong>
           </div>
         </div>
       )}
 
-      {/* =========================
-          SUBMIT
-      ========================== */}
       <div className="batch-form-footer">
         <button
           type="submit"
@@ -532,12 +313,10 @@ const BatchForm = ({
           disabled={
             loading ||
             loadingCourses ||
-            courses.length === 0
+            safeCourses.length === 0
           }
         >
-          {loading
-            ? "Saving..."
-            : submitLabel}
+          {loading ? "Saving..." : submitLabel}
         </button>
       </div>
     </form>

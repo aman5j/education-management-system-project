@@ -1,193 +1,144 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
 
+import React, { useEffect, useState } from "react";
 import {
+  Navigate,
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 import BatchForm from "../../../components/batches/BatchForm";
-
 import {
   getBatch,
   updateBatch,
 } from "../../../services/batchService";
-
-import {
-  getCourses,
-} from "../../../services/courseService";
+import { getCourses } from "../../../services/courseService";
 
 const EditBatch = () => {
-  const {
-    id,
-  } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
 
-  const navigate =
-    useNavigate();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff/batches"
+    : "/admin/batches";
 
-  const [
-    batch,
-    setBatch,
-  ] = useState(null);
+  const canUpdate = hasPermission(user, "batches.update");
 
-  const [
-    courses,
-    setCourses,
-  ] = useState([]);
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-  const [loadingCourses, setLoadingCourses] = useState(false);
-
-  // In AddBatch.jsx and EditBatch.jsx
-  // const courseList = 
-  //   coursesResponse?.data?.courses || 
-  //   coursesResponse?.data?.data?.courses || 
-  //   coursesResponse?.data || [];
-
-  // setCourses(Array.isArray(courseList) ? courseList : []);
-
-  
-
-  // useEffect(() => {
-  //   const loadData =
-  //     async () => {
-  //       try {
-  //         setLoading(true);
-
-  //         const [
-  //           batchResponse,
-  //           coursesResponse,
-  //         ] = await Promise.all([
-  //           getBatch(id),
-  //           getCourses({
-  //             page: 1,
-  //             limit: 100,
-  //           }),
-  //         ]);
-
-  //         setBatch(batchResponse?.data?.data);
-
-  //         const courseList =
-  //           coursesResponse?.data?.courses ||
-  //           coursesResponse?.data?.data?.courses ||
-  //           coursesResponse?.data ||
-  //           [];
-
-  //         setCourses(Array.isArray(courseList) ? courseList : []);
-  //       } catch (requestError) {
-  //         console.error(
-  //           "Failed to load batch:",
-  //           requestError
-  //         );
-
-  //         setError(
-  //           requestError?.response
-  //             ?.data?.message ||
-  //             "Failed to load batch."
-  //         );
-  //       } finally {
-  //         setLoading(false);
-  //       }
-  //     };
-
-  //   loadData();
-  // }, [id]);
+  const [batch, setBatch] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-  const loadData = async () => {
-    try {
+    if (authLoading || !user || !canUpdate) {
+      setLoading(false);
+      setLoadingCourses(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadData = async () => {
       setLoading(true);
       setLoadingCourses(true);
       setError("");
 
-    const [batchResponse, coursesResponse] = await Promise.all([
-      getBatch(id),
-      getCourses({
-        page: 1,
-        limit: 100,
-      }),
-    ]);
-
-    setBatch(batchResponse?.data?.data);
-
-    const courseList = coursesResponse?.data?.data ?? [];
-
-    setCourses(
-      Array.isArray(courseList) ? courseList : []
-    );
-
-      console.log(
-        "Edit Batch courses:",
-        courseList
-      );
-    } catch (requestError) {
-      console.error(
-        "Failed to load batch:",
-        requestError
-      );
-
-      setError(
-        requestError?.response?.data
-          ?.message ||
-          "Failed to load batch."
-      );
-    } finally {
-      setLoading(false);
-      setLoadingCourses(false);
-    }
-  };
-
-  loadData();
-}, [id]);
-
-  const handleSubmit =
-    async (data) => {
-      setSaving(true);
-
       try {
-        await updateBatch(
-          id,
-          data
-        );
+        const [batchResponse, coursesResponse] = await Promise.all([
+          getBatch(id),
+          getCourses({ page: 1, limit: 100 }),
+        ]);
 
-        navigate(
-          "/admin/batches"
-        );
-      } catch (error) {
-        throw error;
+        if (cancelled) return;
+
+        const batchData = batchResponse?.data?.data || null;
+        const payload = coursesResponse?.data?.data;
+
+        const courseList = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.courses)
+            ? payload.courses
+            : [];
+
+        setBatch(batchData);
+        setCourses(courseList);
+
+        if (!batchData) {
+          setError("Batch not found.");
+        }
+
+        if (courseList.length === 0) {
+          setError((previous) =>
+            previous
+              ? `${previous} No courses are available.`
+              : "No courses are available."
+          );
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(
+            requestError?.response?.data?.message ||
+              "Failed to load batch information."
+          );
+        }
       } finally {
-        setSaving(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadingCourses(false);
+        }
       }
     };
 
-  if (loading) {
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, authLoading, user, canUpdate]);
+
+  const handleSubmit = async (formData) => {
+    setSaving(true);
+
+    try {
+      await updateBatch(id, formData);
+      navigate(basePath, { replace: true });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (authLoading) {
+    return <div className="batch-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canUpdate) {
     return (
-      <div className="batch-loading">
-        Loading batch...
+      <div className="batch-page">
+        <div className="batch-list-error" role="alert">
+          You do not have permission to update batches.
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (loading) {
+    return <div className="batch-loading">Loading batch...</div>;
+  }
+
+  if (error || !batch) {
     return (
-      <div className="batch-list-error">
-        {error}
+      <div className="batch-list-error" role="alert">
+        {error || "Batch not found."}
       </div>
     );
   }
@@ -196,27 +147,12 @@ const EditBatch = () => {
     <div className="batch-page">
       <div className="batch-page-header">
         <div>
-          <h1>
-            Edit Batch
-          </h1>
-
-          <p>
-            Update batch information.
-          </p>
+          <h1>Edit Batch</h1>
+          <p>Update batch information.</p>
         </div>
       </div>
 
       <div className="batch-card">
-        {/* <BatchForm
-          initialData={batch}
-          courses={courses}
-          loading={saving}
-          submitLabel="Update Batch"
-          onSubmit={
-            handleSubmit
-          }
-        /> */}
-
         <BatchForm
           initialData={batch}
           courses={courses}

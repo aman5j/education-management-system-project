@@ -1,12 +1,22 @@
 
+import mongoose from "mongoose";
 import Category from "../models/Category.js";
 import Course from "../models/Course.js";
 
 const escapeRegex = (value = "") =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const isValidStatus = (status) =>
   ["Active", "Inactive"].includes(status);
+
+const isValidCategoryId = (id) =>
+  mongoose.isValidObjectId(id);
+
+const sendInvalidCategoryId = (res) =>
+  res.status(400).json({
+    success: false,
+    message: "Invalid category ID.",
+  });
 
 const sendDuplicateNameError = (res) =>
   res.status(409).json({
@@ -30,18 +40,21 @@ export const getCategories = async (req, res, next) => {
       Math.max(Number(limit) || 10, 1),
       100
     );
+
     const skip = (pageNumber - 1) * limitNumber;
     const filter = {};
 
     if (typeof status === "string" && status.trim()) {
-      if (!isValidStatus(status.trim())) {
+      const normalizedStatus = status.trim();
+
+      if (!isValidStatus(normalizedStatus)) {
         return res.status(400).json({
           success: false,
           message: "Invalid category status.",
         });
       }
 
-      filter.status = status.trim();
+      filter.status = normalizedStatus;
     }
 
     if (typeof search === "string" && search.trim()) {
@@ -72,6 +85,7 @@ export const getCategories = async (req, res, next) => {
         .skip(skip)
         .limit(limitNumber)
         .lean(),
+
       Category.countDocuments(filter),
     ]);
 
@@ -94,7 +108,13 @@ export const getCategories = async (req, res, next) => {
 
 export const getCategory = async (req, res, next) => {
   try {
-    const category = await Category.findById(req.params.id).lean();
+    if (!isValidCategoryId(req.params.id)) {
+      return sendInvalidCategoryId(res);
+    }
+
+    const category = await Category.findById(
+      req.params.id
+    ).lean();
 
     if (!category) {
       return res.status(404).json({
@@ -125,21 +145,24 @@ export const createCategory = async (req, res, next) => {
     if (categoryName.length < 2 || categoryName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: "Category name must be between 2 and 100 characters.",
+        message:
+          "Category name must be between 2 and 100 characters.",
       });
     }
 
     if (!Number.isInteger(displayOrder) || displayOrder < 0) {
       return res.status(400).json({
         success: false,
-        message: "Display order must be a whole number of 0 or greater.",
+        message:
+          "Display order must be a whole number of 0 or greater.",
       });
     }
 
     if (!isValidStatus(status)) {
       return res.status(400).json({
         success: false,
-        message: "Category status must be Active or Inactive.",
+        message:
+          "Category status must be Active or Inactive.",
       });
     }
 
@@ -179,6 +202,10 @@ export const createCategory = async (req, res, next) => {
 
 export const updateCategory = async (req, res, next) => {
   try {
+    if (!isValidCategoryId(req.params.id)) {
+      return sendInvalidCategoryId(res);
+    }
+
     const category = await Category.findById(req.params.id);
 
     if (!category) {
@@ -204,15 +231,19 @@ export const updateCategory = async (req, res, next) => {
 
       const normalizedName = categoryName.trim();
 
-      if (normalizedName.length < 2 || normalizedName.length > 100) {
+      if (
+        normalizedName.length < 2 ||
+        normalizedName.length > 100
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Category name must be between 2 and 100 characters.",
+          message:
+            "Category name must be between 2 and 100 characters.",
         });
       }
 
-      // Course currently stores category names as strings.
-      // Prevent renaming a category while courses still reference its old name.
+      // Courses store category names as strings.
+      // Prevent renaming a category that existing courses use.
       const isActualRename =
         normalizedName.toLowerCase() !==
         category.categoryName.trim().toLowerCase();
@@ -223,9 +254,10 @@ export const updateCategory = async (req, res, next) => {
           "i"
         );
 
-        const coursesUsingCategory = await Course.countDocuments({
-          courseCategory: categoryNameRegex,
-        });
+        const coursesUsingCategory =
+          await Course.countDocuments({
+            courseCategory: categoryNameRegex,
+          });
 
         if (coursesUsingCategory > 0) {
           return res.status(409).json({
@@ -257,10 +289,14 @@ export const updateCategory = async (req, res, next) => {
     if (displayOrder !== undefined) {
       const normalizedOrder = Number(displayOrder);
 
-      if (!Number.isInteger(normalizedOrder) || normalizedOrder < 0) {
+      if (
+        !Number.isInteger(normalizedOrder) ||
+        normalizedOrder < 0
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Display order must be a whole number of 0 or greater.",
+          message:
+            "Display order must be a whole number of 0 or greater.",
         });
       }
 
@@ -271,7 +307,8 @@ export const updateCategory = async (req, res, next) => {
       if (!isValidStatus(status)) {
         return res.status(400).json({
           success: false,
-          message: "Category status must be Active or Inactive.",
+          message:
+            "Category status must be Active or Inactive.",
         });
       }
 
@@ -279,7 +316,8 @@ export const updateCategory = async (req, res, next) => {
     }
 
     if (req.file) {
-      category.categoryIcon = `/uploads/categories/${req.file.filename}`;
+      category.categoryIcon =
+        `/uploads/categories/${req.file.filename}`;
     }
 
     await category.save();
@@ -300,6 +338,10 @@ export const updateCategory = async (req, res, next) => {
 
 export const deleteCategory = async (req, res, next) => {
   try {
+    if (!isValidCategoryId(req.params.id)) {
+      return sendInvalidCategoryId(res);
+    }
+
     const category = await Category.findById(req.params.id);
 
     if (!category) {
@@ -309,22 +351,24 @@ export const deleteCategory = async (req, res, next) => {
       });
     }
 
-    // Course currently stores the category name as a string.
-    // Match case-insensitively so capitalization cannot bypass this check.
+    // Match category names case-insensitively because courses
+    // currently store category names rather than Category IDs.
     const categoryNameRegex = new RegExp(
       `^${escapeRegex(category.categoryName.trim())}$`,
       "i"
     );
 
-    const coursesUsingCategory = await Course.countDocuments({
-      courseCategory: categoryNameRegex,
-    });
+    const coursesUsingCategory =
+      await Course.countDocuments({
+        courseCategory: categoryNameRegex,
+      });
 
     if (coursesUsingCategory > 0) {
       return res.status(409).json({
         success: false,
         message:
-          `Cannot delete "${category.categoryName}" because ${coursesUsingCategory} course(s) use it. ` +
+          `Cannot delete "${category.categoryName}" because ` +
+          `${coursesUsingCategory} course(s) use it. ` +
           "Reassign those courses or mark this category Inactive instead.",
         data: {
           coursesUsingCategory,
@@ -339,6 +383,10 @@ export const deleteCategory = async (req, res, next) => {
       message: "Category deleted successfully.",
     });
   } catch (error) {
+    if (error?.code === 11000) {
+      return sendDuplicateNameError(res);
+    }
+
     next(error);
   }
 };

@@ -12,51 +12,6 @@ const sendError = (res, status, message, errorCode) =>
   });
 
 
-// const validateActiveCourseCategory = async (value) => {
-//   if (
-//     typeof courseCategory !== "string" ||
-//     !courseCategory.trim()
-//   ) {
-//     return {
-//       valid: false,
-//       message: "Course category is required. Select an active category.",
-//     };
-//   }
-
-//   const categoryName =
-//     typeof value === "string" ? value.trim() : "";
-
-//   // Preserve the existing behavior if category is optional.
-//   if (!categoryName) {
-//     return { categoryName: "" };
-//   }
-
-//   const category = await Category.findOne({
-//     categoryName: {
-//       $regex: `^${categoryName.replace(
-//         /[.*+?^${}()|[\]\\]/g,
-//         "\\$&"
-//       )}$`,
-//       $options: "i",
-//     },
-//   }).select("categoryName status");
-
-//   if (!category) {
-//     return {
-//       error: "The selected course category does not exist.",
-//     };
-//   }
-
-//   if (category.status !== "Active") {
-//     return {
-//       error:
-//         "This category is inactive. Select an active category.",
-//     };
-//   }
-
-//   return { categoryName: category.categoryName };
-// };
-
 
 const validateActiveCourseCategory = async (value) => {
   const categoryName =
@@ -230,12 +185,19 @@ export const getCourses = async (req, res, next) => {
       filter.courseType = normalizedType;
     }
 
+    
     if (String(courseCategory).trim()) {
+      const safeCategory = String(courseCategory)
+        .trim()
+        .slice(0, 100)
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
       filter.courseCategory = {
-        $regex: String(courseCategory).trim(),
+        $regex: safeCategory,
         $options: "i",
       };
     }
+
 
     const safeSearch = String(search)
       .trim()

@@ -1,12 +1,11 @@
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 
 import { useAuth } from "../../../context/AuthContext";
 import CategoryFilters from "../../../components/categories/CategoryFilters";
 import CategoryTable from "../../../components/categories/CategoryTable";
-
 import { hasPermission } from "../../../utils/permissions";
 
 import {
@@ -15,6 +14,13 @@ import {
 } from "../../../services/categoryService";
 
 import "../../../styles/CategoryManagement.css";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  status: "",
+};
+
+const PAGE_SIZE = 10;
 
 const Categories = () => {
   const location = useLocation();
@@ -33,66 +39,99 @@ const Categories = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [filters, setFilters] = useState({
-    search: "",
-    status: "",
-  });
-
+  const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
   const [page, setPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: PAGE_SIZE,
     total: 0,
     totalPages: 0,
   });
 
-  const loadCategories = useCallback(async () => {
+  useEffect(() => {
+    if (authLoading) return undefined;
 
-    if (authLoading || !user || !canView) {
+    if (!user || !canView) {
       setCategories([]);
       setLoading(false);
-      return;
+      return undefined;
     }
 
-    try {
+    let cancelled = false;
+
+    const loadCategories = async () => {
       setLoading(true);
       setError("");
 
-      const response = await getCategories({
-        ...filters,
-        page,
-        limit: 10,
-        sortBy: "displayOrder",
-        sortOrder: "asc",
-      });
-
-      const data = response?.data?.data;
-
-      setCategories(data?.categories || []);
-      setPagination(
-        data?.pagination || {
+      try {
+        const response = await getCategories({
+          ...filters,
           page,
-          limit: 10,
-          total: 0,
-          totalPages: 0,
-        }
-      );
-    } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ||
-          "Failed to load categories."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, page, authLoading, user, canView]);
+          limit: PAGE_SIZE,
+          sortBy: "displayOrder",
+          sortOrder: "asc",
+        });
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadCategories();
-    }
-  }, [loadCategories, authLoading]);
+        if (cancelled) return;
+
+        const payload = response?.data?.data;
+
+        const categoryList = Array.isArray(payload?.categories)
+          ? payload.categories
+          : [];
+
+        const paginationData = payload?.pagination;
+
+        setCategories(categoryList);
+
+        if (paginationData) {
+          setPagination({
+            page: Number(paginationData.page) || page,
+            limit: Number(paginationData.limit) || PAGE_SIZE,
+            total: Number(paginationData.total) || 0,
+            totalPages: Math.max(
+              Number(paginationData.totalPages) || 0,
+              0
+            ),
+          });
+        } else {
+          setPagination({
+            page,
+            limit: PAGE_SIZE,
+            total: categoryList.length,
+            totalPages: categoryList.length ? 1 : 0,
+          });
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setCategories([]);
+          setError(
+            requestError?.response?.data?.message ||
+              "Failed to load categories."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authLoading,
+    user,
+    canView,
+    filters,
+    page,
+    refreshKey,
+  ]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -106,7 +145,7 @@ const Categories = () => {
   };
 
   const handleReset = () => {
-    setFilters({ search: "", status: "" });
+    setFilters({ ...DEFAULT_FILTERS });
     setPage(1);
   };
 
@@ -117,7 +156,7 @@ const Categories = () => {
     }
 
     const confirmed = window.confirm(
-      "Delete this category? Categories used by existing courses should be retained or reassigned first."
+      "Delete this category? Categories used by existing courses must be reassigned first."
     );
 
     if (!confirmed) return;
@@ -125,7 +164,14 @@ const Categories = () => {
     try {
       setError("");
       await deleteCategory(id);
-      await loadCategories();
+
+      // If the deleted category was the only row on a later page,
+      // navigate back; otherwise reload the current page.
+      if (categories.length === 1 && page > 1) {
+        setPage((previous) => previous - 1);
+      } else {
+        setRefreshKey((previous) => previous + 1);
+      }
     } catch (deleteError) {
       setError(
         deleteError?.response?.data?.message ||
@@ -135,7 +181,11 @@ const Categories = () => {
   };
 
   if (authLoading) {
-    return <div className="category-loading">Checking permissions...</div>;
+    return (
+      <div className="category-loading">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (!user) {
@@ -144,7 +194,7 @@ const Categories = () => {
 
   if (!canView) {
     return (
-      <div className="category-list-error">
+      <div className="category-list-error" role="alert">
         You do not have permission to view Course Categories.
       </div>
     );
@@ -159,10 +209,7 @@ const Categories = () => {
         </div>
 
         {canCreate && (
-          <Link
-            to={`${basePath}/add`}
-            className="themebtn"
-          >
+          <Link to={`${basePath}/add`} className="themebtn">
             <FiPlus /> Add Category
           </Link>
         )}
@@ -186,44 +233,46 @@ const Categories = () => {
             Loading categories...
           </div>
         ) : (
-          <CategoryTable
-            categories={categories}
-            basePath={basePath}
-            canView={canView}
-            canUpdate={canUpdate}
-            canDelete={canDelete}
-            onDelete={handleDelete}
-          />
-        )}
+          <>
+            <CategoryTable
+              categories={categories}
+              basePath={basePath}
+              canView={canView}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
+              onDelete={handleDelete}
+            />
 
-        {!loading && pagination.totalPages > 0 && (
-          <div className="category-pagination">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() =>
-                setPage((previous) => previous - 1)
-              }
-            >
-              Previous
-            </button>
+            {pagination.totalPages > 0 && (
+              <div className="category-pagination">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() =>
+                    setPage((previous) => previous - 1)
+                  }
+                >
+                  Previous
+                </button>
 
-            <span>
-              Page {page} of {pagination.totalPages}
-              {" · "}
-              {pagination.total} categories
-            </span>
+                <span>
+                  Page {page} of {pagination.totalPages}
+                  {" · "}
+                  {pagination.total} categories
+                </span>
 
-            <button
-              type="button"
-              disabled={page >= pagination.totalPages}
-              onClick={() =>
-                setPage((previous) => previous + 1)
-              }
-            >
-              Next
-            </button>
-          </div>
+                <button
+                  type="button"
+                  disabled={page >= pagination.totalPages}
+                  onClick={() =>
+                    setPage((previous) => previous + 1)
+                  }
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

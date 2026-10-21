@@ -12,6 +12,7 @@ import {
 } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
+import DOMPurify from "dompurify";
 
 
 import { getCourse } from "../../../services/courseService";
@@ -116,6 +117,9 @@ const ViewCourse = () => {
       </div>
     );
   }
+
+  const sanitizeRichText = (html) =>
+  DOMPurify.sanitize(html || "");
 
   return (
     <div className="course-page">
@@ -245,7 +249,7 @@ const ViewCourse = () => {
           <h2>Description</h2>
           <div
             dangerouslySetInnerHTML={{
-              __html: course.description || "-",
+              __html: sanitizeRichText(course.description),
             }}
           />
         </div>
@@ -254,7 +258,7 @@ const ViewCourse = () => {
           <h2>Syllabus</h2>
           <div
             dangerouslySetInnerHTML={{
-              __html: course.syllabus || "-",
+              __html: sanitizeRichText(course.syllabus),
             }}
           />
         </div>
@@ -263,7 +267,7 @@ const ViewCourse = () => {
           <h2>Eligibility</h2>
           <div
             dangerouslySetInnerHTML={{
-              __html: course.eligibility || "-",
+              __html: sanitizeRichText(course.eligibility),
             }}
           />
         </div>
