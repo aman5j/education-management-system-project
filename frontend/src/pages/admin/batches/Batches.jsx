@@ -306,6 +306,8 @@ const Batches = () => {
           <BatchTable
             batches={batches}
             onDelete={handleDelete}
+            canView={canView}
+            canEdit={hasPermission(user, "batches.update")}
             canDelete={canDelete}
           />
         )}
