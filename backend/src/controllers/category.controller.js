@@ -3,7 +3,7 @@ import Category from "../models/Category.js";
 import Course from "../models/Course.js";
 
 const escapeRegex = (value = "") =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const isValidStatus = (status) =>
   ["Active", "Inactive"].includes(status);
