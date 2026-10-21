@@ -1,25 +1,32 @@
 
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import CourseForm from "../../../components/courses/CourseForm";
 import { createCourse } from "../../../services/courseService";
+import { hasPermission } from "../../../utils/permissions";
 
 const AddCourse = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/courses"
     : "/admin/courses";
 
-  const permissions = user?.assignedRole?.permissions || [];
-  const canCreate =
-    user?.role === "admin" || permissions.includes("courses.create");
+  const canCreate = hasPermission(user, "courses.create");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  if (authLoading) {
+    return <div className="course-page">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canCreate) {
     return (

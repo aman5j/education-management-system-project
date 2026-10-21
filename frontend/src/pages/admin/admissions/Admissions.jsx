@@ -100,60 +100,60 @@ const Admissions = () => {
       totalPages: 1,
     });
 
-  const loadAdmissions =
-    async () => {
+  // const loadAdmissions =
+  //   async () => {
 
-      if (authLoading || !user || !canViewAdmissions) {
-        setAdmissions([]);
-        setLoading(false);
-        return;
-      }
+  //     if (authLoading || !user || !canViewAdmissions) {
+  //       setAdmissions([]);
+  //       setLoading(false);
+  //       return;
+  //     }
 
-      try {
-        setLoading(true);
-        setError("");
+  //     try {
+  //       setLoading(true);
+  //       setError("");
 
-        const response =
-          await getAdmissions({
-            search,
-            status,
-            page,
-            limit: 10,
-          });
+  //       const response =
+  //         await getAdmissions({
+  //           search,
+  //           status,
+  //           page,
+  //           limit: 10,
+  //         });
 
-        const data =
-          response?.data?.data;
+  //       const data =
+  //         response?.data?.data;
 
-        setAdmissions(
-          Array.isArray(
-            data?.admissions
-          )
-            ? data.admissions
-            : []
-        );
+  //       setAdmissions(
+  //         Array.isArray(
+  //           data?.admissions
+  //         )
+  //           ? data.admissions
+  //           : []
+  //       );
 
-        setPagination(
-          data?.pagination || {
-            page,
-            limit: 10,
-            total: 0,
-            totalPages: 1,
-          }
-        );
-      } catch (loadError) {
-        console.error(
-          loadError
-        );
+  //       setPagination(
+  //         data?.pagination || {
+  //           page,
+  //           limit: 10,
+  //           total: 0,
+  //           totalPages: 1,
+  //         }
+  //       );
+  //     } catch (loadError) {
+  //       console.error(
+  //         loadError
+  //       );
 
-        setError(
-          loadError?.response
-            ?.data?.message ||
-            "Unable to load admissions."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       setError(
+  //         loadError?.response
+  //           ?.data?.message ||
+  //           "Unable to load admissions."
+  //       );
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
     useEffect(() => {
       const timer = setTimeout(() => {

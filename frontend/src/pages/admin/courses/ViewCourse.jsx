@@ -8,8 +8,10 @@ import {
   useLocation,
   useNavigate,
   useParams,
+  Navigate,
 } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 
 
 import { getCourse } from "../../../services/courseService";
@@ -18,17 +20,14 @@ import { getAssetUrl } from "../../../utils/assetUrl";
 const ViewCourse = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/courses"
     : "/admin/courses";
 
-  const permissions = user?.assignedRole?.permissions || [];
-  const canView =
-    user?.role === "admin" || permissions.includes("courses.view");
-  const canUpdate =
-    user?.role === "admin" || permissions.includes("courses.update");
+  const canView = hasPermission(user, "courses.view");
+  const canUpdate = hasPermission(user, "courses.update");
 
 
   const { id } = useParams();
@@ -41,7 +40,7 @@ const ViewCourse = () => {
 
 
     useEffect(() => {
-    if (!canView || !id) {
+    if (authLoading || !canView || !id) {
       setLoading(false);
       return undefined;
     }
@@ -74,10 +73,17 @@ const ViewCourse = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, canView]);
+  }, [id, canView, authLoading]);
 
+  if (authLoading) {
+    return <div className="course-page">Checking permissions...</div>;
+  }
 
-    if (!canView) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canView) {
     return (
       <div className="course-page">
         <div className="course-list-error" role="alert">

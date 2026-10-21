@@ -1,28 +1,34 @@
 
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 
 import CategoryForm from "../../../components/categories/CategoryForm";
 import { useAuth } from "../../../context/AuthContext";
 import { createCategory } from "../../../services/categoryService";
 
+import { hasPermission } from "../../../utils/permissions";
+
 const AddCategory = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/categories"
     : "/admin/categories";
 
-  const permissions = user?.assignedRole?.permissions || [];
-  const canCreate =
-    user?.role === "admin" ||
-    permissions.includes("*") ||
-    permissions.includes("courses.create");
+  const canCreate = hasPermission(user, "courses.create");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  if (authLoading) {
+    return <div className="category-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canCreate) {
     return (

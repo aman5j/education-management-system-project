@@ -1,11 +1,13 @@
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Navigate } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 
 import { useAuth } from "../../../context/AuthContext";
 import CategoryFilters from "../../../components/categories/CategoryFilters";
 import CategoryTable from "../../../components/categories/CategoryTable";
+
+import { hasPermission } from "../../../utils/permissions";
 
 import {
   getCategories,
@@ -16,24 +18,16 @@ import "../../../styles/CategoryManagement.css";
 
 const Categories = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/categories"
     : "/admin/categories";
 
-  const isAdmin = user?.role === "admin";
-  const permissions = user?.assignedRole?.permissions || [];
-
-  const can = (permission) =>
-    isAdmin ||
-    permissions.includes("*") ||
-    permissions.includes(permission);
-
-  const canView = can("courses.view");
-  const canCreate = can("courses.create");
-  const canUpdate = can("courses.update");
-  const canDelete = can("courses.delete");
+  const canView = hasPermission(user, "courses.view");
+  const canCreate = hasPermission(user, "courses.create");
+  const canUpdate = hasPermission(user, "courses.update");
+  const canDelete = hasPermission(user, "courses.delete");
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +48,13 @@ const Categories = () => {
   });
 
   const loadCategories = useCallback(async () => {
+
+    if (authLoading || !user || !canView) {
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -85,11 +86,13 @@ const Categories = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, page]);
+  }, [filters, page, authLoading, user, canView]);
 
   useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
+    if (!authLoading) {
+      loadCategories();
+    }
+  }, [loadCategories, authLoading]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -130,6 +133,14 @@ const Categories = () => {
       );
     }
   };
+
+  if (authLoading) {
+    return <div className="category-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canView) {
     return (

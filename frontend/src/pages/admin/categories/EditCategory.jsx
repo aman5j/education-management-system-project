@@ -1,26 +1,24 @@
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, Navigate } from "react-router-dom";
 
 import CategoryForm from "../../../components/categories/CategoryForm";
 import { useAuth } from "../../../context/AuthContext";
 import { getCategory, updateCategory } from "../../../services/categoryService";
 
+import { hasPermission } from "../../../utils/permissions";
+
 const EditCategory = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/categories"
     : "/admin/categories";
 
-  const permissions = user?.assignedRole?.permissions || [];
-  const canUpdate =
-    user?.role === "admin" ||
-    permissions.includes("*") ||
-    permissions.includes("courses.update");
+  const canUpdate = hasPermission(user, "courses.update");
 
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +26,11 @@ const EditCategory = () => {
   const [error, setError] = useState("");
 
   const loadCategory = useCallback(async () => {
+    if (authLoading || !user || !canUpdate) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -41,11 +44,13 @@ const EditCategory = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, authLoading, user, canUpdate]);
 
   useEffect(() => {
-    loadCategory();
-  }, [loadCategory]);
+    if (!authLoading) {
+      loadCategory();
+    }
+  }, [loadCategory, authLoading]);
 
   const handleSubmit = async (formData) => {
     setSaving(true);
@@ -64,6 +69,14 @@ const EditCategory = () => {
       setSaving(false);
     }
   };
+
+  if (authLoading) {
+    return <div className="category-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canUpdate) {
     return (

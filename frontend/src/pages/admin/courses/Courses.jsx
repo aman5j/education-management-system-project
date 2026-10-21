@@ -1,10 +1,11 @@
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Navigate } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
 import CourseFilters from "../../../components/courses/CourseFilters";
 import CourseTable from "../../../components/courses/CourseTable";
+import { hasPermission } from "../../../utils/permissions";
 
 import {
   deleteCourse,
@@ -16,22 +17,16 @@ import "./CourseManagement.css";
 
 const Courses = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/courses"
     : "/admin/courses";
 
-  const isAdmin = user?.role === "admin";
-
-  const permissions = Array.isArray(user?.assignedRole?.permissions)
-    ? user.assignedRole.permissions
-    : [];
-
-  const canView = isAdmin || permissions.includes("courses.view");
-  const canCreate = isAdmin || permissions.includes("courses.create");
-  const canUpdate = isAdmin || permissions.includes("courses.update");
-  const canDelete = isAdmin || permissions.includes("courses.delete");
+  const canView = hasPermission(user, "courses.view");
+  const canCreate = hasPermission(user, "courses.create");
+  const canUpdate = hasPermission(user, "courses.update");
+  const canDelete = hasPermission(user, "courses.delete");
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,10 +47,9 @@ const Courses = () => {
   });
 
   const loadCourses = useCallback(async () => {
-    if (!canView) {
+    if (authLoading || !user || !canView) {
       setCourses([]);
       setLoading(false);
-      setError("You are not authorized to view courses.");
       return;
     }
 
@@ -96,11 +90,16 @@ const Courses = () => {
     filters,
     pagination.page,
     pagination.limit,
+
+    authLoading,
+    user,
   ]);
 
   useEffect(() => {
-    loadCourses();
-  }, [loadCourses]);
+    if (!authLoading) {
+      loadCourses();
+    }
+  }, [loadCourses, authLoading]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -169,6 +168,14 @@ const Courses = () => {
       );
     }
   };
+
+  if (authLoading) {
+    return <div className="course-page">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canView) {
     return (

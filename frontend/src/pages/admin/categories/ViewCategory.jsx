@@ -1,36 +1,35 @@
 
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams, Navigate } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
 import { getCategory } from "../../../services/categoryService";
 import { getAssetUrl } from "../../../utils/assetUrl";
 
+import { hasPermission } from "../../../utils/permissions";
+
 const ViewCategory = () => {
   const { id } = useParams();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff/categories"
     : "/admin/categories";
 
-  const permissions = user?.assignedRole?.permissions || [];
-  const canView =
-    user?.role === "admin" ||
-    permissions.includes("*") ||
-    permissions.includes("courses.view");
-
-  const canUpdate =
-    user?.role === "admin" ||
-    permissions.includes("*") ||
-    permissions.includes("courses.update");
+  const canView = hasPermission(user, "courses.view");
+  const canUpdate = hasPermission(user, "courses.update");
 
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (authLoading || !user || !canView) {
+      setLoading(false);
+      return;
+    }
+
     let active = true;
 
     const loadCategory = async () => {
@@ -60,7 +59,15 @@ const ViewCategory = () => {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, authLoading, user, canView]);
+
+  if (authLoading) {
+    return <div className="category-loading">Checking permissions...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canView) {
     return (
