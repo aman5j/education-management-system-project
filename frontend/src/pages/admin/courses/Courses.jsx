@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -14,6 +14,13 @@ import {
 } from "../../../services/courseService";
 
 import "./CourseManagement.css";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  status: "",
+  courseType: "",
+  courseCategory: "",
+};
 
 const Courses = () => {
   const location = useLocation();
@@ -32,12 +39,7 @@ const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [filters, setFilters] = useState({
-    search: "",
-    status: "",
-    courseType: "",
-    courseCategory: "",
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -48,74 +50,24 @@ const Courses = () => {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadCourses = useCallback(async () => {
-    if (authLoading || !user || !canView) {
-      setCourses([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await getCourses({
-        ...filters,
-        page: pagination.page,
-        limit: pagination.limit,
-      });
-
-      const result = response.data?.data;
-
-      setCourses(Array.isArray(result?.courses)
-        ? result.courses
-        : Array.isArray(result)
-          ? result
-          : []);
-
-      if (result?.pagination) {
-        setPagination((previous) => ({
-          ...previous,
-          ...result.pagination,
-        }));
-      }
-    } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ||
-          "Unable to load courses."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    canView,
-    filters,
-    pagination.page,
-    pagination.limit,
-
-    authLoading,
-    user,
-  ]);
-
-  // useEffect(() => {
-  //   if (!authLoading) {
-  //     loadCourses();
-  //   }
-  // }, [loadCourses, authLoading]);
-
+  // Load the list in one place so older requests cannot overwrite
+  // results belonging to newer filters or pages.
   useEffect(() => {
     if (authLoading) return undefined;
 
+    if (!user || !canView) {
+      setCourses([]);
+      setLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
 
-    const run = async () => {
-      // Keep this request isolated from any earlier effect.
+    const loadCourses = async () => {
+      setLoading(true);
+      setError("");
+
       try {
-        if (!user || !canView) return;
-
-        setLoading(true);
-        setError("");
-
         const response = await getCourses({
           ...filters,
           page: pagination.page,
@@ -124,35 +76,54 @@ const Courses = () => {
 
         if (cancelled) return;
 
-        const result = response.data?.data;
+        const responseBody = response?.data;
+        const payload = responseBody?.data;
 
-        setCourses(
-          Array.isArray(result?.courses)
-            ? result.courses
-            : Array.isArray(result)
-              ? result
-              : []
-        );
+        // The backend currently returns data as an array and
+        // pagination as a separate top-level property.
+        const courseList = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.courses)
+            ? payload.courses
+            : [];
 
-        if (result?.pagination) {
+        const paginationData =
+          responseBody?.pagination ?? payload?.pagination;
+
+        setCourses(courseList);
+
+        if (paginationData) {
           setPagination((previous) => ({
             ...previous,
-            ...result.pagination,
+            ...paginationData,
+            totalPages: Math.max(
+              Number(paginationData.totalPages) || 0,
+              1
+            ),
+          }));
+        } else {
+          setPagination((previous) => ({
+            ...previous,
+            total: courseList.length,
+            totalPages: 1,
           }));
         }
       } catch (requestError) {
         if (!cancelled) {
           setError(
-            requestError.response?.data?.message ||
+            requestError?.response?.data?.message ||
               "Unable to load courses."
           );
+          setCourses([]);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    run();
+    loadCourses();
 
     return () => {
       cancelled = true;
@@ -182,12 +153,7 @@ const Courses = () => {
   };
 
   const handleReset = () => {
-    setFilters({
-      search: "",
-      status: "",
-      courseType: "",
-      courseCategory: "",
-    });
+    setFilters({ ...DEFAULT_FILTERS });
 
     setPagination((previous) => ({
       ...previous,
@@ -208,10 +174,19 @@ const Courses = () => {
     try {
       setError("");
       await deleteCourse(id);
-      await loadCourses();
+
+      // If this was the only row on a later page, go back one page.
+      if (courses.length === 1 && pagination.page > 1) {
+        setPagination((previous) => ({
+          ...previous,
+          page: previous.page - 1,
+        }));
+      } else {
+        setRefreshKey((previous) => previous + 1);
+      }
     } catch (requestError) {
       setError(
-        requestError.response?.data?.message ||
+        requestError?.response?.data?.message ||
           "Unable to delete course."
       );
     }
@@ -226,10 +201,10 @@ const Courses = () => {
     try {
       setError("");
       await updateCourseStatus(id, status);
-      await loadCourses();
+      setRefreshKey((previous) => previous + 1);
     } catch (requestError) {
       setError(
-        requestError.response?.data?.message ||
+        requestError?.response?.data?.message ||
           "Unable to update course status."
       );
     }
@@ -262,10 +237,7 @@ const Courses = () => {
         </div>
 
         {canCreate && (
-          <Link
-            to={`${basePath}/add`}
-            className="course-primary-btn"
-          >
+          <Link to={`${basePath}/add`} className="course-primary-btn">
             + Add Course
           </Link>
         )}
@@ -315,6 +287,8 @@ const Courses = () => {
 
               <span>
                 Page {pagination.page} of {pagination.totalPages || 1}
+                {" · "}
+                {pagination.total} courses
               </span>
 
               <button
