@@ -90,22 +90,44 @@ export const getBatches = async (req, res, next) => {
       Batch.countDocuments(filter),
     ]);
 
-    // Return seat availability calculated from real student assignments.
-    const batchesWithAccurateSeats = await Promise.all(
-      batches.map(async (batch) => {
-        const assignedStudents = await getAssignedStudentCount(
-          batch._id
-        );
+    // Calculate assigned student counts for all listed batches in one query.
+    const batchIds = batches.map((batch) => batch._id);
 
-        return {
-          ...batch,
-          available_seats: Math.max(
-            Number(batch.max_seats) - assignedStudents,
-            0
-          ),
-        };
-      })
+    const assignedCounts = batchIds.length
+      ? await Student.aggregate([
+          {
+            $match: {
+              batch_id: { $in: batchIds },
+            },
+          },
+          {
+            $group: {
+              _id: "$batch_id",
+              assignedStudents: { $sum: 1 },
+            },
+          },
+        ])
+      : [];
+
+    const assignedCountByBatch = new Map(
+      assignedCounts.map((item) => [
+        String(item._id),
+        item.assignedStudents,
+      ])
     );
+
+    const batchesWithAccurateSeats = batches.map((batch) => {
+      const assignedStudents =
+        assignedCountByBatch.get(String(batch._id)) || 0;
+
+      return {
+        ...batch,
+        available_seats: Math.max(
+          Number(batch.max_seats) - assignedStudents,
+          0
+        ),
+      };
+    });
 
     return res.status(200).json({
       success: true,
