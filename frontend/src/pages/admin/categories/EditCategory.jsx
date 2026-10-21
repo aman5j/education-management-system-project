@@ -1,5 +1,6 @@
 
-import React, { useCallback, useEffect, useState } from "react";
+// import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, Navigate } from "react-router-dom";
 
 import CategoryForm from "../../../components/categories/CategoryForm";
@@ -25,32 +26,79 @@ const EditCategory = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const loadCategory = useCallback(async () => {
-    if (authLoading || !user || !canUpdate) {
-      setLoading(false);
-      return;
+  // const loadCategory = useCallback(async () => {
+  //   if (authLoading || !user || !canUpdate) {
+  //     setLoading(false);
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     setError("");
+  //     const response = await getCategory(id);
+  //     setCategory(response?.data?.data || null);
+  //   } catch (requestError) {
+  //     setError(
+  //       requestError?.response?.data?.message ||
+  //         "Failed to load category."
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [id, authLoading, user, canUpdate]);
+
+  // useEffect(() => {
+  //   if (!authLoading) {
+  //     loadCategory();
+  //   }
+  // }, [loadCategory, authLoading]);
+
+  
+  useEffect(() => {
+    if (authLoading) {
+      return undefined;
     }
 
-    try {
+    if (!user || !canUpdate) {
+      setCategory(null);
+      setLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadCategory = async () => {
       setLoading(true);
       setError("");
-      const response = await getCategory(id);
-      setCategory(response?.data?.data || null);
-    } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ||
-          "Failed to load category."
-      );
-    } finally {
-      setLoading(false);
-    }
+
+      try {
+        const response = await getCategory(id);
+
+        if (!cancelled) {
+          setCategory(response?.data?.data || null);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setCategory(null);
+          setError(
+            requestError?.response?.data?.message ||
+              "Failed to load category."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadCategory();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, authLoading, user, canUpdate]);
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadCategory();
-    }
-  }, [loadCategory, authLoading]);
 
   const handleSubmit = async (formData) => {
     setSaving(true);
