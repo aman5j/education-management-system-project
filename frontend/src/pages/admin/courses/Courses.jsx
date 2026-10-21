@@ -46,6 +46,8 @@ const Courses = () => {
     totalPages: 1,
   });
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const loadCourses = useCallback(async () => {
     if (authLoading || !user || !canView) {
       setCourses([]);
@@ -95,11 +97,75 @@ const Courses = () => {
     user,
   ]);
 
+  // useEffect(() => {
+  //   if (!authLoading) {
+  //     loadCourses();
+  //   }
+  // }, [loadCourses, authLoading]);
+
   useEffect(() => {
-    if (!authLoading) {
-      loadCourses();
-    }
-  }, [loadCourses, authLoading]);
+    if (authLoading) return undefined;
+
+    let cancelled = false;
+
+    const run = async () => {
+      // Keep this request isolated from any earlier effect.
+      try {
+        if (!user || !canView) return;
+
+        setLoading(true);
+        setError("");
+
+        const response = await getCourses({
+          ...filters,
+          page: pagination.page,
+          limit: pagination.limit,
+        });
+
+        if (cancelled) return;
+
+        const result = response.data?.data;
+
+        setCourses(
+          Array.isArray(result?.courses)
+            ? result.courses
+            : Array.isArray(result)
+              ? result
+              : []
+        );
+
+        if (result?.pagination) {
+          setPagination((previous) => ({
+            ...previous,
+            ...result.pagination,
+          }));
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(
+            requestError.response?.data?.message ||
+              "Unable to load courses."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authLoading,
+    user,
+    canView,
+    filters,
+    pagination.page,
+    pagination.limit,
+    refreshKey,
+  ]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
