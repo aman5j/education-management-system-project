@@ -1,114 +1,76 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
 
-import {
-  Link,
-  useParams,
-} from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 
-import {
-  getBatch,
-} from "../../../services/batchService";
+import { getBatch } from "../../../services/batchService";
 
 const ViewBatch = () => {
-  const {
-    id,
-  } = useParams();
+  const { id } = useParams();
+  const location = useLocation();
 
-  const [
-    batch,
-    setBatch,
-  ] = useState(null);
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff/batches"
+    : "/admin/batches";
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [batch, setBatch] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const loadBatch =
-      async () => {
-        try {
-          const response =
-            await getBatch(
-              id
-            );
+    let cancelled = false;
 
-          setBatch(
-            response?.data?.data
-          );
-        } catch (requestError) {
-          console.error(
-            "Failed to load batch:",
-            requestError
-          );
+    const loadBatch = async () => {
+      setLoading(true);
+      setError("");
 
+      try {
+        const response = await getBatch(id);
+        if (!cancelled) setBatch(response?.data?.data || null);
+      } catch (requestError) {
+        if (!cancelled) {
           setError(
-            requestError?.response
-              ?.data?.message ||
+            requestError?.response?.data?.message ||
               "Failed to load batch."
           );
-        } finally {
-          setLoading(false);
         }
-      };
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
     loadBatch();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (loading) {
+    return <div className="batch-loading">Loading batch...</div>;
+  }
+
+  if (error || !batch) {
     return (
-      <div className="batch-loading">
-        Loading batch...
+      <div className="batch-list-error" role="alert">
+        {error || "Batch not found."}
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="batch-list-error">
-        {error}
-      </div>
-    );
-  }
-
-  if (!batch) {
-    return (
-      <div className="batch-list-error">
-        Batch not found.
-      </div>
-    );
-  }
-
-  const occupiedSeats =
-    Math.max(
-      batch.max_seats -
-        batch.available_seats,
-      0
-    );
+  const maxSeats = Number(batch.max_seats) || 0;
+  const availableSeats = Number(batch.available_seats) || 0;
+  const occupiedSeats = Math.max(maxSeats - availableSeats, 0);
 
   return (
     <div className="batch-page">
       <div className="batch-page-header">
         <div>
-          <h1>
-            View Batch
-          </h1>
-
-          <p>
-            Batch details.
-          </p>
+          <h1>View Batch</h1>
+          <p>Batch details.</p>
         </div>
 
         <Link
-          to={`/admin/batches/${id}/edit`}
+          to={`${basePath}/${id}/edit`}
           className="batch-add-button"
         >
           Edit Batch
@@ -118,103 +80,49 @@ const ViewBatch = () => {
       <div className="batch-card">
         <div className="batch-details">
           <div className="batch-detail-item">
-            <span>
-              Batch Name
-            </span>
-
-            <strong>
-              {
-                batch.batch_name
-              }
-            </strong>
+            <span>Batch Name</span>
+            <strong>{batch.batch_name || "—"}</strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Course
-            </span>
-
-            <strong>
-              {
-                batch.course_id
-                  ?.courseTitle ||
-                "—"
-              }
-            </strong>
+            <span>Course</span>
+            <strong>{batch.course_id?.courseTitle || "—"}</strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Maximum Seats
-            </span>
-
-            <strong>
-              {
-                batch.max_seats
-              }
-            </strong>
+            <span>Maximum Seats</span>
+            <strong>{maxSeats}</strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Available Seats
-            </span>
-
-            <strong>
-              {
-                batch.available_seats
-              }
-            </strong>
+            <span>Available Seats</span>
+            <strong>{availableSeats}</strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Occupied Seats
-            </span>
-
-            <strong>
-              {
-                occupiedSeats
-              }
-            </strong>
+            <span>Occupied Seats</span>
+            <strong>{occupiedSeats}</strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Status
-            </span>
-
-            <strong>
-              {
-                batch.status
-              }
-            </strong>
+            <span>Status</span>
+            <strong>{batch.status || "—"}</strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Created
-            </span>
-
+            <span>Created</span>
             <strong>
               {batch.createdAt
-                ? new Date(
-                    batch.createdAt
-                  ).toLocaleString()
+                ? new Date(batch.createdAt).toLocaleString()
                 : "—"}
             </strong>
           </div>
 
           <div className="batch-detail-item">
-            <span>
-              Updated
-            </span>
-
+            <span>Updated</span>
             <strong>
               {batch.updatedAt
-                ? new Date(
-                    batch.updatedAt
-                  ).toLocaleString()
+                ? new Date(batch.updatedAt).toLocaleString()
                 : "—"}
             </strong>
           </div>

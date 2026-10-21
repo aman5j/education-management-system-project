@@ -1,91 +1,70 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
 
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import BatchForm from "../../../components/batches/BatchForm";
-
 import { createBatch } from "../../../services/batchService";
 import { getCourses } from "../../../services/courseService";
 
 const AddBatch = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff/batches"
+    : "/admin/batches";
 
   const [courses, setCourses] = useState([]);
-  const [loadingCourses, setLoadingCourses] =
-    useState(true);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [courseError, setCourseError] =
-    useState("");
+  const [courseError, setCourseError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadCourses = async () => {
-  try {
-    setLoadingCourses(true);
-    setCourseError("");
+      try {
+        setLoadingCourses(true);
+        setCourseError("");
 
-    console.log("Fetching courses for Add Batch...");
+        const response = await getCourses({ page: 1, limit: 100 });
+        if (cancelled) return;
 
-    const response = await getCourses({
-      page: 1,
-      limit: 100,
-    });
+        const payload = response?.data?.data;
+        const courseList = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.courses)
+            ? payload.courses
+            : [];
 
-    console.log("Courses API response:", response);
+        setCourses(courseList);
 
-    // API response:
-    // {
-    //   success: true,
-    //   data: [...]
-    // }
-
-    const courseList = response?.data?.data ?? [];
-
-    console.log("Courses loaded:", courseList);
-
-    setCourses(Array.isArray(courseList) ? courseList : []);
-
-    if (!Array.isArray(courseList) || courseList.length === 0) {
-      setCourseError("No courses found. Please create a course first.");
-    }
-  } catch (error) {
-    console.error("Failed to load courses:", error);
-
-    setCourses([]);
-
-    setCourseError(
-      error?.response?.data?.message ||
-        "Unable to load courses."
-    );
-  } finally {
-    setLoadingCourses(false);
-  }
-};
+        if (courseList.length === 0) {
+          setCourseError("No courses found. Please create a course first.");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCourses([]);
+          setCourseError(
+            error?.response?.data?.message || "Unable to load courses."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingCourses(false);
+      }
+    };
 
     loadCourses();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSubmit = async (formData) => {
+    setSaving(true);
     try {
-      setSaving(true);
-
-      console.log(
-        "Creating batch with:",
-        formData
-      );
-
       await createBatch(formData);
-
-      navigate("/admin/batches");
-    } catch (error) {
-      console.error(
-        "Failed to create batch:",
-        error
-      );
-
-      throw error;
+      navigate(basePath, { replace: true });
     } finally {
       setSaving(false);
     }
@@ -96,17 +75,13 @@ const AddBatch = () => {
       <div className="batch-page-header">
         <div>
           <h1>Add Batch</h1>
-
-          <p>
-            Create a new batch for an existing
-            course.
-          </p>
+          <p>Create a new batch for an existing course.</p>
         </div>
       </div>
 
       <div className="batch-card">
         {courseError && (
-          <div className="batch-form-error">
+          <div className="batch-form-error" role="alert">
             {courseError}
           </div>
         )}

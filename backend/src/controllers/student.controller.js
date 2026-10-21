@@ -6,6 +6,28 @@ import Student from "../models/Student.js";
 import Course from "../models/Course.js";
 import Batch from "../models/Batch.js";
 
+
+
+const syncBatchAvailableSeats = async (batchId) => {
+  if (!batchId) return;
+
+  const batch = await Batch.findById(batchId);
+
+  if (!batch) return;
+
+  const assignedStudents = await Student.countDocuments({
+    batch_id: batch._id,
+  });
+
+  batch.available_seats = Math.max(
+    Number(batch.max_seats) - assignedStudents,
+    0
+  );
+
+  await batch.save();
+};
+
+
 // const createRollNumber =
 //   async () => {
 //     const latestStudent =
@@ -451,12 +473,14 @@ export const createStudent =
           });
         }
 
+        
         const batchDocument = await Batch.findOne({
           _id: batch_id,
           course_id,
         })
-          .select("_id batch_name course_id")
+          .select("_id batch_name course_id max_seats")
           .lean();
+
 
         if (!batchDocument) {
           return res.status(400).json({
@@ -465,6 +489,19 @@ export const createStudent =
               "Selected batch does not belong to the selected course.",
           });
         }
+
+        
+      const assignedStudents = await Student.countDocuments({
+        batch_id: batchDocument._id,
+      });
+
+      if (assignedStudents >= Number(batchDocument.max_seats)) {
+        return res.status(409).json({
+          success: false,
+          message: "This batch is full. Please select another batch.",
+        });
+      }
+
 
       const student =
         await Student.create({
@@ -538,6 +575,10 @@ export const createStudent =
           status:
             status || "active",
         });
+
+        
+      await syncBatchAvailableSeats(student.batch_id);
+
 
       return res.status(201).json({
         success: true,
@@ -734,14 +775,14 @@ export const updateStudent = async (req, res, next) => {
         message: "Selected course not found.",
       });
     }
+    
+    const batchDocument = await Batch.findOne({
+      _id: nextBatchId,
+      course_id: nextCourseId,
+    })
+      .select("_id batch_name course_id max_seats")
+      .lean();
 
-    const batchDocument =
-      await Batch.findOne({
-        _id: nextBatchId,
-        course_id: nextCourseId,
-      })
-        .select("_id batch_name course_id")
-        .lean();
 
     if (!batchDocument) {
       return res.status(400).json({
@@ -750,6 +791,29 @@ export const updateStudent = async (req, res, next) => {
           "Selected batch does not belong to the selected course.",
       });
     }
+
+    
+    const oldBatchId = student.batch_id
+      ? String(student.batch_id)
+      : "";
+
+    const newBatchId = String(batchDocument._id);
+
+    if (oldBatchId !== newBatchId) {
+      const assignedStudents = await Student.countDocuments({
+        batch_id: batchDocument._id,
+      });
+
+      if (assignedStudents >= Number(batchDocument.max_seats)) {
+        return res.status(409).json({
+          success: false,
+          message: "The selected batch is full. Please select another batch.",
+        });
+      }
+    }
+
+    // temp
+    // const previousBatchId = student.batch_id;
 
     student.course_id = courseDocument._id;
     student.batch_id = batchDocument._id;
@@ -794,6 +858,14 @@ export const updateStudent = async (req, res, next) => {
 
     await student.save();
 
+    
+    await syncBatchAvailableSeats(student.batch_id);
+
+    if (oldBatchId && oldBatchId !== String(student.batch_id)) {
+      await syncBatchAvailableSeats(oldBatchId);
+    }
+
+
     return res.status(200).json({
       success: true,
       message: "Student updated successfully",
@@ -820,7 +892,19 @@ export const deleteStudent =
         });
       }
 
+      
+    const previousBatchId = student.batch_id
+      ? String(student.batch_id)
+      : "";
+
+
       await student.deleteOne();
+
+    
+      if (previousBatchId) {
+        await syncBatchAvailableSeats(previousBatchId);
+      }
+
 
       return res.status(200).json({
         success: true,
