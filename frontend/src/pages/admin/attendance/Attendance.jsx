@@ -565,6 +565,7 @@ const Attendance = () => {
                           value={remarks[student._id] || ""}
                           placeholder="Optional"
                           maxLength={500}
+                          disabled={!canManageAttendance}
                           onChange={(event) =>
                             setRemarks((previous) => ({
                               ...previous,
