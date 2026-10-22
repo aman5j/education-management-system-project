@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -9,10 +10,8 @@ import {
   getStudentPaymentHistory,
 } from "../controllers/payment.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 import {
   createPaymentValidation,
@@ -21,74 +20,57 @@ import {
 
 import validationMiddleware from "../middleware/validationMiddleware.js";
 
-const router =
-  express.Router();
-
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
+const router = express.Router();
 
 router.use(authenticate);
 
-/*
-|--------------------------------------------------------------------------
-| GET
-|
-| Admin → all payments
-| Student → own payments only
-|--------------------------------------------------------------------------
-*/
+// Students may use read endpoints, but the controller must
+// enforce ownership. Admins and authorized Staff use permissions.
+const requirePaymentRead = (req, res, next) => {
+  if (req.user?.role === "student") {
+    return next();
+  }
 
-router.get(
-  "/",
-  authorizeRoles(
-    "admin",
-    "student"
-  ),
-  getPayments
-);
+  return requirePermission("payments.view")(req, res, next);
+};
 
+// Payment list
+router.get("/", requirePaymentRead, getPayments);
+
+// Student payment history:
+// - Students can access only their own history (controller check).
+// - Admin/Staff must have payments.view.
 router.get(
   "/student/:studentId",
+  requirePaymentRead,
   getStudentPaymentHistory
 );
 
-router.get(
-  "/:id",
-  authorizeRoles(
-    "admin",
-    "student"
-  ),
-  getPayment
-);
+// Single payment details
+router.get("/:id", requirePaymentRead, getPayment);
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN ONLY
-|--------------------------------------------------------------------------
-*/
-
+// Create payment: Admin or Staff with payments.manage
 router.post(
   "/",
-  authorizeRoles("admin"),
+  requirePermission("payments.manage"),
   createPaymentValidation,
   validationMiddleware,
   createPayment
 );
 
+// Update payment: Admin or Staff with payments.manage
 router.put(
   "/:id",
-  authorizeRoles("admin"),
+  requirePermission("payments.manage"),
   updatePaymentValidation,
   validationMiddleware,
   updatePayment
 );
 
+// Delete payment: Admin or Staff with payments.manage
 router.delete(
   "/:id",
-  authorizeRoles("admin"),
+  requirePermission("payments.manage"),
   deletePayment
 );
 
