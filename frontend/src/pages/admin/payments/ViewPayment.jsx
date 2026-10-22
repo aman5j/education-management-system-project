@@ -5,6 +5,7 @@ import {
 
 import {
   Link,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
@@ -27,10 +28,25 @@ import {
   getAssetUrl,
 } from "../../../utils/assetUrl";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import "../../../styles/PaymentManagement.css";
 
 const ViewPayment = () => {
   const { id } = useParams();
+
+  const { user } = useAuth();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
+
+  const canManagePayments = hasPermission(
+    user,
+    "payments.manage"
+  );
 
   const [payment, setPayment] =
     useState(null);
@@ -255,7 +271,7 @@ const ViewPayment = () => {
         </div>
 
         <Link
-          to="/admin/payments"
+          to={`${basePath}/payments`}
           className="payment-secondary-button"
         >
           <FiArrowLeft />
@@ -280,7 +296,7 @@ const ViewPayment = () => {
       <div className="payment-page-header">
         <div>
           <div className="payment-back-link">
-            <Link to="/admin/payments">
+            <Link to={`${basePath}/payments`}>
               <FiArrowLeft />
               Back to Payments
             </Link>
@@ -311,13 +327,15 @@ const ViewPayment = () => {
             </button>
           )}
 
-          <Link
-            to={`/admin/payments/${payment._id}/edit`}
-            className="payment-secondary-button"
-          >
-            <FiEdit />
-            Edit Payment
-          </Link>
+            {canManagePayments && (
+            <Link
+              to={`${basePath}/payments/${payment._id}/edit`}
+              className="payment-secondary-button"
+            >
+              <FiEdit />
+              Edit Payment
+            </Link>
+          )}
         </div>
       </div>
 
@@ -728,7 +746,7 @@ const ViewPayment = () => {
 
       <div className="payment-bottom-actions">
         <Link
-          to="/admin/payments"
+          to={`${basePath}/payments`}
           className="payment-secondary-button"
         >
           <FiArrowLeft />
