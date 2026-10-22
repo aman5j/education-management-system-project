@@ -199,26 +199,8 @@ const Attendance = () => {
     });
     };
 
-  const generateTestQR = async () => {
-    if (!qrStudentId) {
-        setQrError("Please select a student.");
-        return;
-    }
 
-    try {
-        const qrText = `EMS-STUDENT:${qrStudentId}`;
-        const image = await QRCode.toDataURL(qrText, {
-        width: 280,
-        margin: 2,
-        });
-
-        setQrImage(image);
-        setQrError("");
-    } catch {
-        setQrError("Unable to generate the QR code.");
-        setQrImage("");
-    }
-    };
+    
 
   const handleSave = async () => {
     if (!courseId || !batchId || !date) {
