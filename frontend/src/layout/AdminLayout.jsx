@@ -1,20 +1,14 @@
-import {
-  useEffect,
-  useState,
-} from "react";
 
-import {
-  Outlet,
-  useLocation,
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import StaffRouteGuard from "../components/auth/StaffRouteGuard";
 
 import "./AdminLayout.css";
 
-const SIDEBAR_STORAGE_KEY =
-  "ems_admin_sidebar_collapsed";
+const SIDEBAR_STORAGE_KEY = "ems_admin_sidebar_collapsed";
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -25,31 +19,16 @@ const AdminLayout = () => {
     ? "/staff/dashboard"
     : "/admin/dashboard";
 
-  const [
-    collapsed,
-    setCollapsed,
-  ] = useState(() => {
-    const stored =
-      localStorage.getItem(
-        SIDEBAR_STORAGE_KEY
-      );
-
+  const [collapsed, setCollapsed] = useState(() => {
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
     return stored === "true";
   });
 
-  const [
-    mobileSidebarOpen,
-    setMobileSidebarOpen,
-  ] = useState(false);
-
-  const [openMenus, setOpenMenus] =
-    useState({});
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState({});
 
   useEffect(() => {
-    localStorage.setItem(
-      SIDEBAR_STORAGE_KEY,
-      String(collapsed)
-    );
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
   }, [collapsed]);
 
   useEffect(() => {
@@ -59,46 +38,34 @@ const AdminLayout = () => {
       }
     };
 
-    window.addEventListener(
-      "resize",
-      handleResize
-    );
+    window.addEventListener("resize", handleResize);
 
-    return () =>
-      window.removeEventListener(
-        "resize",
-        handleResize
-      );
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow =
-      mobileSidebarOpen
-        ? "hidden"
-        : "";
+    document.body.style.overflow = mobileSidebarOpen ? "hidden" : "";
 
     return () => {
-      document.body.style.overflow =
-        "";
+      document.body.style.overflow = "";
     };
   }, [mobileSidebarOpen]);
 
-  const handleToggleMenu = (
-    menuLabel
-  ) => {
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
+
+  const handleToggleMenu = (menuLabel) => {
     setOpenMenus((previous) => ({
       ...previous,
-      [menuLabel]:
-        !previous[menuLabel],
+      [menuLabel]: !previous[menuLabel],
     }));
   };
 
   return (
     <div
       className={`admin-layout ${
-        collapsed
-          ? "admin-layout-collapsed"
-          : ""
+        collapsed ? "admin-layout-collapsed" : ""
       }`}
     >
       <Sidebar
@@ -118,10 +85,20 @@ const AdminLayout = () => {
         />
 
         <main className="admin-content">
-          <Outlet />
+          {isStaffPortal ? (
+            <StaffRouteGuard>
+              <Outlet />
+            </StaffRouteGuard>
+          ) : (
+            <Outlet />
+          )}
         </main>
+
         <footer className="footer">
-          <p>&copy; 2026 <a href="#">India Tech Samadhaan</a> All rights reserved.</p>
+          <p>
+            &copy; 2026{" "}
+            <a href="#">India Tech Samadhaan</a> All rights reserved.
+          </p>
         </footer>
       </div>
     </div>
