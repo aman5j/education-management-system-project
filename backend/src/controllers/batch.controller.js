@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import Batch from "../models/Batch.js";
 import Course from "../models/Course.js";
 import Student from "../models/Student.js";
+import StudentAdmission from "../models/StudentAdmission.js";
 
 const escapeRegex = (value = "") =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -64,7 +65,6 @@ export const getBatches = async (req, res, next) => {
     const allowedSortFields = [
       "batch_name",
       "max_seats",
-      "available_seats",
       "status",
       "createdAt",
       "updatedAt",
@@ -200,10 +200,10 @@ export const createBatch = async (req, res, next) => {
     const normalizedName = String(batch_name || "").trim();
     const maximumSeats = Number(max_seats);
 
-    if (!normalizedName) {
+    if (normalizedName.length < 2 || normalizedName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: "Batch name is required.",
+        message: "Batch name must be between 2 and 100 characters.",
       });
     }
 
@@ -233,9 +233,17 @@ export const createBatch = async (req, res, next) => {
       });
     }
 
+    const escapedName = normalizedName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
     const existingBatch = await Batch.findOne({
       course_id,
-      batch_name: normalizedName,
+      batch_name: {
+        $regex: `^${escapedName}$`,
+        $options: "i",
+      },
     });
 
     if (existingBatch) {
@@ -290,10 +298,10 @@ export const updateBatch = async (req, res, next) => {
     const normalizedName = String(batch_name || "").trim();
     const newMaxSeats = Number(max_seats);
 
-    if (!normalizedName) {
+    if (normalizedName.length < 2 || normalizedName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: "Batch name is required.",
+        message: "Batch name must be between 2 and 100 characters.",
       });
     }
 
@@ -332,10 +340,18 @@ export const updateBatch = async (req, res, next) => {
       });
     }
 
+    const escapedName = normalizedName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
     const duplicateBatch = await Batch.findOne({
       _id: { $ne: id },
       course_id,
-      batch_name: normalizedName,
+      batch_name: {
+        $regex: `^${escapedName}$`,
+        $options: "i",
+      },
     });
 
     if (duplicateBatch) {
@@ -345,15 +361,22 @@ export const updateBatch = async (req, res, next) => {
       });
     }
 
-    const assignedStudents = await getAssignedStudentCount(batch._id);
+    const [assignedStudents, assignedAdmissions] = await Promise.all([
+      getAssignedStudentCount(batch._id),
+      StudentAdmission.countDocuments({ batch_id: batch._id }),
+    ]);
+
     const currentCourseId = String(batch.course_id);
     const newCourseId = String(course._id);
 
-    if (assignedStudents > 0 && currentCourseId !== newCourseId) {
+    if (
+      currentCourseId !== newCourseId &&
+      (assignedStudents > 0 || assignedAdmissions > 0)
+    ) {
       return res.status(400).json({
         success: false,
         message:
-          "This batch cannot be moved to another course while students are assigned to it. Reassign the students first.",
+          `This batch cannot be moved to another course because it is referenced by ${assignedStudents} student(s) and ${assignedAdmissions} admission(s). Reassign or resolve those records first.`,
       });
     }
 
@@ -409,13 +432,16 @@ export const deleteBatch = async (req, res, next) => {
       });
     }
 
-    const assignedStudents = await getAssignedStudentCount(batch._id);
+    const [assignedStudents, assignedAdmissions] = await Promise.all([
+      getAssignedStudentCount(batch._id),
+      StudentAdmission.countDocuments({ batch_id: batch._id }),
+    ]);
 
-    if (assignedStudents > 0) {
+    if (assignedStudents > 0 || assignedAdmissions > 0) {
       return res.status(400).json({
         success: false,
         message:
-          `This batch cannot be deleted because ${assignedStudents} student(s) are assigned to it. Reassign or remove those students first.`,
+          `This batch cannot be deleted because it is referenced by ${assignedStudents} student(s) and ${assignedAdmissions} admission(s). Reassign or remove those records first.`,
       });
     }
 
