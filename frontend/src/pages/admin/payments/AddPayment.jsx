@@ -3,6 +3,7 @@ import {
 } from "react";
 
 import {
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -16,6 +17,11 @@ import {
 const AddPayment = () => {
   const navigate =
     useNavigate();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [
     saving,
@@ -31,9 +37,7 @@ const AddPayment = () => {
           formData
         );
 
-        navigate(
-          "/admin/payments"
-        );
+         navigate(`${basePath}/payments`);
       } catch (error) {
         console.error(
           "Create payment error:",

@@ -1,7 +1,7 @@
 
 
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   FiPlus,
   FiRefreshCw,
@@ -20,6 +20,9 @@ import {
   getExpenseSummary,
   deleteExpense,
 } from "../../../services/expenseService";
+
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
 
 import "../../../styles/ExpenseManagement.css";
 
@@ -65,6 +68,15 @@ const Expenses = () => {
     page: 1, total: 0, totalPages: 1,
   });
 
+  const location = useLocation();
+  const { user } = useAuth();
+
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
+
+  const canManageExpenses = hasPermission(user, "expenses.manage");
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -87,7 +99,14 @@ const Expenses = () => {
     try {
       const [listResponse, summaryResponse] = await Promise.all([
         getExpenses(params),
-        getExpenseSummary(),
+        getExpenseSummary({
+          search: search.trim(),
+          category,
+          status,
+          paymentMethod,
+          from,
+          to,
+        }),
       ]);
 
       const data = listResponse?.data?.data;
@@ -143,9 +162,11 @@ const Expenses = () => {
           <p>Track institute spending and manage expense records.</p>
         </div>
 
-        <Link to="/admin/expenses/add" className="expense-primary-button">
+        {canManageExpenses && (
+        <Link to={`${basePath}/expenses/add`} className="expense-primary-button">
           <FiPlus /> Add Expense
         </Link>
+        )}
       </div>
 
       <div className="expense-summary-grid">
@@ -342,22 +363,27 @@ const Expenses = () => {
                         </span>
                         )}
 
-                        <Link
-                        to={`/admin/expenses/${expense._id}/edit`}
-                        title="Edit expense"
-                        aria-label="Edit expense"
-                        >
-                        <FiEdit2 />
-                        </Link>
+                        {canManageExpenses && (
+                          <>
+                            <Link
+                              to={`${basePath}/expenses/${expense._id}/edit`}
+                              title="Edit expense"
+                              aria-label={`Edit expense ${expense.title}`}
+                            >
+                              <FiEdit2 />
+                            </Link>
 
-                        <button
-                        type="button"
-                        title="Delete expense"
-                        aria-label="Delete expense"
-                        onClick={() => handleDelete(expense)}
-                        >
-                        <FiTrash2 />
-                        </button>
+                            <button
+                              type="button"
+                              title="Delete expense"
+                              aria-label={`Delete expense ${expense.title}`}
+                              onClick={() => handleDelete(expense)}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </>
+                        )}
+
                     </div>
                     </td>
 

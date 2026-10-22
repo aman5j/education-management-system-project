@@ -5,6 +5,7 @@ import {
 
 import {
   Link,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
@@ -33,6 +34,11 @@ import "../../../styles/PaymentManagement.css";
 
 const StudentPaymentHistory = () => {
   const { studentId } = useParams();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [student, setStudent] =
     useState(null);
@@ -937,7 +943,7 @@ const handleShareWhatsApp = () => {
         </div>
 
         <Link
-          to="/admin/students"
+          to={`${basePath}/students`}
           className="payment-secondary-button"
         >
           <FiArrowLeft />
@@ -1240,7 +1246,7 @@ const handleShareWhatsApp = () => {
                         <div className="payment-action-buttons">
                         {/* View Payment */}
                           <Link
-                            to={`/admin/payments/${payment._id}`}
+                            to={`${basePath}/payments/${payment._id}`}
                             className="payment-action-button"
                             title="View Payment"
                           >

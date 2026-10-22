@@ -9,24 +9,45 @@ import {
   deleteExam,
 } from "../controllers/exam.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
-// Every exam endpoint requires authentication and admin access.
 router.use(authenticate);
-router.use(authorizeRoles("admin"));
 
-router.route("/")
-  .get(getExams)
-  .post(createExam);
+// Read exams
+router.get(
+  "/",
+  requirePermission("exams.view"),
+  getExams
+);
 
-router.route("/:id")
-  .get(getExamById)
-  .patch(updateExam)
-  .delete(deleteExam);
+router.get(
+  "/:id",
+  requirePermission("exams.view"),
+  getExamById
+);
+
+// Create an exam
+router.post(
+  "/",
+  requirePermission("exams.create"),
+  createExam
+);
+
+// Update an exam
+router.patch(
+  "/:id",
+  requirePermission("exams.update"),
+  updateExam
+);
+
+// Delete an exam
+router.delete(
+  "/:id",
+  requirePermission("exams.delete"),
+  deleteExam
+);
 
 export default router;

@@ -413,6 +413,24 @@ const App = () => {
           }
         />
 
+        {/* Payments — access is checked by StaffRouteGuard */}
+        <Route path="payments" element={<Payments />} />
+        <Route path="payments/add" element={<AddPayment />} />
+        <Route path="payments/:id" element={<ViewPayment />} />
+        <Route path="payments/:id/edit" element={<EditPayment />} />
+
+        <Route
+          path="students/:studentId/payments"
+          element={<StudentPaymentHistory />}
+        />
+
+
+
+        {/* Expenses — StaffRouteGuard checks the required permission */}
+        <Route path="expenses" element={<Expenses />} />
+        <Route path="expenses/add" element={<AddExpense />} />
+        <Route path="expenses/:id/edit" element={<EditExpense />} />
+
 
          {/* Reports */}
         {/* <Route path="reports" element={<Reports />} />

@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExpenseForm from "../../../components/expenses/ExpenseForm";
 import { getExpense, updateExpense } from "../../../services/expenseService";
 import "../../../styles/ExpenseManagement.css";
@@ -8,6 +7,12 @@ import "../../../styles/ExpenseManagement.css";
 const EditExpense = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
+
   const [expense, setExpense] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,6 +25,7 @@ const EditExpense = () => {
       try {
         setLoading(true);
         setError("");
+
         const response = await getExpense(id);
 
         if (active) {
@@ -37,18 +43,25 @@ const EditExpense = () => {
     };
 
     loadExpense();
-    return () => { active = false; };
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const handleSubmit = async (data) => {
     setSaving(true);
+    setError("");
+
     try {
       await updateExpense(id, data);
-      navigate("/admin/expenses");
+      navigate(`${basePath}/expenses`, { replace: true });
     } catch (err) {
-      throw new Error(
-        err?.response?.data?.message || "Unable to update expense."
-      );
+      const message =
+        err?.response?.data?.message || "Unable to update expense.";
+
+      setError(message);
+      throw new Error(message);
     } finally {
       setSaving(false);
     }
@@ -58,8 +71,8 @@ const EditExpense = () => {
     return <div className="expense-state">Loading expense...</div>;
   }
 
-  if (error) {
-    return <div className="expense-alert">{error}</div>;
+  if (error && !expense) {
+    return <div className="expense-alert" role="alert">{error}</div>;
   }
 
   if (!expense) {
@@ -74,6 +87,8 @@ const EditExpense = () => {
           <p>Update the selected expense record.</p>
         </div>
       </div>
+
+      {error && <div className="expense-alert" role="alert">{error}</div>}
 
       <ExpenseForm
         initialData={expense}

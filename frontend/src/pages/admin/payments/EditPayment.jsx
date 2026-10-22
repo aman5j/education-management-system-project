@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import {
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
@@ -23,6 +24,11 @@ const EditPayment = () => {
 
   const navigate =
     useNavigate();
+
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const [
     payment,
@@ -87,9 +93,8 @@ const EditPayment = () => {
           formData
         );
 
-        navigate(
-          `/admin/payments/${id}`
-        );
+          navigate(`${basePath}/payments/${id}`);
+          
       } catch (submitError) {
         throw new Error(
           submitError?.response
