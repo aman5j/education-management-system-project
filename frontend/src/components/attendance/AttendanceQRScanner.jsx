@@ -18,6 +18,7 @@ const AttendanceQRScanner = ({
   const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
@@ -145,6 +146,7 @@ const AttendanceQRScanner = ({
     }
 
     startingRef.current = true;
+    setStarting(true);
     setError("");
     setMessage("");
 
@@ -207,6 +209,10 @@ const AttendanceQRScanner = ({
       }
     } finally {
       startingRef.current = false;
+
+      if (mountedRef.current) {
+        setStarting(false);
+      }
     }
   };
 
@@ -226,9 +232,9 @@ const AttendanceQRScanner = ({
             type="button"
             className="attendance-primary-button"
             onClick={startScanner}
-            disabled={startingRef.current}
+            disabled={starting || scanning}
           >
-            {startingRef.current ? "Starting..." : "Start Scanner"}
+            {starting ? "Starting..." : "Start Scanner"}
           </button>
         ) : (
           <button
