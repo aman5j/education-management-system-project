@@ -4,6 +4,9 @@ import { getBatches } from "../../../services/batchService";
 // import { getStudents } from "../../../services/studentService";
 import { getAttendanceRoster } from "../../../services/studentService";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import {
   getAttendance,
   createAttendance,
@@ -37,6 +40,38 @@ const getList = (response, keys = []) => {
 const getId = (value) =>
   typeof value === "object" ? value?._id : value;
 
+
+const getAllAttendanceRecords = async (params) => {
+  const allRecords = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await getAttendance({
+      ...params,
+      page,
+      limit: 100,
+    });
+
+    const payload =
+      response?.data?.data ?? response?.data ?? {};
+
+    const records = Array.isArray(payload.records)
+      ? payload.records
+      : [];
+
+    allRecords.push(...records);
+    totalPages = Math.max(
+      Number(payload.pagination?.totalPages) || 1,
+      1
+    );
+
+    page += 1;
+  } while (page <= totalPages);
+
+  return allRecords;
+};
+
 const Attendance = () => {
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -58,6 +93,13 @@ const Attendance = () => {
   const [historyRecords, setHistoryRecords] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
+
+  const { user } = useAuth();
+  const canManageAttendance = hasPermission(
+    user,
+    "attendance.manage"
+  );
 
 
   useEffect(() => {
@@ -111,25 +153,25 @@ const Attendance = () => {
       //   }),
       // ]);
 
-      const [studentResponse, attendanceResponse] = await Promise.all([
-          getAttendanceRoster({
-            course_id: courseId,
-            batch_id: batchId,
-          }),
-          getAttendance({
-            course_id: courseId,
-            batch_id: batchId,
-            date,
-            page: 1,
-            limit: 500,
-          }),
-        ]);
+      const [studentResponse, attendanceList] = await Promise.all([
+        getAttendanceRoster({
+          course_id: courseId,
+          batch_id: batchId,
+        }),
+        getAllAttendanceRecords({
+          course_id: courseId,
+          batch_id: batchId,
+          date,
+        }),
+      ]);
 
       const studentList = getList(studentResponse, ["students"]);
-      const attendanceList = getList(attendanceResponse, ["records"]);
 
       setStudents(studentList);
       setRecords(attendanceList);
+
+      // setStudents(studentList);
+      // setRecords(attendanceList);
 
       const nextStatuses = {};
       const nextRemarks = {};
@@ -199,26 +241,8 @@ const Attendance = () => {
     });
     };
 
-  const generateTestQR = async () => {
-    if (!qrStudentId) {
-        setQrError("Please select a student.");
-        return;
-    }
 
-    try {
-        const qrText = `EMS-STUDENT:${qrStudentId}`;
-        const image = await QRCode.toDataURL(qrText, {
-        width: 280,
-        margin: 2,
-        });
 
-        setQrImage(image);
-        setQrError("");
-    } catch {
-        setQrError("Unable to generate the QR code.");
-        setQrImage("");
-    }
-    };
 
   const handleSave = async () => {
     if (!courseId || !batchId || !date) {
@@ -279,10 +303,15 @@ const Attendance = () => {
       setMessage("Attendance saved successfully.");
       await loadAttendance();
     } catch (err) {
-      setError(
+    const errorMessage =
         err?.response?.data?.message ||
-          "Attendance could not be fully saved. Reload records before retrying."
-      );
+        "Attendance could not be fully saved. Existing records have been reloaded; review them before retrying.";
+
+      try {
+        await loadAttendance();
+      } finally {
+        setError(errorMessage);
+      }
     } finally {
       setSaving(false);
     }
@@ -316,9 +345,13 @@ const Attendance = () => {
     if (historyFrom) params.from = historyFrom;
     if (historyTo) params.to = historyTo;
 
-    const response = await getAttendance(params);
+    // const response = await getAttendance(params);
 
-    setHistoryRecords(getList(response, ["records"]));
+    // setHistoryRecords(getList(response, ["records"]));
+
+    const allHistoryRecords = await getAllAttendanceRecords(params);
+    setHistoryRecords(allHistoryRecords);
+
   } catch (err) {
     setHistoryError(
       err?.response?.data?.message ||
@@ -338,14 +371,17 @@ const Attendance = () => {
           <p>Record and review daily student attendance.</p>
         </div>
 
-        <button
-          type="button"
-          className="attendance-primary-button"
-          onClick={handleSave}
-          disabled={saving || loading || !students.length}
-        >
-          {saving ? "Saving..." : "Save Attendance"}
-        </button>
+        {canManageAttendance && (
+          <button
+            type="button"
+            className="attendance-primary-button"
+            onClick={handleSave}
+            disabled={saving || loading || !students.length}
+          >
+            {saving ? "Saving..." : "Save Attendance"}
+          </button>
+        )}
+
       </div>
 
       <section className="attendance-card">
@@ -439,7 +475,7 @@ const Attendance = () => {
           </div>
         ) : (
           <>
-            <div className="attendance-bulk-actions">
+            {/* <div className="attendance-bulk-actions">
                 <span>{students.length} students</span>
 
                 <div>
@@ -455,7 +491,27 @@ const Attendance = () => {
                     Clear all
                     </button>
                 </div>
-            </div>
+            </div> */}
+
+            {canManageAttendance && (
+              <div className="attendance-bulk-actions">
+                <span>{students.length} students</span>
+
+                <div>
+                  <button type="button" onClick={() => markAll("Present")}>
+                    ✓ Mark all present
+                  </button>
+
+                  <button type="button" onClick={() => markAll("Absent")}>
+                    ✕ Mark all absent
+                  </button>
+
+                  <button type="button" onClick={clearAll}>
+                    Clear all
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="attendance-table-wrapper">
               <table className="attendance-table">
@@ -490,6 +546,7 @@ const Attendance = () => {
                                 name={`attendance-${student._id}`}
                                 value={status}
                                 checked={statuses[student._id] === status}
+                                disabled={!canManageAttendance}
                                 onChange={() =>
                                     setStatuses((previous) => ({
                                     ...previous,
@@ -525,14 +582,16 @@ const Attendance = () => {
         )}
       </section>
 
-      <AttendanceQRScanner
-        courseId={courseId}
-        batchId={batchId}
-        date={date}
-        onSuccess={async () => {
+      {canManageAttendance && (
+        <AttendanceQRScanner
+          courseId={courseId}
+          batchId={batchId}
+          date={date}
+          onSuccess={async () => {
             await loadAttendance();
-        }}
+          }}
         />
+      )}
 
       <section className="attendance-card attendance-history-card">
         <div className="attendance-history-heading">
