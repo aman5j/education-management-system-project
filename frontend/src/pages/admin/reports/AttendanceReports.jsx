@@ -10,11 +10,22 @@ import {
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { FaUserClock } from "react-icons/fa";
+import { MdOutlineGraphicEq } from "react-icons/md";
+import { FaFilePdf } from "react-icons/fa";
+import { RiFileExcel2Line } from "react-icons/ri";
+
+
+
+
 
 import { getAttendanceReport } from "../../../services/attendanceReportService";
 import { getCourses } from "../../../services/courseService";
 import { getBatches } from "../../../services/batchService";
 import { getStudents } from "../../../services/studentService";
+import { FaUserFriends, FaUserTimes } from "react-icons/fa";
+import { FaUserCheck } from "react-icons/fa6";
+
 
 import "../../../styles/AttendanceReports.css";
 
@@ -397,45 +408,18 @@ const AttendanceReports = () => {
 
   return (
     <div className="attendance-reports-page">
-      <div className="attendance-reports-header">
-        <div>
-          <span className="attendance-reports-eyebrow">
-            ACADEMIC REPORTS
-          </span>
-          <h1>Attendance Reports</h1>
-          <p>
-            Analyze attendance records, student participation and
-            attendance status.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="attendance-report-secondary-button"
-          onClick={handleRefresh}
-          disabled={loading}
-        >
-          <FiRefreshCw /> Refresh
-        </button>
-      </div>
-
+<div class="page-header"><div><h1>Attendance Report</h1></div></div>
       {error && (
         <div className="attendance-report-alert" role="alert">
           {error}
         </div>
       )}
 
-      <section className="attendance-report-filter-card">
-        <div className="attendance-report-section-heading">
-          <div>
-            <h2>Filter Report</h2>
-            <p>Choose dates, course, batch, student or attendance status.</p>
-          </div>
-        </div>
 
-        <div className="attendance-report-filters">
+        <div className="common-card-filters">
+          <div className="input-search noicon">
           <label>
-            From Date
+            From Date </label>
             <input
               type="date"
               name="from"
@@ -443,10 +427,12 @@ const AttendanceReports = () => {
               max={filters.to || undefined}
               onChange={handleChange}
             />
-          </label>
-
+            </div>
+         
+<div className="input-search noicon">
           <label>
             To Date
+            </label>
             <input
               type="date"
               name="to"
@@ -454,10 +440,13 @@ const AttendanceReports = () => {
               min={filters.from || undefined}
               onChange={handleChange}
             />
-          </label>
+         
+          </div>
 
+<div className="input-search ">
           <label>
             Course
+             </label>
             <select
               name="course_id"
               value={filters.course_id}
@@ -471,10 +460,13 @@ const AttendanceReports = () => {
                 </option>
               ))}
             </select>
-          </label>
+         
+          </div>
 
+<div className="input-search ">
           <label>
             Batch
+             </label>
             <select
               name="batch_id"
               value={filters.batch_id}
@@ -488,10 +480,13 @@ const AttendanceReports = () => {
                 </option>
               ))}
             </select>
-          </label>
+         
+          </div>
 
+<div className="input-search">
           <label>
             Student
+            </label>
             <select
               name="student_id"
               value={filters.student_id}
@@ -506,10 +501,12 @@ const AttendanceReports = () => {
                 </option>
               ))}
             </select>
-          </label>
-
+          
+</div>
+<div className="input-search ">
           <label>
             Attendance Status
+             </label>
             <select
               name="status"
               value={filters.status}
@@ -522,101 +519,187 @@ const AttendanceReports = () => {
                 </option>
               ))}
             </select>
-          </label>
-
-          <div className="attendance-report-filter-actions">
+         
+    </div>
+          <div className="student-filter-actions">
             <button
               type="button"
-              className="attendance-report-primary-button"
+              className="themebtn"
               onClick={handleApply}
               disabled={loading}
             >
-              <FiSearch /> Apply
+             
+               Apply Filter
             </button>
 
-            <button
+            <button className="themebtn themebtnline"
               type="button"
-              className="attendance-report-secondary-button"
               onClick={handleReset}
               disabled={loading}
             >
+              < FiRefreshCw />
               Reset
             </button>
           </div>
         </div>
-      </section>
+     
 
       <section className="attendance-report-summary-grid">
-        <article className="attendance-report-summary-card">
-          <span>Total Records</span>
-          <strong>{summary.totalRecords || 0}</strong>
-          <small>Matching attendance entries</small>
-        </article>
-        <article className="attendance-report-summary-card">
-          <span>Present</span>
-          <strong>{summary.present || 0}</strong>
-          <small>Marked present</small>
-        </article>
-        <article className="attendance-report-summary-card">
-          <span>Absent</span>
-          <strong>{summary.absent || 0}</strong>
-          <small>Marked absent</small>
-        </article>
-        <article className="attendance-report-summary-card">
-          <span>Leave</span>
-          <strong>{summary.leave || 0}</strong>
-          <small>Marked on leave</small>
-        </article>
-        <article className="attendance-report-summary-card">
-          <span>Late</span>
-          <strong>{summary.late || 0}</strong>
-          <small>Marked late</small>
-        </article>
-        <article className="attendance-report-summary-card">
-          <span>Attendance Percentage</span>
-          <strong>{formatPercentage(summary.attendancePercentage)}</strong>
-          <small>Present ÷ recorded entries</small>
-        </article>
+      
+      <div className="dashboard-stat-card card-purple">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-purple">
+                   <FaUserFriends /> 
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title"> Total Records</span>
+                     
+                       <strong class="stat-card-value">
+                  {summary.totalRecords || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+          <div className="dashboard-stat-card card-success">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-success">
+                  <FaUserCheck />
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title"> Present</span>
+                     
+                       <strong class="stat-card-value">
+                  {summary.present || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+      
+            <div className="dashboard-stat-card card-danger">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-danger">
+                  <FaUserTimes />
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title"> Absent</span>
+                     
+                       <strong class="stat-card-value">
+                  {summary.absent || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+               
+
+                  <div className="dashboard-stat-card card-warning">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-warning">
+                 <FaUserClock />
+
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title">Late</span>
+                       <strong class="stat-card-value">
+                 {summary.late || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+ <div className="dashboard-stat-card card-bluewarning">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-bluewarning">
+                  <FaUserTimes />
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title">Leave</span>
+
+                       <strong class="stat-card-value">
+                  {summary.leave || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+                 <div className="dashboard-stat-card card-bluewarning">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-bluewarning">
+                 <MdOutlineGraphicEq />
+
+ 
+
+                   </div> 
+                   </div>
+        
+         <div className="stat-card-body">
+                      <span class="stat-card-title">Attendance Percentage
+</span>
+
+                       <strong class="stat-card-value">
+                 {formatPercentage(summary.attendancePercentage)}
+                  </strong>
+                    </div>
+                 
+                 
+                </div>
+
+
+
+       
       </section>
 
-      <section className="attendance-report-card">
-        <div className="attendance-report-section-heading attendance-report-table-heading">
-          <div>
-            <h2>Attendance Records</h2>
-            <p>
-              {pagination.total || 0} matching records
-              {pagination.totalPages > 0
-                ? ` · Page ${pagination.page} of ${pagination.totalPages}`
-                : ""}
-            </p>
-          </div>
-
-          <div className="attendance-report-export-actions">
+      <section className="common-card">
+        <div class="panel-header"><div><h3>Attendance Records </h3> </div>
+         <div className="attendance-report-export-actions">
             <button
               type="button"
-              className="attendance-report-secondary-button"
+              className="themebtn exceldownload"
               onClick={exportExcel}
               disabled={!records.length}
             >
-              <FiDownload /> Excel
+              <RiFileExcel2Line /> Excel
             </button>
             <button
               type="button"
-              className="attendance-report-secondary-button"
+              className="themebtn pdfdownload "
               onClick={exportPDF}
               disabled={!records.length}
             >
-              <FiFileText /> PDF
+              <FaFilePdf /> PDF
             </button>
             <button
               type="button"
-              className="attendance-report-secondary-button"
+              className="themebtn"
               onClick={() => window.print()}
             >
               <FiPrinter /> Print
             </button>
           </div>
         </div>
+       
 
         {loading ? (
           <div className="attendance-report-state">
@@ -627,30 +710,42 @@ const AttendanceReports = () => {
             No attendance records match the selected filters.
           </div>
         ) : (
-          <div className="attendance-report-table-wrapper">
-            <table className="attendance-report-table">
+          <div className="common-table-wrapper">
+            <table className="common-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Roll No.</th>
-                  <th>Student</th>
+                 
+                  <th>Student/Roll No.</th>
+                   <th>Date</th>
+                  {/* <th>Student</th> */}
+                  <th>Attendance Status</th>
                   <th>Course</th>
-                  <th>Batch</th>
-                  <th>Status</th>
+                  {/* <th>Batch</th> */}
+                  
                   <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
                 {records.map((record) => (
                   <tr key={record._id}>
-                    <td>{formatDate(record.attendance_date)}</td>
-                    <td>{record.student_id?.rollNo || "-"}</td>
-                    <td>
-                      <strong>{getStudentName(record.student_id)}</strong>
+                    
+                    <td className="batch-name-cell">
+
+                      <div class="student-name-cell">
+                        <div class="student-avatar-wrapper">
+                          <img alt="Aman Prajapati" class="student-avatar" src="https://education-management-backend-79g1.onrender.com/uploads/students/1790327763958-my-image-portfolio-office--1-.png" />
+                          </div>
+                          <div>
+                            <strong>{getStudentName(record.student_id)}  </strong>
+                             
+                            <label className="student-roll">{record.student_id?.rollNo || "-"}</label>
+                            </div></div>
+
+                    
                     </td>
-                    <td>{record.course_id?.courseTitle || "-"}</td>
-                    <td>{record.batch_id?.batch_name || "-"}</td>
-                    <td>
+                    <td><span className="batchtag">{formatDate(record.attendance_date)}</span> </td>
+
+<td>
                       <span
                         className={`attendance-report-status ${(record.status || "")
                           .toLowerCase()}`}
@@ -658,6 +753,11 @@ const AttendanceReports = () => {
                         {record.status || "-"}
                       </span>
                     </td>
+                    <td>{record.course_id?.courseTitle || "-"} <br></br>
+                      <span className="batchtag">{record.batch_id?.batch_name || "-"}</span>
+                    </td>
+                   
+                    
                     <td>{record.remarks || "-"}</td>
                   </tr>
                 ))}
@@ -677,6 +777,13 @@ const AttendanceReports = () => {
             {" of "}
             {pagination.total || 0}
           </span>
+          <p>
+              {pagination.total || 0} matching records
+              {pagination.totalPages > 0
+                ? ` · Page ${pagination.page} of ${pagination.totalPages}`
+                : ""}
+            </p>
+            
           <div>
             <button
               type="button"
@@ -707,16 +814,128 @@ const AttendanceReports = () => {
         </div>
       </section>
 
-      <section className="attendance-report-card">
-        <div className="attendance-report-section-heading">
-          <div>
-            <h2>Student-wise Attendance</h2>
-            <p>
-              Attendance totals and percentages for each student in the
-              selected report filters.
-            </p>
+<div className="twocolumn">
+  <div className="common-card">
+ 
+  <div class="panel-header"><div><h3>Course-wise Attendance </h3><p>Recorded attendance percentages grouped by course.</p> </div></div>
+
+  {!report.courseBreakdown.length ? (
+    <div className="attendance-report-state">
+      {loading
+        ? "Loading course attendance..."
+        : "No course breakdown available."}
+    </div>
+  ) : (
+    <div className="course-attendance-list">
+      {report.courseBreakdown.map((item) => {
+        const percentage = Math.min(
+          100,
+          Math.max(0, Number(item.attendancePercentage) || 0)
+        );
+
+        return (
+          <div
+            className="course-attendance-item"
+            key={item.courseId || item.courseTitle}
+          >
+            <div className="course-attendance-info">
+              <strong title={item.courseTitle || "Unnamed Course"}>
+                {item.courseTitle || "Unnamed Course"}
+              </strong>
+
+              <span>
+                {item.totalRecords || 0}{" "}
+                {Number(item.totalRecords) === 1 ? "record" : "records"}
+              </span>
+            </div>
+
+            <div
+              className="course-attendance-progress"
+              role="progressbar"
+              aria-label={`${item.courseTitle || "Course"} attendance`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percentage}
+            >
+              <div
+                className="course-attendance-progress-fill"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+
+            <strong className="course-attendance-percentage">
+              {percentage.toFixed(2)}%
+            </strong>
           </div>
-        </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+     
+<div className="common-card">
+ 
+    <div class="panel-header"><div><h3>Batch-wise Attendance </h3><p>Recorded attendance percentages grouped by batch.</p> </div></div>
+
+
+  {!report.batchBreakdown.length ? (
+    <div className="attendance-report-state">
+      {loading
+        ? "Loading batch attendance..."
+        : "No batch breakdown available."}
+    </div>
+  ) : (
+    <div className="course-attendance-list">
+      {report.batchBreakdown.map((item) => {
+        const percentage = Math.min(
+          100,
+          Math.max(0, Number(item.attendancePercentage) || 0)
+        );
+
+        return (
+          <div
+            className="course-attendance-item"
+            key={item.batchId || item.batchName}
+          >
+            <div className="course-attendance-info">
+              <strong title={item.batchName || "Unnamed Batch"}>
+                {item.batchName || "Unnamed Batch"}
+              </strong>
+
+              <span>
+                {item.totalRecords || 0}{" "}
+                {Number(item.totalRecords) === 1 ? "record" : "records"}
+              </span>
+            </div>
+
+            <div
+              className="course-attendance-progress"
+              role="progressbar"
+              aria-label={`${item.batchName || "Batch"} attendance`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percentage}
+            >
+              <div
+                className="course-attendance-progress-fill"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+
+            <strong className="course-attendance-percentage">
+              {formatPercentage(percentage)}
+            </strong>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+</div>
+
+      <section className="common-card">
+        <div class="panel-header"><div><h3>Student-wise Attendance </h3><p> Attendance totals and percentages for each student in the
+              selected report filters.</p> </div></div>
 
         {!report.studentBreakdown.length ? (
           <div className="attendance-report-state">
@@ -762,53 +981,8 @@ const AttendanceReports = () => {
         )}
       </section>
 
-      <section className="attendance-report-card">
-        <div className="attendance-report-section-heading">
-          <div>
-            <h2>Course-wise Attendance</h2>
-            <p>Recorded attendance percentages grouped by course.</p>
-          </div>
-        </div>
-        {!report.courseBreakdown.length ? (
-          <div className="attendance-report-state">
-            No course breakdown available.
-          </div>
-        ) : (
-          <div className="attendance-report-breakdown-grid">
-            {report.courseBreakdown.map((item) => (
-              <div className="attendance-report-breakdown-item" key={item.courseId}>
-                <strong>{item.courseTitle || "Unnamed Course"}</strong>
-                <span>{item.totalRecords || 0} records</span>
-                <b>{formatPercentage(item.attendancePercentage)}</b>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
-      <section className="attendance-report-card">
-        <div className="attendance-report-section-heading">
-          <div>
-            <h2>Batch-wise Attendance</h2>
-            <p>Recorded attendance percentages grouped by batch.</p>
-          </div>
-        </div>
-        {!report.batchBreakdown.length ? (
-          <div className="attendance-report-state">
-            No batch breakdown available.
-          </div>
-        ) : (
-          <div className="attendance-report-breakdown-grid">
-            {report.batchBreakdown.map((item) => (
-              <div className="attendance-report-breakdown-item" key={item.batchId}>
-                <strong>{item.batchName || "Unnamed Batch"}</strong>
-                <span>{item.totalRecords || 0} records</span>
-                <b>{formatPercentage(item.attendancePercentage)}</b>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+
     </div>
   );
 };
