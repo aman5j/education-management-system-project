@@ -413,6 +413,16 @@ const App = () => {
           }
         />
 
+        {/* Payments */}
+        {/* <Route path="payments" element={<Payments />} />
+        <Route path="payments/add" element={<AddPayment />} />
+        <Route path="payments/:id" element={<ViewPayment />} />
+        <Route path="payments/:id/edit" element={<EditPayment />} />
+        <Route
+          path="students/:studentId/payments"
+          element={<StudentPaymentHistory />}
+        /> */}
+
 
          {/* Reports */}
         {/* <Route path="reports" element={<Reports />} />
