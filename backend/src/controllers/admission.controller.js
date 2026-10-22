@@ -668,13 +668,13 @@ export const createAdmission = async (
      */
 
     if (
-      String(batch.course_id) !==
-      String(course._id)
+      String(student.course_id) !== String(course._id) ||
+      String(student.batch_id) !== String(batch._id)
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Selected batch does not belong to the selected course.",
+          "The selected student must belong to the selected course and batch.",
       });
     }
 
@@ -905,13 +905,13 @@ export const updateAdmission = async (
     }
 
     if (
-      String(batch.course_id) !==
-      String(course._id)
+      String(student.course_id) !== String(course._id) ||
+      String(student.batch_id) !== String(batch._id)
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Selected batch does not belong to the selected course.",
+          "The selected student must belong to the selected course and batch.",
       });
     }
 
