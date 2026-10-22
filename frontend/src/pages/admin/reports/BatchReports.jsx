@@ -4,23 +4,31 @@ import {
   useState,
 } from "react";
 
+import { FaClipboardList } from "react-icons/fa";
+import { FaUserFriends } from "react-icons/fa";
+import { GiOfficeChair } from "react-icons/gi";
+
 import {
   FiDownload,
   FiFileText,
   FiRefreshCw,
+  FiSearch,
 } from "react-icons/fi";
 
 import * as XLSX from "xlsx";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { RiFileExcel2Line } from "react-icons/ri";
 
+import { FaFilePdf } from "react-icons/fa";
 import {
   getBatchReport,
   getBatchReportFilters,
 } from "../../../services/batchReportService";
 
 import "../../../styles/BatchReports.css";
+import { FaBookOpen } from "react-icons/fa6";
 
 /*
 |--------------------------------------------------------------------------
@@ -883,42 +891,14 @@ const BatchReports = () => {
 
       {/* HEADER */}
 
-      <div className="batch-reports-header">
-
-        <div>
-          <h1>
-            Batch Reports
-          </h1>
-
-          <p>
-            View batch capacity,
-            student allocation,
-            admissions and fee
-            information.
-          </p>
-        </div>
-
-        <div className="batch-report-actions">
-
-          <button
+     
+       <div class="page-header"><div><h1>Batch Reports</h1></div>
+             <div className="student-report-actions">
+              
+      
+      <button
             type="button"
-            className="batch-report-btn secondary"
-            onClick={
-              handleRefresh
-            }
-            disabled={
-              loading ||
-              filtersLoading
-            }
-          >
-            <FiRefreshCw />
-
-            Refresh
-          </button>
-
-          <button
-            type="button"
-            className="batch-report-btn excel"
+           className="themebtn exceldownload"
             onClick={
               exportExcel
             }
@@ -926,14 +906,13 @@ const BatchReports = () => {
               !batches.length
             }
           >
-            <FiDownload />
-
-            Excel
+           <RiFileExcel2Line />
+                  Excel
           </button>
 
           <button
             type="button"
-            className="batch-report-btn pdf"
+           className="themebtn pdfdownload "
             onClick={
               exportPDF
             }
@@ -941,14 +920,16 @@ const BatchReports = () => {
               !batches.length
             }
           >
-            <FiFileText />
-
-            PDF
+             <FaFilePdf />
+                  PDF
           </button>
 
-        </div>
+             
+      
+               
+              </div>
+            </div>
 
-      </div>
 
       {/* ERROR */}
 
@@ -962,115 +943,98 @@ const BatchReports = () => {
 
       <div className="batch-report-summary">
 
-        <div className="batch-summary-card">
-          <span>
-            Total Batches
-          </span>
+ <div className="dashboard-stat-card card-success">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-success">
+           <FaClipboardList />
+ 
+           </div> 
+           </div>
 
-          <strong>
+            <div className="stat-card-body">
+              <span class="stat-card-title"> Total Batches </span>
+             
+               <strong class="stat-card-value">
             {Number(
               summary.totalBatches ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="batch-summary-card">
-          <span>
-            Total Students
-          </span>
+         <div className="dashboard-stat-card card-purple">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-purple">
+           <FaUserFriends />
 
-          <strong>
-            {Number(
+           </div> 
+           </div>
+
+            <div className="stat-card-body">
+              <span class="stat-card-title"> Total Students</span>
+             
+               <strong class="stat-card-value">
+             {Number(
               summary.totalStudents ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="batch-summary-card">
-          <span>
-            Total Admissions
-          </span>
+         <div className="dashboard-stat-card card-bluewarning">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-bluewarning">
+            <GiOfficeChair />
 
-          <strong>
-            {Number(
-              summary.totalAdmissions ||
-                0
-            )}
-          </strong>
-        </div>
+           </div> 
+           </div>
 
-        <div className="batch-summary-card">
-          <span>
-            Total Capacity
-          </span>
-
-          <strong>
-            {Number(
+            <div className="stat-card-body">
+              <span class="stat-card-title">  Total Seats</span>
+             
+               <strong class="stat-card-value">
+             {Number(
               summary.totalCapacity ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="batch-summary-card">
-          <span>
-            Occupied Seats
-          </span>
+      
+       <div className="dashboard-stat-card card-danger">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-danger">
+            <GiOfficeChair />
 
-          <strong>
-            {Number(
-              summary.totalOccupiedSeats ||
-                0
-            )}
-          </strong>
-        </div>
+           </div> 
+           </div>
 
-        <div className="batch-summary-card">
-          <span>
-            Available Seats
-          </span>
-
-          <strong>
+            <div className="stat-card-body">
+              <span class="stat-card-title">   Available Seats</span>
+             
+               <strong class="stat-card-value">
             {Number(
               summary.totalAvailableSeats ||
                 0
             )}
           </strong>
-        </div>
-
-        <div className="batch-summary-card">
-          <span>
-            Total Paid
-          </span>
-
-          <strong>
-            {formatCurrency(
-              summary.totalPaidAmount
-            )}
-          </strong>
-        </div>
-
-        <div className="batch-summary-card">
-          <span>
-            Remaining Fees
-          </span>
-
-          <strong>
-            {formatCurrency(
-              summary.totalRemainingAmount
-            )}
-          </strong>
+            </div>
+         
         </div>
 
       </div>
 
       {/* FILTERS */}
 
-      <div className="batch-report-filters">
+      <div className="common-card-filters">
 
-        <div className="batch-filter-field">
+        <div className="input-search">
 
           <label>
             Search Batch
@@ -1088,9 +1052,10 @@ const BatchReports = () => {
             placeholder="Search batch..."
           />
 
+             <FiSearch />
         </div>
 
-        <div className="batch-filter-field">
+        <div className="input-search">
 
           <label>
             Course
@@ -1133,7 +1098,7 @@ const BatchReports = () => {
 
         </div>
 
-        <div className="batch-filter-field">
+        <div className="input-search">
 
           <label>
             Status
@@ -1167,11 +1132,11 @@ const BatchReports = () => {
 
         </div>
 
-        <div className="batch-filter-actions">
+        <div className="student-filter-actions">
 
           <button
             type="button"
-            className="batch-report-btn primary"
+            className="themebtn"
             onClick={
               handleApply
             }
@@ -1179,16 +1144,17 @@ const BatchReports = () => {
               loading
             }
           >
-            Apply
+            Apply Filter
           </button>
 
           <button
             type="button"
-            className="batch-report-btn secondary"
+            className="themebtn themebtnline"
             onClick={
               handleReset
             }
           >
+            < FiRefreshCw />
             Reset
           </button>
 
@@ -1198,316 +1164,222 @@ const BatchReports = () => {
 
       {/* TABLE */}
 
-      <div className="batch-report-table-wrapper">
+      <div className="common-card">
+            <div className="common-table-wrapper">
+              <table className="common-table">
 
-        <table className="batch-report-table">
+                <thead>
+                  <tr>
 
-          <thead>
-            <tr>
+                    {/* <th>
+                      S.No
+                    </th> */}
 
-              <th>
-                S.No
-              </th>
+                    <th>
+                      Batch
+                    </th>
 
-              <th>
-                Batch
-              </th>
+                  
 
-              <th>
-                Course
-              </th>
+                    <th>
+                     Batch Type
+                    </th>
 
-              <th>
-                Type
-              </th>
+                    <th>
+                      Max Seats
+                    </th>
 
-              <th>
-                Max Seats
-              </th>
+                   
 
-              <th>
-                Occupied
-              </th>
+                    <th>
+                      Available
+                    </th>
 
-              <th>
-                Available
-              </th>
+                    
 
-              <th>
-                Occupancy
-              </th>
+                    <th>
+                      Students
+                    </th>
 
-              <th>
-                Students
-              </th>
+                    <th>
+                      Course Fees
+                    </th>
 
-              <th>
-                Admissions
-              </th>
+                    <th>
+                      Paid
+                    </th>
 
-              <th>
-                Active
-              </th>
+                    <th>
+                      Remaining
+                    </th>
 
-              <th>
-                Completed
-              </th>
+                    <th>
+                      Status
+                    </th>
 
-              <th>
-                Dropped
-              </th>
+                  </tr>
+                </thead>
 
-              <th>
-                Course Fees
-              </th>
+                <tbody>
 
-              <th>
-                Paid
-              </th>
-
-              <th>
-                Remaining
-              </th>
-
-              <th>
-                Status
-              </th>
-
-            </tr>
-          </thead>
-
-          <tbody>
-
-            {loading ? (
-              <tr>
-                <td colSpan="17">
-                  Loading batch
-                  report...
-                </td>
-              </tr>
-            ) : !batches.length ? (
-              <tr>
-                <td colSpan="17">
-                  No batch records
-                  found.
-                </td>
-              </tr>
-            ) : (
-              batches.map(
-                (
-                  item,
-                  index
-                ) => {
-                  const batch =
-                    item.batch ||
-                    {};
-
-                  const course =
-                    batch.course_id ||
-                    {};
-
-                  return (
-                    <tr
-                      key={
-                        batch._id ||
-                        index
-                      }
-                    >
-
-                      <td>
-                        {index + 1}
+                  {loading ? (
+                    <tr>
+                      <td colSpan="17">
+                        Loading batch
+                        report...
                       </td>
-
-                      <td className="batch-name-cell">
-
-                        <strong>
-                          {
-                            batch.batch_name ||
-                            "-"
-                          }
-                        </strong>
-
-                        <span>
-                          ID:{" "}
-                          {
-                            batch._id
-                              ? String(
-                                  batch._id
-                                ).slice(
-                                  -6
-                                )
-                              : "-"
-                          }
-                        </span>
-
-                      </td>
-
-                      <td>
-                        {
-                          course.courseTitle ||
-                          "-"
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          course.courseType ||
-                          "-"
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.maxSeats ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.occupiedSeats ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.availableSeats ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        <div className="occupancy-cell">
-
-                          <div className="occupancy-bar">
-
-                            <span
-                              style={{
-                                width: `${Math.min(
-                                  Number(
-                                    item.occupancyPercentage ||
-                                      0
-                                  ),
-                                  100
-                                )}%`,
-                              }}
-                            />
-
-                          </div>
-
-                          <small>
-                            {
-                              Number(
-                                item.occupancyPercentage ||
-                                  0
-                              )
-                            }
-                            %
-                          </small>
-
-                        </div>
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.totalStudents ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.totalAdmissions ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.activeAdmissions ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.completedAdmissions ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          Number(
-                            item.droppedAdmissions ||
-                              0
-                          )
-                        }
-                      </td>
-
-                      <td>
-                        {formatCurrency(
-                          item.totalCourseFees
-                        )}
-                      </td>
-
-                      <td>
-                        {formatCurrency(
-                          item.totalPaidAmount
-                        )}
-                      </td>
-
-                      <td>
-                        {formatCurrency(
-                          item.totalRemainingAmount
-                        )}
-                      </td>
-
-                      <td>
-
-                        <span
-                          className={`batch-status-badge ${String(
-                            batch.status ||
-                              ""
-                          )
-                            .toLowerCase()
-                            .replace(
-                              /\s+/g,
-                              "-"
-                            )}`}
-                        >
-                          {
-                            batch.status ||
-                            "-"
-                          }
-                        </span>
-
-                      </td>
-
                     </tr>
-                  );
-                }
-              )
-            )}
+                  ) : !batches.length ? (
+                    <tr>
+                      <td colSpan="17">
+                        No batch records
+                        found.
+                      </td>
+                    </tr>
+                  ) : (
+                    batches.map(
+                      (
+                        item,
+                        index
+                      ) => {
+                        const batch =
+                          item.batch ||
+                          {};
 
-          </tbody>
+                        const course =
+                          batch.course_id ||
+                          {};
 
-        </table>
+                        return (
+                          <tr
+                            key={
+                              batch._id ||
+                              index
+                            }
+                          >
+
+                            {/* <td>
+                              {index + 1}
+                            </td> */}
+
+                            <td className="batch-name-cell">
+
+                              <strong>
+                                {
+                                  batch.batch_name ||
+                                  "-"
+                                }
+                              </strong>
+                               {
+                                course.courseTitle ||
+                                "-"
+                              }
+         
+                               
+                              {/* <span>
+                                ID:{" "}
+                                {
+                                  batch._id
+                                    ? String(
+                                        batch._id
+                                      ).slice(
+                                        -6
+                                      )
+                                    : "-"
+                                }
+                              </span> */}
+
+                            </td>
+
+                           
+
+                            <td>
+                                <span className={`course-type ${course.courseType ? course.courseType.toLowerCase().replace(/\s+/g, "-") : "default"}`}> {
+                                course.courseType ||
+                                "-"
+                              }</span>
+                            </td>
+
+                            <td>
+                              {
+                                Number(
+                                  item.maxSeats ||
+                                    0
+                                )
+                              }
+                            </td>
+
+                         
+
+                            <td>
+                              {
+                                Number(
+                                  item.availableSeats ||
+                                    0
+                                )
+                              }
+                            </td>
+
+                         
+
+                            <td>
+                              {
+                                Number(
+                                  item.totalStudents ||
+                                    0
+                                )
+                              }
+                            </td>
+
+                            <td>
+                            <span className="tag-purple">  {formatCurrency(
+                                item.totalCourseFees
+                              )}</span>
+                            </td>
+
+                            <td>
+                              <span className="tag-success">{formatCurrency(
+                                item.totalPaidAmount
+                              )}</span>
+                            </td>
+
+                            <td>
+                              <span className="tag-danger">{formatCurrency(
+                                item.totalRemainingAmount
+                              )}</span>
+                            </td>
+
+                            <td>
+
+                              <span
+                                className={`batch-status-badge ${String(
+                                  batch.status ||
+                                    ""
+                                )
+                                  .toLowerCase()
+                                  .replace(
+                                    /\s+/g,
+                                    "-"
+                                  )}`}
+                              >
+                                {
+                                  batch.status ||
+                                  "-"
+                                }
+                              </span>
+
+                            </td>
+
+                          </tr>
+                        );
+                      }
+                    )
+                  )}
+
+                </tbody>
+
+              </table>
+            </div>
 
       </div>
 

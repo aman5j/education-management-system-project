@@ -9,6 +9,8 @@ import {
   FiRefreshCw,
   FiExternalLink,
 } from "react-icons/fi";
+import { FaBookOpen } from "react-icons/fa6";
+
 
 import * as XLSX from "xlsx";
 
@@ -25,7 +27,9 @@ import {
 
 import "../../../styles/CourseReports.css";
 import { RiFileExcel2Line } from "react-icons/ri";
-import { FaFilePdf } from "react-icons/fa";
+import { FaFilePdf, FaUserFriends } from "react-icons/fa";
+import { MdCurrencyRupee, MdDateRange } from "react-icons/md";
+import { IoIosCall } from "react-icons/io";
 
 /*
 |--------------------------------------------------------------------------
@@ -925,107 +929,94 @@ const CourseReports = () => {
 
       <div className="course-report-summary">
 
-        <div className="course-summary-card">
-          <span>
-            Total Courses
-          </span>
+        <div className="dashboard-stat-card card-purple">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-purple">
+           <FaBookOpen /> 
+           </div> 
+           </div>
 
-          <strong>
+            <div className="stat-card-body">
+              <span class="stat-card-title">Total Courses</span>
+             
+               <strong class="stat-card-value">
             {Number(
               summary.totalCourses ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="course-summary-card">
-          <span>
-            Total Students
-          </span>
 
-          <strong>
-            {Number(
-              summary.totalStudents ||
-                0
-            )}
-          </strong>
-        </div>
+  <div className="dashboard-stat-card card-success">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-success">
+           <FaBookOpen /> 
+           </div> 
+           </div>
 
-        <div className="course-summary-card">
-          <span>
-            Total Admissions
-          </span>
-
-          <strong>
-            {Number(
-              summary.totalAdmissions ||
-                0
-            )}
-          </strong>
-        </div>
-
-        <div className="course-summary-card">
-          <span>
-            Active Admissions
-          </span>
-
-          <strong>
-            {Number(
-              summary.activeAdmissions ||
-                0
-            )}
-          </strong>
-        </div>
-
-        <div className="course-summary-card">
-          <span>
-            Completed
-          </span>
-
-          <strong>
+            <div className="stat-card-body">
+              <span class="stat-card-title">Completed Course </span>
+             
+               <strong class="stat-card-value">
             {Number(
               summary.completedAdmissions ||
                 0
             )}
           </strong>
+            </div>
+         
         </div>
+       
 
-        <div className="course-summary-card">
-          <span>
-            Dropped
-          </span>
+      
 
-          <strong>
-            {Number(
-              summary.droppedAdmissions ||
-                0
-            )}
-          </strong>
-        </div>
+       
+ <div className="dashboard-stat-card card-bluewarning">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-bluewarning">
+          <MdCurrencyRupee />
+           </div> 
+           </div>
 
-        <div className="course-summary-card">
-          <span>
-            Total Course Fees
-          </span>
-
-          <strong>
-            {formatCurrency(
+            <div className="stat-card-body">
+              <span class="stat-card-title">Total Course Fees </span>
+             
+               <strong class="stat-card-value">
+           {formatCurrency(
               summary.totalCourseFees
             )}
           </strong>
+            </div>
+         
         </div>
 
-        <div className="course-summary-card">
-          <span>
-            Remaining Fees
-          </span>
+         <div className="dashboard-stat-card card-danger">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-danger">
+          <MdCurrencyRupee />
+           </div> 
+           </div>
 
-          <strong>
-            {formatCurrency(
+            <div className="stat-card-body">
+              <span class="stat-card-title"> Remaining Fees </span>
+             
+               <strong class="stat-card-value">
+           {formatCurrency(
               summary.totalRemainingAmount
             )}
           </strong>
+            </div>
+         
         </div>
+
+       
+
+     
+
+      
 
       </div>
 
@@ -1199,35 +1190,35 @@ const CourseReports = () => {
                       Lectures
                     </th>
 
-                    <th>
+                    {/* <th>
                       Practical
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Objective
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Students
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Admissions
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Active
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Completed
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Dropped
-                    </th>
+                    </th> */}
 
-                    <th>
+                    {/* <th>
                       Course Fees
                     </th>
 
@@ -1237,7 +1228,7 @@ const CourseReports = () => {
 
                     <th>
                       Remaining
-                    </th>
+                    </th> */}
 
                     <th>
                       Popular
@@ -1247,13 +1238,13 @@ const CourseReports = () => {
                       Recommended
                     </th>
 
-                    <th>
+                    {/* <th>
                       MRP Visible
                     </th>
 
                     <th>
                       Exam Result
-                    </th>
+                    </th> */}
 
                     <th>
                       Status
@@ -1398,10 +1389,16 @@ const CourseReports = () => {
                             {/* DURATION */}
 
                             <td>
-                              {formatDuration(
+                              <div className="contact-details">
+                                <div className="contact-li">
+                                 <MdDateRange />
+                                  <span>{formatDuration(
                                 course.duration,
                                 course.durationUnit
-                              )}
+                              )}</span>
+                                </div>
+                              </div>
+                              
                             </td>
 
                             {/* LECTURES */}
@@ -1415,80 +1412,80 @@ const CourseReports = () => {
 
                             {/* PRACTICAL */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 course.practicalMarks ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* OBJECTIVE */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 course.objectiveMarks ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* STUDENTS */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 item.totalStudents ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* ADMISSIONS */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 item.totalAdmissions ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* ACTIVE */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 item.activeAdmissions ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* COMPLETED */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 item.completedAdmissions ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* DROPPED */}
 
-                            <td>
+                            {/* <td>
                               {Number(
                                 item.droppedAdmissions ||
                                   0
                               )}
-                            </td>
+                            </td> */}
 
                             {/* COURSE FEES */}
 
-                            <td>
+                            {/* <td>
                              
                               <span className=" tag-purple"> {formatCurrency(
                                 item.totalCourseFees
                               )}</span>
                              
-                            </td>
+                            </td> */}
 
                             {/* PAID */}
 
-                            <td>
+                            {/* <td>
                              
                                <span className="tag-success">
                                {formatCurrency(
@@ -1496,17 +1493,17 @@ const CourseReports = () => {
                               )}
                              </span>
 
-                            </td>
+                            </td> */}
 
                             {/* REMAINING */}
 
-                            <td>
+                            {/* <td>
                              <span className="tag-danger">
                                {formatCurrency(
                                 item.totalRemainingAmount
                               )}
                              </span>
-                            </td>
+                            </td> */}
 
                             {/* POPULAR */}
 
@@ -1542,7 +1539,7 @@ const CourseReports = () => {
 
                             {/* MRP VISIBLE */}
 
-                            <td>
+                            {/* <td>
                               <span
                                 className={
                                   course.mrpVisible
@@ -1554,11 +1551,11 @@ const CourseReports = () => {
                                   ? "Yes"
                                   : "No"}
                               </span>
-                            </td>
+                            </td> */}
 
                             {/* EXAM RESULT */}
 
-                            <td>
+                            {/* <td>
                               <span
                                 className={
                                   course.hideExamResult
@@ -1570,7 +1567,7 @@ const CourseReports = () => {
                                   ? "Hidden"
                                   : "Visible"}
                               </span>
-                            </td>
+                            </td> */}
 
                             {/* STATUS */}
 
