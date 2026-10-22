@@ -226,17 +226,17 @@ export const createAttendance = async (req, res, next) => {
 
     const normalizedDate = normalizeDate(attendance_date);
 
+    if (!normalizedDate) {
+      return res.status(400).json({
+        success: false,
+        message: "attendance_date must be a valid date in YYYY-MM-DD format.",
+      });
+    }
+
     if (attendance_date > getIndiaToday()) {
       return res.status(400).json({
         success: false,
         message: "Attendance cannot be recorded for a future date.",
-      });
-    }
-
-    if (!normalizedDate) {
-      return res.status(400).json({
-        success: false,
-        message: "attendance_date must use YYYY-MM-DD format.",
       });
     }
 

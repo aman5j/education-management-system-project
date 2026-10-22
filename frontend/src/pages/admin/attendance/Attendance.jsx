@@ -303,10 +303,15 @@ const Attendance = () => {
       setMessage("Attendance saved successfully.");
       await loadAttendance();
     } catch (err) {
-      setError(
+    const errorMessage =
         err?.response?.data?.message ||
-          "Attendance could not be fully saved. Reload records before retrying."
-      );
+        "Attendance could not be fully saved. Existing records have been reloaded; review them before retrying.";
+
+      try {
+        await loadAttendance();
+      } finally {
+        setError(errorMessage);
+      }
     } finally {
       setSaving(false);
     }
@@ -340,9 +345,13 @@ const Attendance = () => {
     if (historyFrom) params.from = historyFrom;
     if (historyTo) params.to = historyTo;
 
-    const response = await getAttendance(params);
+    // const response = await getAttendance(params);
 
-    setHistoryRecords(getList(response, ["records"]));
+    // setHistoryRecords(getList(response, ["records"]));
+
+    const allHistoryRecords = await getAllAttendanceRecords(params);
+    setHistoryRecords(allHistoryRecords);
+
   } catch (err) {
     setHistoryError(
       err?.response?.data?.message ||
@@ -466,7 +475,7 @@ const Attendance = () => {
           </div>
         ) : (
           <>
-            <div className="attendance-bulk-actions">
+            {/* <div className="attendance-bulk-actions">
                 <span>{students.length} students</span>
 
                 <div>
@@ -482,7 +491,27 @@ const Attendance = () => {
                     Clear all
                     </button>
                 </div>
-            </div>
+            </div> */}
+
+            {canManageAttendance && (
+              <div className="attendance-bulk-actions">
+                <span>{students.length} students</span>
+
+                <div>
+                  <button type="button" onClick={() => markAll("Present")}>
+                    ✓ Mark all present
+                  </button>
+
+                  <button type="button" onClick={() => markAll("Absent")}>
+                    ✕ Mark all absent
+                  </button>
+
+                  <button type="button" onClick={clearAll}>
+                    Clear all
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="attendance-table-wrapper">
               <table className="attendance-table">
@@ -517,6 +546,7 @@ const Attendance = () => {
                                 name={`attendance-${student._id}`}
                                 value={status}
                                 checked={statuses[student._id] === status}
+                                disabled={!canManageAttendance}
                                 onChange={() =>
                                     setStatuses((previous) => ({
                                     ...previous,

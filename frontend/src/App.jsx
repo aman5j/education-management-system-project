@@ -359,10 +359,10 @@ const App = () => {
         />
 
         {/* Attendance */}
-        <Route
+        {/* <Route
           path="attendance"
           element={<Attendance />}
-        />
+        /> */}
 
          {/* Course management */}
         <Route path="courses" element={<Courses />} />
