@@ -4,6 +4,9 @@ import { getBatches } from "../../../services/batchService";
 // import { getStudents } from "../../../services/studentService";
 import { getAttendanceRoster } from "../../../services/studentService";
 
+import { useAuth } from "../../../context/AuthContext";
+import { hasPermission } from "../../../utils/permissions";
+
 import {
   getAttendance,
   createAttendance,
@@ -37,6 +40,38 @@ const getList = (response, keys = []) => {
 const getId = (value) =>
   typeof value === "object" ? value?._id : value;
 
+
+const getAllAttendanceRecords = async (params) => {
+  const allRecords = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await getAttendance({
+      ...params,
+      page,
+      limit: 100,
+    });
+
+    const payload =
+      response?.data?.data ?? response?.data ?? {};
+
+    const records = Array.isArray(payload.records)
+      ? payload.records
+      : [];
+
+    allRecords.push(...records);
+    totalPages = Math.max(
+      Number(payload.pagination?.totalPages) || 1,
+      1
+    );
+
+    page += 1;
+  } while (page <= totalPages);
+
+  return allRecords;
+};
+
 const Attendance = () => {
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -58,6 +93,13 @@ const Attendance = () => {
   const [historyRecords, setHistoryRecords] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
+
+  const { user } = useAuth();
+  const canManageAttendance = hasPermission(
+    user,
+    "attendance.manage"
+  );
 
 
   useEffect(() => {
@@ -111,25 +153,25 @@ const Attendance = () => {
       //   }),
       // ]);
 
-      const [studentResponse, attendanceResponse] = await Promise.all([
-          getAttendanceRoster({
-            course_id: courseId,
-            batch_id: batchId,
-          }),
-          getAttendance({
-            course_id: courseId,
-            batch_id: batchId,
-            date,
-            page: 1,
-            limit: 500,
-          }),
-        ]);
+      const [studentResponse, attendanceList] = await Promise.all([
+        getAttendanceRoster({
+          course_id: courseId,
+          batch_id: batchId,
+        }),
+        getAllAttendanceRecords({
+          course_id: courseId,
+          batch_id: batchId,
+          date,
+        }),
+      ]);
 
       const studentList = getList(studentResponse, ["students"]);
-      const attendanceList = getList(attendanceResponse, ["records"]);
 
       setStudents(studentList);
       setRecords(attendanceList);
+
+      // setStudents(studentList);
+      // setRecords(attendanceList);
 
       const nextStatuses = {};
       const nextRemarks = {};
@@ -200,7 +242,7 @@ const Attendance = () => {
     };
 
 
-    
+
 
   const handleSave = async () => {
     if (!courseId || !batchId || !date) {
@@ -320,14 +362,17 @@ const Attendance = () => {
           <p>Record and review daily student attendance.</p>
         </div>
 
-        <button
-          type="button"
-          className="attendance-primary-button"
-          onClick={handleSave}
-          disabled={saving || loading || !students.length}
-        >
-          {saving ? "Saving..." : "Save Attendance"}
-        </button>
+        {canManageAttendance && (
+          <button
+            type="button"
+            className="attendance-primary-button"
+            onClick={handleSave}
+            disabled={saving || loading || !students.length}
+          >
+            {saving ? "Saving..." : "Save Attendance"}
+          </button>
+        )}
+
       </div>
 
       <section className="attendance-card">
@@ -507,14 +552,16 @@ const Attendance = () => {
         )}
       </section>
 
-      <AttendanceQRScanner
-        courseId={courseId}
-        batchId={batchId}
-        date={date}
-        onSuccess={async () => {
+      {canManageAttendance && (
+        <AttendanceQRScanner
+          courseId={courseId}
+          batchId={batchId}
+          date={date}
+          onSuccess={async () => {
             await loadAttendance();
-        }}
+          }}
         />
+      )}
 
       <section className="attendance-card attendance-history-card">
         <div className="attendance-history-heading">

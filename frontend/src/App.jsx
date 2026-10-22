@@ -83,6 +83,7 @@ import Profile from "./pages/admin/Profile";
 import RoleManagement from "./pages/admin/RoleManagement";
 import StaffManagement from "./pages/admin/StaffManagement";
 
+import PermissionRoute from "./components/auth/PermissionRoute";
 
 
 import VerifyReceipt from "./pages/public/VerifyReceipt";
@@ -271,7 +272,15 @@ const App = () => {
         <Route path="notifications" element={<Notifications />} />
 
         {/* Attendance */}
-        <Route path="attendance" element={<Attendance />} />
+        {/* <Route path="attendance" element={<Attendance />} /> */}
+        <Route
+          path="attendance"
+          element={
+            <PermissionRoute permission="attendance.view">
+              <Attendance />
+            </PermissionRoute>
+          }
+        />
 
         {/* Exams */}
         {/* Exam Schedule */}
@@ -392,6 +401,29 @@ const App = () => {
         <Route path="admissions/add" element={<AddAdmission />} />
         <Route path="admissions/:id" element={<ViewAdmission />} />
         <Route path="admissions/:id/edit" element={<EditAdmission />} />
+
+
+
+        <Route
+          path="attendance"
+          element={
+            <PermissionRoute permission="attendance.view">
+              <Attendance />
+            </PermissionRoute>
+          }
+        />
+
+
+         {/* Reports */}
+        {/* <Route path="reports" element={<Reports />} />
+        <Route path="reports/payments" element={<PaymentReports />} />
+        <Route path="reports/students" element={<StudentReports />} />
+        <Route path="reports/admissions" element={<AdmissionReports />} />
+        <Route path="reports/courses" element={<CourseReports />} />
+        <Route path="reports/batches" element={<BatchReports />} />
+        <Route path="reports/fees" element={<FeeReports />} />
+        <Route path="reports/expenses" element={<ExpenseReports />} />
+        <Route path="reports/attendance" element={<AttendanceReports />} /> */}
 
         
 

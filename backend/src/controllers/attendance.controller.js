@@ -29,6 +29,15 @@ const normalizeDate = (value) => {
   return date;
 };
 
+
+const getIndiaToday = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
 const validStatuses = ["Present", "Absent", "Leave", "Late"];
 
 const validateAttendanceRelations = async ({
@@ -216,6 +225,13 @@ export const createAttendance = async (req, res, next) => {
     } = req.body;
 
     const normalizedDate = normalizeDate(attendance_date);
+
+    if (attendance_date > getIndiaToday()) {
+      return res.status(400).json({
+        success: false,
+        message: "Attendance cannot be recorded for a future date.",
+      });
+    }
 
     if (!normalizedDate) {
       return res.status(400).json({
