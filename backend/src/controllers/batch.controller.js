@@ -200,10 +200,10 @@ export const createBatch = async (req, res, next) => {
     const normalizedName = String(batch_name || "").trim();
     const maximumSeats = Number(max_seats);
 
-    if (!normalizedName) {
+    if (normalizedName.length < 2 || normalizedName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: "Batch name is required.",
+        message: "Batch name must be between 2 and 100 characters.",
       });
     }
 
@@ -298,10 +298,10 @@ export const updateBatch = async (req, res, next) => {
     const normalizedName = String(batch_name || "").trim();
     const newMaxSeats = Number(max_seats);
 
-    if (!normalizedName) {
+    if (normalizedName.length < 2 || normalizedName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: "Batch name is required.",
+        message: "Batch name must be between 2 and 100 characters.",
       });
     }
 

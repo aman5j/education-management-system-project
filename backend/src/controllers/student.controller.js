@@ -22,14 +22,31 @@ const reserveBatchSeat = async (batchId) =>
     }
   ).lean();
 
-const releaseBatchSeat = async (batchId) => {
-  if (!batchId) return;
+  const releaseBatchSeat = async (batchId) => {
+    if (!batchId) return;
 
-  await Batch.updateOne(
-    { _id: batchId },
-    { $inc: { available_seats: 1 } }
-  );
-};
+    // Never allow the stored available-seat count to exceed capacity.
+    await Batch.updateOne(
+      { _id: batchId },
+      [
+        {
+          $set: {
+            available_seats: {
+              $min: [
+                {
+                  $add: [
+                    { $ifNull: ["$available_seats", 0] },
+                    1,
+                  ],
+                },
+                "$max_seats",
+              ],
+            },
+          },
+        },
+      ]
+    );
+  };
 
 // const createRollNumber =
 //   async () => {
