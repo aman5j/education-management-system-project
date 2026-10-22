@@ -150,7 +150,7 @@
 
 .attendance-report-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 22px;
 }
@@ -436,8 +436,8 @@
 
 .course-attendance-info strong {
   color: #243653;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -542,10 +542,114 @@
   }
 }
 
-/* Respect reduced-motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  .course-attendance-progress-fill {
-    animation: none;
-    transition: none;
+
+
+/* Attendance progress bar colors */
+
+.course-attendance-progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  background: #edf0f5;
+  border-radius: 50px;
+}
+
+.course-attendance-progress-fill {
+  width: var(--progress-width, 0%);
+  height: 100%;
+  border-radius: inherit;
+  transform-origin: left;
+  transition: background-color 0.3s ease;
+  will-change: width;
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);
+    background-size: 1rem 1rem;
+    animation: 1s linear infinite progress-bar-stripes;
+}
+@keyframes progress-bar-stripes {
+    0% {
+      background-position: 1rem 0;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
+}
+/* Percentage text colors */
+
+.course-attendance-percentage.progress-text-red {
+  color: #dc2626;
+}
+
+.course-attendance-percentage.progress-text-orange {
+  color: #f97316;
+}
+
+.course-attendance-percentage.progress-text-yellow {
+  color: #ca8a04;
+}
+
+.course-attendance-percentage.progress-text-green {
+  color: #16a34a;
+}
+
+.course-attendance-progress-fill.progress-red {
+  background: linear-gradient(90deg, #f87171, #dc2626);
+}
+
+.course-attendance-progress-fill.progress-orange {
+  background: linear-gradient(90deg, #fdba74, #f97316);
+}
+
+.course-attendance-progress-fill.progress-yellow {
+  background: linear-gradient(90deg, #fde047, #eab308);
+}
+
+.course-attendance-progress-fill.progress-green {
+  background: linear-gradient(90deg, #4ade80, #16a34a);
+}
+
+
+
+.course-attendance-progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  background: #edf0f5;
+  border-radius: 50px;
+}
+
+.course-attendance-progress-fill {
+  width: var(--progress-width, 0%);
+  height: 100%;
+  border-radius: inherit;
+  animation: progressFill 1.2s ease-out both;
+}
+
+
+.student-attendance-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+}
+
+.student-attendance-progress-wrap .course-attendance-progress {
+  flex: 1;
+  min-width: 60px;
+  height: 8px;
+}
+
+.student-attendance-progress-wrap .course-attendance-percentage {
+  min-width: 58px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .student-attendance-progress-wrap {
+    min-width: 125px;
+    gap: 7px;
   }
 }

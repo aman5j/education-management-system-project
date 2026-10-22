@@ -11,7 +11,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaUserClock } from "react-icons/fa";
-import { MdOutlineGraphicEq } from "react-icons/md";
+import { MdDateRange, MdOutlineGraphicEq } from "react-icons/md";
 import { FaFilePdf } from "react-icons/fa";
 import { RiFileExcel2Line } from "react-icons/ri";
 
@@ -415,7 +415,132 @@ const AttendanceReports = () => {
         </div>
       )}
 
+  <section className="attendance-report-summary-grid">
+      
+      <div className="dashboard-stat-card card-purple">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-purple">
+                   <FaUserFriends /> 
 
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title"> Total Records</span>
+                     
+                       <strong class="stat-card-value">
+                  {summary.totalRecords || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+          <div className="dashboard-stat-card card-success">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-success">
+                  <FaUserCheck />
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title"> Present</span>
+                     
+                       <strong class="stat-card-value">
+                  {summary.present || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+      
+            <div className="dashboard-stat-card card-danger">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-danger">
+                  <FaUserTimes />
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title"> Absent</span>
+                     
+                       <strong class="stat-card-value">
+                  {summary.absent || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+               
+
+                  <div className="dashboard-stat-card card-warning">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-warning">
+                 <FaUserClock />
+
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title">Late</span>
+                       <strong class="stat-card-value">
+                 {summary.late || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+ <div className="dashboard-stat-card card-bluewarning">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-bluewarning">
+                  <FaUserTimes />
+
+
+                   </div> 
+                   </div>
+        
+                    <div className="stat-card-body">
+                      <span class="stat-card-title">Leave</span>
+
+                       <strong class="stat-card-value">
+                  {summary.leave || 0}
+                  </strong>
+                    </div>
+                 
+                </div>
+
+                 <div className="dashboard-stat-card card-bluewarning">
+                  <div class="stat-card-top">
+                    <div class="stat-icon stat-icon-bluewarning">
+                 <MdOutlineGraphicEq />
+
+ 
+
+                   </div> 
+                   </div>
+        
+         <div className="stat-card-body">
+                      <span class="stat-card-title">Attendance Percentage
+</span>
+
+                       <strong class="stat-card-value">
+                 {formatPercentage(summary.attendancePercentage)}
+                  </strong>
+                    </div>
+                 
+                 
+                </div>
+
+
+
+       
+      </section>
         <div className="common-card-filters">
           <div className="input-search noicon">
           <label>
@@ -544,132 +669,7 @@ const AttendanceReports = () => {
         </div>
      
 
-      <section className="attendance-report-summary-grid">
-      
-      <div className="dashboard-stat-card card-purple">
-                  <div class="stat-card-top">
-                    <div class="stat-icon stat-icon-purple">
-                   <FaUserFriends /> 
-
-
-                   </div> 
-                   </div>
-        
-                    <div className="stat-card-body">
-                      <span class="stat-card-title"> Total Records</span>
-                     
-                       <strong class="stat-card-value">
-                  {summary.totalRecords || 0}
-                  </strong>
-                    </div>
-                 
-                </div>
-
-          <div className="dashboard-stat-card card-success">
-                  <div class="stat-card-top">
-                    <div class="stat-icon stat-icon-success">
-                  <FaUserCheck />
-
-
-                   </div> 
-                   </div>
-        
-                    <div className="stat-card-body">
-                      <span class="stat-card-title"> Present</span>
-                     
-                       <strong class="stat-card-value">
-                  {summary.present || 0}
-                  </strong>
-                    </div>
-                 
-                </div>
-
-      
-            <div className="dashboard-stat-card card-danger">
-                  <div class="stat-card-top">
-                    <div class="stat-icon stat-icon-danger">
-                  <FaUserTimes />
-
-
-                   </div> 
-                   </div>
-        
-                    <div className="stat-card-body">
-                      <span class="stat-card-title"> Absent</span>
-                     
-                       <strong class="stat-card-value">
-                  {summary.absent || 0}
-                  </strong>
-                    </div>
-                 
-                </div>
-
-               
-
-                  <div className="dashboard-stat-card card-warning">
-                  <div class="stat-card-top">
-                    <div class="stat-icon stat-icon-warning">
-                 <FaUserClock />
-
-
-
-                   </div> 
-                   </div>
-        
-                    <div className="stat-card-body">
-                      <span class="stat-card-title">Late</span>
-                       <strong class="stat-card-value">
-                 {summary.late || 0}
-                  </strong>
-                    </div>
-                 
-                </div>
-
- <div className="dashboard-stat-card card-bluewarning">
-                  <div class="stat-card-top">
-                    <div class="stat-icon stat-icon-bluewarning">
-                  <FaUserTimes />
-
-
-                   </div> 
-                   </div>
-        
-                    <div className="stat-card-body">
-                      <span class="stat-card-title">Leave</span>
-
-                       <strong class="stat-card-value">
-                  {summary.leave || 0}
-                  </strong>
-                    </div>
-                 
-                </div>
-
-                 <div className="dashboard-stat-card card-bluewarning">
-                  <div class="stat-card-top">
-                    <div class="stat-icon stat-icon-bluewarning">
-                 <MdOutlineGraphicEq />
-
- 
-
-                   </div> 
-                   </div>
-        
-         <div className="stat-card-body">
-                      <span class="stat-card-title">Attendance Percentage
-</span>
-
-                       <strong class="stat-card-value">
-                 {formatPercentage(summary.attendancePercentage)}
-                  </strong>
-                    </div>
-                 
-                 
-                </div>
-
-
-
-       
-      </section>
+    
 
       <section className="common-card">
         <div class="panel-header"><div><h3>Attendance Records </h3> </div>
@@ -720,7 +720,7 @@ const AttendanceReports = () => {
                   {/* <th>Student</th> */}
                   <th>Attendance Status</th>
                   <th>Course</th>
-                  {/* <th>Batch</th> */}
+                  <th>Batch</th>
                   
                   <th>Remarks</th>
                 </tr>
@@ -743,7 +743,13 @@ const AttendanceReports = () => {
 
                     
                     </td>
-                    <td><span className="batchtag">{formatDate(record.attendance_date)}</span> </td>
+                    <td>
+                      <div class="contact-details"><div class="contact-li"> 
+                        <MdDateRange /> 
+                        <span>{formatDate(record.attendance_date)}</span></div></div>
+                      
+                      
+                      </td>
 
 <td>
                       <span
@@ -754,9 +760,9 @@ const AttendanceReports = () => {
                       </span>
                     </td>
                     <td>{record.course_id?.courseTitle || "-"} <br></br>
-                      <span className="batchtag">{record.batch_id?.batch_name || "-"}</span>
                     </td>
-                   
+                   <td>                      <span className="batchtag">{record.batch_id?.batch_name || "-"}</span>
+</td>
                     
                     <td>{record.remarks || "-"}</td>
                   </tr>
@@ -843,29 +849,48 @@ const AttendanceReports = () => {
                 {item.courseTitle || "Unnamed Course"}
               </strong>
 
-              <span>
+              {/* <span>
                 {item.totalRecords || 0}{" "}
                 {Number(item.totalRecords) === 1 ? "record" : "records"}
-              </span>
+              </span> */}
             </div>
 
-            <div
-              className="course-attendance-progress"
-              role="progressbar"
-              aria-label={`${item.courseTitle || "Course"} attendance`}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={percentage}
-            >
-              <div
-                className="course-attendance-progress-fill"
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
+           <div
+  className="course-attendance-progress"
+  role="progressbar"
+  aria-label={`${item.courseTitle || "Course"} attendance`}
+  aria-valuemin={0}
+  aria-valuemax={100}
+  aria-valuenow={percentage}
+>
+  <div
+    key={`${item.courseId}-${percentage}`}
+    className={`course-attendance-progress-fill ${
+      percentage <= 20
+        ? "progress-red"
+        : percentage <= 50
+        ? "progress-orange"
+        : percentage <= 80
+        ? "progress-yellow"
+        : "progress-green"
+    }`}
+    style={{ "--progress-width": `${percentage}%` }}
+  />
+</div>
 
-            <strong className="course-attendance-percentage">
-              {percentage.toFixed(2)}%
-            </strong>
+            <strong
+  className={`course-attendance-percentage ${
+    percentage <= 20
+      ? "progress-text-red"
+      : percentage <= 50
+      ? "progress-text-orange"
+      : percentage <= 80
+      ? "progress-text-yellow"
+      : "progress-text-green"
+  }`}
+>
+  {percentage.toFixed(2)}%
+</strong>
           </div>
         );
       })}
@@ -873,10 +898,14 @@ const AttendanceReports = () => {
   )}
 </div>
      
-<div className="common-card">
- 
-    <div class="panel-header"><div><h3>Batch-wise Attendance </h3><p>Recorded attendance percentages grouped by batch.</p> </div></div>
 
+<div className="common-card">
+  <div className="panel-header">
+    <div>
+      <h3>Batch-wise Attendance</h3>
+      <p>Recorded attendance percentages grouped by batch.</p>
+    </div>
+  </div>
 
   {!report.batchBreakdown.length ? (
     <div className="attendance-report-state">
@@ -892,6 +921,24 @@ const AttendanceReports = () => {
           Math.max(0, Number(item.attendancePercentage) || 0)
         );
 
+        const colorClass =
+          percentage <= 20
+            ? "progress-red"
+            : percentage <= 50
+            ? "progress-orange"
+            : percentage <= 80
+            ? "progress-yellow"
+            : "progress-green";
+
+        const textColorClass =
+          percentage <= 20
+            ? "progress-text-red"
+            : percentage <= 50
+            ? "progress-text-orange"
+            : percentage <= 80
+            ? "progress-text-yellow"
+            : "progress-text-green";
+
         return (
           <div
             className="course-attendance-item"
@@ -902,10 +949,29 @@ const AttendanceReports = () => {
                 {item.batchName || "Unnamed Batch"}
               </strong>
 
-              <span>
+      <span className="batch-course-title">
+  Course: {
+    item.courseTitle ||
+    item.course_id?.courseTitle ||
+    options.batches.find(
+      (batch) =>
+        String(batch._id) === String(item.batchId)
+    )?.course_id?.courseTitle ||
+    options.batches.find(
+      (batch) =>
+        String(batch._id) === String(item.batchId)
+    )?.course?.courseTitle ||
+    "Course not found"
+  }
+</span>
+
+
+              {/* <span>
                 {item.totalRecords || 0}{" "}
-                {Number(item.totalRecords) === 1 ? "record" : "records"}
-              </span>
+                {Number(item.totalRecords) === 1
+                  ? "record"
+                  : "records"}
+              </span> */}
             </div>
 
             <div
@@ -917,12 +983,14 @@ const AttendanceReports = () => {
               aria-valuenow={percentage}
             >
               <div
-                className="course-attendance-progress-fill"
-                style={{ width: `${percentage}%` }}
+                className={`course-attendance-progress-fill ${colorClass}`}
+                style={{ "--progress-width": `${percentage}%` }}
               />
             </div>
 
-            <strong className="course-attendance-percentage">
+            <strong
+              className={`course-attendance-percentage ${textColorClass}`}
+            >
               {formatPercentage(percentage)}
             </strong>
           </div>
@@ -931,6 +999,7 @@ const AttendanceReports = () => {
     </div>
   )}
 </div>
+
 </div>
 
       <section className="common-card">
@@ -942,12 +1011,12 @@ const AttendanceReports = () => {
             No student breakdown available.
           </div>
         ) : (
-          <div className="attendance-report-table-wrapper">
-            <table className="attendance-report-table">
+          <div className="common-table-wrapper">
+            <table className="common-table">
               <thead>
                 <tr>
-                  <th>Roll No.</th>
-                  <th>Student</th>
+                  
+                  <th>Student/Roll No.</th>
                   <th>Total</th>
                   <th>Present</th>
                   <th>Absent</th>
@@ -959,19 +1028,66 @@ const AttendanceReports = () => {
               <tbody>
                 {report.studentBreakdown.map((student) => (
                   <tr key={student.studentId || student.rollNo}>
-                    <td>{student.rollNo || "-"}</td>
                     <td>
-                      <strong>{getStudentName(student)}</strong>
+                      <div class="student-name-cell"><div class="student-avatar-wrapper"><img alt="Aman Prajapati" class="student-avatar" src="https://education-management-backend-79g1.onrender.com/uploads/students/1790327763958-my-image-portfolio-office--1-.png" /></div>
+                      <div><strong><strong>{getStudentName(student)}</strong>  </strong> <label className="student-roll"> {student.rollNo || "-"}</label></div></div>
+                      
                     </td>
+                   
                     <td>{student.totalRecords || 0}</td>
                     <td>{student.present || 0}</td>
                     <td>{student.absent || 0}</td>
                     <td>{student.leave || 0}</td>
                     <td>{student.late || 0}</td>
                     <td>
-                      <strong>
-                        {formatPercentage(student.attendancePercentage)}
-                      </strong>
+                      
+{(() => {
+  const percentage = Math.min(
+    100,
+    Math.max(0, Number(student.attendancePercentage) || 0)
+  );
+
+  const colorClass =
+    percentage <= 20
+      ? "progress-red"
+      : percentage <= 50
+      ? "progress-orange"
+      : percentage <= 80
+      ? "progress-yellow"
+      : "progress-green";
+
+  const textClass =
+    percentage <= 20
+      ? "progress-text-red"
+      : percentage <= 50
+      ? "progress-text-orange"
+      : percentage <= 80
+      ? "progress-text-yellow"
+      : "progress-text-green";
+
+  return (
+    <div className="student-attendance-progress-wrap">
+      <div
+        className="course-attendance-progress"
+        role="progressbar"
+        aria-valuenow={percentage}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${getStudentName(student)} attendance`}
+      >
+        <div
+          className={`course-attendance-progress-fill ${colorClass}`}
+          style={{ "--progress-width": `${percentage}%` }}
+        />
+      </div>
+
+      <strong className={`course-attendance-percentage ${textClass}`}>
+        {percentage.toFixed(2)}%
+      </strong>
+    </div>
+  );
+})()}
+
                     </td>
                   </tr>
                 ))}
