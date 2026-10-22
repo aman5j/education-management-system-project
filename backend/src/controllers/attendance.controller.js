@@ -54,30 +54,34 @@ const validateAttendanceRelations = async ({
   }
 
   const [student, course, batch] = await Promise.all([
-    Student.findById(student_id).select("_id course_id batch_id"),
-    Course.findById(course_id).select("_id"),
-    Batch.findById(batch_id).select("_id course_id"),
+    Student.findById(student_id)
+      .select("_id course_id batch_id status")
+      .lean(),
+    Course.findById(course_id)
+      .select("_id")
+      .lean(),
+    Batch.findById(batch_id)
+      .select("_id course_id")
+      .lean(),
   ]);
 
   if (!student) return "Student not found.";
   if (!course) return "Course not found.";
   if (!batch) return "Batch not found.";
 
+  if (student.status !== "active") {
+    return "Attendance can only be recorded for active students.";
+  }
+
   if (String(batch.course_id) !== String(course_id)) {
     return "The selected batch does not belong to this course.";
   }
 
-  if (
-    student.course_id &&
-    String(student.course_id) !== String(course_id)
-  ) {
+  if (String(student.course_id || "") !== String(course_id)) {
     return "The selected student does not belong to this course.";
   }
 
-  if (
-    student.batch_id &&
-    String(student.batch_id) !== String(batch_id)
-  ) {
+  if (String(student.batch_id || "") !== String(batch_id)) {
     return "The selected student does not belong to this batch.";
   }
 
