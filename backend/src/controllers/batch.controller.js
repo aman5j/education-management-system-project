@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import Batch from "../models/Batch.js";
 import Course from "../models/Course.js";
 import Student from "../models/Student.js";
+import StudentAdmission from "../models/StudentAdmission.js";
 
 const escapeRegex = (value = "") =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -424,13 +425,16 @@ export const deleteBatch = async (req, res, next) => {
       });
     }
 
-    const assignedStudents = await getAssignedStudentCount(batch._id);
+    const [assignedStudents, assignedAdmissions] = await Promise.all([
+      getAssignedStudentCount(batch._id),
+      StudentAdmission.countDocuments({ batch_id: batch._id }),
+    ]);
 
-    if (assignedStudents > 0) {
+    if (assignedStudents > 0 || assignedAdmissions > 0) {
       return res.status(400).json({
         success: false,
         message:
-          `This batch cannot be deleted because ${assignedStudents} student(s) are assigned to it. Reassign or remove those students first.`,
+          `This batch cannot be deleted because it is referenced by ${assignedStudents} student(s) and ${assignedAdmissions} admission(s). Reassign or remove those records first.`,
       });
     }
 

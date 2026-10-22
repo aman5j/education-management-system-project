@@ -10,9 +10,16 @@ import Batch from "../models/Batch.js";
 // the same remaining seat. Reconcile stored seat counts before using this.
 const reserveBatchSeat = async (batchId) =>
   Batch.findOneAndUpdate(
-    { _id: batchId, available_seats: { $gt: 0 } },
+    {
+      _id: batchId,
+      status: { $in: ["Upcoming", "Ongoing"] },
+      available_seats: { $gt: 0 },
+    },
     { $inc: { available_seats: -1 } },
-    { new: true, projection: { _id: 1 } }
+    {
+      new: true,
+      projection: { _id: 1 },
+    }
   ).lean();
 
 const releaseBatchSeat = async (batchId) => {
