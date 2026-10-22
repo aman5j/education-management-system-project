@@ -5,16 +5,19 @@ import {
   getAttendanceReport,
 } from "../controllers/attendanceReport.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorizeRoles("admin"));
 
-router.get("/attendance", getAttendanceReport);
+// Attendance reports follow the same permission model as
+// the main Attendance Management module.
+router.get(
+  "/attendance",
+  requirePermission("attendance.view"),
+  getAttendanceReport
+);
 
 export default router;

@@ -367,7 +367,7 @@ const App = () => {
         <Route path="categories/:id" element={<ViewCategory />} />
         <Route path="categories/:id/edit" element={<EditCategory />} />
 
-        
+
         {/* Subjects */}
         <Route path="subjects" element={<SubjectManagement />} />
         <Route path="subjects/add" element={<AddSubject />} />
@@ -392,6 +392,8 @@ const App = () => {
         <Route path="admissions/add" element={<AddAdmission />} />
         <Route path="admissions/:id" element={<ViewAdmission />} />
         <Route path="admissions/:id/edit" element={<EditAdmission />} />
+
+        
 
 
         <Route
