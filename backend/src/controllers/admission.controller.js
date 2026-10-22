@@ -667,14 +667,22 @@ export const createAdmission = async (
      * Batch must belong to selected Course.
      */
 
+    // The selected batch must belong to the selected course.
+    if (String(batch.course_id) !== String(course._id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected batch does not belong to the selected course.",
+      });
+    }
+
+    // A new admission must match the student's current course and batch.
     if (
       String(student.course_id) !== String(course._id) ||
       String(student.batch_id) !== String(batch._id)
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "The selected student must belong to the selected course and batch.",
+        message: "The selected student must belong to the selected course and batch.",
       });
     }
 
@@ -904,14 +912,13 @@ export const updateAdmission = async (
       });
     }
 
-    if (
-      String(student.course_id) !== String(course._id) ||
-      String(student.batch_id) !== String(batch._id)
-    ) {
+    // An existing admission may be historical. The student's current
+    // course or batch can change after the admission was created.
+    // Always validate the relationship between the admission's course and batch.
+    if (String(batch.course_id) !== String(course._id)) {
       return res.status(400).json({
         success: false,
-        message:
-          "The selected student must belong to the selected course and batch.",
+        message: "Selected batch does not belong to the selected course.",
       });
     }
 

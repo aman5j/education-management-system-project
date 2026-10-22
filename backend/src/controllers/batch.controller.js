@@ -361,15 +361,22 @@ export const updateBatch = async (req, res, next) => {
       });
     }
 
-    const assignedStudents = await getAssignedStudentCount(batch._id);
+    const [assignedStudents, assignedAdmissions] = await Promise.all([
+      getAssignedStudentCount(batch._id),
+      StudentAdmission.countDocuments({ batch_id: batch._id }),
+    ]);
+
     const currentCourseId = String(batch.course_id);
     const newCourseId = String(course._id);
 
-    if (assignedStudents > 0 && currentCourseId !== newCourseId) {
+    if (
+      currentCourseId !== newCourseId &&
+      (assignedStudents > 0 || assignedAdmissions > 0)
+    ) {
       return res.status(400).json({
         success: false,
         message:
-          "This batch cannot be moved to another course while students are assigned to it. Reassign the students first.",
+          `This batch cannot be moved to another course because it is referenced by ${assignedStudents} student(s) and ${assignedAdmissions} admission(s). Reassign or resolve those records first.`,
       });
     }
 
