@@ -64,7 +64,6 @@ export const getBatches = async (req, res, next) => {
     const allowedSortFields = [
       "batch_name",
       "max_seats",
-      "available_seats",
       "status",
       "createdAt",
       "updatedAt",
@@ -233,9 +232,17 @@ export const createBatch = async (req, res, next) => {
       });
     }
 
+    const escapedName = normalizedName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
     const existingBatch = await Batch.findOne({
       course_id,
-      batch_name: normalizedName,
+      batch_name: {
+        $regex: `^${escapedName}$`,
+        $options: "i",
+      },
     });
 
     if (existingBatch) {
@@ -332,10 +339,18 @@ export const updateBatch = async (req, res, next) => {
       });
     }
 
+    const escapedName = normalizedName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
     const duplicateBatch = await Batch.findOne({
       _id: { $ne: id },
       course_id,
-      batch_name: normalizedName,
+      batch_name: {
+        $regex: `^${escapedName}$`,
+        $options: "i",
+      },
     });
 
     if (duplicateBatch) {
