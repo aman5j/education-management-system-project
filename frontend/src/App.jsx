@@ -425,6 +425,13 @@ const App = () => {
         />
 
 
+
+        {/* Expenses — StaffRouteGuard checks the required permission */}
+        <Route path="expenses" element={<Expenses />} />
+        <Route path="expenses/add" element={<AddExpense />} />
+        <Route path="expenses/:id/edit" element={<EditExpense />} />
+
+
          {/* Reports */}
         {/* <Route path="reports" element={<Reports />} />
         <Route path="reports/payments" element={<PaymentReports />} />
