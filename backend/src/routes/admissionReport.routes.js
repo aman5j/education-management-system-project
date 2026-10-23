@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -5,37 +6,15 @@ import {
   getAdmissionReportFilters,
 } from "../controllers/admissionReport.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Admission Report Filters
-|--------------------------------------------------------------------------
-| Admin only
-*/
-router.get(
-  "/admission-filters",
-  authenticate,
-  authorizeRoles("admin"),
-  getAdmissionReportFilters
-);
+router.use(authenticate);
+router.use(requirePermission("reports.view"));
 
-/*
-|--------------------------------------------------------------------------
-| Admission Report
-|--------------------------------------------------------------------------
-| Admin only
-*/
-router.get(
-  "/admissions",
-  authenticate,
-  authorizeRoles("admin"),
-  getAdmissionReport
-);
+router.get("/admission-filters", getAdmissionReportFilters);
+router.get("/admissions", getAdmissionReport);
 
 export default router;

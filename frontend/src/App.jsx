@@ -14,10 +14,12 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/admin/Dashboard";
 import RoleHome from "./pages/dashboard/RoleHome";
 import StaffDashboard from "./pages/staff/StaffDashboard";
+import StaffProfile from "./pages/staff/StaffProfile";
 
 import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
 import EditStudent from "./pages/admin/students/EditStudent";
+import StudentDetails from "./pages/admin/students/StudentDetails";
 
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
@@ -206,6 +208,12 @@ const App = () => {
         <Route path="students/add" element={<AddStudent />} />
         <Route path="students/:id/edit" element={<EditStudent />} />
 
+        {/* Find student */}
+        <Route
+          path="students/:id/details"
+          element={<StudentDetails />}
+        />
+
         {/* Admissions */}
         <Route path="admissions" element={<Admissions />} />
         <Route path="admissions/add" element={<AddAdmission />} />
@@ -344,6 +352,8 @@ const App = () => {
           element={<StaffDashboard />}
         />
 
+        <Route path="profile" element={<StaffProfile />} />
+
         {/* Student management */}
         <Route
           path="students"
@@ -442,6 +452,91 @@ const App = () => {
         <Route path="reports/fees" element={<FeeReports />} />
         <Route path="reports/expenses" element={<ExpenseReports />} />
         <Route path="reports/attendance" element={<AttendanceReports />} /> */}
+
+
+      
+        {/* Reports — enforce report permissions on Staff routes */}
+        <Route
+          path="reports"
+          element={
+            <PermissionRoute permission="reports.view">
+              <Reports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/payments"
+          element={
+            <PermissionRoute permission="reports.view">
+              <PaymentReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/students"
+          element={
+            <PermissionRoute permission="reports.view">
+              <StudentReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/admissions"
+          element={
+            <PermissionRoute permission="reports.view">
+              <AdmissionReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/courses"
+          element={
+            <PermissionRoute permission="reports.view">
+              <CourseReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/batches"
+          element={
+            <PermissionRoute permission="reports.view">
+              <BatchReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/fees"
+          element={
+            <PermissionRoute permission="reports.view">
+              <FeeReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/pending-fees"
+          element={
+            <PermissionRoute permission="reports.view">
+              <PendingFeeReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/expenses"
+          element={
+            <PermissionRoute permission="reports.view">
+              <ExpenseReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/attendance"
+          element={
+            <PermissionRoute permission="attendance.view">
+              <AttendanceReports />
+            </PermissionRoute>
+          }
+        />
+
 
         
 

@@ -1,18 +1,17 @@
-
 import express from "express";
 
 import { getExpenseReport } from "../controllers/expenseReport.controller.js";
-
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorizeRoles("admin"));
 
-router.get("/expenses", getExpenseReport);
+router.get(
+  "/expenses",
+  requirePermission("reports.view"),
+  getExpenseReport
+);
 
 export default router;

@@ -10,12 +10,16 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import "../../../styles/Reports.css";
 
 const Reports = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const reports = [
     {
@@ -23,7 +27,8 @@ const Reports = () => {
       description:
         "View student records, status, course and batch information.",
       icon: FiUsers,
-      path: "/admin/reports/students",
+      // path: "/admin/reports/students",
+      path: `${basePath}/reports/students`,
       status: "Completed",
        className: "studentreport"
     },
@@ -32,7 +37,8 @@ const Reports = () => {
       description:
         "Analyze admissions by date, course, batch and status.",
       icon: FiClipboard,
-      path: "/admin/reports/admissions",
+      // path: "/admin/reports/admissions",
+      path: `${basePath}/reports/admissions`,
       status: "Completed",
       className: "admision"
     },
@@ -41,7 +47,8 @@ const Reports = () => {
       description:
         "View course-wise student and admission information.",
       icon: FiBookOpen,
-      path: "/admin/reports/courses",
+      // path: "/admin/reports/courses",
+      path: `${basePath}/reports/courses`,
       status: "Completed",
       className: "batch"
     },
@@ -50,7 +57,8 @@ const Reports = () => {
       description:
         "View batch capacity, seats and student allocation.",
       icon: FiLayers,
-      path: "/admin/reports/batches",
+      // path: "/admin/reports/batches",
+      path: `${basePath}/reports/batches`,
       status: "Completed",
       className: "batch"
     },
@@ -59,7 +67,8 @@ const Reports = () => {
       description:
         "Analyze total fees, paid fees, pending fees and collections.",
       icon: FiDollarSign,
-      path: "/admin/reports/fees",
+      // path: "/admin/reports/fees",
+      path: `${basePath}/reports/fees`,
       status: "Completed",
       className: "fees"
     },
@@ -68,7 +77,8 @@ const Reports = () => {
       description:
         "View payment transactions with filters and PDF/Excel export.",
       icon: FiCreditCard,
-      path: "/admin/reports/payments",
+      // path: "/admin/reports/payments",
+      path: `${basePath}/reports/payments`,
       status: "Completed",
       className: "payment"
     },
@@ -77,7 +87,8 @@ const Reports = () => {
       description:
         "Identify students with outstanding fee balances.",
       icon: FiAlertCircle,
-      path: "/admin/reports/pending-fees",
+      // path: "/admin/reports/pending-fees",
+      path: `${basePath}/reports/pending-fees`,
       status: "Completed",
       className: "pendingfess"
     },
@@ -87,7 +98,8 @@ const Reports = () => {
       description:
         "Analyze institute expenses, paid and pending amounts, and category-wise spending.",
       icon: FiDollarSign,
-      path: "/admin/reports/expenses",
+      // path: "/admin/reports/expenses",
+      path: `${basePath}/reports/expenses`,
       status: "Completed",
       className: "exprences"
     },
@@ -97,7 +109,8 @@ const Reports = () => {
       description:
         "Analyze student attendance, Present, Absent, Leave, Late and attendance percentages.",
       icon: FiCalendar,
-      path: "/admin/reports/attendance",
+      // path: "/admin/reports/attendance",
+      path: `${basePath}/reports/attendance`,
       status: "Completed",
       className: "aatendance"
     },

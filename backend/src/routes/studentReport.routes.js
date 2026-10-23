@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -5,38 +6,15 @@ import {
   getStudentReportFilters,
 } from "../controllers/studentReport.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Student Report Filters
-|--------------------------------------------------------------------------
-*/
+router.use(authenticate);
+router.use(requirePermission("reports.view"));
 
-router.get(
-  "/student-filters",
-  authenticate,
-  authorizeRoles("admin"),
-  getStudentReportFilters
-);
-
-/*
-|--------------------------------------------------------------------------
-| Student Report
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/students",
-  authenticate,
-  authorizeRoles("admin"),
-  getStudentReport
-);
+router.get("/student-filters", getStudentReportFilters);
+router.get("/students", getStudentReport);
 
 export default router;
