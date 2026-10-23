@@ -20,10 +20,16 @@ import RecentAdmissions from "../../components/dashboard/RecentAdmissions";
 import TodaysClasses from "../../components/dashboard/TodaysClasses";
 import PendingActions from "../../components/dashboard/PendingActions";
 
+// const formatCurrency = (value) =>
+//   `₹${Number(value || 0).toLocaleString("en-IN", {
+//     maximumFractionDigits: 2,
+//   })}`;
+
+// const formatCurrency = (value) =>
+//   `₹${Math.round(Number(value) || 0).toLocaleString("en-IN")}`;
+
 const formatCurrency = (value) =>
-  `₹${Number(value || 0).toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  })}`;
+  `₹${Math.trunc(Number(value) || 0).toLocaleString("en-IN")}`;
 
 const formatDate = () =>
   new Intl.DateTimeFormat("en-IN", {
@@ -442,11 +448,7 @@ const openStudentDetails = (student) => {
                     </div>
                   )}
 
-                  {/* {selectedStudentLoading && (
-                    <p style={{ fontSize: "12px", color: "#64748b" }}>
-                      Loading student profile...
-                    </p>
-                  )} */}
+                  
 
                   {searchError && !searchOpen && (
                     <p
