@@ -71,7 +71,9 @@ const STAFF_ROUTE_PERMISSIONS = [
   [/^\/staff\/media\/?$/, "website.view"],
   [/^\/staff\/seo\/?$/, "website.view"],
 
-  [/^\/staff\/profile\/?$/, "dashboard.view"],
+//   [/^\/staff\/profile\/?$/, "dashboard.view"],
+// Every authenticated staff member can access their own profile.
+  [/^\/staff\/profile\/?$/, null],
   [/^\/staff\/notifications\/?$/, "dashboard.view"],
 ];
 
@@ -113,8 +115,13 @@ const StaffRouteGuard = ({ children }) => {
 
   const [, requiredPermission] = routeRule;
 
-  if (!hasPermission(user, requiredPermission)) {
-    return <Navigate to="/unauthorized" replace />;
+  // Personal profile access is available to all staff.
+  // All other staff routes continue to require their assigned permission.
+ if (
+   requiredPermission &&
+   !hasPermission(user, requiredPermission)
+  ) {
+   return <Navigate to="/unauthorized" replace />;
   }
 
   return children;
