@@ -142,14 +142,25 @@ export default function StudentDetails() {
               );
             },
           },
-          {
+        
+            {
             key: "attendance",
             run: () =>
-              api.get("/attendance", {
-                params: { student_id: id, page: 1, limit: 100 },
-              }),
-            save: (data) => setAttendance(getRows(data, "attendance")),
-          },
+                api.get("/attendance", {
+                params: {
+                    student_id: id,
+                    page: 1,
+                    limit: 100,
+                },
+                }),
+            save: (data) => {
+                // The backend returns records under data.records.
+                const rows = getRows(data, "records");
+
+                setAttendance(rows);
+            },
+            },
+
         ];
 
         await Promise.all(
@@ -417,7 +428,13 @@ export default function StudentDetails() {
               <tbody>
                 {attendance.map((record) => (
                   <tr key={record._id}>
-                    <td>{date(record.date || record.attendanceDate)}</td>
+                    <td>
+                    {date(
+                        record.attendance_date ||
+                        record.date ||
+                        record.attendanceDate
+                    )}
+                    </td>
                     <td>{record.course_id?.courseTitle || "—"}</td>
                     <td>{record.batch_id?.batch_name || "—"}</td>
                     <td>{value(record.status)}</td>

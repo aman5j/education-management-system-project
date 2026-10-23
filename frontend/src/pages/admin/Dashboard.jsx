@@ -19,7 +19,6 @@ import FeeCollection from "../../components/dashboard/FeeCollection";
 import RecentAdmissions from "../../components/dashboard/RecentAdmissions";
 import TodaysClasses from "../../components/dashboard/TodaysClasses";
 import PendingActions from "../../components/dashboard/PendingActions";
-// import StudentView from "../../components/students/StudentView";
 
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -54,9 +53,6 @@ const Dashboard = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  // const [selectedStudent, setSelectedStudent] = useState(null);
-  // const [selectedStudentLoading, setSelectedStudentLoading] =
-  //   useState(false);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -366,8 +362,7 @@ const openStudentDetails = (student) => {
                             role="option"
                             aria-selected="false"
                             onClick={() => openStudentDetails(student)}
-                            // disabled={selectedStudentLoading}
-                            // onClick={() => openStudentDetails(student)}
+        
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -529,16 +524,7 @@ const openStudentDetails = (student) => {
         </>
       )}
 
-      {/* {selectedStudent && (
-        <StudentView
-          student={selectedStudent}
-          onClose={() => setSelectedStudent(null)}
-          onEdit={(student) => {
-            setSelectedStudent(null);
-            navigate(`/admin/students/${student._id}/edit`);
-          }}
-        />
-      )} */}
+      
     </div>
   );
 };
