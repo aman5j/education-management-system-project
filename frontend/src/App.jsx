@@ -19,6 +19,7 @@ import StaffProfile from "./pages/staff/StaffProfile";
 import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
 import EditStudent from "./pages/admin/students/EditStudent";
+import StudentDetails from "./pages/admin/students/StudentDetails";
 
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
@@ -206,6 +207,12 @@ const App = () => {
         <Route path="students" element={<Students />} />
         <Route path="students/add" element={<AddStudent />} />
         <Route path="students/:id/edit" element={<EditStudent />} />
+
+        {/* Find student */}
+        <Route
+          path="students/:id/details"
+          element={<StudentDetails />}
+        />
 
         {/* Admissions */}
         <Route path="admissions" element={<Admissions />} />
