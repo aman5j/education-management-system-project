@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import CategoryForm from "../../../components/categories/CategoryForm";
 import { useAuth } from "../../../context/AuthContext";
 import { createCategory } from "../../../services/categoryService";
+import { IoChevronBack } from "react-icons/io5";
 
 import { hasPermission } from "../../../utils/permissions";
 
@@ -61,12 +62,12 @@ const AddCategory = () => {
     <div className="category-page">
       <div className="page-header">
         <div>
-          <h1>Add Category</h1>
-          <p>Create a reusable category for your institute's courses.</p>
+          {/* <Link to={basePath} className="backbutton">
+           <IoChevronBack/> Back
+        </Link> */}
+        <h1>  Add Category</h1>
         </div>
-        <Link to={basePath} className="category-add-button">
-          Back to Categories
-        </Link>
+        
       </div>
 
       {error && (

@@ -868,18 +868,18 @@ label.admission-checkbox-label span {
 }
 .online, .Online {
     background: #F44336;
-    padding: 3px 7px;
+    padding: 2px 5px;
     border-radius: 3px;
     color: white !important;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 0.4px;
 }
 .Offline, .offline  {
     background: #673ab7;
-    padding: 3px 7px;
+    padding: 2px 5px;
     border-radius: 3px;
     color: white !important;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 0.4px;
 }
 .status-active {

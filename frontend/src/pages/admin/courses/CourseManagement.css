@@ -36,8 +36,6 @@
 
 .course-card {
   width: 100%;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 20px;
   margin-bottom: 20px;
@@ -348,6 +346,10 @@
 .course-form-actions {
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
+}
+.common-card{
+  margin-bottom: 20px;
 }
 
 /* View */

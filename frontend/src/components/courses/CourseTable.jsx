@@ -2,6 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { getAssetUrl } from "../../utils/assetUrl";
+import { FiEdit2, FiEye, FiTrash2 } from "react-icons/fi";
 
 const CourseTable = ({
   courses = [],
@@ -16,14 +17,13 @@ const CourseTable = ({
   }
 
   return (
-    <div className="course-table-wrapper">
-      <table className="course-table">
+    <div className="common-table-wrapper">
+      <table className="common-table">
         <thead>
           <tr>
-            <th>#</th>
+            {/* <th>#</th> */}
             <th>Image</th>
             <th>Course</th>
-            <th>Type</th>
             <th>Category</th>
             <th>MRP</th>
             <th>Price</th>
@@ -37,38 +37,45 @@ const CourseTable = ({
         <tbody>
           {courses.map((course, index) => (
             <tr key={course._id}>
-              <td>{index + 1}</td>
+              {/* <td>{index + 1}</td> */}
 
               <td>
                 {course.courseImage ? (
                   <img
                     src={getAssetUrl(course.courseImage)}
                     alt={course.courseTitle}
-                    className="course-thumb"
+                    className="student-avatar"
                   />
                 ) : (
-                  <div className="course-thumb-placeholder">
+                  <div className="student-avatar student-avatar-placeholder">
                     No Image
                   </div>
                 )}
               </td>
 
-              <td>
+              <td >
+                <div className="student-name-cell">
                 <strong>{course.courseTitle}</strong>
-                {course.popular && (
-                  <span className="course-mini-badge">Popular</span>
+                 {course.popular && (
+                  <label className="course-mini-badge">Popular</label>
                 )}
+                </div>
+                <span className={`online ${course.courseType || ""}`}>
+                      {course.courseType || "-"}
+                </span>
+               
               </td>
 
-              <td>{course.courseType || "-"}</td>
+            
+
               <td>{course.courseCategory || "-"}</td>
 
               <td>
-                ₹{Number(course.mrp || 0).toLocaleString("en-IN")}
+                <span className="tag-purple">₹{Number(course.mrp || 0).toLocaleString("en-IN")}</span>
               </td>
 
               <td>
-                ₹{Number(course.price || 0).toLocaleString("en-IN")}
+                <span className="tag-success">₹{Number(course.price || 0).toLocaleString("en-IN")}</span>
               </td>
 
               <td>
@@ -99,30 +106,30 @@ const CourseTable = ({
               </td>
 
               <td>
-                <div className="course-actions">
+                <div className="admission-actions">
                   <Link
                     to={`${basePath}/${course._id}`}
-                    className="course-action view"
+                    data-tooltip="View" className="tooltip"
                   >
-                    View
+                    <FiEye />
                   </Link>
 
                   {canUpdate && (
                     <Link
                       to={`${basePath}/${course._id}/edit`}
-                      className="course-action edit"
+                      data-tooltip="Edit" className="tooltip"
                     >
-                      Edit
+                        <FiEdit2 />
                     </Link>
                   )}
 
                   {canDelete && (
                     <button
                       type="button"
-                      className="course-action delete"
+                     data-tooltip="Delete" className="tooltip"
                       onClick={() => onDelete(course._id)}
                     >
-                      Delete
+                       <FiTrash2 />
                     </button>
                   )}
                 </div>
