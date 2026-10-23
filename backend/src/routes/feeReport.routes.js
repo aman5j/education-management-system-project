@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -5,26 +6,15 @@ import {
   getFeeReportFilters,
 } from "../controllers/feeReport.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
-router.get(
-  "/fee-filters",
-  authenticate,
-  authorizeRoles("admin"),
-  getFeeReportFilters
-);
+router.use(authenticate);
+router.use(requirePermission("reports.view"));
 
-router.get(
-  "/fees",
-  authenticate,
-  authorizeRoles("admin"),
-  getFeeReport
-);
+router.get("/fee-filters", getFeeReportFilters);
+router.get("/fees", getFeeReport);
 
 export default router;

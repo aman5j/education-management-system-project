@@ -443,6 +443,91 @@ const App = () => {
         <Route path="reports/expenses" element={<ExpenseReports />} />
         <Route path="reports/attendance" element={<AttendanceReports />} /> */}
 
+
+      
+        {/* Reports — enforce report permissions on Staff routes */}
+        <Route
+          path="reports"
+          element={
+            <PermissionRoute permission="reports.view">
+              <Reports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/payments"
+          element={
+            <PermissionRoute permission="reports.view">
+              <PaymentReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/students"
+          element={
+            <PermissionRoute permission="reports.view">
+              <StudentReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/admissions"
+          element={
+            <PermissionRoute permission="reports.view">
+              <AdmissionReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/courses"
+          element={
+            <PermissionRoute permission="reports.view">
+              <CourseReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/batches"
+          element={
+            <PermissionRoute permission="reports.view">
+              <BatchReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/fees"
+          element={
+            <PermissionRoute permission="reports.view">
+              <FeeReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/pending-fees"
+          element={
+            <PermissionRoute permission="reports.view">
+              <PendingFeeReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/expenses"
+          element={
+            <PermissionRoute permission="reports.view">
+              <ExpenseReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="reports/attendance"
+          element={
+            <PermissionRoute permission="attendance.view">
+              <AttendanceReports />
+            </PermissionRoute>
+          }
+        />
+
+
         
 
 

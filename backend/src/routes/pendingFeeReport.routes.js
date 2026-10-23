@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -5,25 +6,15 @@ import {
   getPendingFeeReportFilters,
 } from "../controllers/pendingFeeReport.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
-router.get(
-  "/pending-fee-filters",
-  authenticate,
-  authorizeRoles("admin"),
-  getPendingFeeReportFilters
-);
+router.use(authenticate);
+router.use(requirePermission("reports.view"));
 
-router.get(
-  "/pending-fees",
-  authenticate,
-  authorizeRoles("admin"),
-  getPendingFeeReport
-);
+router.get("/pending-fee-filters", getPendingFeeReportFilters);
+router.get("/pending-fees", getPendingFeeReport);
 
 export default router;

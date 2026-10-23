@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -5,45 +6,15 @@ import {
   getPaymentReportFilters,
 } from "../controllers/paymentReport.controller.js";
 
-import {
-  authenticate,
-  authorizeRoles,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Payment Reports
-|--------------------------------------------------------------------------
-| Admin only
-|--------------------------------------------------------------------------
-*/
+router.use(authenticate);
+router.use(requirePermission("reports.view"));
 
-/*
-|--------------------------------------------------------------------------
-| GET /api/reports/payment-filters
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/payment-filters",
-  authenticate,
-  authorizeRoles("admin"),
-  getPaymentReportFilters
-);
-
-/*
-|--------------------------------------------------------------------------
-| GET /api/reports/payments
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/payments",
-  authenticate,
-  authorizeRoles("admin"),
-  getPaymentReport
-);
+router.get("/payment-filters", getPaymentReportFilters);
+router.get("/payments", getPaymentReport);
 
 export default router;
