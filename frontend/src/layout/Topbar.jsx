@@ -201,7 +201,7 @@ const Topbar = ({
               <div className="profile-dropdown-divider" />
 
                     <div class="profile-dropdown-item">
-                       <button
+                       {/* <button
                 onClick={() => {
                   setProfileOpen(false);
                   navigate("/admin/profile");
@@ -209,7 +209,24 @@ const Topbar = ({
               >
                 <FiUser />
                 Profile
-              </button>
+              </button> */}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(false);
+
+                      const profilePath =
+                        user?.role === "staff"
+                          ? "/staff/profile"
+                          : "/admin/profile";
+
+                      navigate(profilePath);
+                    }}
+                  >
+                    <FiUser />
+                    Profile
+                  </button>
 
               <button
                 onClick={() => {
