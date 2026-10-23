@@ -342,7 +342,13 @@ export default function StudentDetails() {
                 </div>
 
                 <p className="student-details-muted">
-                  <FiCalendar /> Admitted on {date(admission.admission_date)}
+                <FiCalendar /> Admitted on {date(admission.admission_date)}
+                </p>
+
+                <p className="student-details-muted">
+                Course: {admission.course_id?.courseTitle || "—"}
+                {" · "}
+                Batch: {admission.batch_id?.batch_name || "—"}
                 </p>
 
                 <div className="student-details-amount-grid">

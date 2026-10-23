@@ -5,6 +5,7 @@ import Attendance from "../models/Attendance.js";
 import Student from "../models/Student.js";
 import Course from "../models/Course.js";
 import Batch from "../models/Batch.js";
+import StudentAdmission from "../models/StudentAdmission.js";
 
 const isValidId = (id) =>
   mongoose.Types.ObjectId.isValid(id);
@@ -46,119 +47,68 @@ const validateAttendanceRelations = async ({
   batch_id,
 }) => {
   if (
-    !isValidId(student_id) ||
-    !isValidId(course_id) ||
-    !isValidId(batch_id)
+    !student_id ||
+    !course_id ||
+    !batch_id ||
+    !mongoose.Types.ObjectId.isValid(student_id) ||
+    !mongoose.Types.ObjectId.isValid(course_id) ||
+    !mongoose.Types.ObjectId.isValid(batch_id)
   ) {
-    return "Valid student, course, and batch IDs are required.";
+    return "Valid student, course and batch IDs are required.";
   }
 
   const [student, course, batch] = await Promise.all([
     Student.findById(student_id)
-      .select("_id course_id batch_id status")
+      .select("_id status")
       .lean(),
+
     Course.findById(course_id)
       .select("_id")
       .lean(),
+
     Batch.findById(batch_id)
       .select("_id course_id")
       .lean(),
   ]);
 
-  if (!student) return "Student not found.";
-  if (!course) return "Course not found.";
-  if (!batch) return "Batch not found.";
+  if (!student) {
+    return "Student not found.";
+  }
 
   if (student.status !== "active") {
-    return "Attendance can only be recorded for active students.";
+    return "Attendance cannot be recorded for an inactive student.";
   }
 
-  if (String(batch.course_id) !== String(course_id)) {
-    return "The selected batch does not belong to this course.";
+  if (!course) {
+    return "Course not found.";
   }
 
-  if (String(student.course_id || "") !== String(course_id)) {
-    return "The selected student does not belong to this course.";
+  if (!batch) {
+    return "Batch not found.";
   }
 
-  if (String(student.batch_id || "") !== String(batch_id)) {
-    return "The selected student does not belong to this batch.";
+  if (String(batch.course_id) !== String(course._id)) {
+    return "Selected batch does not belong to the selected course.";
+  }
+
+  // Course and batch membership belongs to the admission,
+  // not to the Student record.
+  const admission = await StudentAdmission.findOne({
+    student_id: student._id,
+    course_id: course._id,
+    batch_id: batch._id,
+    status: "Active",
+  })
+    .select("_id")
+    .lean();
+
+  if (!admission) {
+    return "The student does not have an active admission for this course and batch.";
   }
 
   return null;
 };
 
-// const validateAttendanceRelations = async ({
-//   student_id,
-//   course_id,
-//   batch_id,
-// }) => {
-//   if (
-//     !isValidId(student_id) ||
-//     !isValidId(course_id) ||
-//     !isValidId(batch_id)
-//   ) {
-//     return "Valid student, course, and batch IDs are required.";
-//   }
-
-//   const [student, course, batch] = await Promise.all([
-//     Student.findById(student_id)
-//       // start remove: course_id and batch_id from student select
-//       // .select("_id course_id batch_id status")
-//       // end remove
-//       // start insertion
-//       .select("_id status")
-//       // end insertion
-//       .lean(),
-//     Course.findById(course_id)
-//       .select("_id")
-//       .lean(),
-//     Batch.findById(batch_id)
-//       .select("_id course_id")
-//       .lean(),
-//   ]);
-
-//   if (!student) return "Student not found.";
-//   if (!course) return "Course not found.";
-//   if (!batch) return "Batch not found.";
-
-//   if (student.status !== "active") {
-//     return "Attendance can only be recorded for active students.";
-//   }
-
-//   if (String(batch.course_id) !== String(course_id)) {
-//     return "The selected batch does not belong to this course.";
-//   }
-
-//   // start remove: student course_id and batch_id comparison checks
-//   /*
-//   if (String(student.course_id || "") !== String(course_id)) {
-//     return "The selected student does not belong to this course.";
-//   }
-
-//   if (String(student.batch_id || "") !== String(batch_id)) {
-//     return "The selected student does not belong to this batch.";
-//   }
-//   */
-//   // end remove
-
-//   // start insertion: active admission check
-//   const admission = await StudentAdmission.findOne({
-//     student_id,
-//     course_id,
-//     batch_id,
-//     status: "Active",
-//   })
-//     .select("_id")
-//     .lean();
-
-//   if (!admission) {
-//     return "The student does not have an active admission for this course and batch.";
-//   }
-//   // end insertion
-
-//   return null;
-// };
 
 export const getAttendance = async (req, res, next) => {
   try {

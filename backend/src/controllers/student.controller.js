@@ -266,52 +266,64 @@ export const getStudents = async (req, res, next) => {
       filter.status = status;
     }
 
-    if (course_id) {
-      if (!mongoose.Types.ObjectId.isValid(course_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid course ID.",
-        });
-      }
-
-      filter.course_id = course_id;
-    }
-
-    if (batch_id) {
-      if (!mongoose.Types.ObjectId.isValid(batch_id)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid batch ID.",
-        });
-      }
-
-      filter.batch_id = batch_id;
-    }
-
-    if (course_id && batch_id) {
-      const batchExists = await Batch.exists({
-        _id: batch_id,
-        course_id,
+    if (course_id && !mongoose.Types.ObjectId.isValid(course_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID.",
       });
-
-      if (!batchExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Selected batch does not belong to the selected course.",
-        });
-      }
     }
 
-    if (search.trim()) {
-      const searchRegex = new RegExp(escapeRegex(search.trim()), "i");
+    if (batch_id && !mongoose.Types.ObjectId.isValid(batch_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid batch ID.",
+      });
+    }
 
-      filter.$or = [
-        { firstName: searchRegex },
-        { surname: searchRegex },
-        { fatherName: searchRegex },
-        { mobile: searchRegex },
-        { email: searchRegex },
-        { rollNo: searchRegex },
+    if (course_id || batch_id) {
+      const admissionFilter = {};
+
+      if (course_id) admissionFilter.course_id = course_id;
+      if (batch_id) admissionFilter.batch_id = batch_id;
+
+      if (course_id && batch_id) {
+        const batchExists = await Batch.exists({
+          _id: batch_id,
+          course_id,
+        });
+
+        if (!batchExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Selected batch does not belong to the selected course.",
+          });
+        }
+      }
+
+      const admissions = await StudentAdmission.find(admissionFilter)
+        .distinct("student_id");
+
+      filter._id = { $in: admissions };
+    }
+
+    if (String(search).trim()) {
+      const searchRegex = new RegExp(
+        escapeRegex(String(search).trim()),
+        "i"
+      );
+
+      filter.$and = [
+        ...(filter.$and || []),
+        {
+          $or: [
+            { firstName: searchRegex },
+            { surname: searchRegex },
+            { fatherName: searchRegex },
+            { mobile: searchRegex },
+            { email: searchRegex },
+            { rollNo: searchRegex },
+          ],
+        },
       ];
     }
 
@@ -332,14 +344,6 @@ export const getStudents = async (req, res, next) => {
 
     const [students, total] = await Promise.all([
       Student.find(filter)
-        .populate({
-          path: "course_id",
-          select: "_id courseTitle courseType status",
-        })
-        .populate({
-          path: "batch_id",
-          select: "_id batch_name course_id status",
-        })
         .sort({ [safeSortBy]: safeSortOrder })
         .skip(skip)
         .limit(limitNumber)
@@ -347,8 +351,6 @@ export const getStudents = async (req, res, next) => {
 
       Student.countDocuments(filter),
     ]);
-
-    const totalPages = Math.ceil(total / limitNumber);
 
     return res.status(200).json({
       success: true,
@@ -358,7 +360,7 @@ export const getStudents = async (req, res, next) => {
           page: pageNumber,
           limit: limitNumber,
           total,
-          totalPages,
+          totalPages: Math.ceil(total / limitNumber),
         },
       },
     });
@@ -369,16 +371,14 @@ export const getStudents = async (req, res, next) => {
 
 export const getStudent = async (req, res, next) => {
   try {
-    const student = await Student.findById(req.params.id)
-      .populate({
-        path: "course_id",
-        select: "_id courseTitle courseType status",
-      })
-      .populate({
-        path: "batch_id",
-        select: "_id batch_name course_id status",
-      })
-      .lean();
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student ID.",
+      });
+    }
+
+    const student = await Student.findById(req.params.id).lean();
 
     if (!student) {
       return res.status(404).json({
