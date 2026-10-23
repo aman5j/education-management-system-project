@@ -396,7 +396,11 @@ export const updateProfile = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(req.user._id);
+    // const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).populate({
+      path: "assignedRole",
+      select: "name label permissions isActive roleType isSystem",
+    });
 
     if (!user) {
       return res.status(404).json({

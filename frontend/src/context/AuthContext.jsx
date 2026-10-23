@@ -39,8 +39,28 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
 
+  // const updateUser = useCallback((updatedUser) => {
+  //   setUser(updatedUser);
+  // }, []);
+
   const updateUser = useCallback((updatedUser) => {
-    setUser(updatedUser);
+    setUser((currentUser) => {
+      if (!currentUser || !updatedUser) {
+        return currentUser;
+      }
+
+      return {
+        ...currentUser,
+        ...updatedUser,
+
+        // Keep the populated role if the profile API returns
+        // only the assigned role ID.
+        assignedRole:
+          updatedUser.assignedRole?.isActive !== undefined
+            ? updatedUser.assignedRole
+            : currentUser.assignedRole,
+      };
+    });
   }, []);
 
   useEffect(() => {
