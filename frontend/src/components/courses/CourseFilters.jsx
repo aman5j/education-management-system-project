@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getCategories } from "../../services/categoryService";
+import { IoSearchOutline } from "react-icons/io5";
+import { FiRefreshCw } from "react-icons/fi";
 
 const CourseFilters = ({
   filters,
@@ -60,7 +62,7 @@ const CourseFilters = ({
   return (
     <div className="course-filters">
       {/* Search */}
-      <div className="course-filter-group course-search">
+      <div className="input-search">
         <label htmlFor="course-filter-search">Search Course</label>
 
         <input
@@ -71,10 +73,13 @@ const CourseFilters = ({
           onChange={onChange}
           placeholder="Search course..."
         />
+        <IoSearchOutline />
+
+
       </div>
 
       {/* Status */}
-      <div className="course-filter-group">
+      <div className="input-search">
         <label htmlFor="course-filter-status">Status</label>
 
         <select
@@ -91,7 +96,7 @@ const CourseFilters = ({
       </div>
 
       {/* Course Type */}
-      <div className="course-filter-group">
+      <div className="input-search">
         <label htmlFor="course-filter-type">Course Type</label>
 
         <select
@@ -107,7 +112,7 @@ const CourseFilters = ({
       </div>
 
       {/* Database-driven Course Category */}
-      <div className="course-filter-group">
+      <div className="input-search">
         <label htmlFor="course-filter-category">
           Course Category
         </label>
@@ -145,10 +150,10 @@ const CourseFilters = ({
       {/* Reset */}
       <button
         type="button"
-        className="course-reset-btn"
+        className="themebtn themebtnline"
         onClick={onReset}
       >
-        Reset
+      <FiRefreshCw />  Reset
       </button>
     </div>
   );

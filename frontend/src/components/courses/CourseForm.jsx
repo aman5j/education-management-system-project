@@ -692,7 +692,7 @@ const CourseForm = ({
 
   return (
     <form
-      className="course-form"
+     
       onSubmit={handleSubmit}
       noValidate
     >
@@ -705,13 +705,14 @@ const CourseForm = ({
 
       {/* BASIC INFORMATION */}
 
-      <div className="course-form-section">
-        <h2>Basic Information</h2>
-
+      <div className="common-card">
+        <div class="panel-header"><div><h3>Basic Information </h3> </div></div>
+      
+        <div className="cardbody">
         <div className="course-form-grid">
-          <div className="course-field course-field-full">
+          <div className="input-felid">
             <label>
-              Course Title *
+              Course Title <span className="required">*</span>
             </label>
 
             <input
@@ -725,8 +726,8 @@ const CourseForm = ({
             {fieldError("courseTitle")}
           </div>
 
-          <div className="course-field">
-            <label htmlFor="courseType">Course Type *</label>
+          <div className="input-felid">
+            <label htmlFor="courseType">Course Type <span className="required">*</span></label>
 
             <select
               id="courseType"
@@ -744,8 +745,8 @@ const CourseForm = ({
           </div>
 
           
-          <div className="course-field">
-            <label htmlFor="courseCategory">Course Category *</label>
+          <div className="input-felid">
+            <label htmlFor="courseCategory">Course Category <span className="required">*</span></label>
 
             <select
               id="courseCategory"
@@ -795,9 +796,9 @@ const CourseForm = ({
           </div>
 
 
-          <div className="course-field">
+          <div className="input-felid">
             <label>
-              Display Order *
+              Display Order <span className="required">*</span>
             </label>
 
             <input
@@ -812,19 +813,25 @@ const CourseForm = ({
             {fieldError("displayOrder")}
           </div>
         </div>
+        </div>
       </div>
 
       
       {/* COURSE SUBJECTS */}
 
-      <div className="course-form-section">
-        <h2>Course Subjects</h2>
-        <p>
+      <div className="common-card">
+                <div class="panel-header"><div>
+                  <h3>Course Subjects </h3>
+                <p>
           Select the subjects included in this course.
           A subject can be reused in multiple courses.
         </p>
+                 </div></div>
 
-        <div className="course-field">
+        
+        <div className="cardbody">
+
+        <div className="input-felid">
           <label htmlFor="course-subject-search">
             Search subjects
           </label>
@@ -894,17 +901,25 @@ const CourseForm = ({
         </p>
 
         {fieldError("subjects")}
+        </div>
       </div>
 
 
       {/* PRICING */}
 
-      <div className="course-form-section">
-        <h2>Pricing & Duration</h2>
+      
 
+      <div className="common-card">
+
+        <div class="panel-header"><div>
+                  <h3>Pricing & Duration </h3>
+                 </div></div>
+
+      
+        <div className="cardbody">
         <div className="course-form-grid">
-          <div className="course-field">
-            <label>MRP *</label>
+          <div className="input-felid">
+            <label>MRP <span className="required">*</span></label>
 
             <input
               type="number"
@@ -917,8 +932,8 @@ const CourseForm = ({
             {fieldError("mrp")}
           </div>
 
-          <div className="course-field">
-            <label>Price *</label>
+          <div className="input-felid">
+            <label>Price <span className="required">*</span></label>
 
             <input
               type="number"
@@ -932,8 +947,8 @@ const CourseForm = ({
             {fieldError("price")}
           </div>
 
-          <div className="course-field">
-            <label>Duration *</label>
+          <div className="input-felid">
+            <label>Duration <span className="required">*</span></label>
 
             <input
               type="number"
@@ -945,9 +960,9 @@ const CourseForm = ({
             {fieldError("duration")}
           </div>
 
-          <div className="course-field">
+          <div className="input-felid">
             <label>
-              Duration Unit *
+              Duration Unit <span className="required">*</span>
             </label>
 
             <select
@@ -980,78 +995,88 @@ const CourseForm = ({
             {fieldError("durationUnit")}
           </div>
         </div>
+        </div>
+
       </div>
 
       {/* COURSE MEDIA */}
 
-      <div className="course-form-section">
-        <h2>Course Media</h2>
+      <div className="common-card">
+         <div class="panel-header"><div>
+                  <h3>Course Media </h3>
+                 </div></div>
+       
+              <div className="cardbody">
+                <div className="course-form-grid">
+                  <div className="input-felid">
+                    <label>
+                      Course Image
+                    </label>
 
-        <div className="course-form-grid">
-          <div className="course-field">
-            <label>
-              Course Image
-            </label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={
+                        handleImageChange
+                      }
+                    />
 
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp"
-              onChange={
-                handleImageChange
-              }
-            />
+                    {/* IMAGE PREVIEW */}
 
-            {/* IMAGE PREVIEW */}
+                    {imagePreview && (
+                      <div className="course-image-preview">
+                        <img
+                          src={getAssetUrl(imagePreview)}
+                          alt="Course preview"
+                          onError={(event) => {
+                            event.currentTarget.style.display =
+                              "none";
+                          }}
+                        />
 
-            {imagePreview && (
-              <div className="course-image-preview">
-                <img
-                  src={getAssetUrl(imagePreview)}
-                  alt="Course preview"
-                  onError={(event) => {
-                    event.currentTarget.style.display =
-                      "none";
-                  }}
-                />
+                        <span>
+                          {image
+                            ? "New image selected"
+                            : "Current course image"}
+                        </span>
+                      </div>
+                    )}
 
-                <span>
-                  {image
-                    ? "New image selected"
-                    : "Current course image"}
-                </span>
-              </div>
-            )}
+                    {fieldError("courseImage")}
+                  </div>
 
-            {fieldError("courseImage")}
-          </div>
+                  <div className="input-felid">
+                    <label>
+                      Preview Video <span className="required">*</span>
+                    </label>
 
-          <div className="course-field">
-            <label>
-              Preview Video *
-            </label>
+                    <input
+                      name="previewVideo"
+                      value={
+                        form.previewVideo
+                      }
+                      onChange={handleChange}
+                      placeholder="YouTube / video URL"
+                    />
+                    {fieldError("previewVideo")}
+                  </div>
+                </div>
+            </div>
 
-            <input
-              name="previewVideo"
-              value={
-                form.previewVideo
-              }
-              onChange={handleChange}
-              placeholder="YouTube / video URL"
-            />
-            {fieldError("previewVideo")}
-          </div>
-        </div>
       </div>
 
       {/* COURSE DETAILS */}
 
-      <div className="course-form-section">
-        <h2>Course Details</h2>
-
+      <div className="common-card">
+        <div class="panel-header"><div>
+                  <h3>Course Details </h3>
+                 </div></div>
+       
+        <div className="cardbody">
         <div className="course-form-grid">
-          <div className="course-field">
+          <div className="input-felid">
             <label>
-              Total Lectures *
+              Total Lectures <span className="required">*</span>
             </label>
 
             <input
@@ -1066,9 +1091,9 @@ const CourseForm = ({
             {fieldError("totalLectures")}
           </div>
 
-          <div className="course-field">
+          <div className="input-felid">
             <label>
-              Practical Marks *
+              Practical Marks <span className="required">*</span>
             </label>
 
             <input
@@ -1083,9 +1108,9 @@ const CourseForm = ({
             {fieldError("practicalMarks")}
           </div>
 
-          <div className="course-field">
+          <div className="input-felid">
             <label>
-              Objective Marks *
+              Objective Marks <span className="required">*</span>
             </label>
 
             <input
@@ -1100,9 +1125,9 @@ const CourseForm = ({
             {fieldError("objectiveMarks")}
           </div>
 
-          <div className="course-field">
+          <div className="input-felid">
             <label>
-              Certificate Subject *
+              Certificate Subject <span className="required">*</span>
             </label>
 
             <input
@@ -1118,7 +1143,7 @@ const CourseForm = ({
 
           <div className="course-field course-field-full">
             <label>
-            Description *
+            Description <span className="required">*</span>
             </label>
 
             <RichTextEditor
@@ -1142,7 +1167,7 @@ const CourseForm = ({
 
           <div className="course-field course-field-full">
             <label>
-            Syllabus *
+            Syllabus <span className="required">*</span>
             </label>
 
             <RichTextEditor
@@ -1182,7 +1207,7 @@ const CourseForm = ({
 
           <div className="course-field course-field-full">
             <label>
-                Eligibility *
+                Eligibility <span className="required">*</span>
             </label>
 
             <RichTextEditor
@@ -1217,15 +1242,19 @@ const CourseForm = ({
 
 
         </div>
+        </div>
+
       </div>
 
       {/* VISIBILITY */}
 
-      <div className="course-form-section">
-        <h2>
-          Visibility & Status
-        </h2>
+      <div className="common-card">
+       
+         <div class="panel-header"><div>
+                  <h3> Visibility & Status </h3>
+                 </div></div>
 
+            <div className="cardbody">
         <div className="course-checkbox-grid">
           <label>
             <input
@@ -1297,6 +1326,7 @@ const CourseForm = ({
 
             {fieldError("status")}
         </div>
+        </div>
       </div>
 
       {/* SUBMIT */}
@@ -1304,7 +1334,7 @@ const CourseForm = ({
       <div className="course-form-actions">
         <button
           type="submit"
-          className="course-primary-btn"
+          className="themebtn"
           disabled={loading}
         >
           {loading

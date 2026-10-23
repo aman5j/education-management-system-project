@@ -113,19 +113,15 @@ const EditCourse = () => {
 
   return (
     <div className="course-page">
-      <div className="course-page-header">
-        <div>
-          <h1>Edit Course</h1>
-          <p>Update course information.</p>
-        </div>
-        <Link to={basePath} className="course-primary-btn">
-          Back to Courses
-        </Link>
-      </div>
+     
+       <div class="page-header"><div><h1>Edit Course</h1></div>
+               
+              </div>
+
 
       {error && <div className="course-list-error" role="alert">{error}</div>}
 
-      <div className="course-card">
+      <div className="">
         <CourseForm
           initialData={course}
           loading={saving}

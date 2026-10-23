@@ -230,18 +230,17 @@ const Courses = () => {
 
   return (
     <div className="course-page">
-      <div className="course-page-header">
-        <div>
-          <h1>Courses</h1>
-          <p>Manage courses, pricing, duration and publishing status.</p>
-        </div>
-
-        {canCreate && (
-          <Link to={`${basePath}/add`} className="course-primary-btn">
+      
+        <div class="page-header"><div><h1>Courses</h1></div>
+         {canCreate && (
+          <Link to={`${basePath}/add`} className="themebtn">
             + Add Course
           </Link>
         )}
-      </div>
+        </div>
+       
+    
+
 
       {error && (
         <div className="course-list-error" role="alert">
@@ -249,7 +248,7 @@ const Courses = () => {
         </div>
       )}
 
-      <div className="course-card">
+      <div className="common-card-filters">
         <CourseFilters
           filters={filters}
           onChange={handleFilterChange}
@@ -257,7 +256,7 @@ const Courses = () => {
         />
       </div>
 
-      <div className="course-card">
+      <div className="common-card">
         {loading ? (
           <div className="course-loading">Loading courses...</div>
         ) : (

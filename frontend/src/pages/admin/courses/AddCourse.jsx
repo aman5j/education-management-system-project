@@ -58,19 +58,11 @@ const AddCourse = () => {
 
   return (
     <div className="course-page">
-      <div className="course-page-header">
-        <div>
-          <h1>Add Course</h1>
-          <p>Create a new course.</p>
-        </div>
-        <Link to={basePath} className="course-primary-btn">
-          Back to Courses
-        </Link>
-      </div>
-
+      
+<div class="page-header"><div><h1>Add New Courses</h1></div></div>
       {error && <div className="course-list-error" role="alert">{error}</div>}
 
-      <div className="course-card">
+      <div className="">
         <CourseForm
           loading={loading}
           submitLabel="Create Course"

@@ -205,7 +205,7 @@ const Categories = () => {
       <div className="page-header">
         <div>
           <h1>Course Categories</h1>
-          <p>Organize and manage the institute's course categories.</p>
+          
         </div>
 
         {canCreate && (
