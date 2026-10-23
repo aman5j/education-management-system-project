@@ -19,7 +19,7 @@ import FeeCollection from "../../components/dashboard/FeeCollection";
 import RecentAdmissions from "../../components/dashboard/RecentAdmissions";
 import TodaysClasses from "../../components/dashboard/TodaysClasses";
 import PendingActions from "../../components/dashboard/PendingActions";
-import StudentView from "../../components/students/StudentView";
+// import StudentView from "../../components/students/StudentView";
 
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -54,9 +54,9 @@ const Dashboard = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [selectedStudentLoading, setSelectedStudentLoading] =
-    useState(false);
+  // const [selectedStudent, setSelectedStudent] = useState(null);
+  // const [selectedStudentLoading, setSelectedStudentLoading] =
+  //   useState(false);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -188,33 +188,19 @@ const Dashboard = () => {
     [summary]
   );
 
-  const openStudentDetails = async (student) => {
-    if (!student?._id) return;
 
-    setSearchOpen(false);
-    setSearchError("");
-    setSelectedStudentLoading(true);
+const openStudentDetails = (student) => {
+  if (!student?._id) {
+    setSearchError("Unable to open this student. Student ID is missing.");
+    return;
+  }
 
-    try {
-      // Fetch the complete current student record before showing it.
-      const response = await api.get(`/students/${student._id}`);
-      const fullStudent = response.data?.data;
+  setSearchOpen(false);
+  setSearchError("");
 
-      if (!fullStudent?._id) {
-        throw new Error("Student details could not be found.");
-      }
+  navigate(`/admin/students/${student._id}/details`);
+};
 
-      setSelectedStudent(fullStudent);
-    } catch (requestError) {
-      setSearchError(
-        requestError.response?.data?.message ||
-          requestError.message ||
-          "Unable to load student details."
-      );
-    } finally {
-      setSelectedStudentLoading(false);
-    }
-  };
 
   const clearStudentSearch = () => {
     setStudentSearch("");
@@ -380,7 +366,8 @@ const Dashboard = () => {
                             role="option"
                             aria-selected="false"
                             onClick={() => openStudentDetails(student)}
-                            disabled={selectedStudentLoading}
+                            // disabled={selectedStudentLoading}
+                            // onClick={() => openStudentDetails(student)}
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -460,11 +447,11 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {selectedStudentLoading && (
+                  {/* {selectedStudentLoading && (
                     <p style={{ fontSize: "12px", color: "#64748b" }}>
                       Loading student profile...
                     </p>
-                  )}
+                  )} */}
 
                   {searchError && !searchOpen && (
                     <p
@@ -542,7 +529,7 @@ const Dashboard = () => {
         </>
       )}
 
-      {selectedStudent && (
+      {/* {selectedStudent && (
         <StudentView
           student={selectedStudent}
           onClose={() => setSelectedStudent(null)}
@@ -551,7 +538,7 @@ const Dashboard = () => {
             navigate(`/admin/students/${student._id}/edit`);
           }}
         />
-      )}
+      )} */}
     </div>
   );
 };
