@@ -190,27 +190,6 @@ const studentSchema = new mongoose.Schema(
       default: [],
     },
 
-    // ==========================================
-    // COURSE
-    // ==========================================
-
-    course_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
-      default: null,
-      index: true,
-    },
-
-    // ==========================================
-    // BATCH
-    // ==========================================
-
-    batch_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Batch",
-      default: null,
-      index: true,
-    },
 
     // ==========================================
     // STATUS

@@ -290,8 +290,8 @@ export default function StudentDetails() {
           <Field label="Mother Name">{student.motherName}</Field>
           <Field label="Gender">{student.gender}</Field>
           <Field label="Date of Birth">{date(student.dob)}</Field>
-          <Field label="Course">{student.course_id?.courseTitle}</Field>
-          <Field label="Batch">{student.batch_id?.batch_name}</Field>
+          {/* <Field label="Course">{student.course_id?.courseTitle}</Field>
+          <Field label="Batch">{student.batch_id?.batch_name}</Field> */}
           <Field label="Pincode">{student.pincode}</Field>
           <Field label="Address">
             {student.address ? (

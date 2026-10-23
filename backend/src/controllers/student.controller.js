@@ -3,6 +3,7 @@
 import mongoose from "mongoose";
 
 import Student from "../models/Student.js";
+import StudentAdmission from "../models/StudentAdmission.js";
 import Course from "../models/Course.js";
 import Batch from "../models/Batch.js";
 
@@ -124,14 +125,42 @@ export const getAttendanceRoster = async (req, res, next) => {
     // Return only active students in this exact course and batch.
     // Do not expose addresses, phone numbers, documents, or other
     // private student-management fields to the attendance screen.
-    const students = await Student.find({
+    // const students = await Student.find({
+    //   course_id,
+    //   batch_id,
+    //   status: "active",
+    // })
+    //   .select("_id rollNo firstName surname")
+    //   .sort({ firstName: 1, surname: 1, rollNo: 1 })
+    //   .lean();
+
+    const admissions = await StudentAdmission.find({
       course_id,
       batch_id,
-      status: "active",
+      status: "Active",
     })
-      .select("_id rollNo firstName surname")
-      .sort({ firstName: 1, surname: 1, rollNo: 1 })
+      .select("student_id")
+      .populate({
+        path: "student_id",
+        select: "_id rollNo firstName surname status",
+        match: { status: "active" },
+      })
       .lean();
+
+    const students = admissions
+      .map((admission) => admission.student_id)
+      .filter(Boolean)
+      .filter(
+        (student, index, all) =>
+          all.findIndex(
+            (item) => String(item._id) === String(student._id)
+          ) === index
+      )
+      .sort((a, b) =>
+        `${a.firstName} ${a.surname} ${a.rollNo}`.localeCompare(
+          `${b.firstName} ${b.surname} ${b.rollNo}`
+        )
+      );
 
     return res.status(200).json({
       success: true,
@@ -141,6 +170,78 @@ export const getAttendanceRoster = async (req, res, next) => {
     next(error);
   }
 };
+
+// export const getAttendanceRoster = async (req, res, next) => {
+//   try {
+//     const { course_id, batch_id } = req.query;
+
+//     if (
+//       !course_id ||
+//       !batch_id ||
+//       !mongoose.Types.ObjectId.isValid(course_id) ||
+//       !mongoose.Types.ObjectId.isValid(batch_id)
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Valid course_id and batch_id are required.",
+//       });
+//     }
+
+//     // Verify that the selected batch belongs to the selected course.
+//     const batch = await Batch.findOne({
+//       _id: batch_id,
+//       course_id,
+//     })
+//       .select("_id")
+//       .lean();
+
+//     if (!batch) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Selected batch does not belong to the selected course.",
+//       });
+//     }
+
+//     // Query active admissions for this exact course and batch,
+//     // and populate the active student records.
+//     const admissions = await StudentAdmission.find({
+//       course_id,
+//       batch_id,
+//       status: "Active",
+//     })
+//       .populate({
+//         path: "student_id",
+//         select: "_id rollNo firstName surname status",
+//       })
+//       .lean();
+
+//     const students = admissions
+//       .map((admission) => admission.student_id)
+//       .filter((student) => student && student.status === "active")
+//       .sort((a, b) => {
+//         const firstNameCompare = (a.firstName || "").localeCompare(b.firstName || "");
+//         if (firstNameCompare !== 0) return firstNameCompare;
+
+//         const surnameCompare = (a.surname || "").localeCompare(b.surname || "");
+//         if (surnameCompare !== 0) return surnameCompare;
+
+//         return (a.rollNo || "").localeCompare(b.rollNo || "");
+//       })
+//       .map((student) => ({
+//         _id: student._id,
+//         rollNo: student.rollNo,
+//         firstName: student.firstName,
+//         surname: student.surname,
+//       }));
+
+//     return res.status(200).json({
+//       success: true,
+//       data: { students },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 export const getStudents = async (req, res, next) => {
   try {
@@ -311,8 +412,8 @@ export const createStudent = async (req, res, next) => {
       email,
       address,
       pincode,
-      course_id,
-      batch_id,
+      // course_id,
+      // batch_id,
       showFatherName,
       showSurname,
       status,
@@ -354,72 +455,72 @@ export const createStudent = async (req, res, next) => {
       ? email.trim().toLowerCase()
       : "";
 
-    if (!course_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Course is required.",
-      });
-    }
+    // if (!course_id) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Course is required.",
+    //   });
+    // }
 
-    if (!batch_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Batch is required.",
-      });
-    }
+    // if (!batch_id) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Batch is required.",
+    //   });
+    // }
 
-    if (!mongoose.Types.ObjectId.isValid(course_id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid course.",
-      });
-    }
+    // if (!mongoose.Types.ObjectId.isValid(course_id)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Invalid course.",
+    //   });
+    // }
 
-    if (!mongoose.Types.ObjectId.isValid(batch_id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid batch.",
-      });
-    }
+    // if (!mongoose.Types.ObjectId.isValid(batch_id)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Invalid batch.",
+    //   });
+    // }
 
-    const courseDocument = await Course.findById(course_id)
-      .select("_id courseTitle")
-      .lean();
+    // const courseDocument = await Course.findById(course_id)
+    //   .select("_id courseTitle")
+    //   .lean();
 
-    if (!courseDocument) {
-      return res.status(404).json({
-        success: false,
-        message: "Selected course not found.",
-      });
-    }
+    // if (!courseDocument) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "Selected course not found.",
+    //   });
+    // }
 
-    const batchDocument = await Batch.findOne({
-      _id: batch_id,
-      course_id,
-    })
-      .select("_id batch_name course_id max_seats")
-      .lean();
+    // const batchDocument = await Batch.findOne({
+    //   _id: batch_id,
+    //   course_id,
+    // })
+    //   .select("_id batch_name course_id max_seats")
+    //   .lean();
 
-    if (!batchDocument) {
-      return res.status(400).json({
-        success: false,
-        message: "Selected batch does not belong to the selected course.",
-      });
-    }
+    // if (!batchDocument) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Selected batch does not belong to the selected course.",
+    //   });
+    // }
 
     // Reserve a seat atomically before creating the student.
-    const reservedBatch = await reserveBatchSeat(batchDocument._id);
+    // const reservedBatch = await reserveBatchSeat(batchDocument._id);
 
-    if (!reservedBatch) {
-      return res.status(409).json({
-        success: false,
-        message: "This batch is full. Please select another batch.",
-      });
-    }
+    // if (!reservedBatch) {
+    //   return res.status(409).json({
+    //     success: false,
+    //     message: "This batch is full. Please select another batch.",
+    //   });
+    // }
 
     let student;
 
-    try {
+    // try {
       student = await Student.create({
         rollNo: rollNo.trim(),
         firstName: firstName.trim(),
@@ -434,8 +535,8 @@ export const createStudent = async (req, res, next) => {
         email: normalizedEmail,
         address: address?.trim() || "",
         pincode: pincode?.trim() || "",
-        course_id: courseDocument._id,
-        batch_id: batchDocument._id,
+        // course_id: courseDocument._id,
+        // batch_id: batchDocument._id,
 
         profileImage: req.files?.profileImage?.[0]
           ? `/uploads/students/${req.files.profileImage[0].filename}`
@@ -457,10 +558,10 @@ export const createStudent = async (req, res, next) => {
 
         status: status || "active",
       });
-    } catch (error) {
-      await releaseBatchSeat(batchDocument._id);
-      throw error;
-    }
+    // } catch (error) {
+    //   await releaseBatchSeat(batchDocument._id);
+    //   throw error;
+    // }
 
     return res.status(201).json({
       success: true,
@@ -497,8 +598,8 @@ export const updateStudent = async (req, res, next) => {
       email,
       address,
       pincode,
-      course_id,
-      batch_id,
+      // course_id,
+      // batch_id,
       status,
       showFatherName,
       showSurname,
@@ -554,88 +655,88 @@ export const updateStudent = async (req, res, next) => {
       student.pincode = pincode.trim();
     }
 
-    const nextCourseId =
-      course_id !== undefined ? course_id : student.course_id;
+    // const nextCourseId =
+    //   course_id !== undefined ? course_id : student.course_id;
 
-    const nextBatchId =
-      batch_id !== undefined ? batch_id : student.batch_id;
+    // const nextBatchId =
+    //   batch_id !== undefined ? batch_id : student.batch_id;
 
-    if (!nextCourseId) {
-      return res.status(400).json({
-        success: false,
-        message: "Course is required.",
-      });
-    }
+    // if (!nextCourseId) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Course is required.",
+    //   });
+    // }
 
-    if (!nextBatchId) {
-      return res.status(400).json({
-        success: false,
-        message: "Batch is required.",
-      });
-    }
+    // if (!nextBatchId) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Batch is required.",
+    //   });
+    // }
 
-    if (!mongoose.Types.ObjectId.isValid(nextCourseId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid course ID.",
-      });
-    }
+    // if (!mongoose.Types.ObjectId.isValid(nextCourseId)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Invalid course ID.",
+    //   });
+    // }
 
-    if (!mongoose.Types.ObjectId.isValid(nextBatchId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid batch ID.",
-      });
-    }
+    // if (!mongoose.Types.ObjectId.isValid(nextBatchId)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Invalid batch ID.",
+    //   });
+    // }
 
-    const courseDocument = await Course.findById(nextCourseId)
-      .select("_id courseTitle")
-      .lean();
+    // const courseDocument = await Course.findById(nextCourseId)
+    //   .select("_id courseTitle")
+    //   .lean();
 
-    if (!courseDocument) {
-      return res.status(404).json({
-        success: false,
-        message: "Selected course not found.",
-      });
-    }
+    // if (!courseDocument) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "Selected course not found.",
+    //   });
+    // }
 
-    const batchDocument = await Batch.findOne({
-      _id: nextBatchId,
-      course_id: nextCourseId,
-    })
-      .select("_id batch_name course_id max_seats")
-      .lean();
+    // const batchDocument = await Batch.findOne({
+    //   _id: nextBatchId,
+    //   course_id: nextCourseId,
+    // })
+    //   .select("_id batch_name course_id max_seats")
+    //   .lean();
 
-    if (!batchDocument) {
-      return res.status(400).json({
-        success: false,
-        message: "Selected batch does not belong to the selected course.",
-      });
-    }
+    // if (!batchDocument) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Selected batch does not belong to the selected course.",
+    //   });
+    // }
 
-    const oldBatchId = student.batch_id
-      ? String(student.batch_id)
-      : "";
+    // const oldBatchId = student.batch_id
+    //   ? String(student.batch_id)
+    //   : "";
 
-    const newBatchId = String(batchDocument._id);
-    let destinationSeatReserved = false;
+    // const newBatchId = String(batchDocument._id);
+    // let destinationSeatReserved = false;
 
-    // Only reserve a new seat if the student is changing batches.
-    if (oldBatchId !== newBatchId) {
-      const reservedBatch = await reserveBatchSeat(batchDocument._id);
+    // // Only reserve a new seat if the student is changing batches.
+    // if (oldBatchId !== newBatchId) {
+    //   const reservedBatch = await reserveBatchSeat(batchDocument._id);
 
-      if (!reservedBatch) {
-        return res.status(409).json({
-          success: false,
-          message: "The selected batch is full. Please select another batch.",
-        });
-      }
+    //   if (!reservedBatch) {
+    //     return res.status(409).json({
+    //       success: false,
+    //       message: "The selected batch is full. Please select another batch.",
+    //     });
+    //   }
 
-      destinationSeatReserved = true;
-    }
+    //   destinationSeatReserved = true;
+    // }
 
-    student.course_id = courseDocument._id;
-    student.batch_id = batchDocument._id;
+    // student.course_id = courseDocument._id;
+    // student.batch_id = batchDocument._id;
 
     if (status !== undefined) {
       student.status = status;
@@ -661,20 +762,22 @@ export const updateStudent = async (req, res, next) => {
         `/uploads/students/${req.files.signature[0].filename}`;
     }
 
-    try {
-      await student.save();
-    } catch (error) {
-      if (destinationSeatReserved) {
-        await releaseBatchSeat(batchDocument._id);
-      }
+    // try {
+    //   await student.save();
+    // } catch (error) {
+    //   if (destinationSeatReserved) {
+    //     await releaseBatchSeat(batchDocument._id);
+    //   }
 
-      throw error;
-    }
+    //   throw error;
+    // }
 
     // Release the old seat only after the student has been saved.
-    if (oldBatchId && oldBatchId !== newBatchId) {
-      await releaseBatchSeat(oldBatchId);
-    }
+    // if (oldBatchId && oldBatchId !== newBatchId) {
+    //   await releaseBatchSeat(oldBatchId);
+    // }
+
+    await student.save();
 
     return res.status(200).json({
       success: true,
@@ -697,15 +800,15 @@ export const deleteStudent = async (req, res, next) => {
       });
     }
 
-    const previousBatchId = student.batch_id
-      ? String(student.batch_id)
-      : "";
+    // const previousBatchId = student.batch_id
+    //   ? String(student.batch_id)
+    //   : "";
 
     await student.deleteOne();
 
-    if (previousBatchId) {
-      await releaseBatchSeat(previousBatchId);
-    }
+    // if (previousBatchId) {
+    //   await releaseBatchSeat(previousBatchId);
+    // }
 
     return res.status(200).json({
       success: true,

@@ -676,15 +676,15 @@ export const createAdmission = async (
     }
 
     // A new admission must match the student's current course and batch.
-    if (
-      String(student.course_id) !== String(course._id) ||
-      String(student.batch_id) !== String(batch._id)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "The selected student must belong to the selected course and batch.",
-      });
-    }
+    // if (
+    //   String(student.course_id) !== String(course._id) ||
+    //   String(student.batch_id) !== String(batch._id)
+    // ) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "The selected student must belong to the selected course and batch.",
+    //   });
+    // }
 
     /*
      * Course fee:

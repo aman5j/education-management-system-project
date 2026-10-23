@@ -88,6 +88,78 @@ const validateAttendanceRelations = async ({
   return null;
 };
 
+// const validateAttendanceRelations = async ({
+//   student_id,
+//   course_id,
+//   batch_id,
+// }) => {
+//   if (
+//     !isValidId(student_id) ||
+//     !isValidId(course_id) ||
+//     !isValidId(batch_id)
+//   ) {
+//     return "Valid student, course, and batch IDs are required.";
+//   }
+
+//   const [student, course, batch] = await Promise.all([
+//     Student.findById(student_id)
+//       // start remove: course_id and batch_id from student select
+//       // .select("_id course_id batch_id status")
+//       // end remove
+//       // start insertion
+//       .select("_id status")
+//       // end insertion
+//       .lean(),
+//     Course.findById(course_id)
+//       .select("_id")
+//       .lean(),
+//     Batch.findById(batch_id)
+//       .select("_id course_id")
+//       .lean(),
+//   ]);
+
+//   if (!student) return "Student not found.";
+//   if (!course) return "Course not found.";
+//   if (!batch) return "Batch not found.";
+
+//   if (student.status !== "active") {
+//     return "Attendance can only be recorded for active students.";
+//   }
+
+//   if (String(batch.course_id) !== String(course_id)) {
+//     return "The selected batch does not belong to this course.";
+//   }
+
+//   // start remove: student course_id and batch_id comparison checks
+//   /*
+//   if (String(student.course_id || "") !== String(course_id)) {
+//     return "The selected student does not belong to this course.";
+//   }
+
+//   if (String(student.batch_id || "") !== String(batch_id)) {
+//     return "The selected student does not belong to this batch.";
+//   }
+//   */
+//   // end remove
+
+//   // start insertion: active admission check
+//   const admission = await StudentAdmission.findOne({
+//     student_id,
+//     course_id,
+//     batch_id,
+//     status: "Active",
+//   })
+//     .select("_id")
+//     .lean();
+
+//   if (!admission) {
+//     return "The student does not have an active admission for this course and batch.";
+//   }
+//   // end insertion
+
+//   return null;
+// };
+
 export const getAttendance = async (req, res, next) => {
   try {
     const {

@@ -3,13 +3,6 @@ import {
   useState,
 } from "react";
 
-import {
-  getCourses,
-} from "../../services/courseService";
-
-import {
-  getBatches,
-} from "../../services/batchService";
 
 import {
   FiImage,
@@ -20,6 +13,7 @@ import {
 
 
 import { getAssetUrl } from "../../utils/assetUrl";
+
 
 const initialForm = {
   rollNo: "",
@@ -35,8 +29,6 @@ const initialForm = {
   email: "",
   address: "",
   pincode: "",
-  course_id: "",
-  batch_id: "",
   showFatherName: true,
   showSurname: true,
   status: "active",
@@ -62,107 +54,10 @@ const StudentForm = ({
     setSignaturePreview,
   ] = useState("");
 
-  const [courses, setCourses] =
-    useState([]);
-
-  const [batches, setBatches] =
-    useState([]);
-
-  const [loadingCourses, setLoadingCourses] =
-    useState(false);
-
-  const [loadingBatches, setLoadingBatches] =
-    useState(false);
 
   const [error, setError] =
     useState("");
 
-
-
-  useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        setLoadingCourses(true);
-
-        const response =
-          await getCourses({
-            page: 1,
-            limit: 100,
-          });
-
-        const courseCandidates = [
-          response?.data?.data?.courses,
-          response?.data?.courses,
-          response?.data?.data,
-          response?.data,
-        ];
-
-        const courseList =
-          courseCandidates.find(
-            (value) => Array.isArray(value)
-          ) || [];
-
-        setCourses(courseList);
-      } catch (error) {
-        console.error(
-          "Failed to load courses:",
-          error
-        );
-
-        setCourses([]);
-      } finally {
-        setLoadingCourses(false);
-      }
-    };
-
-    loadCourses();
-  }, []);
-
-
-  useEffect(() => {
-    const loadBatches = async () => {
-      if (!form.course_id) {
-        setBatches([]);
-        return;
-      }
-
-      try {
-        setLoadingBatches(true);
-
-        const response =
-          await getBatches({
-            page: 1,
-            limit: 100,
-            course_id: form.course_id,
-          });
-
-        const batchCandidates = [
-          response?.data?.data?.batches,
-          response?.data?.batches,
-          response?.data?.data,
-          response?.data,
-        ];
-
-        const batchList =
-          batchCandidates.find(
-            (value) => Array.isArray(value)
-          ) || [];
-
-        setBatches(batchList);
-      } catch (error) {
-        console.error(
-          "Failed to load batches:",
-          error
-        );
-
-        setBatches([]);
-      } finally {
-        setLoadingBatches(false);
-      }
-    };
-
-    loadBatches();
-  }, [form.course_id]);
 
 
 
@@ -356,19 +251,6 @@ const StudentForm = ({
       return;
     }
 
-    if (!form.course_id) {
-      setError(
-        "Please select a course."
-      );
-      return;
-    }
-
-    if (!form.batch_id) {
-      setError(
-        "Please select a batch."
-      );
-      return;
-    }
 
     const formData =
       new FormData();
@@ -859,115 +741,6 @@ const StudentForm = ({
           </div>
         </div>
       </section>
-
-
-
-      <section className="student-form-section">
-        <div className="student-form-section-header">
-          <div>
-            <h3>
-              Course & Batch
-            </h3>
-
-            <p>
-              Select the student's course
-              and batch.
-            </p>
-          </div>
-        </div>
-
-        <div className="student-form-grid">
-
-         
-          <div className="input-felid ">
-            <label>
-              Course <span className="required">*</span>
-            </label>
-
-            <select
-              name="course_id"
-              value={form.course_id}
-              onChange={(event) => {
-                const courseId =
-                  event.target.value;
-
-                setForm((previous) => ({
-                  ...previous,
-                  course_id: courseId,
-                  batch_id: "",
-                }));
-
-                setError("");
-              }}
-              disabled={loadingCourses}
-              required
-            >
-              <option value="">
-                {loadingCourses
-                  ? "Loading courses..."
-                  : "Select course"}
-              </option>
-
-              {courses.map((course) => (
-                <option
-                  key={course._id}
-                  value={course._id}
-                >
-                  {course.courseTitle}
-                </option>
-              ))}
-            </select>
-          </div>
-
-         
-          <div className="input-felid ">
-            <label>
-              Batch <span className="required">*</span>
-            </label>
-
-            <select
-              name="batch_id"
-              value={form.batch_id}
-              onChange={(event) => {
-                const batchId =
-                  event.target.value;
-
-                setForm((previous) => ({
-                  ...previous,
-                  batch_id: batchId,
-                }));
-
-                setError("");
-              }}
-              disabled={
-                !form.course_id ||
-                loadingBatches
-              }
-              required
-            >
-              <option value="">
-                {!form.course_id
-                  ? "Select course first"
-                  : loadingBatches
-                    ? "Loading batches..."
-                    : "Select batch"}
-              </option>
-
-              {batches.map((batch) => (
-                <option
-                  key={batch._id}
-                  value={batch._id}
-                >
-                  {batch.batch_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-        </div>
-      </section>
-
-      
        
      
 
