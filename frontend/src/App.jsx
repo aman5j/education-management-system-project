@@ -14,6 +14,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/admin/Dashboard";
 import RoleHome from "./pages/dashboard/RoleHome";
 import StaffDashboard from "./pages/staff/StaffDashboard";
+import StaffProfile from "./pages/staff/StaffProfile";
 
 import Students from "./pages/admin/students/Students";
 import AddStudent from "./pages/admin/students/AddStudent";
@@ -343,6 +344,8 @@ const App = () => {
           path="dashboard"
           element={<StaffDashboard />}
         />
+
+        <Route path="profile" element={<StaffProfile />} />
 
         {/* Student management */}
         <Route

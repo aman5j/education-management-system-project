@@ -237,7 +237,7 @@ const PATH_PERMISSION_MAP = {
 
   "/admin/students": "students.view",
   "/admin/students/add": "students.create",
-  
+
   "/admin/students/:id/edit": "students.update",
 
   "/admin/enquiries": "courses.view",
@@ -273,7 +273,25 @@ const PATH_PERMISSION_MAP = {
   "/admin/system-settings": "settings.manage",
 };
 
+// const canAccessPath = (path, permissions) => {
+//   const requiredPermission = PATH_PERMISSION_MAP[path];
+
+//   return (
+//     Boolean(requiredPermission) &&
+//     (
+//       permissions.includes("*") ||
+//       permissions.includes(requiredPermission)
+//     )
+//   );
+// };
+
+
 const canAccessPath = (path, permissions) => {
+  // Every staff member should be able to manage their own profile.
+  if (path === "/admin/profile") {
+    return true;
+  }
+
   const requiredPermission = PATH_PERMISSION_MAP[path];
 
   return (
