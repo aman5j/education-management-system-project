@@ -532,9 +532,6 @@ const handleDownloadReceipt = async (student) => {
                         Inactive
                       </option>
 
-                      <option value="suspended">
-                        Suspended
-                      </option>
                     </select>
 
                     ) : (

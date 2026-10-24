@@ -297,6 +297,16 @@ export const createStudent = async (req, res, next) => {
       status,
     } = req.body;
 
+    if (
+      status !== undefined &&
+      !["active", "inactive"].includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student status. Use active or inactive.",
+      });
+    }
+
     if (!rollNo?.trim()) {
       return res.status(400).json({
         success: false,
@@ -463,6 +473,16 @@ export const updateStudent = async (req, res, next) => {
       student.pincode = pincode.trim();
     }
 
+    if (
+      status !== undefined &&
+      !["active", "inactive"].includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student status. Use active or inactive.",
+      });
+    }
+
 
     if (status !== undefined) {
       student.status = status;
@@ -529,11 +549,7 @@ export const updateStudentStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
 
-    const allowedStatuses = [
-      "active",
-      "inactive",
-      "suspended",
-    ];
+    const allowedStatuses = ["active", "inactive"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({

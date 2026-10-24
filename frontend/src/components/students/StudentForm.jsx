@@ -586,9 +586,6 @@ const StudentForm = ({
                   Inactive
                 </option>
 
-                <option value="suspended">
-                  Suspended
-                </option>
               </select>
             </div>
 
