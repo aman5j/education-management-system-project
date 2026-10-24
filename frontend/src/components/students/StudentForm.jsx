@@ -113,15 +113,6 @@ const StudentForm = ({
       pincode:
         initialData.pincode || "",
 
-      course_id:
-        initialData.course_id?._id ||
-        initialData.course_id ||
-        "",
-
-      batch_id:
-        initialData.batch_id?._id ||
-        initialData.batch_id ||
-        "",
 
       showFatherName:
         initialData.showFatherName ??

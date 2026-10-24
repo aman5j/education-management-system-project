@@ -4,50 +4,12 @@ import mongoose from "mongoose";
 
 import Student from "../models/Student.js";
 import StudentAdmission from "../models/StudentAdmission.js";
-import Course from "../models/Course.js";
 import Batch from "../models/Batch.js";
 
 // Atomically reserve one seat so concurrent requests cannot consume
 // the same remaining seat. Reconcile stored seat counts before using this.
-// const reserveBatchSeat = async (batchId) =>
-//   Batch.findOneAndUpdate(
-//     {
-//       _id: batchId,
-//       status: { $in: ["Upcoming", "Ongoing"] },
-//       available_seats: { $gt: 0 },
-//     },
-//     { $inc: { available_seats: -1 } },
-//     {
-//       new: true,
-//       projection: { _id: 1 },
-//     }
-//   ).lean();
 
-//   const releaseBatchSeat = async (batchId) => {
-//     if (!batchId) return;
 
-//     // Never allow the stored available-seat count to exceed capacity.
-//     await Batch.updateOne(
-//       { _id: batchId },
-//       [
-//         {
-//           $set: {
-//             available_seats: {
-//               $min: [
-//                 {
-//                   $add: [
-//                     { $ifNull: ["$available_seats", 0] },
-//                     1,
-//                   ],
-//                 },
-//                 "$max_seats",
-//               ],
-//             },
-//           },
-//         },
-//       ]
-//     );
-//   };
 
 // const createRollNumber =
 //   async () => {
@@ -330,8 +292,6 @@ export const createStudent = async (req, res, next) => {
       email,
       address,
       pincode,
-      // course_id,
-      // batch_id,
       showFatherName,
       showSurname,
       status,
