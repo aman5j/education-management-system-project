@@ -1168,3 +1168,61 @@
   color: #dc2626;
   font-size: 12px;
 }
+
+
+
+/* Student photo in Admissions table */
+.admission-student-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 170px;
+}
+
+.admission-student-image,
+.admission-student-fallback {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admission-student-image {
+  display: block;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.admission-student-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf0ff;
+  color: #2457c5;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #dbe5ff;
+}
+
+.admission-student-fallback-hidden {
+  display: none;
+}
+
+.admission-student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admission-student-info strong {
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admission-student-info small {
+  color: #94a3b8;
+  font-size: 11px;
+}

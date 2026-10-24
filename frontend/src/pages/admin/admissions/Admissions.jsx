@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
+import { getAssetUrl } from "../../../utils/assetUrl";
 
 
 import "../../../styles/AdmissionManagement.css";
@@ -456,28 +457,61 @@ const Admissions = () => {
                           admission._id
                         }
                       >
-                        <td>
-                          <div className="admission-student-cell">
+                        
+                    <td>
+                      <div className="admission-student-cell">
+                        <div className="admission-student-profile">
+                          {student?.profileImage ? (
+                            <img
+                              className="admission-student-image"
+                              src={getAssetUrl(student.profileImage)}
+                              alt={[
+                                student?.firstName,
+                                student?.surname,
+                              ].filter(Boolean).join(" ") || "Student"}
+                              loading="lazy"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+                                event.currentTarget.nextElementSibling?.classList.remove(
+                                  "admission-student-fallback-hidden"
+                                );
+                              }}
+                            />
+                          ) : null}
+
+                          <div
+                            className={`admission-student-fallback ${
+                              student?.profileImage
+                                ? "admission-student-fallback-hidden"
+                                : ""
+                            }`}
+                            aria-label="Student initials"
+                          >
+                            {[
+                              student?.firstName?.[0],
+                              student?.surname?.[0],
+                            ]
+                              .filter(Boolean)
+                              .join("")
+                              .toUpperCase() || "S"}
+                          </div>
+
+                          <div className="admission-student-info">
                             <strong>
                               {[
                                 student?.firstName,
                                 student?.surname,
                               ]
-                                .filter(
-                                  Boolean
-                                )
-                                .join(
-                                  " "
-                                ) ||
-                                "—"}
+                                .filter(Boolean)
+                                .join(" ") || "—"}
                             </strong>
 
-                            <small>
-                              {student?.rollNo ||
-                                "—"}
-                            </small>
+                            <small>{student?.rollNo || "—"}</small>
                           </div>
-                        </td>
+                        </div>
+                      </div>
+                    </td>
+
 
                         <td>
                           {course?.courseTitle ||
