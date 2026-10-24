@@ -1226,3 +1226,124 @@
   color: #94a3b8;
   font-size: 11px;
 }
+
+
+/* Selected student preview in Add/Edit Admission */
+.admission-selected-student {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.admission-selected-student-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 100px;
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  border: 3px solid #dbeafe;
+  border-radius: 50%;
+  background: #eaf0ff;
+}
+
+.admission-selected-student-avatar img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.admission-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #2457c5;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.admission-avatar-fallback-hidden {
+  display: none;
+}
+
+.admission-selected-student-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.admission-selected-student-details h4 {
+  margin: 0 0 10px;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admission-selected-student-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admission-selected-student-meta span {
+  color: #64748b;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.admission-selected-student-meta strong {
+  color: #334155;
+}
+
+.admission-student-selected-label {
+  align-self: flex-start;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .admission-selected-student {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .admission-selected-student-avatar {
+    flex-basis: 72px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .admission-selected-student-details {
+    flex-basis: calc(100% - 90px);
+  }
+
+  .admission-selected-student-details h4 {
+    font-size: 15px;
+  }
+
+  .admission-student-selected-label {
+    margin-left: 84px;
+  }
+}

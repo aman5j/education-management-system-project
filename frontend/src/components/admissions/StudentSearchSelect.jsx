@@ -4,6 +4,9 @@ import React, {
   useState,
 } from "react";
 
+import { getAssetUrl } from "../../utils/assetUrl";
+import "../../styles/AdmissionManagement.css";
+
 const StudentSearchSelect = ({
   students = [],
   value = "",
@@ -14,6 +17,18 @@ const StudentSearchSelect = ({
   error = "",
   disabled = false,
 }) => {
+
+  const getFullName = (student) =>
+    [student?.firstName, student?.surname]
+      .filter(Boolean)
+      .join(" ") || "Student";
+
+  const getInitials = (student) =>
+    [student?.firstName?.[0], student?.surname?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() || "S";
+      
   const [search, setSearch] =
     useState("");
 
@@ -227,6 +242,60 @@ const StudentSearchSelect = ({
               characters to search.
             </div>
           )}
+        </div>
+      )}
+
+      {selectedStudent && String(value) && (
+        <div className="admission-selected-student">
+          <div className="admission-selected-student-avatar">
+            {selectedStudent.profileImage ? (
+              <img
+                src={getAssetUrl(selectedStudent.profileImage)}
+                alt={getFullName(selectedStudent)}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                  event.currentTarget.nextElementSibling?.classList.remove(
+                    "admission-avatar-fallback-hidden"
+                  );
+                }}
+              />
+            ) : null}
+
+            <div
+              className={`admission-avatar-fallback ${
+                selectedStudent.profileImage
+                  ? "admission-avatar-fallback-hidden"
+                  : ""
+              }`}
+            >
+              {getInitials(selectedStudent)}
+            </div>
+          </div>
+
+          <div className="admission-selected-student-details">
+            <h4>{getFullName(selectedStudent)}</h4>
+
+            <div className="admission-selected-student-meta">
+              <span>
+                <strong>Roll No:</strong>{" "}
+                {selectedStudent.rollNo || "—"}
+              </span>
+
+              <span>
+                <strong>Mobile:</strong>{" "}
+                {selectedStudent.mobile || "—"}
+              </span>
+
+              <span>
+                <strong>Email:</strong>{" "}
+                {selectedStudent.email || "—"}
+              </span>
+            </div>
+          </div>
+
+          <span className="admission-student-selected-label">
+            Selected
+          </span>
         </div>
       )}
 
