@@ -7,7 +7,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import Breadcrumb from "../../../common/Breadcrumb";
 import StudentForm from "../../../components/students/StudentForm";
-import { uploadStudentDocuments } from "../../../services/studentDocumentService";
+// import { uploadStudentDocuments } from "../../../services/studentDocumentService";
 import "./StudentManagement.css";
 
 const AddStudent = () => {
@@ -40,19 +40,14 @@ const AddStudent = () => {
       });
 
       const student = response?.data?.data;
-      const documents = formData.getAll("documents");
 
-      if (documents.length > 0) {
-        if (!student?._id) {
-          throw new Error(
-            "Student was created, but its ID was not returned. Documents were not uploaded."
-          );
-        }
-
-        await uploadStudentDocuments(student._id, documents);
+      if (!student?._id) {
+        throw new Error(
+          "Student was created, but the server did not return the student ID."
+        );
       }
 
-      navigate(studentsPath);
+      navigate(`${studentsPath}/${student._id}/edit`);
 
     } catch (error) {
       throw new Error(

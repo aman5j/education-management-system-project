@@ -54,8 +54,8 @@ const StudentForm = ({
     setSignaturePreview,
   ] = useState("");
 
-  const [selectedDocuments, setSelectedDocuments] =
-  useState([]);
+  // const [selectedDocuments, setSelectedDocuments] =
+  // useState([]);
 
   const [error, setError] =
     useState("");
@@ -279,9 +279,9 @@ const StudentForm = ({
       }
     );
 
-    selectedDocuments.forEach((file) => {
-      formData.append("documents", file);
-    });
+    // selectedDocuments.forEach((file) => {
+    //   formData.append("documents", file);
+    // });
 
     try {
       await onSubmit(formData);
@@ -738,28 +738,28 @@ const StudentForm = ({
        
      
       {initialData?._id && (
-        <section className="common-card student-form-full">
-          <div className="panel-header">
-            <div>
-              <h3>Student Documents</h3>
-              <p>
-                Upload, view, download, or remove documents
-                associated with this student.
-              </p>
-            </div>
-          </div>
-
-          <div className="cardbody">
-            <StudentDocuments
-              student={initialData}
-              inline
-            />
-          </div>
-        </section>
-      )}
-
-
       <section className="common-card student-form-full">
+        <div className="panel-header">
+          <div>
+            <h3>Student Documents</h3>
+            <p>
+              Upload, view, download, or remove documents
+              associated with this student.
+            </p>
+          </div>
+        </div>
+
+        <div className="cardbody">
+          <StudentDocuments
+            student={initialData}
+            inline
+          />
+        </div>
+      </section>
+    )}
+
+
+      {/* <section className="common-card student-form-full">
         <div className="panel-header">
           <div>
             <h3>Student Documents</h3>
@@ -820,7 +820,7 @@ const StudentForm = ({
             XLS and XLSX.
           </small>
         </div>
-      </section>
+      </section> */}
 
 
       
