@@ -49,7 +49,7 @@ const getStatusLabel = (status) => {
 const getStudentName = (student) =>
   student?.studentName ||
   [student?.firstName, student?.surname].filter(Boolean).join(" ").trim() ||
-  "â€”";
+  "-";
 
 const StudentReports = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -548,45 +548,47 @@ const StudentReports = () => {
 
                         <div className="student-report-identity">
                           <strong>{getStudentName(student)}</strong>
-                          <span>Father: {student.fatherName || "â€”"}</span>
+                          <span>Father: {student.fatherName || "-"}</span>
                           {student.signature && (
-                            <img
-                              className="student-signature"
-                              src={getAssetUrl(student.signature)}
-                              alt={`${getStudentName(student)} signature`}
-                              loading="lazy"
-                              onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                              }}
-                            />
+                            <div className="student-report-signature">
+                              <img
+                                className="student-signature"
+                                src={getAssetUrl(student.signature)}
+                                alt={`${student.studentName || "Student"} signature`}
+                                loading="lazy"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                }}
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
                     </td>
 
                     <td>
-                      <span className="student-roll">{student.rollNo || "â€”"}</span>
+                      <span className="student-roll">{student.rollNo || "-"}</span>
                     </td>
 
-                    <td>{student.gender || "â€”"}</td>
+                    <td>{student.gender || "-"}</td>
 
                     <td>
                       <div className="contact-details">
                         <div className="contact-li">
                           <IoIosCall />
-                          <span>{student.mobile || "â€”"}</span>
+                          <span>{student.mobile || "-"}</span>
                         </div>
                         <div className="contact-li">
                           <MdOutgoingMail />
-                          <span>{student.email || "â€”"}</span>
+                          <span>{student.email || "-"}</span>
                         </div>
                       </div>
                     </td>
 
                     <td>
-                      {student.course || "â€”"}
+                      {student.course || "-"}
                       <br />
-                      <span className="batchtag">{student.batch || "â€”"}</span>
+                      <span className="batchtag">{student.batch || "-"}</span>
                     </td>
 
                     <td>

@@ -814,3 +814,47 @@
   object-fit: contain;
   object-position: left center;
 }
+
+
+.student-report-signature {
+  width: 100%;
+  max-width: 100px;
+  height: 24px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.student-report-signature .student-signature {
+  display: block;
+  max-width: 100px;
+  max-height: 24px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.student-report-identity {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.student-report-identity > span {
+  overflow-wrap: anywhere;
+}
+
+
+
+.student-reports-page .common-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.student-reports-page .common-table {
+  min-width: 1050px;
+}
+
+.student-reports-page .common-table th,
+.student-reports-page .common-table td {
+  vertical-align: middle;
+}
