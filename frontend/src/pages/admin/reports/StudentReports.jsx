@@ -528,7 +528,7 @@ const StudentReports = () => {
                   <tr key={student._id}>
                     <td>
                       <div className="student-name-cell">
-                        <div className="student-avatar-wrapper">
+                        {/* <div className="student-avatar-wrapper">
                           {student.profileImage ? (
                             <img
                               alt={`${getStudentName(student)} profile`}
@@ -544,7 +544,51 @@ const StudentReports = () => {
                               {getStudentName(student).charAt(0).toUpperCase() || "S"}
                             </div>
                           )}
+                        </div> */}
+
+                        
+                      <div className="student-avatar-wrapper">
+                        {student.profileImage ? (
+                          <img
+                            alt={`${getStudentName(student)} profile`}
+                            className="student-avatar"
+                            src={getAssetUrl(student.profileImage)}
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                              const fallback = event.currentTarget.parentElement?.querySelector(
+                                ".student-avatar-fallback"
+                              );
+                              if (fallback) fallback.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+
+                        <div
+                          className="student-avatar-fallback"
+                          style={{
+                            display: student.profileImage ? "none" : "flex",
+                          }}
+                          aria-label={`${getStudentName(student)} initials`}
+                        >
+                          {[
+                            student.firstName?.trim()?.[0],
+                            student.surname?.trim()?.[0],
+                          ]
+                            .filter(Boolean)
+                            .join("")
+                            .toUpperCase() ||
+                            getStudentName(student)
+                              .split(/\s+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((part) => part[0])
+                              .join("")
+                              .toUpperCase() ||
+                            "S"}
                         </div>
+                      </div>
+
 
                         <div className="student-report-identity">
                           <strong>{getStudentName(student)}</strong>
