@@ -17,15 +17,13 @@ import { RiFileExcel2Line } from "react-icons/ri";
 
 
 
-
-
 import { getAttendanceReport } from "../../../services/attendanceReportService";
 import { getCourses } from "../../../services/courseService";
 import { getBatches } from "../../../services/batchService";
 import { getStudents } from "../../../services/studentService";
 import { FaUserFriends, FaUserTimes } from "react-icons/fa";
 import { FaUserCheck } from "react-icons/fa6";
-
+import { getAssetUrl } from "../../../utils/assetUrl";
 
 import "../../../styles/AttendanceReports.css";
 
@@ -1028,11 +1026,76 @@ const AttendanceReports = () => {
               <tbody>
                 {report.studentBreakdown.map((student) => (
                   <tr key={student.studentId || student.rollNo}>
-                    <td>
+                    {/* <td>
                       <div class="student-name-cell"><div class="student-avatar-wrapper"><img alt="Aman Prajapati" class="student-avatar" src="https://education-management-backend-79g1.onrender.com/uploads/students/1790327763958-my-image-portfolio-office--1-.png" /></div>
                       <div><strong><strong>{getStudentName(student)}</strong>  </strong> <label className="student-roll"> {student.rollNo || "-"}</label></div></div>
                       
+                    </td> */}
+
+                    
+                    <td>
+                      <div className="student-name-cell">
+                        <div className="student-avatar-wrapper">
+                          {student.profileImage ? (
+                            <img
+                              alt={`${getStudentName(student)} profile`}
+                              className="student-avatar"
+                              src={getAssetUrl(student.profileImage)}
+                              loading="lazy"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+
+                                const fallback =
+                                  event.currentTarget.parentElement?.querySelector(
+                                    ".attendance-avatar-fallback"
+                                  );
+
+                                if (fallback) {
+                                  fallback.style.display = "flex";
+                                }
+                              }}
+                            />
+                          ) : null}
+
+                          <div
+                            className="student-avatar attendance-avatar-fallback"
+                            style={{
+                              display: student.profileImage ? "none" : "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              background: "#eaf0ff",
+                              color: "#2457c5",
+                            }}
+                            aria-label={`${getStudentName(student)} initials`}
+                          >
+                            {[
+                              student.firstName?.trim()?.[0],
+                              student.surname?.trim()?.[0],
+                            ]
+                              .filter(Boolean)
+                              .join("")
+                              .toUpperCase() ||
+                              getStudentName(student)
+                                .split(/\s+/)
+                                .filter(Boolean)
+                                .slice(0, 2)
+                                .map((part) => part[0])
+                                .join("")
+                                .toUpperCase() ||
+                              "S"}
+                          </div>
+                        </div>
+
+                        <div>
+                          <strong>{getStudentName(student)}</strong>
+                          <label className="student-roll">
+                            {student.rollNo || "—"}
+                          </label>
+                        </div>
+                      </div>
                     </td>
+
                    
                     <td>{student.totalRecords || 0}</td>
                     <td>{student.present || 0}</td>

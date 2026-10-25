@@ -1094,25 +1094,7 @@ const CourseReports = () => {
 
         </div>
 
-        {/* <div className="input-search noicon">
 
-          <label>
-            Course Type
-          </label>
-
-          <input
-            type="text"
-            name="course_type"
-            value={
-              filters.course_type
-            }
-            onChange={
-              handleChange
-            }
-            placeholder="Course type..."
-          />
-
-        </div> */}
 
         <div className="input-search">
           <label htmlFor="course-report-type">
@@ -1136,25 +1118,8 @@ const CourseReports = () => {
           </select>
         </div>
 
-        {/* <div className="input-search noicon">
 
-          <label>
-            Category
-          </label>
 
-          <input
-            type="text"
-            name="course_category"
-            value={
-              filters.course_category
-            }
-            onChange={
-              handleChange
-            }
-            placeholder="Category..."
-          />
-
-        </div> */}
 
         <div className="input-search">
           <label htmlFor="course-report-category">

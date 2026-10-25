@@ -233,6 +233,7 @@ export const getAttendanceReport = async (req, res, next) => {
             rollNo: "$student.rollNo",
             firstName: "$student.firstName",
             surname: "$student.surname",
+            profileImage: "$student.profileImage",
             totalRecords: 1,
             present: 1,
             absent: 1,
@@ -354,7 +355,10 @@ export const getAttendanceReport = async (req, res, next) => {
       ]),
 
       Attendance.find(filter)
-        .populate("student_id", "rollNo firstName surname")
+        .populate(
+          "student_id",
+          "rollNo firstName surname profileImage"
+        )
         .populate("course_id", "courseTitle")
         .populate("batch_id", "batch_name")
         .populate("marked_by", "name email")
