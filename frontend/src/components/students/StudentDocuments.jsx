@@ -41,6 +41,8 @@ const StudentDocuments = ({
   onClose,
   onCountChange,
   inline = false,
+  draftFiles = [],
+  onDraftFilesChange,
 }) => {
   const inputRef = useRef(null);
 
@@ -188,6 +190,20 @@ const StudentDocuments = ({
     if (!result.valid) {
       setError(result.message);
       setSuccess("");
+      return;
+    }
+
+    if (!student?._id) {
+      onDraftFilesChange?.((previous) => [
+        ...previous,
+        ...result.files,
+      ]);
+
+      setSuccess(
+        `${result.files.length} document(s) selected. They will upload after the student is created.`
+      );
+
+      setError("");
       return;
     }
 
@@ -562,11 +578,9 @@ const StudentDocuments = ({
               </strong>
 
               <span>
-                {documents.length}{" "}
-                document
-                {documents.length === 1
-                  ? ""
-                  : "s"}
+                {!student?._id
+                  ? `${draftFiles.length} document${draftFiles.length === 1 ? "" : "s"}`
+                  : `${documents.length} document${documents.length === 1 ? "" : "s"}`}
               </span>
             </div>
 
@@ -605,7 +619,65 @@ const StudentDocuments = ({
             and XLSX.
           </p>
 
-          {loading ? (
+
+          {!student?._id ? (
+            draftFiles.length === 0 ? (
+              <div className="student-documents-empty">
+                <FiFileText />
+
+                <strong>
+                  No documents selected
+                </strong>
+
+                <span>
+                  Click "Upload Documents"
+                  to select student documents.
+                </span>
+              </div>
+            ) : (
+              <div className="student-documents-list">
+                {draftFiles.map(
+                  (file, index) => (
+                    <div
+                      className="student-document-row"
+                      key={`${file.name}-${file.size}-${index}`}
+                    >
+                      <div className="student-document-icon">
+                        <FiFileText />
+                      </div>
+
+                      <div className="student-document-info">
+                        <strong title={file.name}>
+                          {file.name}
+                        </strong>
+
+                        <span>
+                          {formatFileSize(file.size)}
+                        </span>
+                      </div>
+
+                      <div className="student-document-actions">
+                        <button
+                          type="button"
+                          title="Remove"
+                          className="danger"
+                          onClick={() =>
+                            onDraftFilesChange?.((previous) =>
+                              previous.filter((_, i) => i !== index)
+                            )
+                          }
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            )
+          ) :
+
+          loading ? (
             <div className="student-documents-loading">
               Loading documents...
             </div>

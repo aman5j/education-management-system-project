@@ -7,7 +7,9 @@ import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import Breadcrumb from "../../../common/Breadcrumb";
 import StudentForm from "../../../components/students/StudentForm";
-// import { uploadStudentDocuments } from "../../../services/studentDocumentService";
+import {
+  uploadStudentDocuments,
+} from "../../../services/studentDocumentService";
 import "./StudentManagement.css";
 
 const AddStudent = () => {
@@ -31,13 +33,24 @@ const AddStudent = () => {
     setSubmitting(true);
 
     try {
-      // await api.post("/students", formData, {
-      //   headers: { "Content-Type": "multipart/form-data" },
-      // });
+      const documents = formData.getAll("documents");
+      const studentFormData = new FormData();
 
-      const response = await api.post("/students", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      for (const [key, value] of formData.entries()) {
+        if (key !== "documents") {
+          studentFormData.append(key, value);
+        }
+      }
+
+      const response = await api.post(
+        "/students",
+        studentFormData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       const student = response?.data?.data;
 
@@ -47,7 +60,19 @@ const AddStudent = () => {
         );
       }
 
-      navigate(`${studentsPath}/${student._id}/edit`);
+      if (documents.length > 0) {
+        try {
+          await uploadStudentDocuments(student._id, documents);
+        } catch (uploadError) {
+          navigate(`${studentsPath}/${student._id}/edit`);
+
+          throw new Error(
+            "Student was created, but document upload failed. You have been redirected to Edit Student to retry the upload."
+          );
+        }
+      }
+
+      navigate(studentsPath);
 
     } catch (error) {
       throw new Error(
