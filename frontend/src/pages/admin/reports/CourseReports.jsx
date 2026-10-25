@@ -118,6 +118,11 @@ const CourseReports = () => {
       courses: [],
     });
 
+  const [filterOptions, setFilterOptions] = useState({
+    courseTypes: [],
+    categories: [],
+  });
+
   const [loading, setLoading] =
     useState(false);
 
@@ -175,6 +180,17 @@ const CourseReports = () => {
 
       const data =
         getResponseData(response);
+
+      if (data.filterOptions) {
+        setFilterOptions({
+          courseTypes: Array.isArray(data.filterOptions.courseTypes)
+            ? data.filterOptions.courseTypes
+            : [],
+          categories: Array.isArray(data.filterOptions.categories)
+            ? data.filterOptions.categories
+            : [],
+        });
+      }
 
       setReport({
         summary:
@@ -1078,7 +1094,7 @@ const CourseReports = () => {
 
         </div>
 
-        <div className="input-search noicon">
+        {/* <div className="input-search noicon">
 
           <label>
             Course Type
@@ -1096,9 +1112,31 @@ const CourseReports = () => {
             placeholder="Course type..."
           />
 
+        </div> */}
+
+        <div className="input-search">
+          <label htmlFor="course-report-type">
+            Course Type
+          </label>
+
+          <select
+            id="course-report-type"
+            name="course_type"
+            value={filters.course_type}
+            onChange={handleChange}
+            disabled={loading}
+          >
+            <option value="">All Course Types</option>
+
+            {filterOptions.courseTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="input-search noicon">
+        {/* <div className="input-search noicon">
 
           <label>
             Category
@@ -1116,6 +1154,28 @@ const CourseReports = () => {
             placeholder="Category..."
           />
 
+        </div> */}
+
+        <div className="input-search">
+          <label htmlFor="course-report-category">
+            Category
+          </label>
+
+          <select
+            id="course-report-category"
+            name="course_category"
+            value={filters.course_category}
+            onChange={handleChange}
+            disabled={loading}
+          >
+            <option value="">All Categories</option>
+
+            {filterOptions.categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="student-filter-actions">

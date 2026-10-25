@@ -1,5 +1,6 @@
 import Course from "../models/Course.js";
 import StudentAdmission from "../models/StudentAdmission.js";
+import Category from "../models/Category.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,45 @@ export const getCourseReport = async (
       course_type = "",
       course_category = "",
     } = req.query;
+
+
+    const [storedCourseTypes, activeCategories, usedCourseCategories] =
+      await Promise.all([
+        Course.distinct("courseType", {
+          courseType: { $nin: ["", null] },
+        }),
+
+        Category.find({ status: "Active" })
+          .select("categoryName")
+          .sort({ displayOrder: 1, categoryName: 1 })
+          .lean(),
+
+        Course.distinct("courseCategory", {
+          courseCategory: { $nin: ["", null] },
+        }),
+      ]);
+
+    const filterOptions = {
+      courseTypes: [
+        ...new Set(
+          storedCourseTypes
+            .filter(Boolean)
+            .map((value) => String(value).trim())
+            .filter(Boolean)
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+
+      categories: [
+        ...new Set([
+          ...activeCategories.map((category) =>
+            String(category.categoryName || "").trim()
+          ),
+          ...usedCourseCategories.map((category) =>
+            String(category || "").trim()
+          ),
+        ].filter(Boolean)),
+      ].sort((a, b) => a.localeCompare(b)),
+    };
 
     /*
     |--------------------------------------------------------------------------
@@ -172,8 +212,8 @@ export const getCourseReport = async (
             totalPaidAmount: 0,
             totalRemainingAmount: 0,
           },
-
           courses: [],
+          filterOptions,
         },
       });
     }
@@ -539,12 +579,10 @@ export const getCourseReport = async (
 
     return res.status(200).json({
       success: true,
-
       data: {
         summary,
-
-        courses:
-          reportCourses,
+        courses: reportCourses,
+        filterOptions,
       },
     });
   } catch (error) {
