@@ -28,6 +28,8 @@ import {
   getAdmissionReportFilters,
 } from "../../../services/admissionReportService";
 
+import { getAssetUrl } from "../../../utils/assetUrl";
+
 import "../../../styles/AdmissionReports.css";
 
 const getResponseData = (response) => {
@@ -1121,7 +1123,7 @@ const AdmissionReports = () => {
                       {index + 1}
                     </td>
 
-                    <td>
+                    {/* <td>
                       <div className="admission-report-student">
 
                         <div class="student-name-cell">
@@ -1135,7 +1137,81 @@ const AdmissionReports = () => {
 
                        
                       </div>
+                    </td> */}
+
+                    
+                    <td>
+                      <div className="admission-report-student">
+                        <div className="student-name-cell">
+                          <div className="student-avatar-wrapper">
+                            {admission.student?.profileImage ? (
+                              <img
+                                alt={`${admission.student.name || "Student"} profile`}
+                                className="student-avatar"
+                                src={getAssetUrl(admission.student.profileImage)}
+                                loading="lazy"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+
+                                  const fallback =
+                                    event.currentTarget.parentElement?.querySelector(
+                                      ".admission-report-avatar-fallback"
+                                    );
+
+                                  if (fallback) {
+                                    fallback.style.display = "flex";
+                                  }
+                                }}
+                              />
+                            ) : null}
+
+                            <div
+                              className="student-avatar admission-report-avatar-fallback"
+                              style={{
+                                display: admission.student?.profileImage ? "none" : "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontWeight: 700,
+                                background: "#eaf0ff",
+                                color: "#2457c5",
+                              }}
+                              aria-label={`${admission.student?.name || "Student"} initials`}
+                            >
+                              {admission.student?.name
+                                ?.split(/\s+/)
+                                .filter(Boolean)
+                                .slice(0, 2)
+                                .map((part) => part[0])
+                                .join("")
+                                .toUpperCase() || "S"}
+                            </div>
+                          </div>
+
+                          <div>
+                            <strong>{admission.student?.name || "—"}</strong>
+
+                            {admission.student?.fatherName && (
+                              <small>
+                                {admission.student.fatherName}
+                              </small>
+                            )}
+
+                            {admission.student?.signature && (
+                              <img
+                                alt={`${admission.student?.name || "Student"} signature`}
+                                className="student-signature"
+                                src={getAssetUrl(admission.student.signature)}
+                                loading="lazy"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </td>
+
 
                     <td>
                       <span className="student-roll">{

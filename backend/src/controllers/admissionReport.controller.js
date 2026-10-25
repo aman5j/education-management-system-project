@@ -175,7 +175,7 @@ export const getAdmissionReport = async (
       .populate({
         path: "student_id",
         select:
-          "rollNo firstName surname mobile email",
+          "rollNo firstName surname mobile email profileImage fatherName signature",
       })
       .populate({
         path: "course_id",
@@ -281,6 +281,9 @@ export const getAdmissionReport = async (
             .filter(Boolean)
             .join(" ")
             .trim(),
+          fatherName: student.fatherName || "",
+          profileImage: student.profileImage || "",
+          signature: student.signature || "",
           mobile: student.mobile || "",
           email: student.email || "",
         },
