@@ -121,7 +121,6 @@ export const getStudentReport = async (
       const allowedStatuses = [
         "active",
         "inactive",
-        "suspended",
       ];
 
       if (
@@ -274,7 +273,6 @@ export const getStudentReport = async (
               totalStudents: 0,
               activeStudents: 0,
               inactiveStudents: 0,
-              suspendedStudents: 0,
               newStudents: 0,
             },
 
@@ -299,7 +297,7 @@ export const getStudentReport = async (
         studentMatch
       )
         .select(
-          "_id rollNo firstName surname gender mobile email course batch status createdAt"
+          "_id rollNo firstName surname fatherName gender mobile email profileImage signature status createdAt"
         )
         .sort({
           createdAt: -1,
@@ -393,8 +391,7 @@ export const getStudentReport = async (
           return {
             _id: student._id,
 
-            rollNo:
-              student.rollNo || "",
+            rollNo: student.rollNo || "",
 
             studentName: [
               student.firstName,
@@ -404,41 +401,32 @@ export const getStudentReport = async (
               .join(" ")
               .trim(),
 
-            gender:
-              student.gender || "",
+            fatherName: student.fatherName || "",
+            profileImage: student.profileImage || "",
+            signature: student.signature || "",
 
-            mobile:
-              student.mobile || "",
-
-            email:
-              student.email || "",
+            gender: student.gender || "",
+            mobile: student.mobile || "",
+            email: student.email || "",
 
             course:
-              admission?.course_id
-                ?.courseTitle ||
+              admission?.course_id?.courseTitle ||
               student.course ||
               "",
 
             batch:
-              admission?.batch_id
-                ?.batch_name ||
+              admission?.batch_id?.batch_name ||
               student.batch ||
               "",
 
             admissionDate:
-              admission?.admission_date ||
-              null,
+              admission?.admission_date || null,
 
             admissionStatus:
-              admission?.status ||
-              "",
+              admission?.status || "",
 
-            status:
-              student.status ||
-              "active",
-
-            createdAt:
-              student.createdAt,
+            status: student.status || "active",
+            createdAt: student.createdAt,
           };
         }
       );
@@ -466,12 +454,6 @@ export const getStudentReport = async (
           "inactive"
       ).length;
 
-    const suspendedStudents =
-      reportStudents.filter(
-        (student) =>
-          student.status ===
-          "suspended"
-      ).length;
 
     /*
     |--------------------------------------------------------------------------

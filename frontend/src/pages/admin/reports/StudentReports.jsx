@@ -1,10 +1,12 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useAuth } from "../../../context/AuthContext";
+import { getAssetUrl } from "../../../utils/assetUrl";
 
 import {
   FiDownload,
@@ -111,6 +113,8 @@ const StudentReports = () => {
     loading: authLoading,
   } = useAuth();
 
+  const initialLoadStarted = useRef(false);
+
   const [filters, setFilters] =
     useState({
       date_from: "",
@@ -144,6 +148,35 @@ const StudentReports = () => {
 
   const [error, setError] =
     useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+
+  const allStudents = report.students || [];
+
+  const filteredStudents = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    if (!query) {
+      return allStudents;
+    }
+
+    return allStudents.filter((student) => {
+      const searchableValues = [
+        student.studentName,
+        student.rollNo,
+        student.email,
+        student.mobile,
+        student.fatherName,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(query)
+      );
+    });
+  }, [allStudents, searchTerm]);
 
   /*
   |--------------------------------------------------------------------------
@@ -295,20 +328,19 @@ const StudentReports = () => {
 // ]);
 
 useEffect(() => {
-  if (authLoading) {
+  if (authLoading || !isAuthenticated) {
     return;
   }
 
-  if (!isAuthenticated) {
+  if (initialLoadStarted.current) {
     return;
   }
 
-  loadFilters();
-  loadReport();
-}, [
-  authLoading,
-  isAuthenticated,
-]);
+  initialLoadStarted.current = true;
+
+  void loadFilters();
+  void loadReport();
+}, [authLoading, isAuthenticated]);
 
   /*
   |--------------------------------------------------------------------------
@@ -383,8 +415,7 @@ useEffect(() => {
   */
 
   const exportExcel = () => {
-    const students =
-      report.students || [];
+    const students = filteredStudents;
 
     if (!students.length) {
       alert(
@@ -478,15 +509,15 @@ useEffect(() => {
               0
           ),
       },
-      {
-        Metric:
-          "Suspended Students",
-        Value:
-          Number(
-            summary.suspendedStudents ||
-              0
-          ),
-      },
+      // {
+      //   Metric:
+      //     "Suspended Students",
+      //   Value:
+      //     Number(
+      //       summary.suspendedStudents ||
+      //         0
+      //     ),
+      // },
       {
         Metric:
           "Students in Selected Period",
@@ -567,8 +598,7 @@ useEffect(() => {
   */
 
   const exportPDF = () => {
-    const students =
-      report.students || [];
+    const students = filteredStudents;
 
     if (!students.length) {
       alert(
@@ -730,13 +760,13 @@ useEffect(() => {
       currentY
     );
 
-    doc.text(
-      `Suspended: ${Number(
-        summary.suspendedStudents || 0
-      )}`,
-      155,
-      currentY
-    );
+    // doc.text(
+    //   `Suspended: ${Number(
+    //     summary.suspendedStudents || 0
+    //   )}`,
+    //   155,
+    //   currentY
+    // );
 
     doc.text(
       `Period Students: ${Number(
@@ -829,8 +859,8 @@ useEffect(() => {
   const summary =
     report.summary || {};
 
-  const students =
-    report.students || [];
+
+  const students = filteredStudents;
 
   /*
   |--------------------------------------------------------------------------
@@ -971,6 +1001,23 @@ useEffect(() => {
        
       </div>
       <div className="common-card-filters">
+
+        <div className="input-search">
+          <label htmlFor="student-report-search">
+            Search Student
+          </label>
+
+          <input
+            id="student-report-search"
+            type="search"
+            placeholder="Search name, roll number, email or mobile..."
+            value={searchTerm}
+            onChange={(event) =>
+              setSearchTerm(event.target.value)
+            }
+          />
+        </div>
+
         <div className="input-search">
           <label>
             From Date
@@ -1112,9 +1159,9 @@ useEffect(() => {
               Inactive
             </option>
 
-            <option value="suspended">
+            {/* <option value="suspended">
               Suspended
-            </option>
+            </option> */}
           </select>
         </div>
 
@@ -1199,16 +1246,61 @@ useEffect(() => {
                         student._id
                       }
                     >
-                      <td>
+                      {/* <td> */}
+
+                        <td>
+                          <div className="student-name-cell">
+                            <div className="student-avatar-wrapper">
+                              {student.profileImage ? (
+                                <img
+                                  alt={`${student.studentName || "Student"} profile`}
+                                  className="student-avatar"
+                                  src={getAssetUrl(student.profileImage)}
+                                  loading="lazy"
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <div className="student-avatar-fallback">
+                                  {(student.studentName || "S")
+                                    .trim()
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="student-report-identity">
+                              <strong>{student.studentName || "—"}</strong>
+
+                              <span>
+                                Father/Guardian: {student.fatherName || "—"}
+                              </span>
+
+                              {student.signature && (
+                                <img
+                                  className="student-signature"
+                                  src={getAssetUrl(student.signature)}
+                                  alt={`${student.studentName || "Student"} signature`}
+                                  loading="lazy"
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </td>
                         
 
-<div class="student-name-cell">
+{/* <div class="student-name-cell">
   <div class="student-avatar-wrapper">
     <img alt="Rahul Lodhi" class="student-avatar" src="http://localhost:5000/uploads/students/1791094170853-711uU2sdLaL-_SY741_.jpg" /></div><div><strong>{student.studentName ||
-                            "-"}</strong>erere<img alt="Student Signature" height="20px" class="student-signature" src="http://localhost:5000/uploads/students/1792320152276-images.png" /></div></div>
+                            "-"}</strong>erere<img alt="Student Signature" height="20px" class="student-signature" src="http://localhost:5000/uploads/students/1792320152276-images.png" /></div></div> */}
 
                         
-                      </td>
+                      {/* </td> */}
 
                       <td>
                         <span className="student-roll"> {student.rollNo ||
