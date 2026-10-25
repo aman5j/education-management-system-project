@@ -483,13 +483,8 @@ export const getStudentReport = async (
       data: {
         summary: {
           totalStudents,
-
           activeStudents,
-
           inactiveStudents,
-
-          suspendedStudents,
-
           newStudents,
         },
 
