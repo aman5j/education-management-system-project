@@ -41,7 +41,7 @@ import Breadcrumb from "../../../common/Breadcrumb";
 import StudentFilters from "../../../components/students/StudentFilters";
 import StudentTable from "../../../components/students/StudentTable";
 import StudentView from "../../../components/students/StudentView";
-import StudentDocuments from "../../../components/students/StudentDocuments";
+// import StudentDocuments from "../../../components/students/StudentDocuments";
 
 import "../../../layout/AdminLayout.css";
 import "./StudentManagement.css";
@@ -188,10 +188,10 @@ const Students = () => {
     setSelectedStudent,
   ] = useState(null);
 
-  const [
-    documentStudent,
-    setDocumentStudent,
-  ] = useState(null);
+  // const [
+  //   documentStudent,
+  //   setDocumentStudent,
+  // ] = useState(null);
 
   const [
     deletingStudent,
@@ -756,9 +756,9 @@ const Students = () => {
                 handleStatusChange
               }
 
-              onDocuments={
-                setDocumentStudent
-              }
+              // onDocuments={
+              //   setDocumentStudent
+              // }
 
               sortBy={sortBy}
               sortOrder={
@@ -934,7 +934,7 @@ const Students = () => {
         />
       )} */}
 
-      {documentStudent && (
+      {/* {documentStudent && (
         <StudentDocuments
           student={documentStudent}
           onClose={() => {
@@ -945,7 +945,7 @@ const Students = () => {
             );
           }}
         />
-      )}
+      )} */}
 
       {deletingStudent && (
         <div className="student-action-overlay">

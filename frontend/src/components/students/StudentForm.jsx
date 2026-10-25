@@ -11,7 +11,7 @@ import {
   FiUpload
 } from "react-icons/fi";
 
-
+import StudentDocuments from "./StudentDocuments";
 import { getAssetUrl } from "../../utils/assetUrl";
 
 
@@ -54,6 +54,8 @@ const StudentForm = ({
     setSignaturePreview,
   ] = useState("");
 
+  const [selectedDocuments, setSelectedDocuments] =
+  useState([]);
 
   const [error, setError] =
     useState("");
@@ -276,6 +278,10 @@ const StudentForm = ({
         );
       }
     );
+
+    selectedDocuments.forEach((file) => {
+      formData.append("documents", file);
+    });
 
     try {
       await onSubmit(formData);
@@ -731,6 +737,93 @@ const StudentForm = ({
       </section>
        
      
+      {initialData?._id && (
+        <section className="common-card student-form-full">
+          <div className="panel-header">
+            <div>
+              <h3>Student Documents</h3>
+              <p>
+                Upload, view, download, or remove documents
+                associated with this student.
+              </p>
+            </div>
+          </div>
+
+          <div className="cardbody">
+            <StudentDocuments
+              student={initialData}
+              inline
+            />
+          </div>
+        </section>
+      )}
+
+
+      <section className="common-card student-form-full">
+        <div className="panel-header">
+          <div>
+            <h3>Student Documents</h3>
+            <p>
+              Upload certificates, identity documents,
+              marksheets, and other student files.
+            </p>
+          </div>
+        </div>
+
+        <div className="cardbody">
+          <label className="student-documents-upload-button">
+            <FiUpload />
+            Select Documents
+
+            <input
+              type="file"
+              multiple
+              hidden
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                setSelectedDocuments((previous) => [
+                  ...previous,
+                  ...files,
+                ]);
+                event.target.value = "";
+              }}
+            />
+          </label>
+
+          {selectedDocuments.length > 0 && (
+            <ul>
+              {selectedDocuments.map((file, index) => (
+                <li key={`${file.name}-${file.size}-${index}`}>
+                  {file.name}
+                  {" — "}
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedDocuments((previous) =>
+                        previous.filter((_, i) => i !== index)
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <small>
+            Maximum 10 files per upload and 10 MB per file.
+            Supported formats: PDF, JPG, PNG, WEBP, DOC, DOCX,
+            XLS and XLSX.
+          </small>
+        </div>
+      </section>
+
+
+      
 
       <div className="student-form-actions">
         <button

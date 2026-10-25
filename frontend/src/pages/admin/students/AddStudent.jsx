@@ -7,6 +7,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import Breadcrumb from "../../../common/Breadcrumb";
 import StudentForm from "../../../components/students/StudentForm";
+import { uploadStudentDocuments } from "../../../services/studentDocumentService";
 import "./StudentManagement.css";
 
 const AddStudent = () => {
@@ -30,11 +31,29 @@ const AddStudent = () => {
     setSubmitting(true);
 
     try {
-      await api.post("/students", formData, {
+      // await api.post("/students", formData, {
+      //   headers: { "Content-Type": "multipart/form-data" },
+      // });
+
+      const response = await api.post("/students", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      const student = response?.data?.data;
+      const documents = formData.getAll("documents");
+
+      if (documents.length > 0) {
+        if (!student?._id) {
+          throw new Error(
+            "Student was created, but its ID was not returned. Documents were not uploaded."
+          );
+        }
+
+        await uploadStudentDocuments(student._id, documents);
+      }
+
       navigate(studentsPath);
+
     } catch (error) {
       throw new Error(
         error.response?.data?.message || "Unable to create student."

@@ -1211,3 +1211,39 @@
   }
 }
 
+/* Student-Document-Model-CSS */
+
+.student-documents-inline {
+  width: 100%;
+  min-width: 0;
+  margin-top: 24px;
+}
+
+.student-documents-inline .student-documents-modal {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  box-shadow: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.student-documents-inline .student-documents-body {
+  overflow: visible;
+}
+
+.student-documents-inline .student-documents-header {
+  padding: 18px 20px;
+}
+
+.student-documents-inline .student-documents-body {
+  padding: 20px;
+}
+
+@media (max-width: 600px) {
+  .student-documents-inline .student-documents-header,
+  .student-documents-inline .student-documents-body {
+    padding: 14px;
+  }
+}

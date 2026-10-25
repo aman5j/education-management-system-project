@@ -2,7 +2,7 @@ import {
   FiDownload,
   FiEdit2,
   FiEye,
-  FiFileText,
+  // FiFileText,
   FiTrash2,
   FiCreditCard,
 } from "react-icons/fi";
@@ -15,7 +15,6 @@ import { MdDateRange } from "react-icons/md";
 
 
 
-// import { getAssetUrl } from "../../../utils/assetUrl";
 import { getAssetUrl } from "../../utils/assetUrl";
 
 // import {
@@ -34,7 +33,7 @@ import generatePaymentReceipt from "../../utils/generatePaymentReceipt";
 const StudentTable = ({
   canUpdateStudent = false,
   canDeleteStudent = false,
-  canManageDocuments = false,
+  // canManageDocuments = false,
   canViewPayments = false,
   
   students,
@@ -42,7 +41,7 @@ const StudentTable = ({
   onEdit,
   onDelete,
   onStatusChange,
-  onDocuments,
+  // onDocuments,
   sortBy,
   sortOrder,
   onSort,
@@ -566,7 +565,7 @@ const handleDownloadReceipt = async (student) => {
                         </button>
                       )}
 
-                      {canManageDocuments && (
+                      {/* {canManageDocuments && (
                       // Keep the existing Manage Documents button here.
                       <button
                         type="button" 
@@ -590,7 +589,7 @@ const handleDownloadReceipt = async (student) => {
                             </span>
                           )}
                       </button>
-                      )}
+                      )} */}
 
                       {/* <Link
                         to={`/admin/students/${student._id}/payments`}

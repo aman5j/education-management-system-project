@@ -40,6 +40,7 @@ const StudentDocuments = ({
   student,
   onClose,
   onCountChange,
+  inline = false,
 }) => {
   const inputRef = useRef(null);
 
@@ -496,13 +497,18 @@ const StudentDocuments = ({
 
   return (
     <div
-      className="student-documents-overlay"
+      className={
+        inline
+          ? "student-documents-inline"
+          : "student-documents-overlay"
+      }
       onMouseDown={(event) => {
         if (
+          !inline &&
           event.target ===
-          event.currentTarget
+            event.currentTarget
         ) {
-          onClose();
+          onClose?.();
         }
       }}
     >
@@ -524,13 +530,16 @@ const StudentDocuments = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            className="student-documents-close"
-            onClick={onClose}
-          >
-            <FiX />
-          </button>
+          {!inline && (
+            <button
+              type="button"
+              className="student-documents-close"
+              onClick={onClose}
+              aria-label="Close student documents"
+            >
+              <FiX />
+            </button>
+          )}
         </div>
 
         <div className="student-documents-body">
