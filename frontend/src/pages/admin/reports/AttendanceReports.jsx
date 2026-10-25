@@ -727,7 +727,7 @@ const AttendanceReports = () => {
                 {records.map((record) => (
                   <tr key={record._id}>
                     
-                    <td className="batch-name-cell">
+                    {/* <td className="batch-name-cell">
 
                       <div class="student-name-cell">
                         <div class="student-avatar-wrapper">
@@ -740,7 +740,72 @@ const AttendanceReports = () => {
                             </div></div>
 
                     
+                    </td> */}
+
+                    
+                    <td className="batch-name-cell">
+                      <div className="student-name-cell">
+                        <div className="student-avatar-wrapper">
+                          {record.student_id?.profileImage ? (
+                            <img
+                              alt={`${getStudentName(record.student_id)} profile`}
+                              className="student-avatar"
+                              src={getAssetUrl(record.student_id.profileImage)}
+                              loading="lazy"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+
+                                const fallback =
+                                  event.currentTarget.parentElement?.querySelector(
+                                    ".attendance-avatar-fallback"
+                                  );
+
+                                if (fallback) {
+                                  fallback.style.display = "flex";
+                                }
+                              }}
+                            />
+                          ) : null}
+
+                          <div
+                            className="student-avatar attendance-avatar-fallback"
+                            style={{
+                              display: record.student_id?.profileImage ? "none" : "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              background: "#eaf0ff",
+                              color: "#2457c5",
+                            }}
+                            aria-label={`${getStudentName(record.student_id)} initials`}
+                          >
+                            {[
+                              record.student_id?.firstName?.trim()?.[0],
+                              record.student_id?.surname?.trim()?.[0],
+                            ]
+                              .filter(Boolean)
+                              .join("")
+                              .toUpperCase() ||
+                              getStudentName(record.student_id)
+                                .split(/\s+/)
+                                .filter(Boolean)
+                                .slice(0, 2)
+                                .map((part) => part[0])
+                                .join("")
+                                .toUpperCase() ||
+                              "S"}
+                          </div>
+                        </div>
+
+                        <div>
+                          <strong>{getStudentName(record.student_id)}</strong>
+                          <label className="student-roll">
+                            {record.student_id?.rollNo || "—"}
+                          </label>
+                        </div>
+                      </div>
                     </td>
+
                     <td>
                       <div class="contact-details"><div class="contact-li"> 
                         <MdDateRange /> 
