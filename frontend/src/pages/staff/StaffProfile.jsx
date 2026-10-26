@@ -291,6 +291,7 @@ export default function StaffProfile() {
           </div> */}
 
           
+          
           <div className="staff-profile__avatar">
             {user?.avatar ? (
               <img
@@ -298,6 +299,7 @@ export default function StaffProfile() {
                 alt={`${user?.name || "Staff"} profile`}
                 onError={(event) => {
                   event.currentTarget.style.display = "none";
+
                   const fallback =
                     event.currentTarget.parentElement?.querySelector(
                       ".staff-profile__avatar-fallback"
@@ -321,6 +323,7 @@ export default function StaffProfile() {
               {getInitials(user?.name)}
             </span>
           </div>
+
 
           <input
             ref={avatarInputRef}
