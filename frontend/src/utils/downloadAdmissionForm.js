@@ -1,7 +1,21 @@
 
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import api from "../services/api";
 import instituteSettingsService from "../services/instituteSettingsService";
+
+const COLORS = {
+  navy: [13, 54, 96],
+  navyDark: [8, 39, 73],
+  orange: [245, 113, 28],
+  blue: [36, 105, 190],
+  text: [29, 43, 61],
+  muted: [99, 115, 133],
+  border: [215, 225, 236],
+  pale: [241, 247, 253],
+  white: [255, 255, 255],
+  green: [22, 128, 75],
+};
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -12,7 +26,7 @@ const formatDate = (value) => {
 
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
-    month: "long",
+    month: "short",
     year: "numeric",
   });
 };
@@ -23,28 +37,70 @@ const money = (value) =>
     maximumFractionDigits: 2,
   })}`;
 
-const resolveAssetUrl = (path) => {
-  if (typeof path !== "string" || !path.trim()) return "";
-
-  const value = path.trim();
-  const apiBase = api.defaults.baseURL || "http://localhost:5000/api";
-  const backendOrigin = new URL(apiBase, window.location.origin).origin;
-
-  if (/^(data:|blob:)/i.test(value)) return value;
-
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(value)) {
-    const oldUrl = new URL(value);
-    return `${backendOrigin}${oldUrl.pathname}${oldUrl.search}`;
+const clean = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "—";
   }
 
-  if (/^https?:\/\//i.test(value)) return value;
-
-  return `${backendOrigin}/${value.replace(/^\/+/, "")}`;
+  return String(value).trim() || "—";
 };
 
-const loadImage = (path) =>
+const getBackendOrigin = () => {
+  const apiBase =
+    api.defaults.baseURL ||
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api";
+
+  return new URL(apiBase, window.location.origin).origin;
+};
+
+const resolveAssetUrl = (assetPath) => {
+  if (
+    typeof assetPath !== "string" ||
+    !assetPath.trim()
+  ) {
+    return "";
+  }
+
+  const value = assetPath.trim();
+
+  if (/^(data:|blob:)/i.test(value)) {
+    return value;
+  }
+
+  const backendOrigin = getBackendOrigin();
+
+  if (/^https?:\/\//i.test(value)) {
+    const parsed = new URL(value);
+
+    const isLocalHost =
+      /^(localhost|127\.0\.0\.1)$/i.test(parsed.hostname);
+
+    if (
+      !isLocalHost &&
+      !/\/uploads\//i.test(parsed.pathname)
+    ) {
+      return value;
+    }
+
+    return `${backendOrigin}${parsed.pathname}${parsed.search}`;
+  }
+
+  let pathname = value.replace(/^\/+/, "");
+
+  // Normalize older saved paths.
+  pathname = pathname.replace(/^api\/+/i, "");
+
+  if (!/^uploads\//i.test(pathname)) {
+    pathname = `uploads/${pathname}`;
+  }
+
+  return `${backendOrigin}/${pathname}`;
+};
+
+const loadImage = (assetPath) =>
   new Promise((resolve, reject) => {
-    if (!path) {
+    if (!assetPath) {
       reject(new Error("Image path is empty."));
       return;
     }
@@ -52,7 +108,7 @@ const loadImage = (path) =>
     let url;
 
     try {
-      url = resolveAssetUrl(path);
+      url = resolveAssetUrl(assetPath);
     } catch {
       reject(new Error("Invalid image URL."));
       return;
@@ -75,80 +131,282 @@ const loadImage = (path) =>
         }
 
         context.drawImage(image, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
+
+        resolve({
+          data: canvas.toDataURL("image/png"),
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
       } catch (error) {
         reject(error);
       }
     };
 
-    image.onerror = () =>
+    image.onerror = () => {
       reject(new Error(`Unable to load image: ${url}`));
+    };
 
     image.src = url;
   });
 
-const addOptionalImage = async (
+const addImage = async (
   pdf,
-  path,
+  assetPath,
   x,
   y,
   width,
-  height
+  height,
+  options = {}
 ) => {
-  if (!path) return false;
+  if (!assetPath) return false;
 
   try {
-    const data = await loadImage(path);
-    pdf.addImage(data, "PNG", x, y, width, height, undefined, "FAST");
+    const image = await loadImage(assetPath);
+
+    const { contain = true } = options;
+
+    if (!contain) {
+      pdf.addImage(
+        image.data,
+        "PNG",
+        x,
+        y,
+        width,
+        height,
+        undefined,
+        "FAST"
+      );
+
+      return true;
+    }
+
+    const scale = Math.min(
+      width / image.width,
+      height / image.height
+    );
+
+    const drawWidth = image.width * scale;
+    const drawHeight = image.height * scale;
+
+    pdf.addImage(
+      image.data,
+      "PNG",
+      x + (width - drawWidth) / 2,
+      y + (height - drawHeight) / 2,
+      drawWidth,
+      drawHeight,
+      undefined,
+      "FAST"
+    );
+
     return true;
   } catch (error) {
-    console.warn("Admission form image could not be loaded:", error.message);
+    console.warn(
+      "Admission form image could not be loaded:",
+      error.message
+    );
+
     return false;
   }
 };
 
-const getSettings = async () => {
+const getInstituteSettings = async () => {
   try {
     return await instituteSettingsService.getSettings();
   } catch (error) {
-    console.warn("Unable to load institute settings:", error.message);
+    console.warn(
+      "Unable to load institute profile:",
+      error.message
+    );
 
     try {
-      const branding =
-        await instituteSettingsService.getPublicBranding();
-
-      return {
-        instituteName: branding?.instituteName || "",
-        logoUrl: branding?.logoUrl || "",
-      };
+      return await instituteSettingsService.getPublicBranding();
     } catch {
       return {};
     }
   }
 };
 
-const clean = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "—";
+const getStudentName = (student) =>
+  [
+    student?.firstName,
+    student?.surname,
+  ]
+    .filter(Boolean)
+    .join(" ") || "Student";
+
+const getAddress = (student) =>
+  [
+    student?.address,
+    student?.pincode ? `PIN: ${student.pincode}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ") || "—";
+
+const setText = (
+  pdf,
+  value,
+  x,
+  y,
+  options = {}
+) => {
+  const {
+    color = COLORS.text,
+    size = 8,
+    bold = false,
+    align,
+    maxWidth,
+  } = options;
+
+  pdf.setTextColor(...color);
+  pdf.setFont("helvetica", bold ? "bold" : "normal");
+  pdf.setFontSize(size);
+
+  const text = clean(value);
+
+  if (maxWidth) {
+    const lines = pdf.splitTextToSize(text, maxWidth);
+
+    pdf.text(
+      lines.slice(0, options.maxLines || 2),
+      x,
+      y,
+      align ? { align } : {}
+    );
+
+    return;
   }
 
-  return String(value);
+  pdf.text(text, x, y, align ? { align } : {});
+};
+
+const drawSection = (pdf, letter, title, y, width) => {
+  const x = 9;
+  const height = 8;
+
+  pdf.setFillColor(...COLORS.navy);
+  pdf.roundedRect(x, y, width, height, 1.4, 1.4, "F");
+
+  // Orange section marker.
+  pdf.setFillColor(...COLORS.orange);
+  pdf.roundedRect(x, y, 13, height, 1.4, 1.4, "F");
+  pdf.rect(x + 7, y, 6, height, "F");
+
+  setText(pdf, letter, x + 6.5, y + 5.5, {
+    color: COLORS.white,
+    size: 10,
+    bold: true,
+    align: "center",
+  });
+
+  setText(pdf, title, x + 18, y + 5.4, {
+    color: COLORS.white,
+    size: 9,
+    bold: true,
+  });
+};
+
+const drawField = (
+  pdf,
+  label,
+  value,
+  x,
+  y,
+  width,
+  options = {}
+) => {
+  const {
+    height = 13,
+    valueSize = 8,
+    bold = false,
+    fill = COLORS.pale,
+  } = options;
+
+  setText(pdf, label.toUpperCase(), x, y + 2.5, {
+    color: COLORS.muted,
+    size: 6.1,
+    bold: true,
+  });
+
+  pdf.setFillColor(...fill);
+  pdf.roundedRect(
+    x,
+    y + 3.7,
+    width,
+    height - 3.7,
+    1,
+    1,
+    "F"
+  );
+
+  pdf.setDrawColor(...COLORS.border);
+  pdf.setLineWidth(0.15);
+  pdf.roundedRect(
+    x,
+    y + 3.7,
+    width,
+    height - 3.7,
+    1,
+    1,
+    "S"
+  );
+
+  const text = clean(value);
+  const maxWidth = width - 3;
+
+  pdf.setFont("helvetica", bold ? "bold" : "normal");
+  pdf.setFontSize(valueSize);
+
+  const lines = pdf.splitTextToSize(text, maxWidth);
+
+  setText(
+    pdf,
+    lines.slice(0, options.maxLines || 2),
+    x + 1.5,
+    y + 7.5,
+    {
+      color: COLORS.text,
+      size: valueSize,
+      bold,
+    }
+  );
 };
 
 export const downloadAdmissionForm = async (admission) => {
-  if (!admission || !admission._id) {
-    throw new Error("Admission information is missing. Refresh the page and try again.");
+  if (!admission?._id) {
+    throw new Error(
+      "Admission information is missing. Refresh the page and try again."
+    );
   }
 
   const student = admission.student_id;
   const course = admission.course_id;
   const batch = admission.batch_id;
 
-  if (!student || typeof student !== "object" || !student._id) {
-    throw new Error("Student information is missing. Refresh admissions and try again.");
+  if (
+    !student ||
+    typeof student !== "object" ||
+    !student._id
+  ) {
+    throw new Error(
+      "Student information is missing. Refresh admissions and try again."
+    );
   }
 
-  const settings = await getSettings();
+  const settings = await getInstituteSettings();
+
+  const instituteName =
+    settings?.instituteName?.trim() ||
+    "Educational Institute";
+
+  const studentName = getStudentName(student);
+
+  const remaining = Math.max(
+    0,
+    Number(admission.final_amount || 0) -
+      Number(admission.paid_amount || 0)
+  );
+
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -157,53 +415,73 @@ export const downloadAdmissionForm = async (admission) => {
   });
 
   const pageWidth = 210;
-  const margin = 15;
+  const pageHeight = 297;
+  const margin = 9;
   const contentWidth = pageWidth - margin * 2;
-  let y = 14;
 
-  const instituteName =
-    settings?.instituteName?.trim() || "Educational Institute";
+  // Clean white page with a thin rounded frame.
+  pdf.setFillColor(...COLORS.white);
+  pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
-  const fullAddress = [
-    settings?.address,
-    settings?.city,
-    settings?.state,
-    settings?.postalCode,
-    settings?.country,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  pdf.setDrawColor(...COLORS.border);
+  pdf.setLineWidth(0.35);
+  pdf.roundedRect(5, 5, 200, 287, 2, 2, "S");
 
-  // Page background and outer border.
-  pdf.setFillColor(255, 255, 255);
-  pdf.rect(0, 0, 210, 297, "F");
+  // -------------------------------------------------------
+  // INSTITUTE HEADER
+  // -------------------------------------------------------
 
-  pdf.setDrawColor(204, 216, 231);
-  pdf.setLineWidth(0.4);
-  pdf.roundedRect(7, 7, 196, 283, 3, 3, "S");
-
-  // Institute header.
-  pdf.setFillColor(16, 53, 104);
-  pdf.roundedRect(margin, y, contentWidth, 32, 2, 2, "F");
-
-  const logoLoaded = await addOptionalImage(
-    pdf,
-    settings?.logoUrl,
-    margin + 4,
-    y + 4,
-    24,
-    24
+  pdf.setFillColor(...COLORS.navyDark);
+  pdf.roundedRect(
+    margin,
+    9,
+    contentWidth,
+    30,
+    2,
+    2,
+    "F"
   );
 
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(15);
+  // White logo background.
+  pdf.setFillColor(...COLORS.white);
+  pdf.roundedRect(12, 12, 25, 24, 1.5, 1.5, "F");
 
-  const instituteLines = pdf.splitTextToSize(instituteName, logoLoaded ? 145 : 175);
-  pdf.text(instituteLines.slice(0, 2), margin + (logoLoaded ? 32 : 8), y + 11);
+  const logoLoaded = await addImage(
+    pdf,
+    settings?.logoUrl,
+    13,
+    13,
+    23,
+    22
+  );
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
+  if (!logoLoaded) {
+    setText(
+      pdf,
+      instituteName
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((word) => word[0] || "")
+        .join("")
+        .toUpperCase(),
+      24.5,
+      25,
+      {
+        color: COLORS.navy,
+        size: 12,
+        bold: true,
+        align: "center",
+      }
+    );
+  }
+
+  setText(pdf, instituteName, 41, 17, {
+    color: COLORS.white,
+    size: 14,
+    bold: true,
+    maxWidth: 151,
+    maxLines: 2,
+  });
 
   const contactLine = [
     settings?.email,
@@ -211,277 +489,521 @@ export const downloadAdmissionForm = async (admission) => {
     settings?.website,
   ]
     .filter(Boolean)
-    .join(" | ");
+    .join("  |  ");
 
   if (contactLine) {
-    pdf.text(
-      pdf.splitTextToSize(contactLine, 170).slice(0, 1),
-      margin + (logoLoaded ? 32 : 8),
-      y + 24
-    );
+    setText(pdf, contactLine, 41, 32, {
+      color: [228, 237, 248],
+      size: 7,
+      maxWidth: 150,
+      maxLines: 1,
+    });
   }
 
-  y += 40;
+  setText(
+    pdf,
+    "STUDENT ADMISSION FORM",
+    pageWidth / 2,
+    45,
+    {
+      color: COLORS.navy,
+      size: 15,
+      bold: true,
+      align: "center",
+    }
+  );
 
-  pdf.setTextColor(16, 53, 104);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.text("STUDENT ADMISSION FORM", pageWidth / 2, y, {
-    align: "center",
-  });
+  setText(
+    pdf,
+    `Admission ID: ${String(admission._id).slice(-10).toUpperCase()}`,
+    pageWidth / 2,
+    50,
+    {
+      color: COLORS.muted,
+      size: 7,
+      align: "center",
+    }
+  );
 
-  y += 5;
+  // -------------------------------------------------------
+  // SECTION A: PERSONAL INFORMATION
+  // -------------------------------------------------------
 
-  pdf.setDrawColor(37, 99, 235);
-  pdf.setLineWidth(0.7);
-  pdf.line(margin, y, pageWidth - margin, y);
+  drawSection(
+    pdf,
+    "A",
+    "STUDENT PERSONAL INFORMATION",
+    54,
+    contentWidth
+  );
 
-  y += 8;
+  // Student photo.
+  pdf.setDrawColor(...COLORS.border);
+  pdf.setLineWidth(0.35);
+  pdf.roundedRect(171, 66, 28, 35, 1.5, 1.5, "S");
 
-  // Student identity panel.
-  pdf.setFillColor(245, 248, 252);
-  pdf.roundedRect(margin, y, contentWidth, 43, 2, 2, "F");
-
-  const photoLoaded = await addOptionalImage(
+  const photoLoaded = await addImage(
     pdf,
     student.profileImage,
-    margin + 4,
-    y + 4,
+    172,
+    67,
     26,
     33
   );
 
   if (!photoLoaded) {
-    pdf.setDrawColor(203, 213, 225);
-    pdf.roundedRect(margin + 4, y + 4, 26, 33, 2, 2, "S");
-    pdf.setTextColor(100, 116, 139);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
-
-    const initials = [
-      student.firstName?.[0],
-      student.surname?.[0],
-    ]
-      .filter(Boolean)
-      .join("")
-      .toUpperCase() || "S";
-
-    pdf.text(initials, margin + 17, y + 22, { align: "center" });
-  }
-
-  const studentName = [
-    student.firstName,
-    student.surname,
-  ]
-    .filter(Boolean)
-    .join(" ") || "Student";
-
-  pdf.setTextColor(20, 35, 60);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  pdf.text(pdf.splitTextToSize(studentName, 125).slice(0, 2), margin + 36, y + 10);
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(71, 85, 105);
-
-  pdf.text(`Roll Number: ${clean(student.rollNo)}`, margin + 36, y + 20);
-  pdf.text(`Admission Date: ${formatDate(admission.admission_date)}`, margin + 36, y + 27);
-  pdf.text(`Admission Status: ${clean(admission.status)}`, margin + 36, y + 34);
-
-  y += 51;
-
-  const drawSection = (title) => {
-    pdf.setFillColor(230, 239, 250);
-    pdf.roundedRect(margin, y, contentWidth, 8, 1, 1, "F");
-
-    pdf.setTextColor(16, 53, 104);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9);
-    pdf.text(title, margin + 3, y + 5.3);
-
-    y += 12;
-  };
-
-  const drawRows = (rows, columns = 2) => {
-    const columnWidth = contentWidth / columns;
-
-    rows.forEach((row, index) => {
-      const col = index % columns;
-      const x = margin + col * columnWidth;
-
-      pdf.setTextColor(100, 116, 139);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.text(row[0], x + 2, y);
-
-      pdf.setTextColor(30, 41, 59);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(8.5);
-
-      const valueLines = pdf.splitTextToSize(clean(row[1]), columnWidth - 8);
-      pdf.text(valueLines.slice(0, 2), x + 2, y + 5);
-
-      if (col === columns - 1 || index === rows.length - 1) {
-        y += 13;
-      }
+    setText(pdf, "PHOTO", 185, 84, {
+      color: COLORS.muted,
+      size: 7,
+      bold: true,
+      align: "center",
     });
-  };
-
-  drawSection("PERSONAL INFORMATION");
-  drawRows([
-    ["Student Name", studentName],
-    ["Father's Name", student.fatherName],
-    ["Mother's Name", student.motherName],
-    ["Date of Birth", formatDate(student.dob)],
-    ["Gender", student.gender],
-    ["Mobile Number", student.mobile],
-    ["Alternate Mobile", student.alternateMobile],
-    ["Email Address", student.email],
-  ]);
-
-  drawRows([
-    ["Address", student.address],
-    ["Pincode", student.pincode],
-  ], 1);
-
-  y += 1;
-
-  if (y > 210) {
-    pdf.addPage();
-    y = 20;
   }
 
-  drawSection("COURSE AND BATCH INFORMATION");
-  drawRows([
-    ["Course Name", course?.courseTitle],
-    ["Course Type", admission.course_type || course?.courseType],
-    ["Batch", batch?.batch_name],
-    ["Batch Status", batch?.status],
-  ]);
+  const leftX = 12;
+  const leftWidth = 154;
+  const gap = 3;
+  const fieldWidth = (leftWidth - gap * 2) / 3;
 
-  y += 1;
-  drawSection("FEE DETAILS");
-  const remaining = Math.max(
-    0,
-    Number(admission.final_amount || 0) -
-      Number(admission.paid_amount || 0)
+  drawField(
+    pdf,
+    "Student Name",
+    studentName,
+    leftX,
+    64,
+    fieldWidth,
+    { height: 14, bold: true }
   );
 
-  drawRows([
-    ["Course Fee", money(admission.course_fee)],
-    [
-      "Discount",
-      `${clean(admission.discount_type)} - ${money(admission.discount_value)}`,
-    ],
-    ["GST", money(admission.gst_amount)],
-    ["Admission Fee", money(admission.admission_fee)],
-    ["Final Amount", money(admission.final_amount)],
-    ["Paid Amount", money(admission.paid_amount)],
-    ["Remaining Amount", money(remaining)],
-    ["Referral Source", admission.referral_source],
-  ]);
-
-  y += 1;
-  drawSection("ADDITIONAL INFORMATION");
-
-  pdf.setTextColor(100, 116, 139);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
-  pdf.text("Remarks", margin + 2, y);
-
-  pdf.setTextColor(30, 41, 59);
-  pdf.setFontSize(9);
-
-  const remarkLines = pdf.splitTextToSize(
-    clean(admission.remark),
-    contentWidth - 4
+  drawField(
+    pdf,
+    "Father's Name",
+    student.fatherName,
+    leftX + fieldWidth + gap,
+    64,
+    fieldWidth,
+    { height: 14 }
   );
 
-  pdf.text(remarkLines.slice(0, 3), margin + 2, y + 5);
-  y += Math.max(13, Math.min(remarkLines.length, 3) * 4 + 7);
+  drawField(
+    pdf,
+    "Mother's Name",
+    student.motherName,
+    leftX + (fieldWidth + gap) * 2,
+    64,
+    fieldWidth,
+    { height: 14 }
+  );
 
-  // If content reaches the signature area, continue on another page.
-  if (y > 250) {
-    pdf.addPage();
-    y = 20;
-  }
+  drawField(
+    pdf,
+    "Date of Birth",
+    formatDate(student.dob),
+    leftX,
+    80,
+    fieldWidth,
+    { height: 14 }
+  );
 
-  // Signature and stamp.
-  pdf.setTextColor(71, 85, 105);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
-  pdf.text("Institute Stamp", margin + 2, y + 3);
+  drawField(
+    pdf,
+    "Gender",
+    student.gender,
+    leftX + fieldWidth + gap,
+    80,
+    fieldWidth,
+    { height: 14 }
+  );
 
-  await addOptionalImage(
+  drawField(
+    pdf,
+    "Relationship",
+    student.relationship,
+    leftX + (fieldWidth + gap) * 2,
+    80,
+    fieldWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Mobile Number",
+    student.mobile,
+    leftX,
+    96,
+    fieldWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Alternate Mobile",
+    student.alternateMobile,
+    leftX + fieldWidth + gap,
+    96,
+    fieldWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Pincode",
+    student.pincode,
+    leftX + (fieldWidth + gap) * 2,
+    96,
+    fieldWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Email Address",
+    student.email,
+    12,
+    112,
+    91,
+    { height: 14, valueSize: 7.5 }
+  );
+
+  drawField(
+    pdf,
+    "Address",
+    student.address,
+    106,
+    112,
+    93,
+    { height: 14, valueSize: 7.2 }
+  );
+
+  // -------------------------------------------------------
+  // SECTION B: COURSE AND BATCH INFORMATION
+  // -------------------------------------------------------
+
+  drawSection(
+    pdf,
+    "B",
+    "COURSE AND BATCH INFORMATION",
+    132,
+    contentWidth
+  );
+
+  drawField(
+    pdf,
+    "Course of Interest",
+    course?.courseTitle,
+    12,
+    142,
+    112,
+    { height: 14, bold: true, valueSize: 8 }
+  );
+
+  drawField(
+    pdf,
+    "Course Type",
+    admission.course_type || course?.courseType,
+    127,
+    142,
+    72,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Admission Date",
+    formatDate(admission.admission_date),
+    12,
+    158,
+    53,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Roll Number",
+    student.rollNo,
+    68,
+    158,
+    61,
+    { height: 14, bold: true }
+  );
+
+  drawField(
+    pdf,
+    "Batch",
+    batch?.batch_name,
+    132,
+    158,
+    67,
+    { height: 14 }
+  );
+
+  // -------------------------------------------------------
+  // SECTION C: OFFICE USE / FEE DETAILS
+  // -------------------------------------------------------
+
+  drawSection(
+    pdf,
+    "C",
+    "OFFICE USE ONLY — FEE DETAILS",
+    178,
+    contentWidth
+  );
+
+  const feeGap = 3;
+  const feeWidth = (contentWidth - feeGap * 2) / 3;
+
+  drawField(
+    pdf,
+    "Course Fee",
+    money(admission.course_fee),
+    12,
+    188,
+    feeWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Discount",
+    `${clean(admission.discount_type)} - ${money(
+      admission.discount_value
+    )}`,
+    12 + feeWidth + feeGap,
+    188,
+    feeWidth,
+    { height: 14, valueSize: 7 }
+  );
+
+  drawField(
+    pdf,
+    "GST Amount",
+    money(admission.gst_amount),
+    12 + (feeWidth + feeGap) * 2,
+    188,
+    feeWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Admission Fee",
+    money(admission.admission_fee),
+    12,
+    204,
+    feeWidth,
+    { height: 14 }
+  );
+
+  drawField(
+    pdf,
+    "Final Amount",
+    money(admission.final_amount),
+    12 + feeWidth + feeGap,
+    204,
+    feeWidth,
+    { height: 14, bold: true }
+  );
+
+  drawField(
+    pdf,
+    "Paid Amount",
+    money(admission.paid_amount),
+    12 + (feeWidth + feeGap) * 2,
+    204,
+    feeWidth,
+    { height: 14 }
+  );
+
+  // Outstanding amount, clearly highlighted.
+  pdf.setFillColor(255, 247, 237);
+  pdf.roundedRect(12, 220, contentWidth, 10, 1.2, 1.2, "F");
+
+  setText(pdf, "BALANCE REMAINING", 15, 226.5, {
+    color: COLORS.navy,
+    size: 7,
+    bold: true,
+  });
+
+  setText(pdf, money(remaining), 196, 226.5, {
+    color: remaining > 0 ? COLORS.orange : COLORS.green,
+    size: 10,
+    bold: true,
+    align: "right",
+  });
+
+  // -------------------------------------------------------
+  // LOWER AREA: QR, TERMS, STAMP, SIGNATURE
+  // -------------------------------------------------------
+
+  // QR contains identifiers only, not personal contact details.
+  const qrPayload = JSON.stringify({
+    type: "EMS_ADMISSION",
+    admissionId: String(admission._id),
+    studentId: String(student._id),
+    rollNo: student.rollNo || "",
+  });
+
+  const qrData = await QRCode.toDataURL(qrPayload, {
+    width: 260,
+    margin: 1,
+    errorCorrectionLevel: "M",
+  });
+
+  pdf.addImage(qrData, "PNG", 12, 238, 24, 24);
+
+  setText(pdf, "SCAN TO IDENTIFY", 24, 265, {
+    color: COLORS.muted,
+    size: 5.5,
+    bold: true,
+    align: "center",
+  });
+
+  // Terms panel.
+  pdf.setDrawColor(...COLORS.border);
+  pdf.setFillColor(250, 252, 255);
+  pdf.roundedRect(40, 238, 101, 31, 1.5, 1.5, "FD");
+
+  setText(pdf, "IMPORTANT NOTES", 44, 244, {
+    color: COLORS.navy,
+    size: 7,
+    bold: true,
+  });
+
+  const notes = [
+    "Please verify the personal and course details on this form.",
+    "Fee figures reflect the admission record at the time of download.",
+    "Contact the institute if any information requires correction.",
+  ];
+
+  notes.forEach((note, index) => {
+    setText(pdf, `• ${note}`, 44, 250 + index * 5, {
+      color: COLORS.text,
+      size: 5.8,
+      maxWidth: 92,
+      maxLines: 1,
+    });
+  });
+
+  // Institute stamp.
+  setText(pdf, "INSTITUTE STAMP", 148, 242, {
+    color: COLORS.muted,
+    size: 6,
+    bold: true,
+    align: "center",
+  });
+
+  const stampLoaded = await addImage(
     pdf,
     settings?.stampUrl,
-    margin + 2,
-    y + 5,
-    25,
-    22
+    137,
+    245,
+    23,
+    20
   );
 
-  await addOptionalImage(
+  if (!stampLoaded) {
+    pdf.setDrawColor(...COLORS.border);
+    pdf.circle(148.5, 255, 8, "S");
+    setText(pdf, "STAMP", 148.5, 256, {
+      color: COLORS.muted,
+      size: 5,
+      align: "center",
+    });
+  }
+
+  // Owner signature and name from Settings > Profile > Owner Details.
+  const signatureLoaded = await addImage(
     pdf,
     settings?.ownerSignatureUrl,
-    pageWidth - margin - 48,
-    y + 3,
-    43,
-    15
+    165,
+    244,
+    31,
+    12
   );
 
-  pdf.setDrawColor(148, 163, 184);
-  pdf.setLineWidth(0.3);
-  pdf.line(pageWidth - margin - 48, y + 20, pageWidth - margin - 2, y + 20);
+  pdf.setDrawColor(...COLORS.border);
+  pdf.setLineWidth(0.25);
+  pdf.line(163, 259, 198, 259);
 
-  pdf.setTextColor(30, 41, 59);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-
-  pdf.text(
-    settings?.ownerName?.trim() || "Authorized Signatory",
-    pageWidth - margin - 25,
-    y + 25,
-    { align: "center", maxWidth: 46 }
+  setText(
+    pdf,
+    settings?.ownerName || "Authorized Signatory",
+    180.5,
+    264,
+    {
+      color: COLORS.navy,
+      size: 7,
+      bold: true,
+      align: "center",
+    }
   );
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(7);
-  pdf.setTextColor(100, 116, 139);
-
-  pdf.text(
-    "Authorized Signature",
-    pageWidth - margin - 25,
-    y + 29,
-    { align: "center" }
+  setText(
+    pdf,
+    signatureLoaded ? "AUTHORIZED SIGNATURE" : "SIGNATURE",
+    180.5,
+    268,
+    {
+      color: COLORS.muted,
+      size: 5.5,
+      align: "center",
+    }
   );
 
-  // Footer on every page.
-  const pageCount = pdf.getNumberOfPages();
-
-  for (let page = 1; page <= pageCount; page += 1) {
-    pdf.setPage(page);
-    pdf.setDrawColor(226, 232, 240);
-    pdf.line(margin, 282, pageWidth - margin, 282);
-
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(7);
-    pdf.setTextColor(100, 116, 139);
-
-    pdf.text(
-      `Generated by ${instituteName}`,
-      margin,
-      287
-    );
-
-    pdf.text(
-      `Page ${page} of ${pageCount}`,
-      pageWidth - margin,
-      287,
-      { align: "right" }
+  // Optional student signature, when present in the Student record.
+  if (student.signature) {
+    await addImage(
+      pdf,
+      student.signature,
+      12,
+      268,
+      23,
+      8
     );
   }
+
+  // -------------------------------------------------------
+  // FOOTER
+  // -------------------------------------------------------
+
+  pdf.setDrawColor(...COLORS.border);
+  pdf.setLineWidth(0.25);
+  pdf.line(9, 278, 201, 278);
+
+  const footerContact = [
+    settings?.address,
+    settings?.city,
+    settings?.state,
+    settings?.postalCode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  setText(
+    pdf,
+    footerContact || `Generated by ${instituteName}`,
+    10,
+    284,
+    {
+      color: COLORS.muted,
+      size: 6,
+      maxWidth: 145,
+      maxLines: 1,
+    }
+  );
+
+  setText(
+    pdf,
+    `Status: ${clean(admission.status)}`,
+    200,
+    284,
+    {
+      color: COLORS.navy,
+      size: 6,
+      bold: true,
+      align: "right",
+    }
+  );
 
   const safeRollNo = String(student.rollNo || "student")
     .replace(/[^a-z0-9_-]/gi, "_");
