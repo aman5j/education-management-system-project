@@ -10,6 +10,10 @@ import {
   FiKey,
 } from "react-icons/fi";
 
+import { useRef } from "react";
+import { FiCamera } from "react-icons/fi";
+import { getAssetUrl } from "../../utils/assetUrl";
+
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 import "../../styles/StaffProfile.css";
@@ -31,6 +35,9 @@ export default function StaffProfile() {
   const navigate = useNavigate();
   const { user, updateUser, changePassword } = useAuth();
 
+  const avatarInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   const [form, setForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -48,6 +55,59 @@ export default function StaffProfile() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    event.target.value = "";
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError("Only JPG, PNG, and WEBP images are allowed.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Profile image must be 2 MB or smaller.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setUploadingAvatar(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await api.post(
+        "/auth/profile/avatar",
+        formData
+      );
+
+      const updatedUser = response?.data?.data?.user;
+
+      if (!updatedUser) {
+        throw new Error("The server did not return the updated profile.");
+      }
+
+      updateUser(updatedUser);
+      setSuccess("Profile photo updated successfully.");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
 
   useEffect(() => {
     setForm({
@@ -219,9 +279,60 @@ export default function StaffProfile() {
 
       <div className="staff-profile__layout">
         <aside className="staff-profile__summary">
-          <div className="staff-profile__avatar">
+          {/* <div className="staff-profile__avatar">
             {getInitials(user?.name)}
+          </div> */}
+
+          
+          <div className="staff-profile__avatar">
+            {user?.avatar ? (
+              <img
+                src={getAssetUrl(user.avatar)}
+                alt={`${user?.name || "Staff"} profile`}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                  const fallback =
+                    event.currentTarget.parentElement?.querySelector(
+                      ".staff-profile__avatar-fallback"
+                    );
+
+                  if (fallback) fallback.style.display = "flex";
+                }}
+              />
+            ) : null}
+
+            <span
+              className="staff-profile__avatar-fallback"
+              style={{
+                display: user?.avatar ? "none" : "flex",
+                width: "100%",
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {getInitials(user?.name)}
+            </span>
           </div>
+
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            onChange={handleAvatarUpload}
+          />
+
+          <button
+            type="button"
+            className="staff-profile__password-toggle"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={uploadingAvatar}
+          >
+            <FiCamera />
+            {uploadingAvatar ? "Uploading photo..." : "Upload profile photo"}
+          </button>
+
 
           <h2>{user?.name || "Staff Member"}</h2>
           <p className="staff-profile__email">{user?.email || "No email available"}</p>

@@ -599,3 +599,48 @@ export const resetPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+export const uploadStaffAvatar = async (req, res, next) => {
+  try {
+    if (req.user.role !== "staff") {
+      return res.status(403).json({
+        success: false,
+        message: "Only staff members can upload a staff profile photo.",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a profile image.",
+      });
+    }
+
+    const user = await User.findById(req.user._id).populate({
+      path: "assignedRole",
+      select: "name label permissions isActive roleType isSystem",
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Staff account not found.",
+      });
+    }
+
+    user.avatar = `/uploads/staff/${req.file.filename}`;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile photo updated successfully.",
+      data: {
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
