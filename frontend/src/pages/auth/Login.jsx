@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import logo from "../../assets/logo.png";
+import defaultLogo from "../../assets/logo.png";
 import bgImage from "../../assets/loginback.png";
+import instituteSettingsService from "../../services/instituteSettingsService";
+import { getAssetUrl } from "../../utils/assetUrl";
 
 import {
   Link,
@@ -19,6 +21,52 @@ import "./Auth.css";
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [instituteLogo, setInstituteLogo] = useState("");
+  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadInstituteLogo = async () => {
+      try {
+        const settings = await instituteSettingsService.getSettings();
+
+        if (mounted) {
+          setInstituteLogo(settings?.logoUrl || "");
+          setLogoLoadFailed(false);
+        }
+      } catch (error) {
+        console.error("Unable to load institute logo:", error);
+      }
+    };
+
+    const handleLogoUpdated = (event) => {
+      setInstituteLogo(event.detail?.logoUrl || "");
+      setLogoLoadFailed(false);
+    };
+
+    loadInstituteLogo();
+
+    window.addEventListener(
+      "ems:institute-logo-updated",
+      handleLogoUpdated
+    );
+
+    return () => {
+      mounted = false;
+
+      window.removeEventListener(
+        "ems:institute-logo-updated",
+        handleLogoUpdated
+      );
+    };
+  }, []);
+
+  const displayedLogo =
+    instituteLogo && !logoLoadFailed
+      ? getAssetUrl(instituteLogo)
+      : defaultLogo;
 
   const {
     login,
@@ -114,8 +162,13 @@ const Login = () => {
         <div className="auth-form-panel">
           <div className="auth-card">
             <div className="auth-heading">
-              <div className="brand-mark">
-              <img src={logo} alt="Logo" />
+
+            <div className="brand-mark">
+              <img
+                src={displayedLogo}
+                alt="Institute Logo"
+                onError={() => setLogoLoadFailed(true)}
+              />
             </div>
 
               <h2>Welcome Back</h2>
