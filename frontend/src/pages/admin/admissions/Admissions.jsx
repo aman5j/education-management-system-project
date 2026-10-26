@@ -12,7 +12,7 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import { getAssetUrl } from "../../../utils/assetUrl";
-
+import { downloadAdmissionIdCard } from "../../../utils/downloadAdmissionIdCard";
 
 import "../../../styles/AdmissionManagement.css";
 
@@ -232,6 +232,29 @@ const Admissions = () => {
 
       refreshKey,
     ]);
+
+  
+  const [downloadingIdCard, setDownloadingIdCard] = useState("");
+
+  const handleDownloadIdCard = async (admission) => {
+    try {
+      setError("");
+      setDownloadingIdCard(admission._id);
+
+      await downloadAdmissionIdCard(admission);
+    } catch (downloadError) {
+      console.error("Student ID card generation failed:", downloadError);
+
+      setError(
+        downloadError?.response?.data?.message ||
+          downloadError?.message ||
+          "Unable to generate the student ID card."
+      );
+    } finally {
+      setDownloadingIdCard("");
+    }
+  };
+
 
   const handleDelete =
     async (id) => {
@@ -583,13 +606,26 @@ const Admissions = () => {
                             </Link>
                             
 
-                            <Link
+                            {/* <Link
                               to={`${admissionsPath}/${admission._id}`}
                               data-tooltip="Download ID Card" className="tooltip"
                             >
                              <GrDocument />
 
-                            </Link>
+                            </Link> */}
+
+                            
+                            <button
+                              type="button"
+                              className="tooltip"
+                              data-tooltip="Download Student ID Card"
+                              title="Download Student ID Card"
+                              disabled={downloadingIdCard === admission._id}
+                              onClick={() => handleDownloadIdCard(admission)}
+                            >
+                              <FaIdCard />
+                            </button>
+
 
 </div>
                            

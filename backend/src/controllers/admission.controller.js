@@ -497,7 +497,8 @@ export const getAdmissions = async (req, res, next) => {
       StudentAdmission.find(filter)
         .populate(
           "student_id",
-          "rollNo firstName surname mobile email profileImage"
+          // "rollNo firstName surname mobile email profileImage"
+          "rollNo firstName surname fatherName mobile email profileImage signature"
         )
         .populate(
           "course_id",
