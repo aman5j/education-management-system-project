@@ -699,14 +699,14 @@ const Profile = () => {
 
             <div className="admin-profile-section-body">
               <div className="admin-profile-grid">
-                <Field
+                {/* <Field
                   label="Admin Name"
                   name="name"
                   value={admin.name}
                   onChange={handleAdminChange}
                   required
                   maxLength={100}
-                />
+                /> */}
 
                 <Field
                   label="Institute Name"
