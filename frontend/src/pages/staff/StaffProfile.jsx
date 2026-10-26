@@ -88,10 +88,17 @@ export default function StaffProfile() {
       const formData = new FormData();
       formData.append("avatar", file);
 
+      
       const response = await api.post(
         "/auth/profile/avatar",
-        formData
+        formData,
+        {
+          headers: {
+            "Content-Type": undefined,
+          },
+        }
       );
+
 
       const updatedUser = response?.data?.data?.user;
 
