@@ -59,31 +59,72 @@ const errorMessage = (error) =>
   error?.message ||
   "Something went wrong. Please try again.";
 
+// const getAssetUrl = (assetPath) => {
+//   if (typeof assetPath !== "string" || !assetPath.trim()) {
+//     return "";
+//   }
+
+//   const value = assetPath.trim();
+
+//   if (/^https?:\/\//i.test(value)) {
+//     return value;
+//   }
+
+//   const apiBase =
+//     api.defaults.baseURL || "http://localhost:5000/api";
+
+//   try {
+//     const backendOrigin = new URL(apiBase).origin;
+//     const cleanPath = value.startsWith("/")
+//       ? value
+//       : `/${value}`;
+
+//     return `${backendOrigin}${cleanPath}`;
+//   } catch {
+//     return "";
+//   }
+// };
+
+
 const getAssetUrl = (assetPath) => {
   if (typeof assetPath !== "string" || !assetPath.trim()) {
     return "";
   }
 
   const value = assetPath.trim();
+  const apiBase = api.defaults.baseURL || "http://localhost:5000/api";
 
+  let backendOrigin;
+
+  try {
+    backendOrigin = new URL(apiBase, window.location.origin).origin;
+  } catch {
+    console.error("Invalid backend API URL:", apiBase);
+    return "";
+  }
+
+  // Old localhost URLs cannot work from a deployed Netlify website.
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(value)) {
+    try {
+      const oldUrl = new URL(value);
+      return `${backendOrigin}${oldUrl.pathname}${oldUrl.search}`;
+    } catch {
+      return "";
+    }
+  }
+
+  // Keep valid URLs hosted on external services unchanged.
   if (/^https?:\/\//i.test(value)) {
     return value;
   }
 
-  const apiBase =
-    api.defaults.baseURL || "http://localhost:5000/api";
+  // Uploaded assets are served from the backend /uploads directory,
+  // not from the frontend or the /api route.
+  const cleanPath = value.replace(/^\/+/, "");
 
-  try {
-    const backendOrigin = new URL(apiBase).origin;
-    const cleanPath = value.startsWith("/")
-      ? value
-      : `/${value}`;
-
-    return `${backendOrigin}${cleanPath}`;
-  } catch {
-    return "";
-  }
+  return `${backendOrigin}/${cleanPath}`;
 };
+
 
 const Field = ({
   label,

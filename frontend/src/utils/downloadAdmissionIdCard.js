@@ -19,20 +19,45 @@ const formatDate = (value) => {
 };
 
 // Resolve stored paths using the same backend origin as the API.
+// const resolveAssetUrl = (path) => {
+//   if (typeof path !== "string" || !path.trim()) return "";
+
+//   const value = path.trim();
+
+//   if (/^(data:|blob:|https?:\/\/)/i.test(value)) {
+//     return value;
+//   }
+
+//   const apiBase = api.defaults.baseURL || "http://localhost:5000/api";
+//   const backendOrigin = new URL(apiBase, window.location.origin).origin;
+
+//   return `${backendOrigin}/${value.replace(/^\/+/, "")}`;
+// };
+
+
 const resolveAssetUrl = (path) => {
   if (typeof path !== "string" || !path.trim()) return "";
 
   const value = path.trim();
-
-  if (/^(data:|blob:|https?:\/\/)/i.test(value)) {
-    return value;
-  }
-
   const apiBase = api.defaults.baseURL || "http://localhost:5000/api";
   const backendOrigin = new URL(apiBase, window.location.origin).origin;
 
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(value)) {
+    const oldUrl = new URL(value);
+    return `${backendOrigin}${oldUrl.pathname}${oldUrl.search}`;
+  }
+
+  if (/^(data:|blob:)/i.test(value)) {
+    return value;
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
   return `${backendOrigin}/${value.replace(/^\/+/, "")}`;
 };
+
 
 const loadImage = (path) =>
   new Promise((resolve, reject) => {
