@@ -86,13 +86,20 @@ const errorMessage = (error) =>
 // };
 
 
+
 const getAssetUrl = (assetPath) => {
   if (typeof assetPath !== "string" || !assetPath.trim()) {
     return "";
   }
 
   const value = assetPath.trim();
-  const apiBase = api.defaults.baseURL || "http://localhost:5000/api";
+  const apiBase =
+    api.defaults.baseURL || import.meta.env.VITE_API_URL;
+
+  if (!apiBase) {
+    console.error("VITE_API_URL is not configured.");
+    return "";
+  }
 
   let backendOrigin;
 
@@ -103,27 +110,49 @@ const getAssetUrl = (assetPath) => {
     return "";
   }
 
-  // Old localhost URLs cannot work from a deployed Netlify website.
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(value)) {
+  // Data and temporary preview URLs should remain unchanged.
+  if (/^(data:|blob:)/i.test(value)) {
+    return value;
+  }
+
+  let pathname = value;
+
+  // Extract the path from absolute URLs, including old localhost
+  // or frontend-hosted URLs. Uploaded files belong on the backend.
+  if (/^https?:\/\//i.test(value)) {
     try {
-      const oldUrl = new URL(value);
-      return `${backendOrigin}${oldUrl.pathname}${oldUrl.search}`;
+      const parsed = new URL(value);
+
+      // Preserve external image URLs unless they point to a local
+      // development server or an old frontend uploads path.
+      const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(
+        parsed.hostname
+      );
+      const isOldFrontendUpload =
+        parsed.pathname.includes("/uploads/");
+
+      if (!isLocalHost && !isOldFrontendUpload) {
+        return value;
+      }
+
+      pathname = parsed.pathname;
     } catch {
       return "";
     }
   }
 
-  // Keep valid URLs hosted on external services unchanged.
-  if (/^https?:\/\//i.test(value)) {
-    return value;
+  // Normalize legacy formats such as api/uploads/... or
+  // /api/uploads/... into /uploads/...
+  pathname = pathname.replace(/^\/+/, "");
+  pathname = pathname.replace(/^api\/uploads\//i, "uploads/");
+
+  if (!pathname.startsWith("uploads/")) {
+    pathname = `uploads/${pathname.replace(/^\/+/, "")}`;
   }
 
-  // Uploaded assets are served from the backend /uploads directory,
-  // not from the frontend or the /api route.
-  const cleanPath = value.replace(/^\/+/, "");
-
-  return `${backendOrigin}/${cleanPath}`;
+  return `${backendOrigin}/${pathname}`;
 };
+
 
 
 const Field = ({
