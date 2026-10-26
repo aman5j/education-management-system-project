@@ -559,7 +559,7 @@ const Profile = () => {
             {user?.status || "active"}
           </span>
 
-          <div className="admin-profile-avatar">
+          {/* <div className="admin-profile-avatar">
             {user?.avatar ? (
               <img
                 src={getAssetUrl(user.avatar)}
@@ -568,10 +568,34 @@ const Profile = () => {
             ) : (
               getInitials(admin.name)
             )}
+          </div> */}
+
+          
+          <div className="admin-profile-avatar">
+            {settings.logoUrl ? (
+              <img
+                src={getAssetUrl(settings.logoUrl)}
+                alt={`${settings.instituteName || "Institute"} logo`}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  padding: "8px",
+                  background: "#ffffff",
+                }}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              getInitials(settings.instituteName || "Institute")
+            )}
           </div>
 
+
           <div className="admin-profile-identity">
-            <h2>{admin.name || "System Administrator"}</h2>
+            {/* <h2>{admin.name || "System Administrator"}</h2> */}
+            <h2>{settings.instituteName || "Institute Name"}</h2>
 
             <p>
               <FiMail />
