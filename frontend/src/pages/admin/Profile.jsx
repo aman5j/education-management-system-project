@@ -787,14 +787,14 @@ const Profile = () => {
                   maxLength={150}
                 />
 
-                <Field
+                {/* <Field
                   label="Designation"
                   name="designation"
                   value={settings.designation}
                   onChange={handleSettingsChange}
                   placeholder="Enter your designation"
                   maxLength={100}
-                />
+                /> */}
 
                 <Field
                   label="Admin Email Address"
