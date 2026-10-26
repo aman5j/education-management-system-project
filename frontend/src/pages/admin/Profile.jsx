@@ -93,45 +93,41 @@ const getAssetUrl = (assetPath) => {
   }
 
   const value = assetPath.trim();
-  const apiBase =
-    api.defaults.baseURL || import.meta.env.VITE_API_URL;
 
-  if (!apiBase) {
-    console.error("VITE_API_URL is not configured.");
-    return "";
+  if (/^(data:|blob:)/i.test(value)) {
+    return value;
   }
+
+  const apiBase =
+    api.defaults.baseURL ||
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api";
 
   let backendOrigin;
 
   try {
-    backendOrigin = new URL(apiBase, window.location.origin).origin;
+    backendOrigin = new URL(
+      apiBase,
+      window.location.origin
+    ).origin;
   } catch {
     console.error("Invalid backend API URL:", apiBase);
     return "";
   }
 
-  // Data and temporary preview URLs should remain unchanged.
-  if (/^(data:|blob:)/i.test(value)) {
-    return value;
-  }
-
   let pathname = value;
 
-  // Extract the path from absolute URLs, including old localhost
-  // or frontend-hosted URLs. Uploaded files belong on the backend.
   if (/^https?:\/\//i.test(value)) {
     try {
       const parsed = new URL(value);
 
-      // Preserve external image URLs unless they point to a local
-      // development server or an old frontend uploads path.
+      // Keep external images that are not backend uploads.
+      const isUploadPath = /\/uploads\//i.test(parsed.pathname);
       const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(
         parsed.hostname
       );
-      const isOldFrontendUpload =
-        parsed.pathname.includes("/uploads/");
 
-      if (!isLocalHost && !isOldFrontendUpload) {
+      if (!isUploadPath && !isLocalHost) {
         return value;
       }
 
@@ -141,17 +137,20 @@ const getAssetUrl = (assetPath) => {
     }
   }
 
-  // Normalize legacy formats such as api/uploads/... or
-  // /api/uploads/... into /uploads/...
+  // Normalize legacy paths such as:
+  // /api/uploads/institute/image.png
+  // api/uploads/institute/image.png
+  // /uploads/institute/image.png
   pathname = pathname.replace(/^\/+/, "");
-  pathname = pathname.replace(/^api\/uploads\//i, "uploads/");
+  pathname = pathname.replace(/^api\/+/i, "");
 
-  if (!pathname.startsWith("uploads/")) {
-    pathname = `uploads/${pathname.replace(/^\/+/, "")}`;
+  if (!/^uploads\//i.test(pathname)) {
+    pathname = `uploads/${pathname}`;
   }
 
   return `${backendOrigin}/${pathname}`;
 };
+
 
 
 
@@ -257,8 +256,16 @@ const ImageUploader = ({
               key={imageUrl}
               src={imageUrl}
               alt={previewTitle}
+              // onError={(event) => {
+              //   event.currentTarget.style.display = "none";
+              //   setPreviewError(true);
+              // }}
               onError={(event) => {
-                event.currentTarget.style.display = "none";
+                console.error(
+                  `Failed to load ${previewTitle}:`,
+                  event.currentTarget.src
+                );
+
                 setPreviewError(true);
               }}
             />
