@@ -112,7 +112,7 @@ const getPopulatedAdmission = async (id) => {
   return StudentAdmission.findById(id)
     .populate(
       "student_id",
-      "rollNo firstName surname mobile email profileImage"
+      "rollNo firstName surname fatherName motherName relationship dob gender mobile alternateMobile email address pincode profileImage signature"
     )
     .populate(
       "course_id",
@@ -498,7 +498,7 @@ export const getAdmissions = async (req, res, next) => {
         .populate(
           "student_id",
           // "rollNo firstName surname mobile email profileImage"
-          "rollNo firstName surname fatherName mobile email profileImage signature"
+          "rollNo firstName surname fatherName motherName relationship dob gender mobile alternateMobile email address pincode profileImage signature"
         )
         .populate(
           "course_id",

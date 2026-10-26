@@ -13,6 +13,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import { getAssetUrl } from "../../../utils/assetUrl";
 import { downloadAdmissionIdCard } from "../../../utils/downloadAdmissionIdCard";
+import { downloadAdmissionForm } from "../../../utils/downloadAdmissionForm";
 
 import "../../../styles/AdmissionManagement.css";
 
@@ -252,6 +253,31 @@ const Admissions = () => {
       );
     } finally {
       setDownloadingIdCard("");
+    }
+  };
+
+  const [downloadingAdmissionForm, setDownloadingAdmissionForm] =
+  useState("");
+
+  const handleDownloadAdmissionForm = async (admission) => {
+    try {
+      setError("");
+      setDownloadingAdmissionForm(admission._id);
+
+      await downloadAdmissionForm(admission);
+    } catch (downloadError) {
+      console.error(
+        "Admission form generation failed:",
+        downloadError
+      );
+
+      setError(
+        downloadError?.response?.data?.message ||
+          downloadError?.message ||
+          "Unable to generate the admission form."
+      );
+    } finally {
+      setDownloadingAdmissionForm("");
     }
   };
 
@@ -598,12 +624,16 @@ const Admissions = () => {
                           <div className="admission-actions">
 
                           
-                          <Link className="tooltip" data-tooltip="Download Admission Form"
-                              to={`${admissionsPath}/${admission._id}`}
-                              
-                            >
-                              <LuIdCard />
-                            </Link>
+                          <button
+                            type="button"
+                            className="tooltip"
+                            data-tooltip="Download Admission Form"
+                            title="Download Admission Form"
+                            disabled={downloadingAdmissionForm === admission._id}
+                            onClick={() => handleDownloadAdmissionForm(admission)}
+                          >
+                            <GrDocument />
+                          </button>
                             
 
                             {/* <Link
