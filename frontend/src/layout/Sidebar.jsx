@@ -33,6 +33,14 @@ import {
 import "./AdminLayout.css";
 import logo from "../assets/logo.png";
 
+import { useEffect, useState } from "react";
+// import { useAuth } from "../context/AuthContext";
+import instituteSettingsService from "../services/instituteSettingsService";
+import { getAssetUrl } from "../utils/assetUrl";
+import defaultLogo from "../assets/logo.png";
+
+
+
 const menuItems = [
   {
     label: "Dashboard",
@@ -405,6 +413,52 @@ const Sidebar = ({
 }) => {
   const location = useLocation();
 
+  const [instituteLogo, setInstituteLogo] = useState("");
+  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadInstituteLogo = async () => {
+      try {
+        const settings = await instituteSettingsService.getSettings();
+
+        if (mounted) {
+          setInstituteLogo(settings?.logoUrl || "");
+          setLogoLoadFailed(false);
+        }
+      } catch (error) {
+        console.error("Unable to load institute logo:", error);
+      }
+    };
+
+    const handleLogoUpdated = (event) => {
+      setInstituteLogo(event.detail?.logoUrl || "");
+      setLogoLoadFailed(false);
+    };
+
+    loadInstituteLogo();
+
+    window.addEventListener(
+      "ems:institute-logo-updated",
+      handleLogoUpdated
+    );
+
+    return () => {
+      mounted = false;
+      window.removeEventListener(
+        "ems:institute-logo-updated",
+        handleLogoUpdated
+      );
+    };
+  }, []);
+
+  const displayedLogo =
+    instituteLogo && !logoLoadFailed
+      ? getAssetUrl(instituteLogo)
+      : defaultLogo;
+
+
   // 1. Add auth and visible menu calculation here
 const { user } = useAuth();
 
@@ -458,7 +512,13 @@ const visibleMenuItems =
             className="sidebar-brand"
             onClick={onCloseMobile}
           >
-            <img src={logo}  alt="Logo" className="sidebar-logo"/>
+            {/* <img src={logo}  alt="Logo" className="sidebar-logo"/> */}
+            <img
+              src={displayedLogo}
+              alt="Institute Logo"
+              className="sidebar-logo"
+              onError={() => setLogoLoadFailed(true)}
+            />
           </NavLink>
 
           <button

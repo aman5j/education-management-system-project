@@ -366,6 +366,16 @@ const Profile = () => {
           : {}),
       }));
 
+      if (assetType === "logo") {
+        window.dispatchEvent(
+          new CustomEvent("ems:institute-logo-updated", {
+            detail: {
+              logoUrl: uploadedUrl || updated?.logoUrl || "",
+            },
+          })
+        );
+      }
+
       setSuccess(
         `${
           assetType === "logo"
