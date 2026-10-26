@@ -1,7 +1,7 @@
 
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
-import { getAssetUrl } from "./assetUrl";
+import api from "../services/api";
 import instituteSettingsService from "../services/instituteSettingsService";
 
 const formatDate = (value) => {
@@ -18,14 +18,41 @@ const formatDate = (value) => {
       });
 };
 
+// Resolve stored paths using the same backend origin as the API.
+const resolveAssetUrl = (path) => {
+  if (typeof path !== "string" || !path.trim()) return "";
+
+  const value = path.trim();
+
+  if (/^(data:|blob:|https?:\/\/)/i.test(value)) {
+    return value;
+  }
+
+  const apiBase = api.defaults.baseURL || "http://localhost:5000/api";
+  const backendOrigin = new URL(apiBase, window.location.origin).origin;
+
+  return `${backendOrigin}/${value.replace(/^\/+/, "")}`;
+};
+
 const loadImage = (path) =>
   new Promise((resolve, reject) => {
     if (!path) {
-      reject(new Error("Image not available"));
+      reject(new Error("Image path is empty."));
+      return;
+    }
+
+    let imageUrl;
+
+    try {
+      imageUrl = resolveAssetUrl(path);
+    } catch {
+      reject(new Error("Invalid image URL."));
       return;
     }
 
     const image = new Image();
+
+    // Required when the backend serves images from another origin.
     image.crossOrigin = "anonymous";
 
     image.onload = () => {
@@ -35,16 +62,24 @@ const loadImage = (path) =>
         canvas.height = image.naturalHeight;
 
         const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0);
 
+        if (!context) {
+          reject(new Error("Unable to prepare image."));
+          return;
+        }
+
+        context.drawImage(image, 0, 0);
         resolve(canvas.toDataURL("image/png"));
       } catch (error) {
         reject(error);
       }
     };
 
-    image.onerror = () => reject(new Error("Unable to load image"));
-    image.src = getAssetUrl(path);
+    image.onerror = () => {
+      reject(new Error(`Unable to load image: ${imageUrl}`));
+    };
+
+    image.src = imageUrl;
   });
 
 const addOptionalImage = async (
@@ -53,10 +88,9 @@ const addOptionalImage = async (
   x,
   y,
   width,
-  height,
-  options = {}
+  height
 ) => {
-  if (!path) return;
+  if (!path) return false;
 
   try {
     const imageData = await loadImage(path);
@@ -69,12 +103,50 @@ const addOptionalImage = async (
       width,
       height,
       undefined,
-      "FAST",
-      options.rotation || 0
+      "FAST"
     );
-  } catch {
-    // A missing or inaccessible image must not prevent ID card generation.
+
+    return true;
+  } catch (error) {
+    console.warn("ID card image could not be loaded:", error.message);
+    return false;
   }
+};
+
+const getInstituteInitials = (name = "") =>
+  name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("") || "EMS";
+
+const getInstituteSettings = async () => {
+  let settings = {};
+
+  try {
+    settings = await instituteSettingsService.getSettings();
+  } catch (error) {
+    console.warn("Could not load institute settings:", error.message);
+  }
+
+  // If the protected settings response has no logo, try public branding.
+  if (!settings?.logoUrl) {
+    try {
+      const branding =
+        await instituteSettingsService.getPublicBranding();
+
+      settings = {
+        ...settings,
+        logoUrl: branding?.logoUrl || "",
+      };
+    } catch (error) {
+      console.warn("Could not load public institute branding:", error.message);
+    }
+  }
+
+  return settings;
 };
 
 export const downloadAdmissionIdCard = async (admission) => {
@@ -88,12 +160,11 @@ export const downloadAdmissionIdCard = async (admission) => {
     );
   }
 
-  const settings = await instituteSettingsService.getSettings();
+  const settings = await getInstituteSettings();
 
   const instituteName =
     settings?.instituteName || "Educational Institute";
 
-  // Portrait ID card size, in millimetres.
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -104,7 +175,7 @@ export const downloadAdmissionIdCard = async (admission) => {
   const pageWidth = 85;
   const pageHeight = 135;
 
-  // Background and border.
+  // Card background and border.
   pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
@@ -117,28 +188,46 @@ export const downloadAdmissionIdCard = async (admission) => {
   pdf.roundedRect(2.5, 2.5, 80, 25, 2.5, 2.5, "F");
   pdf.rect(2.5, 21, 80, 6.5, "F");
 
-  await addOptionalImage(
+  // Dedicated white background makes the logo visible on the dark header.
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(5, 5, 17, 17, 1.5, 1.5, "F");
+
+  const logoLoaded = await addOptionalImage(
     pdf,
     settings?.logoUrl,
-    5,
-    5,
-    15,
-    15
+    5.5,
+    5.5,
+    16,
+    16
   );
+
+  // Fallback if no logo is configured or its URL is unavailable.
+  if (!logoLoaded) {
+    pdf.setTextColor(16, 53, 104);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+
+    pdf.text(
+      getInstituteInitials(instituteName),
+      13.5,
+      15,
+      { align: "center" }
+    );
+  }
 
   pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(10);
 
-  const instituteLines = pdf.splitTextToSize(instituteName, 57);
-  pdf.text(instituteLines.slice(0, 2), 23, 11);
+  const instituteLines = pdf.splitTextToSize(instituteName, 56);
+  pdf.text(instituteLines.slice(0, 2), 24, 11);
 
   pdf.setFontSize(8);
   pdf.text("STUDENT ID CARD", pageWidth / 2, 24, {
     align: "center",
   });
 
-  // Student photograph and QR code.
+  // Student photograph.
   await addOptionalImage(
     pdf,
     student.profileImage,
@@ -148,6 +237,7 @@ export const downloadAdmissionIdCard = async (admission) => {
     30
   );
 
+  // QR code contains identifiers, not private contact information.
   const qrPayload = JSON.stringify({
     type: "EMS_STUDENT_ID",
     studentId: String(student._id),
@@ -176,11 +266,12 @@ export const downloadAdmissionIdCard = async (admission) => {
   pdf.setFontSize(11);
 
   const nameLines = pdf.splitTextToSize(studentName, 72);
+
   pdf.text(nameLines.slice(0, 2), pageWidth / 2, 71, {
     align: "center",
   });
 
-  // Student and admission details.
+  // Actual student and admission details.
   const rows = [
     ["Father's Name", student.fatherName || "—"],
     ["Course", course?.courseTitle || "—"],
@@ -193,18 +284,14 @@ export const downloadAdmissionIdCard = async (admission) => {
   let y = 79;
 
   rows.forEach(([label, value], index) => {
-    pdf.setFillColor(
-      index % 2 === 0 ? 239 : 248,
-      index % 2 === 0 ? 245 : 250,
-      252
-    );
+    const shade = index % 2 === 0 ? 239 : 248;
 
+    pdf.setFillColor(shade, index % 2 === 0 ? 245 : 250, 252);
     pdf.roundedRect(6, y - 4.2, 73, 7.3, 1, 1, "F");
 
     pdf.setTextColor(35, 55, 78);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7);
-
     pdf.text(label, 8, y);
 
     pdf.setFont("helvetica", "normal");
@@ -216,7 +303,7 @@ export const downloadAdmissionIdCard = async (admission) => {
     y += 8;
   });
 
-  // Controller signature, when configured.
+  // Controller signature and name from institute settings.
   if (settings?.controllerSignatureUrl) {
     await addOptionalImage(
       pdf,
