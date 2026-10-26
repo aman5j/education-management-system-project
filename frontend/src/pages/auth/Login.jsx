@@ -30,10 +30,11 @@ const Login = () => {
 
     const loadInstituteLogo = async () => {
       try {
-        const settings = await instituteSettingsService.getSettings();
+        const branding =
+          await instituteSettingsService.getPublicBranding();
 
         if (mounted) {
-          setInstituteLogo(settings?.logoUrl || "");
+          setInstituteLogo(branding?.logoUrl || "");
           setLogoLoadFailed(false);
         }
       } catch (error) {

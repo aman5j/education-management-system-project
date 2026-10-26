@@ -2,6 +2,14 @@
 import api from "./api";
 
 const instituteSettingsService = {
+  async getPublicBranding() {
+    const response = await api.get(
+      "/institute-settings/public-branding"
+    );
+
+    return response.data?.data?.branding || { logoUrl: "" };
+  },
+  
   async getSettings() {
     const response = await api.get("/institute-settings");
     return response.data.data.settings;

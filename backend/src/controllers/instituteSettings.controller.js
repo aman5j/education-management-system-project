@@ -86,6 +86,27 @@ export const getInstituteSettings = async (_req, res, next) => {
   }
 };
 
+
+export const getPublicInstituteBranding = async (_req, res, next) => {
+  try {
+    const settings = await InstituteSettings.findOne({ key: "default" })
+      .select("logoUrl")
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        branding: {
+          logoUrl: settings?.logoUrl || "",
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const updateInstituteSettings = async (req, res, next) => {
   try {
     const updates = {};

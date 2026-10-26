@@ -3,6 +3,7 @@ import express from "express";
 
 import {
   getInstituteSettings,
+  getPublicInstituteBranding,
   updateInstituteSettings,
   uploadInstituteLogo as saveInstituteLogo,
   uploadInstituteSettingsAsset,
@@ -11,6 +12,8 @@ import {
 import uploadInstituteLogo from "../middleware/instituteLogoUpload.js";
 import instituteSettingsAssetUpload from "../middleware/instituteSettingsAssetUpload.js";
 
+
+// Keep all existing settings endpoints protected.
 import {
   authenticate,
   authorizeRoles,
@@ -18,6 +21,11 @@ import {
 
 const router = express.Router();
 
+// Public, read-only branding for login and other public pages.
+router.get("/public-branding", getPublicInstituteBranding);
+
+
+// --- Protected Routes ---
 // Every settings endpoint is admin-only.
 router.use(authenticate);
 router.use(authorizeRoles("admin"));
