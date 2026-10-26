@@ -297,6 +297,8 @@ export const downloadAdmissionIdCard = async (admission) => {
   });
 
   // Actual student and admission details.
+ 
+  // Actual student and admission details.
   const rows = [
     ["Father's Name", student.fatherName || "—"],
     ["Course", course?.courseTitle || "—"],
@@ -306,54 +308,65 @@ export const downloadAdmissionIdCard = async (admission) => {
     ["Contact Number", student.mobile || "—"],
   ];
 
-  let y = 79;
+  // Compact rows to reserve space for the stamp and owner signature.
+  let y = 78;
 
   rows.forEach(([label, value], index) => {
     const shade = index % 2 === 0 ? 239 : 248;
 
     pdf.setFillColor(shade, index % 2 === 0 ? 245 : 250, 252);
-    pdf.roundedRect(6, y - 4.2, 73, 7.3, 1, 1, "F");
+    pdf.roundedRect(6, y - 3.8, 73, 6.3, 1, 1, "F");
 
     pdf.setTextColor(35, 55, 78);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7);
+    pdf.setFontSize(6.5);
     pdf.text(label, 8, y);
 
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(7);
+    pdf.setFontSize(6.5);
 
     const valueLines = pdf.splitTextToSize(String(value), 42);
     pdf.text(valueLines.slice(0, 1), 37, y);
 
-    y += 8;
+    y += 6.8;
   });
 
-  // Controller signature and name from institute settings.
-  if (settings?.controllerSignatureUrl) {
-    await addOptionalImage(
-      pdf,
-      settings.controllerSignatureUrl,
-      53,
-      119,
-      23,
-      7
-    );
-  }
+  // Institute stamp from Settings > Profile.
+  await addOptionalImage(
+    pdf,
+    settings?.stampUrl,
+    8,
+    116,
+    14,
+    12
+  );
 
+  // Owner signature from Settings > Profile > Owner Details.
+  await addOptionalImage(
+    pdf,
+    settings?.ownerSignatureUrl,
+    51,
+    116,
+    26,
+    9
+  );
+
+  // Owner signature line.
   pdf.setDrawColor(110, 125, 145);
   pdf.setLineWidth(0.2);
   pdf.line(49, 127, 78, 127);
 
+  // Owner name from Settings > Profile > Owner Details.
   pdf.setTextColor(30, 48, 72);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(6.5);
 
-  pdf.text(
-    settings?.controllerName || "Authorized Signatory",
-    63.5,
-    130,
-    { align: "center", maxWidth: 31 }
-  );
+  const ownerName = settings?.ownerName?.trim() || "Authorized Signatory";
+
+  pdf.text(ownerName, 63.5, 130, {
+    align: "center",
+    maxWidth: 31,
+  });
 
   const safeRollNo = String(student.rollNo || "student")
     .replace(/[^a-z0-9_-]/gi, "_");
