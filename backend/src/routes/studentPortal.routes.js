@@ -3,7 +3,9 @@ import express from "express";
 import {
   createStudentAccount,
   getStudentDashboard,
+  getStudentLoginStatus,
   linkStudentAccount,
+  resetStudentLoginPassword,
 } from "../controllers/studentPortal.controller.js";
 
 import {
@@ -27,6 +29,20 @@ router.post(
   authenticate,
   authorizeRoles("admin"),
   createStudentAccount
+);
+
+router.get(
+  "/admin/account/:studentId",
+  authenticate,
+  authorizeRoles("admin"),
+  getStudentLoginStatus
+);
+
+router.patch(
+  "/admin/account/:studentId/password",
+  authenticate,
+  authorizeRoles("admin"),
+  resetStudentLoginPassword
 );
 
 // Student-only portal routes.

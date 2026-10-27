@@ -291,19 +291,13 @@ export const getStudentDashboard = async (req, res, next) => {
  * Creates a student login account and links it to
  * the selected Student record in one operation.
  */
+
 export const createStudentAccount = async (req, res, next) => {
   try {
-    const { studentId, email, password } = req.body;
+    const { studentId, password } = req.body;
 
     if (!mongoose.isValidObjectId(studentId)) {
       return fail(res, 400, "A valid studentId is required.");
-    }
-
-    if (
-      typeof email !== "string" ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    ) {
-      return fail(res, 400, "Enter a valid email address.");
     }
 
     if (
@@ -318,41 +312,58 @@ export const createStudentAccount = async (req, res, next) => {
       );
     }
 
-    const student = await Student.findById(studentId).select("_id");
+    const student = await Student.findById(studentId).select(
+      "_id firstName surname email rollNo"
+    );
 
     if (!student) {
       return fail(res, 404, "Student record not found.");
     }
 
-    const existingLink = await User.findOne({
-      role: "student",
-      studentRecord: student._id,
-    }).select("_id");
+    const normalizedEmail = String(student.email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return fail(
+        res,
+        400,
+        "This student has no valid email. Update the student record first."
+      );
+    }
+
+    const [existingLink, existingUser] = await Promise.all([
+      User.findOne({
+        role: "student",
+        studentRecord: student._id,
+      }).select("_id"),
+
+      User.findOne({ email: normalizedEmail }).select("_id"),
+    ]);
 
     if (existingLink) {
       return fail(
         res,
         409,
-        "This student already has a linked login account."
+        "This student already has a login account. Use password reset instead."
       );
     }
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    const existingUser = await User.findOne({
-      email: normalizedEmail,
-    }).select("_id");
 
     if (existingUser) {
       return fail(
         res,
         409,
-        "An account with this email already exists. Use the link-account endpoint if it is an existing student account."
+        "This email already belongs to an account. Resolve the existing account before proceeding."
       );
     }
 
+    const name = [student.firstName, student.surname]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
     const user = await User.create({
-      name: `Student ${String(student._id).slice(-6)}`,
+      name,
       email: normalizedEmail,
       password,
       role: "student",
@@ -363,13 +374,16 @@ export const createStudentAccount = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Student login account created successfully.",
+      message: "Student login created successfully.",
       data: {
         userId: String(user._id),
         studentId: String(student._id),
-        email: user.email,
+        name,
+        email: normalizedEmail,
         role: user.role,
         status: user.status,
+        initialPassword: password,
+        showInitialPasswordOnce: true,
       },
     });
   } catch (error) {
@@ -377,6 +391,107 @@ export const createStudentAccount = async (req, res, next) => {
       return fail(res, 409, "An account with this email already exists.");
     }
 
+    next(error);
+  }
+};
+
+
+
+
+export const getStudentLoginStatus = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+
+    if (!mongoose.isValidObjectId(studentId)) {
+      return fail(res, 400, "Invalid student ID.");
+    }
+
+    const student = await Student.findById(studentId)
+      .select("_id email")
+      .lean();
+
+    if (!student) {
+      return fail(res, 404, "Student record not found.");
+    }
+
+    const account = await User.findOne({
+      role: "student",
+      studentRecord: student._id,
+    })
+      .select("_id name email role status createdAt lastLoginAt")
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        hasLogin: Boolean(account),
+        studentId: String(student._id),
+        studentEmail: student.email || "",
+        account: account
+          ? {
+              id: String(account._id),
+              name: account.name,
+              email: account.email,
+              role: account.role,
+              status: account.status,
+              createdAt: account.createdAt,
+              lastLoginAt: account.lastLoginAt,
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetStudentLoginPassword = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    const { password } = req.body;
+
+    if (!mongoose.isValidObjectId(studentId)) {
+      return fail(res, 400, "Invalid student ID.");
+    }
+
+    if (
+      typeof password !== "string" ||
+      password.length < 12 ||
+      password.length > 128
+    ) {
+      return fail(
+        res,
+        400,
+        "Password must contain 12–128 characters."
+      );
+    }
+
+    const account = await User.findOne({
+      role: "student",
+      studentRecord: studentId,
+    }).select("+refreshTokenHash");
+
+    if (!account) {
+      return fail(res, 404, "No login account exists for this student.");
+    }
+
+    account.password = password;
+    account.refreshTokenHash = null;
+    account.passwordResetTokenHash = null;
+    account.passwordResetExpires = null;
+
+    await account.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Student password reset successfully.",
+      data: {
+        studentId: String(studentId),
+        email: account.email,
+        showPasswordOnce: true,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 };
