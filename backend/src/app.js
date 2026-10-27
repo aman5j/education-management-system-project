@@ -53,6 +53,9 @@ import expenseRoutes from "./routes/expense.routes.js";
 import instituteSettingsRoutes from "./routes/instituteSettings.routes.js";
 
 
+import studentPortalRoutes from "./routes/studentPortal.routes.js";
+
+
 
 
 // import receiptUploadRoutes from
@@ -292,6 +295,9 @@ app.use(
   "/api/institute-settings",
   instituteSettingsRoutes
 );
+
+
+app.use("/api/student-portal", studentPortalRoutes);
 
 
 // app.use(

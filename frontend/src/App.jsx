@@ -12,7 +12,12 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
 import Dashboard from "./pages/admin/Dashboard";
-import RoleHome from "./pages/dashboard/RoleHome";
+// Remove:
+// import RoleHome from "./pages/dashboard/RoleHome";
+
+// Add:
+import StudentDashboard from "./pages/student/StudentDashboard";
+
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
 
@@ -548,11 +553,12 @@ const App = () => {
       </Route>
 
       {/* Student portal */}
+      {/* Student portal */}
       <Route
         path="/student/dashboard"
         element={
           <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-            <RoleHome />
+            <StudentDashboard />
           </RoleRoute>
         }
       />
