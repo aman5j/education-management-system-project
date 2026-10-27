@@ -13,7 +13,7 @@ import { RiFileExcel2Line } from "react-icons/ri";
 import { FaFileImport } from "react-icons/fa";
 
 import { hasPermission } from "../../../utils/permissions";
-
+import StudentCredentialsModal from "../../../components/students/StudentCredentialsModal";
 
 
 import {
@@ -187,6 +187,8 @@ const Students = () => {
     selectedStudent,
     setSelectedStudent,
   ] = useState(null);
+
+  const [credentialsStudent, setCredentialsStudent] = useState(null);
 
   // const [
   //   documentStudent,
@@ -742,6 +744,9 @@ const Students = () => {
               canManageDocuments={canManageDocuments}
               canViewPayments={canViewPayments}
 
+              canManageCredentials={user?.role === "admin"}
+              onCredentials={setCredentialsStudent}
+
               students={students}
               onView={
                 setSelectedStudent
@@ -905,6 +910,14 @@ const Students = () => {
             navigate(`${studentsPath}/${student._id}/edit`);
           }}
 
+        />
+      )}
+
+
+      {credentialsStudent && user?.role === "admin" && (
+        <StudentCredentialsModal
+          student={credentialsStudent}
+          onClose={() => setCredentialsStudent(null)}
         />
       )}
 

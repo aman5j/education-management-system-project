@@ -1,3 +1,5 @@
+import { FiKey } from "react-icons/fi";
+
 import {
   FiDownload,
   FiEdit2,
@@ -35,9 +37,13 @@ const StudentTable = ({
   canDeleteStudent = false,
   // canManageDocuments = false,
   canViewPayments = false,
+  canManageCredentials = false,
   
   students,
   onView,
+
+  onCredentials,
+  
   onEdit,
   onDelete,
   onStatusChange,
@@ -551,6 +557,19 @@ const handleDownloadReceipt = async (student) => {
                       >
                         <FiEye />
                       </button>
+
+
+                      {canManageCredentials && (
+                        <button
+                          className="tooltip"
+                          data-tooltip="Login Credentials"
+                          type="button"
+                          title="Login Credentials"
+                          onClick={() => onCredentials?.(student)}
+                        >
+                          <FiKey />
+                        </button>
+                      )}
 
 
                       {/* DOCUMENTS */}

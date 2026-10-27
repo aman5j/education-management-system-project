@@ -1168,3 +1168,252 @@
 .profileuploadinput .preview-image {
     top: 19px;
 }
+
+
+
+
+/* student crendetails css */
+
+
+.student-credentials-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.student-credentials-modal {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.student-credentials-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.student-credentials-header span {
+  color: var(--primary-color);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.student-credentials-header h2 {
+  margin: 6px 0;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.student-credentials-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.student-credentials-close {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.student-credentials-body {
+  padding: 20px;
+}
+
+.student-credentials-field {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+.student-credentials-field label {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-credentials-field input,
+.student-credentials-password input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.student-credentials-field input[readonly] {
+  background: #f8fafc;
+}
+
+.student-credentials-field small {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.student-credentials-password {
+  display: flex;
+  gap: 6px;
+}
+
+.student-credentials-password button {
+  width: 42px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.student-credentials-account {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.student-credentials-account > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.student-credentials-account span {
+  color: var(--text-muted);
+}
+
+.student-credentials-account strong {
+  color: var(--text-primary);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.student-credentials-primary,
+.student-credentials-secondary {
+  min-height: 40px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-credentials-primary {
+  width: 100%;
+  border: 1px solid var(--primary-color);
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.student-credentials-primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.student-credentials-secondary {
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-secondary);
+}
+
+.student-credentials-issued {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+  background: #f0fdf4;
+}
+
+.student-credentials-issued > strong {
+  color: #166534;
+  font-size: 12px;
+}
+
+.student-credentials-issued p {
+  color: #166534;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.student-credentials-error,
+.student-credentials-success {
+  margin-bottom: 14px;
+  padding: 11px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.student-credentials-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.student-credentials-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.student-credentials-footer {
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 576px) {
+  .student-credentials-overlay {
+    padding: 10px;
+  }
+
+  .student-credentials-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .student-credentials-header,
+  .student-credentials-body {
+    padding: 15px;
+  }
+
+  .student-credentials-account > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .student-credentials-account strong {
+    text-align: left;
+  }
+}
