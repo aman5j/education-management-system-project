@@ -100,15 +100,10 @@ const AddStudent = () => {
 
   return (
     <div className="student-management-page">
-      <Breadcrumb currentPage="Add Student" />
+      {/* <Breadcrumb currentPage="Add Student" /> */}
 
-      <div className="student-page-header">
-        <div>
-          <span className="student-page-eyebrow">STUDENT MANAGEMENT</span>
-          <h1>Add Student</h1>
-          <p>Create a student record.</p>
-        </div>
-      </div>
+      <div class="page-header"><div><h1> Add New Student</h1></div></div>
+
 
       <StudentForm
         onSubmit={handleSubmit}
