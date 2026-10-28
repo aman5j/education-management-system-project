@@ -88,13 +88,24 @@ const studentSchema = new mongoose.Schema(
       maxlength: 20,
     },
 
+    
     email: {
       type: String,
       default: "",
       lowercase: true,
       trim: true,
       maxlength: 150,
+      validate: {
+        validator: function (value) {
+          return (
+            !value ||
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+          );
+        },
+        message: "Please provide a valid student email address.",
+      },
     },
+
 
     address: {
       type: String,
@@ -234,6 +245,20 @@ studentSchema.index({
   email: "text",
   rollNo: "text",
 });
+
+
+
+studentSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      email: { $type: "string", $gt: "" },
+    },
+    name: "unique_nonempty_student_email",
+  }
+);
+
 
 // ==========================================
 // MODEL
