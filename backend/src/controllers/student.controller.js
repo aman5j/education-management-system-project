@@ -6,6 +6,25 @@ import Student from "../models/Student.js";
 import StudentAdmission from "../models/StudentAdmission.js";
 import Batch from "../models/Batch.js";
 
+
+
+const normalizeStudentEmail = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const checkStudentEmailAvailable = async (email, excludeStudentId = null) => {
+  const filter = { email };
+
+  if (excludeStudentId) {
+    filter._id = { $ne: excludeStudentId };
+  }
+
+  return !(await Student.exists(filter));
+};
+
+
+
+
+
 // Atomically reserve one seat so concurrent requests cannot consume
 // the same remaining seat. Reconcile stored seat counts before using this.
 
@@ -339,10 +358,27 @@ export const createStudent = async (req, res, next) => {
       });
     }
 
-    const normalizedEmail = email?.trim()
-      ? email.trim().toLowerCase()
-      : "";
+    // const normalizedEmail = email?.trim()
+    //   ? email.trim().toLowerCase()
+    //   : "";
 
+    const normalizedEmail = normalizeStudentEmail(email);
+    
+    if (!normalizedEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Student email is required.",
+      });
+    }
+
+    const emailAvailable = await checkStudentEmailAvailable(normalizedEmail);
+
+    if (!emailAvailable) {
+      return res.status(409).json({
+        success: false,
+        message: "This email is already assigned to another student.",
+      });
+    }
 
 
     let student;
@@ -389,6 +425,14 @@ export const createStudent = async (req, res, next) => {
       data: student,
     });
   } catch (error) {
+    
+    if (error?.code === 11000 && error?.keyPattern?.email) {
+      return res.status(409).json({
+        success: false,
+        message: "This email is already assigned to another student.",
+      });
+    }
+
     next(error);
   }
 };
@@ -422,6 +466,8 @@ export const updateStudent = async (req, res, next) => {
       showFatherName,
       showSurname,
     } = req.body;
+
+
 
     // Roll number remains unchanged when editing a student.
 
@@ -461,9 +507,32 @@ export const updateStudent = async (req, res, next) => {
       student.alternateMobile = alternateMobile.trim();
     }
 
+        
     if (email !== undefined) {
-      student.email = email.trim().toLowerCase();
+      const normalizedEmail = normalizeStudentEmail(email);
+
+      if (!normalizedEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Student email is required.",
+        });
+      }
+
+      const emailAvailable = await checkStudentEmailAvailable(
+        normalizedEmail,
+        student._id
+      );
+
+      if (!emailAvailable) {
+        return res.status(409).json({
+          success: false,
+          message: "This email is already assigned to another student.",
+        });
+      }
+
+      student.email = normalizedEmail;
     }
+
 
     if (address !== undefined) {
       student.address = address.trim();
@@ -516,7 +585,14 @@ export const updateStudent = async (req, res, next) => {
       message: "Student updated successfully",
       data: student,
     });
-  } catch (error) {
+  } catch (error) {    
+    if (error?.code === 11000 && error?.keyPattern?.email) {
+      return res.status(409).json({
+        success: false,
+        message: "This email is already assigned to another student.",
+      });
+    }
+
     next(error);
   }
 };
