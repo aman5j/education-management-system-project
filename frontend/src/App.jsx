@@ -20,6 +20,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import StudentLayout from "./layout/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentCourses from "./pages/student/StudentCourses";
+import StudentCourseDetails from "./pages/student/StudentCourseDetails";
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -573,8 +574,15 @@ const App = () => {
           element={<StudentDashboard />}
         />
 
+        {/* <Route path="courses" element={<StudentCourses />} /> */}
+
         <Route path="courses" element={<StudentCourses />} />
-        
+        <Route
+          path="courses/:admissionId"
+          element={<StudentCourseDetails />}
+        />
+
+
       </Route>
 
       {/* Unauthorized access */}

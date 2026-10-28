@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiArrowRight,
   FiBookOpen,
@@ -39,13 +40,14 @@ const getAdmissionStatus = (course) =>
   String(course?.admissionStatus || "").toLowerCase();
 
 export default function StudentCourses() {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const [search, setSearch] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [detailsTab, setDetailsTab] = useState("overview");
+//   const [selectedCourse, setSelectedCourse] = useState(null);
+//   const [detailsTab, setDetailsTab] = useState("overview");
   const [imageErrors, setImageErrors] = useState({});
 
   const loadCourses = useCallback(async () => {
@@ -348,10 +350,12 @@ export default function StudentCourses() {
                     </span>
 
                     <button
-                      type="button"
-                      onClick={() => openDetails(item)}
-                    >
-                      View Details <FiArrowRight />
+                        type="button"
+                        onClick={() =>
+                            navigate(`/student/courses/${item.admissionId}`)
+                        }
+                        >
+                        View Details <FiArrowRight />
                     </button>
                   </div>
                 </div>
@@ -368,7 +372,7 @@ export default function StudentCourses() {
         </p>
       )}
 
-      {selectedCourse && (
+      {/* {selectedCourse && (
         <div
           className="student-course-modal-backdrop"
           onMouseDown={(event) => {
@@ -539,7 +543,8 @@ export default function StudentCourses() {
             </footer>
           </section>
         </div>
-      )}
+      )} */}
+      
     </section>
   );
 }
