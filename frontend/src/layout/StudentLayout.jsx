@@ -53,6 +53,7 @@ const StudentLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -101,8 +102,18 @@ const StudentLayout = () => {
     );
   };
 
+  const handleMenuToggle = () => {
+    if (window.innerWidth <= 760) {
+        setMobileOpen((previous) => !previous);
+        return;
+    }
+
+    setCollapsed((previous) => !previous);
+    };
+
   return (
-    <div className="student-layout">
+    // <div className="student-layout">
+    <div className={`student-layout ${collapsed ? "student-layout--collapsed" : ""}`}>
       {mobileOpen && (
         <button
           className="student-layout__backdrop"
@@ -198,13 +209,23 @@ const StudentLayout = () => {
       <div className="student-layout__main">
         <header className="student-layout__topbar">
           <div className="student-layout__topbar-left">
-            <button
+            {/* <button
               type="button"
               className="student-layout__menu-toggle"
               onClick={() => setMobileOpen(true)}
               aria-label="Open navigation menu"
             >
               <FiMenu />
+            </button> */}
+
+            <button
+                type="button"
+                className="student-layout__menu-toggle"
+                onClick={handleMenuToggle}
+                aria-label="Toggle sidebar"
+                aria-expanded={!collapsed}
+                >
+                <FiMenu />
             </button>
 
             <div className="student-layout__search">

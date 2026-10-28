@@ -573,3 +573,73 @@
     transition: none;
   }
 }
+
+
+
+
+
+
+
+
+/* Desktop sidebar collapse, matching the Admin portal behavior */
+@media (min-width: 761px) {
+  .student-layout__menu-toggle {
+    display: grid;
+  }
+
+  .student-layout__sidebar {
+    transition: width 0.22s ease;
+  }
+
+  .student-layout--collapsed .student-layout__sidebar {
+    width: 76px;
+    overflow-x: hidden;
+  }
+
+  .student-layout--collapsed .student-layout__main {
+    margin-left: 76px;
+  }
+
+  .student-layout--collapsed .student-layout__brand {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+
+  .student-layout--collapsed .student-layout__brand img {
+    max-width: 56px;
+    max-height: 46px;
+    object-fit: contain;
+  }
+
+  .student-layout--collapsed .student-layout__portal-label,
+  .student-layout--collapsed .student-layout__nav-item > span,
+  .student-layout--collapsed .student-layout__support-note,
+  .student-layout--collapsed .student-layout__signout > span {
+    display: none;
+  }
+
+  .student-layout--collapsed .student-layout__nav {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .student-layout--collapsed .student-layout__nav-item {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+
+  .student-layout--collapsed .student-layout__nav-item > svg {
+    flex-basis: auto;
+    font-size: 19px;
+  }
+
+  .student-layout--collapsed .student-layout__sidebar-bottom {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .student-layout--collapsed .student-layout__signout {
+    justify-content: center;
+    padding: 10px 8px;
+  }
+}
