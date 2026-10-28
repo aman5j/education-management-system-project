@@ -75,10 +75,12 @@ const EditStudent = () => {
 
       navigate(studentsPath);
     } catch (requestError) {
-      throw new Error(
-        requestError.response?.data?.message ||
-          "Unable to update student."
-      );
+        const message =
+          requestError.response?.data?.message ||
+          requestError.message ||
+          "Unable to save student.";
+
+        throw new Error(message);
     } finally {
       setSubmitting(false);
     }

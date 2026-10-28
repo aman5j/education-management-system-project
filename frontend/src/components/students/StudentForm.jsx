@@ -242,6 +242,21 @@ const StudentForm = ({
 
       return;
     }
+    
+    const normalizedEmail = form.email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setError("Student email is required.");
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(normalizedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
 
 
     const formData =
@@ -273,8 +288,9 @@ const StudentForm = ({
 
         formData.append(
           key,
-          String(value)
+          key === "email" ? normalizedEmail : String(value)
         );
+
       }
     );
 
@@ -628,7 +644,7 @@ const StudentForm = ({
               />
             </div>
 
-            <div className="input-felid ">
+            {/* <div className="input-felid ">
               <label>
                 Email
               </label>
@@ -644,7 +660,32 @@ const StudentForm = ({
                 }
                 placeholder="Enter email"
               />
+            </div> */}
+
+            
+            <div className="input-felid">
+              <label htmlFor="student-email">
+                Email <span className="required">*</span>
+              </label>
+
+              <input
+                id="student-email"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Enter student's unique email address"
+                autoComplete="email"
+                required
+                maxLength={150}
+                aria-describedby="student-email-help"
+              />
+
+              <small id="student-email-help">
+                Enter a valid email address that is not assigned to another student.
+              </small>
             </div>
+
 
             <div className="input-felid ">
               <label>
