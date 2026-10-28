@@ -1,68 +1,60 @@
-import {
-  useEffect,
-  useState,
-} from "react";
 
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  // FiBell,
   FiChevronDown,
   FiMaximize,
   FiMenu,
-  FiSearch,
   FiUser,
   FiSettings,
   FiLock,
   FiLogOut,
 } from "react-icons/fi";
-
-import {
-  useNavigate,
-} from "react-router-dom";
+import { FaSchool } from "react-icons/fa";
 
 import { useAuth } from "../context/AuthContext";
-
 import NotificationBell from "../components/notifications/NotificationBell";
+import { getAssetUrl } from "../utils/assetUrl";
 
 import "./AdminLayout.css";
+
+const getInitials = (name = "") =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "U";
 
 const Topbar = ({
   onOpenMobileSidebar,
   dashboardPath = "/admin/dashboard",
 }) => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  const {
-    user,
-    logout,
-  } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const isAdmin = user?.role === "admin";
+  const isStaff = user?.role === "staff";
 
-  const [searchOpen, setSearchOpen] =
-    useState(false);
-
-  const [searchValue, setSearchValue] =
-    useState("");
-
-  const [fullscreen, setFullscreen] =
-    useState(false);
+  const avatarUrl = isStaff && user?.avatar
+    ? getAssetUrl(user.avatar)
+    : "";
 
   useEffect(() => {
-    const handleDocumentClick = () => {
-      setProfileOpen(false);
-    };
+    setAvatarFailed(false);
+  }, [user?.avatar]);
 
-    document.addEventListener(
-      "click",
-      handleDocumentClick
-    );
+  useEffect(() => {
+    const handleDocumentClick = () => setProfileOpen(false);
+
+    document.addEventListener("click", handleDocumentClick);
 
     return () => {
-      document.removeEventListener(
-        "click",
-        handleDocumentClick
-      );
+      document.removeEventListener("click", handleDocumentClick);
     };
   }, []);
 
@@ -81,20 +73,48 @@ const Topbar = ({
   };
 
   const handleLogout = async () => {
+    setProfileOpen(false);
     await logout();
-
-    navigate("/login", {
-      replace: true,
-    });
+    navigate("/login", { replace: true });
   };
 
-  const handleProfileClick = (
-    event
-  ) => {
+  const handleProfileClick = (event) => {
     event.stopPropagation();
+    setProfileOpen((previous) => !previous);
+  };
 
-    setProfileOpen(
-      (previous) => !previous
+  const renderAvatar = (large = false) => {
+    const className = `profile-avatar ${
+      large ? "profile-avatar-large" : ""
+    }`;
+
+    // Admin always gets the school icon.
+    if (isAdmin) {
+      return (
+        <div className={`${className} profile-avatar-admin`}>
+          <FaSchool aria-label="Administrator" />
+        </div>
+      );
+    }
+
+    // Staff gets their uploaded profile photo.
+    if (isStaff && avatarUrl && !avatarFailed) {
+      return (
+        <div className={`${className} profile-avatar-photo`}>
+          <img
+            src={avatarUrl}
+            alt={`${user?.name || "Staff"} profile`}
+            onError={() => setAvatarFailed(true)}
+          />
+        </div>
+      );
+    }
+
+    // Fallback for staff without a photo and other account types.
+    return (
+      <div className={className}>
+        {getInitials(user?.name)}
+      </div>
     );
   };
 
@@ -102,73 +122,54 @@ const Topbar = ({
     <header className="admin-topbar">
       <div className="topbar-left">
         <button
+          type="button"
           className="topbar-icon-button mobile-menu-button"
           onClick={onOpenMobileSidebar}
           aria-label="Open sidebar"
         >
           <FiMenu />
         </button>
-
-       
       </div>
 
       <div className="topbar-actions">
         <button
+          type="button"
           className="topbar-icon-button"
           onClick={handleFullscreen}
-          title={
-            fullscreen
-              ? "Exit fullscreen"
-              : "Fullscreen"
-          }
+          title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+          aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           <FiMaximize />
         </button>
-
-        {/* <button
-          className="topbar-icon-button notification-button"
-          title="Notifications"
-        >
-          <FiBell />
-
-          <span className="notification-count">
-            0
-          </span>
-        </button> */}
 
         <NotificationBell />
 
         <div className="topbar-profile-wrapper">
           <button
+            type="button"
             className="topbar-profile"
-            onClick={
-              handleProfileClick
-            }
+            onClick={handleProfileClick}
+            aria-expanded={profileOpen}
+            aria-label="Open profile menu"
           >
-            <div className="profile-avatar">
-              {user?.name
-                ?.charAt(0)
-                ?.toUpperCase() || "A"}
-            </div>
+            {renderAvatar()}
 
             <div className="profile-info">
-              <strong>
-                {user?.name ||
-                  "Administrator"}
-              </strong>
-
+              <strong>{user?.name || (isAdmin ? "Administrator" : "Staff")}</strong>
               <span>
-                {user?.role === "admin"
+                {isAdmin
                   ? "Administrator"
-                  : user?.role}
+                  : user?.role === "staff"
+                    ? user?.assignedRole?.label ||
+                      user?.assignedRole?.name ||
+                      "Staff"
+                    : user?.role || "User"}
               </span>
             </div>
 
             <FiChevronDown
               className={`profile-chevron ${
-                profileOpen
-                  ? "profile-chevron-open"
-                  : ""
+                profileOpen ? "profile-chevron-open" : ""
               }`}
             />
           </button>
@@ -176,92 +177,64 @@ const Topbar = ({
           {profileOpen && (
             <div
               className="profile-dropdown"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
+              onClick={(event) => event.stopPropagation()}
             >
               <div className="profile-dropdown-header">
-                <div className="profile-avatar profile-avatar-large">
-                  {user?.name
-                    ?.charAt(0)
-                    ?.toUpperCase() ||
-                    "A"}
-                </div>
+                {renderAvatar(true)}
 
                 <div>
-                  <strong>
-                    {user?.name}
-                  </strong>
-
-                  <span>
-                    {user?.email}
-                  </span>
+                  <strong>{user?.name || "User"}</strong>
+                  <span>{user?.email || ""}</span>
                 </div>
               </div>
+
               <div className="profile-dropdown-divider" />
 
-                    <div class="profile-dropdown-item">
-                       {/* <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  navigate("/admin/profile");
-                }}
-              >
-                <FiUser />
-                Profile
-              </button> */}
+              <div className="profile-dropdown-item">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate(
+                      isStaff ? "/staff/profile" : "/admin/profile"
+                    );
+                  }}
+                >
+                  <FiUser />
+                  Profile
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfileOpen(false);
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate("/admin/system-settings");
+                  }}
+                >
+                  <FiSettings />
+                  Settings
+                </button>
 
-                      const profilePath =
-                        user?.role === "staff"
-                          ? "/staff/profile"
-                          : "/admin/profile";
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate("/admin/change-password");
+                  }}
+                >
+                  <FiLock />
+                  Change Password
+                </button>
 
-                      navigate(profilePath);
-                    }}
-                  >
-                    <FiUser />
-                    Profile
-                  </button>
-
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  navigate(
-                    "/admin/system-settings"
-                  );
-                }}
-              >
-                <FiSettings />
-                Settings
-              </button>
-
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-                  navigate(
-                    "/admin/change-password"
-                  );
-                }}
-              >
-                <FiLock />
-                Change Password
-              </button>
-
-            
-
-              <button
-                className="profile-logout-button"
-                onClick={handleLogout}
-              >
-                <FiLogOut />
-                Logout
-              </button>
-                    </div>
+                <button
+                  type="button"
+                  className="profile-logout-button"
+                  onClick={handleLogout}
+                >
+                  <FiLogOut />
+                  Logout
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -1534,3 +1534,39 @@ footer p {
     font-size: 15px;
     font-weight: 600;
 }
+
+
+
+
+
+
+/* Admin school icon and Staff profile image in circular topbar avatars */
+.profile-avatar-admin {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.profile-avatar-admin svg {
+  width: 19px;
+  height: 19px;
+}
+
+.profile-avatar-large.profile-avatar-admin svg {
+  width: 23px;
+  height: 23px;
+}
+
+.profile-avatar-photo {
+  padding: 0;
+  overflow: hidden;
+  background: #e8eef8;
+}
+
+.profile-avatar-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+}
