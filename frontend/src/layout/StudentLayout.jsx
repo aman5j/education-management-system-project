@@ -28,13 +28,13 @@ export default function StudentLayout() {
     instituteSettingsService
       .getPublicBranding()
       .then((branding) => {
-        if (active) {
-          setLogoUrl(branding?.logoUrl || "");
-          setLogoFailed(false);
-        }
+        if (!active) return;
+
+        setLogoUrl(branding?.logoUrl || "");
+        setLogoFailed(false);
       })
-      .catch(() => {
-        // Use the bundled logo if branding is unavailable.
+      .catch((error) => {
+        console.error("Unable to load institute branding:", error);
       });
 
     return () => {
@@ -58,6 +58,13 @@ export default function StudentLayout() {
   const displayedLogo =
     logoUrl && !logoFailed ? getAssetUrl(logoUrl) : defaultLogo;
 
+  const handleLogoError = () => {
+    if (logoUrl && !logoFailed) {
+      console.error("Institute logo failed to load:", displayedLogo);
+      setLogoFailed(true);
+    }
+  };
+
   const handleMenuToggle = () => {
     if (window.innerWidth <= 760) {
       setMobileOpen((previous) => !previous);
@@ -67,9 +74,7 @@ export default function StudentLayout() {
   };
 
   const handlePlannedItem = (item) => {
-    setNotice(
-      `${item.label} will be available in Phase ${item.phase}.`
-    );
+    setNotice(`${item.label} will be available in Phase ${item.phase}.`);
   };
 
   const handleLogout = async () => {
@@ -86,6 +91,7 @@ export default function StudentLayout() {
     >
       <StudentSidebar
         logo={displayedLogo}
+        onLogoError={handleLogoError}
         mobileOpen={mobileOpen}
         collapsed={collapsed}
         onCloseMobile={() => setMobileOpen(false)}

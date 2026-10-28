@@ -34,6 +34,7 @@ const navigation = [
 
 export default function StudentSidebar({
   logo,
+  onLogoError,
   mobileOpen,
   collapsed,
   onCloseMobile,
@@ -59,7 +60,12 @@ export default function StudentSidebar({
         ].filter(Boolean).join(" ")}
       >
         <div className="student-layout__brand">
-          <img src={logo} alt="Institute logo" />
+          <img
+            src={logo}
+            alt="Institute logo"
+            onError={onLogoError}
+            className="student-layout__brand-logo"
+            />
           <button
             type="button"
             className="student-layout__mobile-close"

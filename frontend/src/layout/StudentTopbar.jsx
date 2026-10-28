@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FiBell,
   FiChevronDown,
@@ -10,6 +10,9 @@ import {
   FiLogOut,
 } from "react-icons/fi";
 
+import studentPortalService from "../services/studentPortalService";
+import { getAssetUrl } from "../utils/assetUrl";
+
 export default function StudentTopbar({
   user,
   onMenuToggle,
@@ -18,12 +21,41 @@ export default function StudentTopbar({
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [student, setStudent] = useState(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const profileRef = useRef(null);
 
   const displayName =
-    user?.name || user?.email?.split("@")[0] || "Student";
+    student?.name ||
+    [student?.firstName, student?.surname].filter(Boolean).join(" ") ||
+    user?.name ||
+    user?.email?.split("@")[0] ||
+    "Student";
 
   const initial = displayName.trim().charAt(0).toUpperCase() || "S";
+
+  const avatarUrl = student?.profileImage
+    ? getAssetUrl(student.profileImage)
+    : "";
+
+  const loadStudentProfile = useCallback(async () => {
+    try {
+      const response = await studentPortalService.getDashboard();
+      setStudent(response?.data?.student || null);
+      setAvatarFailed(false);
+    } catch (error) {
+      // The topbar can still render the student's initials if this fails.
+      console.error("Unable to load student profile image:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStudentProfile();
+  }, [loadStudentProfile]);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [student?.profileImage]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -33,7 +65,9 @@ export default function StudentTopbar({
     };
 
     const handleEscape = (event) => {
-      if (event.key === "Escape") setProfileOpen(false);
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleOutsideClick);
@@ -59,6 +93,33 @@ export default function StudentTopbar({
     }
   };
 
+  const handleProfileClick = () => {
+    setProfileOpen((previous) => !previous);
+  };
+
+  const renderAvatar = () => {
+    if (avatarUrl && !avatarFailed) {
+      return (
+        <span className="student-layout__avatar student-layout__avatar--photo">
+          <img
+            src={avatarUrl}
+            alt={`${displayName} profile`}
+            onError={() => {
+              console.error("Student profile image failed to load:", avatarUrl);
+              setAvatarFailed(true);
+            }}
+          />
+        </span>
+      );
+    }
+
+    return (
+      <span className="student-layout__avatar" aria-label={`${displayName} initials`}>
+        {initial}
+      </span>
+    );
+  };
+
   return (
     <header className="student-layout__topbar">
       <div className="student-layout__topbar-left">
@@ -78,7 +139,9 @@ export default function StudentTopbar({
             aria-label="Search student portal"
             placeholder="Search student portal"
             onKeyDown={(event) => {
-              if (event.key === "Escape") event.currentTarget.value = "";
+              if (event.key === "Escape") {
+                event.currentTarget.value = "";
+              }
             }}
           />
         </label>
@@ -99,9 +162,7 @@ export default function StudentTopbar({
           type="button"
           className="student-layout__icon-button"
           aria-label="Notifications"
-          onClick={() =>
-            onPlannedItem({ label: "Notifications", phase: 10 })
-          }
+          onClick={() => onPlannedItem({ label: "Notifications", phase: 10 })}
           title="Notifications"
         >
           <FiBell />
@@ -111,23 +172,28 @@ export default function StudentTopbar({
           <button
             type="button"
             className="student-layout__profile-button"
-            onClick={() => setProfileOpen((previous) => !previous)}
+            onClick={handleProfileClick}
             aria-expanded={profileOpen}
             aria-label="Open student profile menu"
           >
-            <span className="student-layout__avatar">{initial}</span>
+            {renderAvatar()}
+
             <span className="student-layout__profile-text">
               <strong>{displayName}</strong>
               <small>Student</small>
             </span>
+
             <FiChevronDown />
           </button>
 
           {profileOpen && (
             <div className="student-layout__profile-menu">
               <div className="student-layout__profile-menu-heading">
-                <strong>{displayName}</strong>
-                <span>{user?.email || "Student account"}</span>
+                {renderAvatar()}
+                <div>
+                  <strong>{displayName}</strong>
+                  <span>{user?.email || "Student account"}</span>
+                </div>
               </div>
 
               <button
