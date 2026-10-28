@@ -4,9 +4,6 @@ import {
   FiArrowRight,
   FiBookOpen,
   FiCalendar,
-  FiCheckCircle,
-  FiClock,
-  FiFileText,
   FiRefreshCw,
   FiSearch,
   FiX,
@@ -46,8 +43,6 @@ export default function StudentCourses() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const [search, setSearch] = useState("");
-//   const [selectedCourse, setSelectedCourse] = useState(null);
-//   const [detailsTab, setDetailsTab] = useState("overview");
   const [imageErrors, setImageErrors] = useState({});
 
   const loadCourses = useCallback(async () => {
@@ -75,17 +70,6 @@ export default function StudentCourses() {
   useEffect(() => {
     loadCourses();
   }, [loadCourses]);
-
-  useEffect(() => {
-    if (!selectedCourse) return undefined;
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") setSelectedCourse(null);
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [selectedCourse]);
 
   const activeCourses = useMemo(
     () =>
@@ -544,7 +528,7 @@ export default function StudentCourses() {
           </section>
         </div>
       )} */}
-      
+
     </section>
   );
 }
