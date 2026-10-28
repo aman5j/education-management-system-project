@@ -16,6 +16,8 @@ import Dashboard from "./pages/admin/Dashboard";
 // import RoleHome from "./pages/dashboard/RoleHome";
 
 // Add:
+//  student routes  
+import StudentLayout from "./layout/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -552,24 +554,34 @@ const App = () => {
         />
       </Route>
 
-      {/* Student portal */}
-      {/* Student portal */}
+      {/* Student Portal */}
       <Route
-        path="/student/dashboard"
+        path="/student"
         element={
           <RoleRoute allowedRoles={[ROLES.STUDENT]}>
-            <StudentDashboard />
+            <StudentLayout />
           </RoleRoute>
         }
-      />
+      >
+        <Route
+          index
+          element={<Navigate to="dashboard" replace />}
+        />
+        <Route
+          path="dashboard"
+          element={<StudentDashboard />}
+        />
+      </Route>
 
       {/* Unauthorized access */}
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Unknown application route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      
     </Routes>
+    
   );
+
 };
 
 export default App;
