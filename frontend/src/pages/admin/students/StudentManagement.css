@@ -1417,3 +1417,19 @@
     text-align: left;
   }
 }
+
+
+/* student email validation css */
+
+.student-form .input-felid input[type="email"]:invalid:focus {
+  border-color: #dc2626;
+  outline-color: #dc2626;
+}
+
+.student-form #student-email-help {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
