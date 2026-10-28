@@ -662,3 +662,38 @@
   max-height: 44px;
   object-position: center;
 }
+
+
+
+
+.student-layout__avatar--photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.student-layout__avatar--photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.student-layout__profile-menu-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.student-layout__profile-menu-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.student-layout__profile-menu-heading > div strong,
+.student-layout__profile-menu-heading > div span {
+  overflow-wrap: anywhere;
+}
