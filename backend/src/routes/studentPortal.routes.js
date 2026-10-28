@@ -3,6 +3,7 @@ import express from "express";
 import {
   createStudentAccount,
   getStudentDashboard,
+  getMyCourses,
   getStudentLoginStatus,
   linkStudentAccount,
   resetStudentLoginPassword,
@@ -50,5 +51,6 @@ router.use(authenticate);
 router.use(authorizeRoles("student"));
 
 router.get("/dashboard", getStudentDashboard);
+router.get("/courses", getMyCourses);
 
 export default router;

@@ -495,3 +495,121 @@ export const resetStudentLoginPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+/**
+ * GET /api/student-portal/courses
+ *
+ * Return only courses belonging to the authenticated student's
+ * own admission records.
+ */
+export const getMyCourses = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return fail(res, 403, "Student portal access only.");
+    }
+
+    if (!req.user.studentRecord) {
+      return fail(
+        res,
+        409,
+        "Your login account is not linked to a student record. Please contact your institute administrator."
+      );
+    }
+
+    const student = await Student.findById(req.user.studentRecord)
+      .select("_id")
+      .lean();
+
+    if (!student) {
+      return fail(res, 404, "Linked student record not found.");
+    }
+
+    const admissions = await StudentAdmission.find({
+      student_id: student._id,
+    })
+      .populate({
+        path: "course_id",
+        select:
+          "courseTitle courseType courseCategory courseImage description syllabus eligibility duration durationUnit totalLectures subjects status",
+        populate: {
+          path: "subjects",
+          select: "subjectName subjectCode description status",
+        },
+      })
+      .populate("batch_id", "batch_name status")
+      .sort({ admission_date: -1 })
+      .lean();
+
+    const courses = admissions.map((admission) => {
+      const course = admission.course_id;
+      const batch = admission.batch_id;
+
+      const finalAmount = Number(admission.final_amount || 0);
+      const paidAmount = Number(admission.paid_amount || 0);
+      const remainingAmount = Math.max(0, finalAmount - paidAmount);
+
+      const paymentPercentage =
+        finalAmount > 0
+          ? Math.min(
+              100,
+              Math.round((paidAmount / finalAmount) * 100)
+            )
+          : 0;
+
+      return {
+        admissionId: String(admission._id),
+        admissionDate: admission.admission_date || null,
+        admissionStatus: admission.status || "Active",
+        course: course
+          ? {
+              id: String(course._id),
+              title: course.courseTitle || "Untitled course",
+              type: course.courseType || "",
+              category: course.courseCategory || "",
+              image: course.courseImage || "",
+              description: course.description || "",
+              syllabus: course.syllabus || "",
+              eligibility: course.eligibility || "",
+              duration: course.duration ?? null,
+              durationUnit: course.durationUnit || "",
+              totalLectures: Number(course.totalLectures || 0),
+              status: course.status || "",
+              subjects: Array.isArray(course.subjects)
+                ? course.subjects
+                    .filter(Boolean)
+                    .map((subject) => ({
+                      id: String(subject._id),
+                      name: subject.subjectName || "Subject",
+                      code: subject.subjectCode || "",
+                      description: subject.description || "",
+                      status: subject.status || "",
+                    }))
+                : [],
+            }
+          : null,
+        batch: batch
+          ? {
+              id: String(batch._id),
+              name: batch.batch_name || "Batch",
+              status: batch.status || "",
+            }
+          : null,
+        fees: {
+          total: finalAmount,
+          paid: paidAmount,
+          outstanding: remainingAmount,
+          paymentPercentage,
+        },
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { courses },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

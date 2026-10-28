@@ -19,6 +19,7 @@ import Dashboard from "./pages/admin/Dashboard";
 //  student routes  
 import StudentLayout from "./layout/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentCourses from "./pages/student/StudentCourses";
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -571,6 +572,9 @@ const App = () => {
           path="dashboard"
           element={<StudentDashboard />}
         />
+
+        <Route path="courses" element={<StudentCourses />} />
+        
       </Route>
 
       {/* Unauthorized access */}
