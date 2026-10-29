@@ -1027,3 +1027,28 @@
     flex: 1;
   }
 }
+
+
+
+/* spacing fix */
+
+.student-exams-page {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .student-exams-page {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-exams-page {
+    padding: 12px;
+  }
+}
