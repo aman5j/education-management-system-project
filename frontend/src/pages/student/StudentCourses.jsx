@@ -112,6 +112,8 @@ export default function StudentCourses() {
   const [recommendedCourses, setRecommendedCourses] = useState([]);
   const [dashboard, setDashboard] = useState(null);
 
+  // const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [recommendationsLoading, setRecommendationsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -122,8 +124,8 @@ export default function StudentCourses() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [imageErrors, setImageErrors] = useState({});
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [detailsTab, setDetailsTab] = useState("overview");
+
+  const [enrollNotice, setEnrollNotice] = useState("");
 
   const loadCourses = useCallback(async () => {
     setLoading(true);
@@ -245,12 +247,6 @@ export default function StudentCourses() {
     categoryFilter,
   ]);
 
-  const openDetails = (item) => {
-    setSelectedCourse(item);
-    setDetailsTab("overview");
-  };
-
-  const closeDetails = () => setSelectedCourse(null);
 
   const upcomingExams = Array.isArray(dashboard?.upcomingExams)
     ? dashboard.upcomingExams
@@ -526,7 +522,11 @@ export default function StudentCourses() {
                       <FiCalendar />
                       {formatDate(item.admissionDate)}
                     </span>
-                    <button type="button" onClick={() => openDetails(item)}>
+                    <button type="button" 
+                     onClick={() =>
+                        navigate(`/student/courses/${item.admissionId}`)
+                      }
+                    >
                       View Details <FiArrowRight />
                     </button>
                   </div>
@@ -618,9 +618,21 @@ export default function StudentCourses() {
                         <del>{formatCurrency(course.mrp)}</del>
                       )}
                   </div>
-                  <p className="sc-recommendation-note">
-                    Contact the institute to enquire or enrol.
-                  </p>
+                  <button
+                    type="button"
+                    className="sc-enroll-button"
+                    onClick={() => setEnrollNotice(course.id)}
+                  >
+                    Enroll Now <FiArrowRight />
+                  </button>
+
+                  {enrollNotice === course.id && (
+                    <p className="sc-enroll-notice" role="status">
+                      To enrol in {course.title}, please contact your institute
+                      administrator. Your official admission record must be created
+                      by the institute.
+                    </p>
+                  )}
                 </div>
               </article>
             ))}
@@ -635,160 +647,7 @@ export default function StudentCourses() {
         </p>
       )}
 
-      {selectedCourse && (
-        <div
-          className="sc-modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDetails();
-          }}
-        >
-          <section
-            className="sc-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sc-modal-title"
-          >
-            <header className="sc-modal__header">
-              <div>
-                <span className="sc-eyebrow">COURSE DETAILS</span>
-                <h2 id="sc-modal-title">
-                  {selectedCourse.course?.title || "Course details"}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={closeDetails}
-                aria-label="Close course details"
-              >
-                <FiX />
-              </button>
-            </header>
-
-            <div className="sc-modal__tabs" role="tablist">
-              {[
-                ["overview", "Overview"],
-                ["syllabus", "Syllabus"],
-                ["subjects", "Subjects"],
-              ].map(([key, label]) => (
-                <button
-                  type="button"
-                  key={key}
-                  role="tab"
-                  aria-selected={detailsTab === key}
-                  className={detailsTab === key ? "is-active" : ""}
-                  onClick={() => setDetailsTab(key)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="sc-modal__content">
-              {detailsTab === "overview" && (
-                <>
-                  <p className="sc-modal__description">
-                    {plainText(selectedCourse.course?.description) ||
-                      "No course description has been provided."}
-                  </p>
-                  <div className="sc-modal__facts">
-                    <div>
-                      <span>Batch</span>
-                      <strong>{selectedCourse.batch?.name || "—"}</strong>
-                    </div>
-                    <div>
-                      <span>Course type</span>
-                      <strong>{selectedCourse.course?.type || "—"}</strong>
-                    </div>
-                    <div>
-                      <span>Duration</span>
-                      <strong>
-                        {selectedCourse.course?.duration
-                          ? `${selectedCourse.course.duration} ${
-                              selectedCourse.course.durationUnit || "Months"
-                            }`
-                          : "Not specified"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Admission date</span>
-                      <strong>{formatDate(selectedCourse.admissionDate)}</strong>
-                    </div>
-                    <div>
-                      <span>Total fees</span>
-                      <strong>
-                        {formatCurrency(selectedCourse.fees?.total)}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Outstanding</span>
-                      <strong>
-                        {formatCurrency(selectedCourse.fees?.outstanding)}
-                      </strong>
-                    </div>
-                  </div>
-                  <div className="sc-modal__section">
-                    <h3>Eligibility</h3>
-                    <p>
-                      {plainText(selectedCourse.course?.eligibility) ||
-                        "No eligibility information has been provided."}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {detailsTab === "syllabus" && (
-                <div className="sc-modal__text">
-                  {plainText(selectedCourse.course?.syllabus) ? (
-                    <p>{plainText(selectedCourse.course.syllabus)}</p>
-                  ) : (
-                    <p>Syllabus details have not been added yet.</p>
-                  )}
-                </div>
-              )}
-
-              {detailsTab === "subjects" && (
-                Array.isArray(selectedCourse.course?.subjects) &&
-                selectedCourse.course.subjects.length > 0 ? (
-                  <div className="sc-modal__subjects">
-                    {selectedCourse.course.subjects.map((subject) => (
-                      <article key={subject.id}>
-                        <span className="sc-subject-icon">
-                          <FiBookOpen />
-                        </span>
-                        <div>
-                          <strong>{subject.name || "Subject"}</strong>
-                          {subject.code && <small>{subject.code}</small>}
-                          {plainText(subject.description) && (
-                            <p>{plainText(subject.description)}</p>
-                          )}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="sc-modal__empty">
-                    <FiBookOpen />
-                    <h3>No subjects linked</h3>
-                    <p>
-                      Subject details will appear here when they are linked to
-                      this course in the institute records.
-                    </p>
-                  </div>
-                )
-              )}
-            </div>
-
-            <footer className="sc-modal__footer">
-              <span>
-                Admission status: {selectedCourse.admissionStatus || "—"}
-              </span>
-              <button type="button" onClick={closeDetails}>
-                Close
-              </button>
-            </footer>
-          </section>
-        </div>
-      )}
+      
     </section>
   );
 }
