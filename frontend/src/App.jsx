@@ -21,6 +21,10 @@ import StudentLayout from "./layout/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentCourses from "./pages/student/StudentCourses";
 import StudentCourseDetails from "./pages/student/StudentCourseDetails";
+import StudentAttendance from "./pages/student/StudentAttendance";
+import StudentFees from "./pages/student/StudentFees";
+import StudentExams from "./pages/student/StudentExams";
+
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -582,6 +586,25 @@ const App = () => {
           element={<StudentCourseDetails />}
         />
 
+        <Route path="attendance" element={<StudentAttendance />} />
+        <Route path="fees" element={<StudentFees />} />
+
+        <Route path="exams" element={<StudentExams />} />
+
+        <Route
+          path="exams/:ticketId/instructions"
+          element={<StudentExams />}
+        />
+
+        <Route
+          path="exams/:ticketId/take"
+          element={<StudentExams />}
+        />
+
+        <Route
+          path="exams/results/:resultId"
+          element={<StudentExams />}
+        />
 
       </Route>
 

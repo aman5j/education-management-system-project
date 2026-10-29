@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Student from "../models/Student.js";
 import StudentAdmission from "../models/StudentAdmission.js";
+import Course from "../models/Course.js";
+import Payment from "../models/Payment.js";
 import Attendance from "../models/Attendance.js";
 import HallTicket from "../models/HallTicket.js";
 import ExamResult from "../models/ExamResult.js";
@@ -608,6 +610,484 @@ export const getMyCourses = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: { courses },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+/**
+ * GET /api/student-portal/recommended-courses
+ *
+ * Returns published courses that the authenticated student
+ * is not already enrolled in.
+ */
+export const getRecommendedCourses = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return fail(res, 403, "Student portal access only.");
+    }
+
+    const studentId = req.user.studentRecord;
+
+    if (!studentId) {
+      return fail(
+        res,
+        409,
+        "Your account is not linked to a student record."
+      );
+    }
+
+    const studentExists = await Student.exists({ _id: studentId });
+
+    if (!studentExists) {
+      return fail(res, 404, "Linked student record not found.");
+    }
+
+    const admissions = await StudentAdmission.find({
+      student_id: studentId,
+    })
+      .select("course_id")
+      .lean();
+
+    const enrolledIds = admissions
+      .map((admission) => admission.course_id)
+      .filter(Boolean);
+
+    const courses = await Course.find({
+      status: "Published",
+      ...(enrolledIds.length
+        ? { _id: { $nin: enrolledIds } }
+        : {}),
+    })
+      .select(
+        "courseTitle courseType courseCategory courseImage description syllabus eligibility duration durationUnit price mrp mrpVisible popular recommended displayOrder totalLectures subjects"
+      )
+      .populate("subjects", "subjectName subjectCode description status")
+      .sort({
+        recommended: -1,
+        popular: -1,
+        displayOrder: 1,
+        createdAt: -1,
+      })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        courses: courses.map((course) => ({
+          id: String(course._id),
+          title: course.courseTitle || "Untitled course",
+          type: course.courseType || "",
+          category: course.courseCategory || "",
+          image: course.courseImage || "",
+          description: course.description || "",
+          syllabus: course.syllabus || "",
+          eligibility: course.eligibility || "",
+          duration: course.duration ?? 0,
+          durationUnit: course.durationUnit || "Months",
+          price: Number(course.price || 0),
+          mrp: Number(course.mrp || 0),
+          mrpVisible: course.mrpVisible !== false,
+          popular: Boolean(course.popular),
+          recommended: Boolean(course.recommended),
+          totalLectures: Number(course.totalLectures || 0),
+          subjects: (course.subjects || []).map((subject) => ({
+            id: String(subject._id),
+            name: subject.subjectName || "Subject",
+            code: subject.subjectCode || "",
+            description: subject.description || "",
+          })),
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+/**
+ * GET /api/student-portal/attendance?month=YYYY-MM
+ *
+ * Returns attendance for the authenticated student's linked record only.
+ */
+export const getMyAttendance = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return res.status(403).json({
+        success: false,
+        message: "Student portal access only.",
+      });
+    }
+
+    const studentId = req.user.studentRecord;
+
+    if (!studentId || !mongoose.isValidObjectId(studentId)) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Your login account is not linked to a student record. Please contact your institute administrator.",
+      });
+    }
+
+    const studentExists = await Student.exists({ _id: studentId });
+
+    if (!studentExists) {
+      return res.status(404).json({
+        success: false,
+        message: "The linked student record could not be found.",
+      });
+    }
+
+    // Use the requested month, or the current month by default.
+    const requestedMonth =
+      typeof req.query.month === "string" ? req.query.month : "";
+
+    const month = requestedMonth || new Date().toISOString().slice(0, 7);
+
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return res.status(400).json({
+        success: false,
+        message: "month must use YYYY-MM format.",
+      });
+    }
+
+    const [yearNumber, monthNumber] = month.split("-").map(Number);
+    const monthStart = new Date(
+      Date.UTC(yearNumber, monthNumber - 1, 1)
+    );
+    const nextMonthStart = new Date(
+      Date.UTC(yearNumber, monthNumber, 1)
+    );
+
+    if (
+      monthStart.getUTCFullYear() !== yearNumber ||
+      monthStart.getUTCMonth() !== monthNumber - 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "The requested month is invalid.",
+      });
+    }
+
+    const studentObjectId = new mongoose.Types.ObjectId(
+      String(studentId)
+    );
+
+    const [
+      statusCounts,
+      courseStats,
+      monthRecords,
+      recentRecords,
+    ] = await Promise.all([
+      Attendance.aggregate([
+        { $match: { student_id: studentObjectId } },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+
+      Attendance.aggregate([
+        { $match: { student_id: studentObjectId } },
+        {
+          $group: {
+            _id: {
+              courseId: "$course_id",
+              status: "$status",
+            },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: "courses",
+            localField: "_id.courseId",
+            foreignField: "_id",
+            as: "course",
+          },
+        },
+        { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: "$_id.courseId",
+            courseName: {
+              $first: {
+                $ifNull: ["$course.courseTitle", "Course unavailable"],
+              },
+            },
+            total: { $sum: "$count" },
+            present: {
+              $sum: {
+                $cond: [
+                  { $in: ["$_id.status", ["Present", "Late"]] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            presentCount: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Present"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            absent: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Absent"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            leave: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Leave"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            late: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Late"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { courseName: 1 } },
+      ]),
+
+      Attendance.find({
+        student_id: studentObjectId,
+        attendance_date: {
+          $gte: monthStart,
+          $lt: nextMonthStart,
+        },
+      })
+        .populate("course_id", "courseTitle")
+        .populate("batch_id", "batch_name")
+        .sort({ attendance_date: 1 })
+        .lean(),
+
+      Attendance.find({ student_id: studentObjectId })
+        .populate("course_id", "courseTitle")
+        .populate("batch_id", "batch_name")
+        .sort({ attendance_date: -1, createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    const counts = {
+      Present: 0,
+      Absent: 0,
+      Leave: 0,
+      Late: 0,
+    };
+
+    for (const item of statusCounts) {
+      if (Object.prototype.hasOwnProperty.call(counts, item._id)) {
+        counts[item._id] = item.count;
+      }
+    }
+
+    const totalRecords = Object.values(counts).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
+    // Late counts as attended. Leave is not counted as attended.
+    const attendedRecords = counts.Present + counts.Late;
+    const attendancePercentage = totalRecords
+      ? Math.round((attendedRecords / totalRecords) * 100)
+      : 0;
+
+    const serializeRecord = (record) => ({
+      id: String(record._id),
+      date: record.attendance_date,
+      status: record.status,
+      remarks: record.remarks || "",
+      course: record.course_id?.courseTitle || "Course unavailable",
+      batch: record.batch_id?.batch_name || "Batch unavailable",
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          totalRecords,
+          attendedRecords,
+          attendancePercentage,
+          ...counts,
+        },
+        courseStats: courseStats.map((item) => ({
+          courseId: String(item._id),
+          course: item.courseName,
+          total: item.total,
+          present: item.presentCount,
+          absent: item.absent,
+          leave: item.leave,
+          late: item.late,
+          attended: item.present,
+          percentage: item.total
+            ? Math.round((item.present / item.total) * 100)
+            : 0,
+        })),
+        calendar: {
+          month,
+          days: monthRecords.map(serializeRecord),
+        },
+        recentRecords: recentRecords.map(serializeRecord),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+
+/**
+ * GET /api/student-portal/fees
+ *
+ * Read-only fee overview and payment history for the authenticated
+ * student's linked Student record.
+ */
+export const getMyFees = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return fail(res, 403, "Student portal access only.");
+    }
+
+    const studentId = req.user.studentRecord;
+
+    if (!studentId || !mongoose.isValidObjectId(studentId)) {
+      return fail(
+        res,
+        409,
+        "Your login account is not linked to a student record. Please contact your institute administrator."
+      );
+    }
+
+    const studentExists = await Student.exists({ _id: studentId });
+
+    if (!studentExists) {
+      return fail(res, 404, "Linked student record not found.");
+    }
+
+    const [admissions, payments] = await Promise.all([
+      StudentAdmission.find({ student_id: studentId })
+        .populate("course_id", "courseTitle courseType")
+        .populate("batch_id", "batch_name")
+        .sort({ admission_date: -1 })
+        .lean(),
+
+      Payment.find({ student_id: studentId })
+        .populate({
+          path: "admission_id",
+          select: "course_id admission_date final_amount paid_amount status",
+          populate: {
+            path: "course_id",
+            select: "courseTitle courseType",
+          },
+        })
+        .sort({ payment_date: -1, createdAt: -1 })
+        .limit(100)
+        .lean(),
+    ]);
+
+    const feeAdmissions = admissions.map((admission) => {
+      const total = Number(admission.final_amount || 0);
+      const paid = Number(admission.paid_amount || 0);
+      const outstanding = Math.max(0, total - paid);
+
+      return {
+        admissionId: String(admission._id),
+        course: admission.course_id?.courseTitle || "Course unavailable",
+        courseType: admission.course_id?.courseType || "",
+        batch: admission.batch_id?.batch_name || "Batch unavailable",
+        admissionDate: admission.admission_date || null,
+        admissionStatus: admission.status || "",
+        total: Number(total.toFixed(2)),
+        paid: Number(paid.toFixed(2)),
+        outstanding: Number(outstanding.toFixed(2)),
+        paymentPercentage: total > 0
+          ? Math.min(100, Math.round((paid / total) * 100))
+          : 0,
+      };
+    });
+
+    const paymentHistory = payments.map((payment) => ({
+      id: String(payment._id),
+      admissionId: payment.admission_id
+        ? String(payment.admission_id._id)
+        : "",
+      course: payment.admission_id?.course_id?.courseTitle
+        || "Course unavailable",
+      amount: Number(Number(payment.amount || 0).toFixed(2)),
+      date: payment.payment_date || null,
+      mode: payment.payment_mode || "",
+      receiptNo: payment.receipt_no || "",
+      status: payment.status || "Pending",
+      notes: payment.notes || "",
+    }));
+
+    const summary = feeAdmissions.reduce(
+      (totals, admission) => {
+        totals.totalFees += admission.total;
+        totals.totalPaid += admission.paid;
+        totals.outstanding += admission.outstanding;
+        return totals;
+      },
+      {
+        totalFees: 0,
+        totalPaid: 0,
+        outstanding: 0,
+      }
+    );
+
+    for (const key of ["totalFees", "totalPaid", "outstanding"]) {
+      summary[key] = Number(summary[key].toFixed(2));
+    }
+
+    const verifiedPayments = paymentHistory
+      .filter((payment) => payment.status === "Verified")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    const pendingPayments = paymentHistory
+      .filter((payment) => payment.status === "Pending")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          ...summary,
+          admissionCount: feeAdmissions.length,
+          verifiedPayments: Number(verifiedPayments.toFixed(2)),
+          pendingPayments: Number(pendingPayments.toFixed(2)),
+        },
+        admissions: feeAdmissions,
+        payments: paymentHistory,
+      },
     });
   } catch (error) {
     next(error);
