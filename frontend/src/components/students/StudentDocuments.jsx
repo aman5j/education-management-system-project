@@ -528,272 +528,180 @@ const StudentDocuments = ({
         }
       }}
     >
-      <div className="student-documents-modal">
-        <div className="student-documents-header">
-          <div>
-            <span className="student-documents-eyebrow">
-              STUDENT MANAGEMENT
-            </span>
+     
 
-            <h2>
-              Student Documents
-            </h2>
 
-            <p>
-              {fullName || "Student"}{" "}
-              • Roll No:{" "}
-              {student?.rollNo || "-"}
-            </p>
-          </div>
+    {error && (
+      <div className="student-documents-error" role="alert">
+        {error}
+      </div>
+    )}
 
-          {!inline && (
-            <button
-              type="button"
-              className="student-documents-close"
-              onClick={onClose}
-              aria-label="Close student documents"
-            >
-              <FiX />
-            </button>
-          )}
+    {success && (
+      <div className="student-documents-success" role="status">
+        {success}
+      </div>
+    )}
+
+   
+
+<div class="admin-profile-upload-box"><span class="admin-profile-upload-icon">
+  <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+  </span><strong>Upload Student Document</strong><small>Maximum 10 files per upload and 10 MB per file. Supported: PDF, JPG, JPEG, PNG, WEBP, DOC, DOCX, XLS and XLSX.
+
+</small><label class="admin-profile-browse-button">Browse files
+   <input
+        ref={inputRef}
+        type="file"
+        multiple
+        hidden
+        accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+        onChange={handleFileChange}
+      />
+    </label></div>
+
+    {/* Document count */}
+    <div className="student-documents-section-heading">
+      <strong>My Documents</strong>
+      <span>
+        {!student?._id ? draftFiles.length : documents.length}{" "}
+        {(!student?._id ? draftFiles.length : documents.length) === 1
+          ? ""
+          : ""}
+      </span>
+    </div>
+
+    {/* Draft files before student record exists */}
+    {!student?._id ? (
+      draftFiles.length === 0 ? (
+        <div className="student-documents-empty">
+          <FiFileText />
+          <strong>No Documents Uploaded Yet</strong>
+          <span>Click to Browse files button to add student documents.</span>
         </div>
-
-        <div className="student-documents-body">
-          {error && (
-            <div className="student-documents-error">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="student-documents-success">
-              {success}
-            </div>
-          )}
-
-          <div className="student-documents-toolbar">
-            <div>
-              <strong>
-                Uploaded Documents
-              </strong>
-
-              <span>
-                {!student?._id
-                  ? `${draftFiles.length} document${draftFiles.length === 1 ? "" : "s"}`
-                  : `${documents.length} document${documents.length === 1 ? "" : "s"}`}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              className="student-documents-upload-button"
-              disabled={uploading}
-              onClick={() =>
-                inputRef.current?.click()
-              }
+      ) : (
+        <div className="student-documents-grid">
+          {draftFiles.map((file, index) => (
+            <div
+              className="student-document-card"
+              key={`${file.name}-${file.size}-${index}`}
             >
-              <FiUpload />
+              <div className="student-document-file-icon">
+                {isImage(file) ? <FiFile /> : <FiFileText />}
+              </div>
 
-              {uploading
-                ? "Uploading..."
-                : "Upload Documents"}
-            </button>
-
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              hidden
-              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
-              onChange={
-                handleFileChange
-              }
-            />
-          </div>
-
-          <p className="student-documents-help">
-            Maximum 10 files per upload
-            and 10 MB per file.
-            Supported: PDF, JPG, JPEG,
-            PNG, WEBP, DOC, DOCX, XLS
-            and XLSX.
-          </p>
-
-
-          {!student?._id ? (
-            draftFiles.length === 0 ? (
-              <div className="student-documents-empty">
-                <FiFileText />
-
-                <strong>
-                  No documents selected
-                </strong>
-
+              <div className="student-document-info">
+                <strong title={file.name}>{file.name}</strong>
                 <span>
-                  Click "Upload Documents"
-                  to select student documents.
+                  {file.name.split(".").pop()?.toUpperCase()} 
+                  {" • "}
+                  {formatFileSize(file.size)}
+                </span>
+                <span className="student-document-date">
+                  Ready to upload
                 </span>
               </div>
-            ) : (
-              <div className="student-documents-list">
-                {draftFiles.map(
-                  (file, index) => (
-                    <div
-                      className="student-document-row"
-                      key={`${file.name}-${file.size}-${index}`}
-                    >
-                      <div className="student-document-icon">
-                        <FiFileText />
-                      </div>
 
-                      <div className="student-document-info">
-                        <strong title={file.name}>
-                          {file.name}
-                        </strong>
-
-                        <span>
-                          {formatFileSize(file.size)}
-                        </span>
-                      </div>
-
-                      <div className="student-document-actions">
-                        <button
-                          type="button"
-                          title="Remove"
-                          className="danger"
-                          onClick={() =>
-                            onDraftFilesChange?.((previous) =>
-                              previous.filter((_, i) => i !== index)
-                            )
-                          }
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
+              <div className="student-document-actions">
+                <button
+                  type="button"
+                  title="Remove selected file"
+                  aria-label={`Remove ${file.name}`}
+                  className="danger"
+                  onClick={() =>
+                    onDraftFilesChange?.((previous) =>
+                      previous.filter((_, i) => i !== index)
+                    )
+                  }
+                >
+                  <FiTrash2 />
+                </button>
               </div>
-            )
-          ) :
-
-          loading ? (
-            <div className="student-documents-loading">
-              Loading documents...
             </div>
-          ) : documents.length ===
-            0 ? (
-            <div className="student-documents-empty">
-              <FiFileText />
+          ))}
+        </div>
+      )
+    ) : loading ? (
+      <div className="student-documents-loading">
+        Loading documents...
+      </div>
+    ) : documents.length === 0 ? (
+      <div className="student-documents-empty">
+        <FiFileText />
+        <strong>No documents uploaded</strong>
+        <span>Choose files above to upload student documents.</span>
+      </div>
+    ) : (
+      <div className="student-documents-grid">
+        {documents.map((document) => (
+          <div className="student-document-card" key={document._id}>
+            <div
+              className={`student-document-file-icon ${
+                isImage(document)
+                  ? "image-file"
+                  : "regular-file"
+              }`}
+            >
+              {isImage(document) ? <FiFile /> : <FiFileText />}
+            </div>
 
-              <strong>
-                No documents uploaded
+            <div className="student-document-info">
+              <strong title={getDocumentName(document)}>
+                {getDocumentName(document)}
               </strong>
 
               <span>
-                Click "Upload Documents"
-                to add student documents.
+                {String(
+                  getDocumentName(document).split(".").pop() || "FILE"
+                ).toUpperCase()}
+                {" • "}
+                {formatFileSize(document.fileSize)}
+              </span>
+
+              <span className="student-document-date">
+                {formatDate(document.uploadedAt)}
               </span>
             </div>
-          ) : (
-            <div className="student-documents-list">
-              {documents.map(
-                (document) => (
-                  <div
-                    className="student-document-row"
-                    key={
-                      document._id
-                    }
-                  >
-                    <div className="student-document-icon">
-                      {isImage(
-                        document
-                      ) ? (
-                        <FiFile />
-                      ) : (
-                        <FiFileText />
-                      )}
-                    </div>
 
-                    <div className="student-document-info">
-                      <strong
-                        title={getDocumentName(
-                          document
-                        )}
-                      >
-                        {getDocumentName(
-                          document
-                        )}
-                      </strong>
+            <div className="student-document-actions">
+              <button
+                type="button"
+                title="View document"
+                aria-label={`View ${getDocumentName(document)}`}
+                disabled={busyDocumentId === document._id}
+                onClick={() => handleView(document)}
+              >
+                <FiEye />
+              </button>
 
-                      <span>
-                        {formatFileSize(
-                          document.fileSize
-                        )}{" "}
-                        •{" "}
-                        {formatDate(
-                          document.uploadedAt
-                        )}
-                      </span>
-                    </div>
+              <button
+                type="button"
+                title="Download document"
+                aria-label={`Download ${getDocumentName(document)}`}
+                disabled={busyDocumentId === document._id}
+                onClick={() => handleDownload(document)}
+              >
+                <FiDownload />
+              </button>
 
-                    <div className="student-document-actions">
-                      <button
-                        type="button"
-                        title="View"
-                        disabled={
-                          busyDocumentId ===
-                          document._id
-                        }
-                        onClick={() =>
-                          handleView(
-                            document
-                          )
-                        }
-                      >
-                        <FiEye />
-                      </button>
-
-                      <button
-                        type="button"
-                        title="Download"
-                        disabled={
-                          busyDocumentId ===
-                          document._id
-                        }
-                        onClick={() =>
-                          handleDownload(
-                            document
-                          )
-                        }
-                      >
-                        <FiDownload />
-                      </button>
-
-                      <button
-                        type="button"
-                        title="Delete"
-                        className="danger"
-                        disabled={
-                          busyDocumentId ===
-                          document._id
-                        }
-                        onClick={() =>
-                          handleDelete(
-                            document
-                          )
-                        }
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </div>
-                )
-              )}
+              <button
+                type="button"
+                title="Delete document"
+                aria-label={`Delete ${getDocumentName(document)}`}
+                className="danger"
+                disabled={busyDocumentId === document._id}
+                onClick={() => handleDelete(document)}
+              >
+                <FiTrash2 />
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        ))}
       </div>
+    )}
+  
+
+
     </div>
   );
 };

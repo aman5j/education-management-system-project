@@ -117,15 +117,8 @@ const EditStudent = () => {
 
   return (
     <div className="student-management-page">
-      <Breadcrumb currentPage="Edit Student" />
+      <div class="page-header"><div><h1> Edit Student</h1></div></div>
 
-      <div className="student-page-header">
-        <div>
-          <span className="student-page-eyebrow">STUDENT MANAGEMENT</span>
-          <h1>Edit Student</h1>
-          <p>Update student information.</p>
-        </div>
-      </div>
 
       <StudentForm
         initialData={student}
