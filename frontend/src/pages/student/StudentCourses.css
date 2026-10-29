@@ -832,3 +832,221 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+
+
+/* Recommended css  */
+
+/* Recommended courses */
+.student-recommendations {
+  margin-top: 30px;
+  padding: 22px;
+  border: 1px solid #e1eafb;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #f0f5ff, #f8faff 70%);
+}
+
+.student-recommendations__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.student-recommendations__heading h2 {
+  margin: 0;
+  color: #172b4d;
+  font-size: clamp(19px, 2vw, 24px);
+  letter-spacing: -0.025em;
+}
+
+.student-recommendations__heading p {
+  margin: 6px 0 0;
+  color: #71809a;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.student-recommendations__count {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid #d9e5ff;
+  border-radius: 8px;
+  background: #fff;
+  color: #315fc9;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.student-recommendations__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.student-recommendation-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e1e8f3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(25, 45, 80, 0.035);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.student-recommendation-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 22px rgba(25, 45, 80, 0.09);
+}
+
+.student-recommendation-card__cover {
+  position: relative;
+  height: 112px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e8efff, #dbe8ff);
+}
+
+.student-recommendation-card__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-recommendation-card__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #fff2d8;
+  color: #965b00;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.student-recommendation-card__body {
+  padding: 12px;
+}
+
+.student-recommendation-card__body h3 {
+  margin: 8px 0 0;
+  color: #24334c;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.student-recommendation-card__description {
+  display: -webkit-box;
+  min-height: 45px;
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #78869c;
+  font-size: 10px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.student-recommendation-card__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+  color: #71809a;
+  font-size: 9px;
+}
+
+.student-recommendation-card__details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.student-recommendation-card__details svg {
+  color: #3268dc;
+}
+
+.student-recommendation-card__price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #edf1f7;
+}
+
+.student-recommendation-card__price strong {
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.student-recommendation-card__price del {
+  color: #929db0;
+  font-size: 10px;
+}
+
+.student-recommendation-card__note {
+  margin: 8px 0 0;
+  color: #8995a8;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.student-recommendations__message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 100px;
+  padding: 20px;
+  border: 1px dashed #d8e3f5;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #71809a;
+  font-size: 12px;
+  text-align: center;
+}
+
+.student-recommendations__message svg {
+  flex: 0 0 auto;
+  color: #3268dc;
+}
+
+@media (max-width: 1100px) {
+  .student-recommendations__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .student-recommendations {
+    padding: 15px;
+  }
+
+  .student-recommendations__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-recommendation-card__cover {
+    height: 105px;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-recommendations__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-recommendation-card__cover {
+    height: 155px;
+  }
+
+  .student-recommendations__heading {
+    align-items: flex-start;
+  }
+}

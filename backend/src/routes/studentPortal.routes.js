@@ -4,6 +4,7 @@ import {
   createStudentAccount,
   getStudentDashboard,
   getMyCourses,
+  getRecommendedCourses,
   getStudentLoginStatus,
   linkStudentAccount,
   resetStudentLoginPassword,
@@ -52,5 +53,6 @@ router.use(authorizeRoles("student"));
 
 router.get("/dashboard", getStudentDashboard);
 router.get("/courses", getMyCourses);
+router.get("/recommended-courses", getRecommendedCourses);
 
 export default router;

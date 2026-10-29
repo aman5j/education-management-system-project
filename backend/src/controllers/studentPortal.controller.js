@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Student from "../models/Student.js";
 import StudentAdmission from "../models/StudentAdmission.js";
+import Course from "../models/Course.js";
 import Attendance from "../models/Attendance.js";
 import HallTicket from "../models/HallTicket.js";
 import ExamResult from "../models/ExamResult.js";
@@ -608,6 +609,98 @@ export const getMyCourses = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: { courses },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+/**
+ * GET /api/student-portal/recommended-courses
+ *
+ * Returns published courses that the authenticated student
+ * is not already enrolled in.
+ */
+export const getRecommendedCourses = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return fail(res, 403, "Student portal access only.");
+    }
+
+    const studentId = req.user.studentRecord;
+
+    if (!studentId) {
+      return fail(
+        res,
+        409,
+        "Your account is not linked to a student record."
+      );
+    }
+
+    const studentExists = await Student.exists({ _id: studentId });
+
+    if (!studentExists) {
+      return fail(res, 404, "Linked student record not found.");
+    }
+
+    const admissions = await StudentAdmission.find({
+      student_id: studentId,
+    })
+      .select("course_id")
+      .lean();
+
+    const enrolledIds = admissions
+      .map((admission) => admission.course_id)
+      .filter(Boolean);
+
+    const courses = await Course.find({
+      status: "Published",
+      ...(enrolledIds.length
+        ? { _id: { $nin: enrolledIds } }
+        : {}),
+    })
+      .select(
+        "courseTitle courseType courseCategory courseImage description syllabus eligibility duration durationUnit price mrp mrpVisible popular recommended displayOrder totalLectures subjects"
+      )
+      .populate("subjects", "subjectName subjectCode description status")
+      .sort({
+        recommended: -1,
+        popular: -1,
+        displayOrder: 1,
+        createdAt: -1,
+      })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        courses: courses.map((course) => ({
+          id: String(course._id),
+          title: course.courseTitle || "Untitled course",
+          type: course.courseType || "",
+          category: course.courseCategory || "",
+          image: course.courseImage || "",
+          description: course.description || "",
+          syllabus: course.syllabus || "",
+          eligibility: course.eligibility || "",
+          duration: course.duration ?? 0,
+          durationUnit: course.durationUnit || "Months",
+          price: Number(course.price || 0),
+          mrp: Number(course.mrp || 0),
+          mrpVisible: course.mrpVisible !== false,
+          popular: Boolean(course.popular),
+          recommended: Boolean(course.recommended),
+          totalLectures: Number(course.totalLectures || 0),
+          subjects: (course.subjects || []).map((subject) => ({
+            id: String(subject._id),
+            name: subject.subjectName || "Subject",
+            code: subject.subjectCode || "",
+            description: subject.description || "",
+          })),
+        })),
+      },
     });
   } catch (error) {
     next(error);

@@ -6,6 +6,7 @@ import {
   FiCalendar,
   FiRefreshCw,
   FiSearch,
+  FiClock,
   FiX,
 } from "react-icons/fi";
 
@@ -45,6 +46,10 @@ export default function StudentCourses() {
   const [search, setSearch] = useState("");
   const [imageErrors, setImageErrors] = useState({});
 
+  const [recommendedCourses, setRecommendedCourses] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
+  const [recommendationsError, setRecommendationsError] = useState("");
+
   const loadCourses = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -67,9 +72,36 @@ export default function StudentCourses() {
     }
   }, []);
 
+
+  const loadRecommendations = useCallback(async () => {
+  setRecommendationsLoading(true);
+  setRecommendationsError("");
+
+  try {
+    const response =
+      await studentPortalService.getRecommendedCourses();
+
+    setRecommendedCourses(
+      Array.isArray(response?.data?.courses)
+        ? response.data.courses
+        : []
+    );
+  } catch (err) {
+    setRecommendedCourses([]);
+    setRecommendationsError(
+      err?.response?.data?.message ||
+        "Unable to load recommended courses."
+    );
+  } finally {
+    setRecommendationsLoading(false);
+  }
+}, []);
+
+
   useEffect(() => {
     loadCourses();
-  }, [loadCourses]);
+    loadRecommendations();
+  }, [loadCourses, loadRecommendations]);
 
   const activeCourses = useMemo(
     () =>
@@ -133,7 +165,10 @@ export default function StudentCourses() {
         <button
           type="button"
           className="student-courses__refresh"
-          onClick={loadCourses}
+          onClick={() => {
+            loadCourses();
+            loadRecommendations();
+          }}
           disabled={loading}
         >
           <FiRefreshCw className={loading ? "student-courses__spin" : ""} />
@@ -349,6 +384,157 @@ export default function StudentCourses() {
         </div>
       )}
 
+      <section className="student-recommendations">
+        <div className="student-recommendations__heading">
+          <div>
+            <span className="student-courses__eyebrow">
+              DISCOVER
+            </span>
+            <h2>Recommended Courses</h2>
+            <p>
+              Explore other courses offered by your institute.
+            </p>
+          </div>
+
+          <span className="student-recommendations__count">
+            {recommendedCourses.length} available
+          </span>
+        </div>
+
+        {recommendationsError && (
+          <div className="student-courses__error" role="alert">
+            <div>
+              <strong>Recommendations unavailable</strong>
+              <p>{recommendationsError}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={loadRecommendations}
+              disabled={recommendationsLoading}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {recommendationsLoading ? (
+          <div className="student-recommendations__message">
+            <FiRefreshCw className="student-courses__spin" />
+            <span>Finding courses for you...</span>
+          </div>
+        ) : !recommendationsError &&
+          recommendedCourses.length === 0 ? (
+          <div className="student-recommendations__message">
+            <FiBookOpen />
+            <span>
+              You’re all caught up! No additional published courses
+              are available right now.
+            </span>
+          </div>
+        ) : (
+          <div className="student-recommendations__grid">
+            {recommendedCourses.map((course) => {
+              const imageUrl = course.image
+                ? getAssetUrl(course.image)
+                : "";
+
+              const imageKey = `recommended-${course.id}`;
+              const imageFailed = Boolean(imageErrors[imageKey]);
+
+              return (
+                <article
+                  className="student-recommendation-card"
+                  key={course.id}
+                >
+                  <div className="student-recommendation-card__cover">
+                    {imageUrl && !imageFailed ? (
+                      <img
+                        src={imageUrl}
+                        alt={`${course.title} course`}
+                        loading="lazy"
+                        onError={() =>
+                          setImageErrors((previous) => ({
+                            ...previous,
+                            [imageKey]: true,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <div className="student-course-card__cover-fallback">
+                        <FiBookOpen />
+                      </div>
+                    )}
+
+                    {course.popular && (
+                      <span className="student-recommendation-card__badge">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="student-recommendation-card__body">
+                    <div className="student-course-card__meta">
+                      {course.category && <span>{course.category}</span>}
+                      {course.type && <span>{course.type}</span>}
+                    </div>
+
+                    <h3>{course.title}</h3>
+
+                    <p className="student-recommendation-card__description">
+                      {course.description
+                        ? course.description
+                            .replace(/<[^>]*>/g, " ")
+                            .replace(/&nbsp;/gi, " ")
+                            .replace(/&amp;/gi, "&")
+                            .replace(/&lt;/gi, "<")
+                            .replace(/&gt;/gi, ">")
+                            .replace(/&#39;|&apos;/gi, "'")
+                            .replace(/&quot;/gi, '"')
+                            .replace(/\s+/g, " ")
+                            .trim()
+                        : "Contact your institute to learn more about this course."}
+                    </p>
+
+                    <div className="student-recommendation-card__details">
+                      <span>
+                        <FiClock />
+                        {course.duration
+                          ? `${course.duration} ${course.durationUnit || "Months"}`
+                          : "Flexible duration"}
+                      </span>
+
+                      {course.totalLectures > 0 && (
+                        <span>
+                          <FiBookOpen />
+                          {course.totalLectures} lectures
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="student-recommendation-card__price">
+                      <strong>
+                        {formatCurrency(course.price)}
+                      </strong>
+
+                      {course.mrpVisible &&
+                        course.mrp > course.price && (
+                          <del>{formatCurrency(course.mrp)}</del>
+                        )}
+                    </div>
+
+                    <p className="student-recommendation-card__note">
+                      Available through your institute
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+
       {!loading && !error && courses.length > 0 && (
         <p className="student-courses__footnote">
           Showing your own admission-linked course records. Course content
@@ -356,178 +542,8 @@ export default function StudentCourses() {
         </p>
       )}
 
-      {/* {selectedCourse && (
-        <div
-          className="student-course-modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDetails();
-          }}
-        >
-          <section
-            className="student-course-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="student-course-modal-title"
-          >
-            <header className="student-course-modal__header">
-              <div>
-                <span>COURSE DETAILS</span>
-                <h2 id="student-course-modal-title">
-                  {selectedCourse.course?.title || "Course details"}
-                </h2>
-              </div>
+      
 
-              <button
-                type="button"
-                onClick={closeDetails}
-                aria-label="Close course details"
-              >
-                <FiX />
-              </button>
-            </header>
-
-            <nav className="student-course-modal__tabs" aria-label="Course details tabs">
-              <button
-                type="button"
-                className={detailsTab === "overview" ? "is-active" : ""}
-                onClick={() => setDetailsTab("overview")}
-              >
-                <FiBookOpen /> Overview
-              </button>
-              <button
-                type="button"
-                className={detailsTab === "syllabus" ? "is-active" : ""}
-                onClick={() => setDetailsTab("syllabus")}
-              >
-                <FiFileText /> Syllabus
-              </button>
-              <button
-                type="button"
-                className={detailsTab === "subjects" ? "is-active" : ""}
-                onClick={() => setDetailsTab("subjects")}
-              >
-                <FiCheckCircle /> Subjects
-              </button>
-            </nav>
-
-            <div className="student-course-modal__content">
-              {detailsTab === "overview" && (
-                <div className="student-course-modal__overview">
-                  <p>
-                    {selectedCourse.course?.description ||
-                      "No course description has been added yet."}
-                  </p>
-
-                  <div className="student-course-modal__facts">
-                    <div>
-                      <span>Batch</span>
-                      <strong>
-                        {selectedCourse.batch?.name || "Not available"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Course type</span>
-                      <strong>
-                        {selectedCourse.course?.type || "Not specified"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Duration</span>
-                      <strong>
-                        {selectedCourse.course?.duration
-                          ? `${selectedCourse.course.duration} ${
-                              selectedCourse.course.durationUnit || ""
-                            }`
-                          : "Not specified"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Admission date</span>
-                      <strong>{formatDate(selectedCourse.admissionDate)}</strong>
-                    </div>
-                    <div>
-                      <span>Total fees</span>
-                      <strong>
-                        {formatCurrency(selectedCourse.fees?.total)}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Outstanding</span>
-                      <strong>
-                        {formatCurrency(selectedCourse.fees?.outstanding)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {selectedCourse.course?.eligibility && (
-                    <div className="student-course-modal__section">
-                      <h3>Eligibility</h3>
-                      <p>{selectedCourse.course.eligibility}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {detailsTab === "syllabus" && (
-                <div className="student-course-modal__text">
-                  {selectedCourse.course?.syllabus?.trim() ? (
-                    <p>{selectedCourse.course.syllabus}</p>
-                  ) : (
-                    <div className="student-course-modal__empty">
-                      <FiFileText />
-                      <h3>Syllabus not available</h3>
-                      <p>
-                        The institute has not added syllabus details for this
-                        course yet.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {detailsTab === "subjects" && (
-                <div className="student-course-modal__subjects">
-                  {selectedCourse.course?.subjects?.length ? (
-                    selectedCourse.course.subjects.map((subject) => (
-                      <article key={subject.id}>
-                        <span className="student-course-modal__subject-icon">
-                          <FiBookOpen />
-                        </span>
-                        <div>
-                          <strong>{subject.name}</strong>
-                          {subject.code && <small>{subject.code}</small>}
-                          {subject.description && (
-                            <p>{subject.description}</p>
-                          )}
-                        </div>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="student-course-modal__empty">
-                      <FiBookOpen />
-                      <h3>No subjects linked</h3>
-                      <p>
-                        Subjects will appear here when they are linked to this
-                        course in the institute's course settings.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <footer className="student-course-modal__footer">
-              <span>
-                <FiClock />
-                Admission: {selectedCourse.admissionStatus || "Unknown"}
-              </span>
-              <button type="button" onClick={closeDetails}>
-                Close
-              </button>
-            </footer>
-          </section>
-        </div>
-      )} */}
 
     </section>
   );

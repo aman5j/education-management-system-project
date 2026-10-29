@@ -10,6 +10,15 @@ const studentPortalService = {
     const response = await api.get("/student-portal/courses");
     return response.data;
   },
+
+  async getRecommendedCourses() {
+    const response = await api.get(
+      "/student-portal/recommended-courses"
+    );
+
+    return response.data;
+  },
+
 };
 
 export default studentPortalService;
