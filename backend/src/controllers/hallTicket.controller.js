@@ -3,6 +3,8 @@ import Exam from "../models/Exam.js";
 import Course from "../models/Course.js";
 import Student from "../models/Student.js";
 import HallTicket from "../models/HallTicket.js";
+import StudentAdmission from "../models/StudentAdmission.js";
+
 
 const validId = (value) => mongoose.isValidObjectId(value);
 
@@ -126,6 +128,65 @@ export const getHallTickets = async (req, res, next) => {
   }
 };
 
+
+/**
+ * GET /api/hall-tickets/eligible-students?course_id=COURSE_ID
+ *
+ * Returns active students who have an active admission
+ * for the selected course.
+ */
+export const getEligibleHallTicketStudents = async (req, res, next) => {
+  try {
+    const { course_id } = req.query;
+
+    if (!mongoose.isValidObjectId(course_id)) {
+      return fail(res, 400, "Please select a valid course.");
+    }
+
+    const courseExists = await Course.exists({ _id: course_id });
+
+    if (!courseExists) {
+      return fail(res, 404, "Course not found.");
+    }
+
+    const admissions = await StudentAdmission.find({
+      course_id,
+      status: "Active",
+    })
+      .select("student_id")
+      .lean();
+
+    const studentIds = [
+      ...new Set(
+        admissions.map((admission) => String(admission.student_id))
+      ),
+    ];
+
+    if (studentIds.length === 0) {
+      return res.json({
+        success: true,
+        data: { students: [] },
+      });
+    }
+
+    const students = await Student.find({
+      _id: { $in: studentIds },
+      status: "active",
+    })
+      .select("_id firstName surname rollNo mobile email status")
+      .sort({ firstName: 1, surname: 1 })
+      .lean();
+
+    return res.json({
+      success: true,
+      data: { students },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const generateHallTickets = async (req, res, next) => {
   try {
     const {
@@ -200,7 +261,6 @@ export const generateHallTickets = async (req, res, next) => {
 
     const students = await Student.find({
       _id: { $in: uniqueStudentIds },
-      course_id,
       status: "active",
     })
       .select("_id rollNo firstName surname")
@@ -210,7 +270,31 @@ export const generateHallTickets = async (req, res, next) => {
       return fail(
         res,
         400,
-        "One or more selected students are inactive or do not belong to this course."
+        "One or more selected students are inactive or could not be found."
+      );
+    }
+
+    const activeAdmissions = await StudentAdmission.find({
+      course_id,
+      status: "Active",
+      student_id: { $in: uniqueStudentIds },
+    })
+      .select("student_id")
+      .lean();
+
+    const eligibleStudentIds = new Set(
+      activeAdmissions.map((admission) => String(admission.student_id))
+    );
+
+    const ineligibleStudents = uniqueStudentIds.filter(
+      (studentId) => !eligibleStudentIds.has(String(studentId))
+    );
+
+    if (ineligibleStudents.length > 0) {
+      return fail(
+        res,
+        400,
+        "Every selected student must have an active admission for the selected course."
       );
     }
 

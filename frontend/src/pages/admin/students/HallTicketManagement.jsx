@@ -2,6 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiDownload } from "react-icons/fi";
 import { generateHallTicketPDF } from "../../../utils/generateHallTicketPDF";
 import { getExam } from "../../../services/examService";
+// import { getStudents } from "../../../services/studentService";
+
+import {
+  getHallTickets,
+  getEligibleHallTicketStudents,
+  generateHallTickets,
+  cancelHallTicket,
+} from "../../../services/hallTicketService";
 
 import {
   FiCheckCircle,
@@ -15,11 +23,11 @@ import {
 import { getCourses } from "../../../services/courseService";
 import { getExams } from "../../../services/examService";
 import { getStudents } from "../../../services/studentService";
-import {
-  getHallTickets,
-  generateHallTickets,
-  cancelHallTicket,
-} from "../../../services/hallTicketService";
+// import {
+//   getHallTickets,
+//   generateHallTickets,
+//   cancelHallTicket,
+// } from "../../../services/hallTicketService";
 
 import "../../../styles/HallTicketManagement.css";
 
@@ -220,65 +228,53 @@ export default function HallTicketManagement() {
     loadTickets();
   }, [loadTickets]);
 
-  const loadExamsForCourse = async (nextCourseId) => {
-    setCourseId(nextCourseId);
-    setExamId("");
-    setExams([]);
-    setStudents([]);
-    setSelectedStudents([]);
-    setStudentSearch("");
-    setError("");
-    setSuccess("");
+const loadExamsForCourse = async (nextCourseId) => {
+  setCourseId(nextCourseId);
+  setExamId("");
+  setExams([]);
+  setStudents([]);
+  setSelectedStudents([]);
+  setStudentSearch("");
+  setError("");
+  setSuccess("");
 
-    if (!nextCourseId) return;
+  if (!nextCourseId) return;
 
-    setLoadingExams(true);
-    setLoadingStudents(true);
+  setLoadingExams(true);
+  setLoadingStudents(true);
 
-    try {
-      const [examResponse, studentResponse] = await Promise.all([
-        getExams({
-          course_id: nextCourseId,
-          page: 1,
-          limit: 100,
-        }),
-        getStudents({
-          course_id: nextCourseId,
-          status: "active",
-          page: 1,
-          limit: 100,
-          sortBy: "firstName",
-          sortOrder: "asc",
-        }),
-      ]);
+  try {
+    const [examResponse, studentResponse] = await Promise.all([
+      getExams({
+        course_id: nextCourseId,
+        page: 1,
+        limit: 100,
+      }),
+      getEligibleHallTicketStudents(nextCourseId),
+    ]);
 
-      const examRoot = unwrap(examResponse);
-      const examData = examRoot?.data ?? examRoot;
-      setExams(examData?.exams || getArray(examResponse, ["exams"]));
+    const examRoot = unwrap(examResponse);
+    const examData = examRoot?.data ?? examRoot;
 
-      const studentRoot = unwrap(studentResponse);
-      const studentData = studentRoot?.data ?? studentRoot;
-      const rows =
-        studentData?.students || getArray(studentResponse, ["students"]);
+    setExams(
+      examData?.exams || getArray(examResponse, ["exams"])
+    );
 
-      setStudents(
-        rows.filter(
-          (student) =>
-            student.status === "active" &&
-            String(
-              typeof student.course_id === "object"
-                ? student.course_id?._id
-                : student.course_id
-            ) === String(nextCourseId)
-        )
-      );
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoadingExams(false);
-      setLoadingStudents(false);
-    }
-  };
+    const eligibleStudents = getArray(studentResponse, ["students"]);
+
+    setStudents(
+      eligibleStudents.filter(
+        (student) => student.status === "active"
+      )
+    );
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setLoadingExams(false);
+    setLoadingStudents(false);
+  }
+};
+
 
   const toggleStudent = (id, checked) => {
     setSelectedStudents((current) =>

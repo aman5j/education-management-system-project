@@ -5,9 +5,12 @@
   --se-border: #e1e9f6;
   --se-bg: #f4f7fc;
   --se-green: #059669;
+
   width: 100%;
+  max-width: 1600px;
   min-width: 0;
-  padding: 4px 0 24px;
+  margin: 0 auto;
+  padding: 24px;
   color: var(--se-navy);
   box-sizing: border-box;
 }
@@ -904,9 +907,15 @@
   }
 }
 
+@media (max-width: 1100px) {
+  .student-exams {
+    padding: 20px;
+  }
+}
+
 @media (max-width: 700px) {
   .student-exams {
-    padding-top: 2px;
+    padding: 14px;
   }
 
   .se-stat-grid {
