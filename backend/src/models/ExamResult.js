@@ -90,6 +90,30 @@ const examResultSchema = new mongoose.Schema(
       default: "Draft",
       index: true,
     },
+
+    // Online exam attempt tracking for the Student Portal.
+    attemptStatus: {
+      type: String,
+      enum: ["NotStarted", "InProgress", "Submitted"],
+      default: "NotStarted",
+      index: true,
+    },
+
+    startedAt: {
+      type: Date,
+      default: null,
+    },
+
+    submittedAt: {
+      type: Date,
+      default: null,
+    },
+
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
+
     publishedAt: {
       type: Date,
       default: null,

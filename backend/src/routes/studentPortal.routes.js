@@ -1,6 +1,15 @@
 import express from "express";
 
 import {
+  getMyExams,
+  getMyExamInstructions,
+  startMyExam,
+  submitMyExam,
+  getMyExamResults,
+  getMyExamResultById,
+} from "../controllers/studentExam.controller.js";
+
+import {
   createStudentAccount,
   getStudentDashboard,
   getMyCourses,
@@ -58,5 +67,12 @@ router.get("/courses", getMyCourses);
 router.get("/recommended-courses", getRecommendedCourses);
 router.get("/attendance", getMyAttendance);
 router.get("/fees", getMyFees);
+
+router.get("/exams", getMyExams);
+router.get("/exams/results", getMyExamResults);
+router.get("/exams/results/:resultId", getMyExamResultById);
+router.get("/exams/:ticketId/instructions", getMyExamInstructions);
+router.post("/exams/:ticketId/start", startMyExam);
+router.post("/exams/:ticketId/submit", submitMyExam);
 
 export default router;

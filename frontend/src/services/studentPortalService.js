@@ -32,6 +32,46 @@ const studentPortalService = {
     return response.data;
   },
 
+
+  async getMyExams() {
+    const response = await api.get("/student-portal/exams");
+    return response.data;
+  },
+
+  async getExamInstructions(ticketId) {
+    const response = await api.get(
+      `/student-portal/exams/${ticketId}/instructions`
+    );
+    return response.data;
+  },
+
+  async startMyExam(ticketId) {
+    const response = await api.post(
+      `/student-portal/exams/${ticketId}/start`
+    );
+    return response.data;
+  },
+
+  async submitMyExam(ticketId, answers) {
+    const response = await api.post(
+      `/student-portal/exams/${ticketId}/submit`,
+      { answers }
+    );
+    return response.data;
+  },
+
+  async getMyExamResults() {
+    const response = await api.get("/student-portal/exams/results");
+    return response.data;
+  },
+
+  async getMyExamResult(resultId) {
+    const response = await api.get(
+      `/student-portal/exams/results/${resultId}`
+    );
+    return response.data;
+  },
+
 };
 
 export default studentPortalService;
