@@ -1,5 +1,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiArrowRight,
   FiBookOpen,
@@ -108,6 +109,9 @@ function CourseImage({ course, imageKey, imageErrors, setImageErrors }) {
 }
 
 export default function StudentCourses() {
+  const navigate = useNavigate();
+
+  
   const [courses, setCourses] = useState([]);
   const [recommendedCourses, setRecommendedCourses] = useState([]);
   const [dashboard, setDashboard] = useState(null);
