@@ -9,7 +9,7 @@ import {
   FiFileText,
   FiRefreshCw,
   FiSearch,
-  FiWallet,
+  FiDollarSign,
 } from "react-icons/fi";
 
 import studentPortalService from "../../services/studentPortalService";
@@ -201,7 +201,7 @@ export default function StudentFees() {
 
       <section className="sf-summary-grid">
         <SummaryCard
-          icon={FiWallet}
+          icon={FiDollarSign}
           title="Total Fees"
           value={money(summary.totalFees)}
           caption={`${summary.admissionCount} admission(s)`}
