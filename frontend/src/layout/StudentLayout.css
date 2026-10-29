@@ -697,3 +697,29 @@
 .student-layout__profile-menu-heading > div span {
   overflow-wrap: anywhere;
 }
+
+
+
+
+/* layout fix 
+
+*/
+
+.student-layout__main {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.student-layout__content {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .student-layout__content {
+    padding: 14px;
+  }
+}
