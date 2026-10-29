@@ -20,7 +20,11 @@ import {
 const navigation = [
   { label: "Dashboard", icon: FiGrid, path: "/student/dashboard" },
   { label: "My Courses", icon: FiBookOpen, path: "/student/courses" },
-  { label: "My Attendance", icon: FiActivity, phase: 4 },
+  {
+    label: "My Attendance",
+    icon: FiActivity,
+    path: "/student/attendance",
+  },
   { label: "Fees & Payments", icon: FiCreditCard, phase: 5 },
   { label: "Exams & Results", icon: FiClipboard, phase: 6 },
   { label: "Certificates & Achievements", icon: FiCheckCircle, phase: 7 },

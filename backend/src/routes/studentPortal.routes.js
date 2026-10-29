@@ -8,6 +8,7 @@ import {
   getStudentLoginStatus,
   linkStudentAccount,
   resetStudentLoginPassword,
+  getMyAttendance,
 } from "../controllers/studentPortal.controller.js";
 
 import {
@@ -54,5 +55,6 @@ router.use(authorizeRoles("student"));
 router.get("/dashboard", getStudentDashboard);
 router.get("/courses", getMyCourses);
 router.get("/recommended-courses", getRecommendedCourses);
+router.get("/attendance", getMyAttendance);
 
 export default router;

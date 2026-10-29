@@ -19,6 +19,14 @@ const studentPortalService = {
     return response.data;
   },
 
+  async getMyAttendance(month) {
+    const response = await api.get("/student-portal/attendance", {
+      params: month ? { month } : {},
+    });
+
+    return response.data;
+  },
+
 };
 
 export default studentPortalService;

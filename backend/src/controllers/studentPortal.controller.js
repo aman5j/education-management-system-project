@@ -706,3 +706,256 @@ export const getRecommendedCourses = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+
+/**
+ * GET /api/student-portal/attendance?month=YYYY-MM
+ *
+ * Returns attendance for the authenticated student's linked record only.
+ */
+export const getMyAttendance = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return res.status(403).json({
+        success: false,
+        message: "Student portal access only.",
+      });
+    }
+
+    const studentId = req.user.studentRecord;
+
+    if (!studentId || !mongoose.isValidObjectId(studentId)) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Your login account is not linked to a student record. Please contact your institute administrator.",
+      });
+    }
+
+    const studentExists = await Student.exists({ _id: studentId });
+
+    if (!studentExists) {
+      return res.status(404).json({
+        success: false,
+        message: "The linked student record could not be found.",
+      });
+    }
+
+    // Use the requested month, or the current month by default.
+    const requestedMonth =
+      typeof req.query.month === "string" ? req.query.month : "";
+
+    const month = requestedMonth || new Date().toISOString().slice(0, 7);
+
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return res.status(400).json({
+        success: false,
+        message: "month must use YYYY-MM format.",
+      });
+    }
+
+    const [yearNumber, monthNumber] = month.split("-").map(Number);
+    const monthStart = new Date(
+      Date.UTC(yearNumber, monthNumber - 1, 1)
+    );
+    const nextMonthStart = new Date(
+      Date.UTC(yearNumber, monthNumber, 1)
+    );
+
+    if (
+      monthStart.getUTCFullYear() !== yearNumber ||
+      monthStart.getUTCMonth() !== monthNumber - 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "The requested month is invalid.",
+      });
+    }
+
+    const studentObjectId = new mongoose.Types.ObjectId(
+      String(studentId)
+    );
+
+    const [
+      statusCounts,
+      courseStats,
+      monthRecords,
+      recentRecords,
+    ] = await Promise.all([
+      Attendance.aggregate([
+        { $match: { student_id: studentObjectId } },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+
+      Attendance.aggregate([
+        { $match: { student_id: studentObjectId } },
+        {
+          $group: {
+            _id: {
+              courseId: "$course_id",
+              status: "$status",
+            },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: "courses",
+            localField: "_id.courseId",
+            foreignField: "_id",
+            as: "course",
+          },
+        },
+        { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: "$_id.courseId",
+            courseName: {
+              $first: {
+                $ifNull: ["$course.courseTitle", "Course unavailable"],
+              },
+            },
+            total: { $sum: "$count" },
+            present: {
+              $sum: {
+                $cond: [
+                  { $in: ["$_id.status", ["Present", "Late"]] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            presentCount: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Present"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            absent: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Absent"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            leave: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Leave"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+            late: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$_id.status", "Late"] },
+                  "$count",
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { courseName: 1 } },
+      ]),
+
+      Attendance.find({
+        student_id: studentObjectId,
+        attendance_date: {
+          $gte: monthStart,
+          $lt: nextMonthStart,
+        },
+      })
+        .populate("course_id", "courseTitle")
+        .populate("batch_id", "batch_name")
+        .sort({ attendance_date: 1 })
+        .lean(),
+
+      Attendance.find({ student_id: studentObjectId })
+        .populate("course_id", "courseTitle")
+        .populate("batch_id", "batch_name")
+        .sort({ attendance_date: -1, createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    const counts = {
+      Present: 0,
+      Absent: 0,
+      Leave: 0,
+      Late: 0,
+    };
+
+    for (const item of statusCounts) {
+      if (Object.prototype.hasOwnProperty.call(counts, item._id)) {
+        counts[item._id] = item.count;
+      }
+    }
+
+    const totalRecords = Object.values(counts).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
+    // Late counts as attended. Leave is not counted as attended.
+    const attendedRecords = counts.Present + counts.Late;
+    const attendancePercentage = totalRecords
+      ? Math.round((attendedRecords / totalRecords) * 100)
+      : 0;
+
+    const serializeRecord = (record) => ({
+      id: String(record._id),
+      date: record.attendance_date,
+      status: record.status,
+      remarks: record.remarks || "",
+      course: record.course_id?.courseTitle || "Course unavailable",
+      batch: record.batch_id?.batch_name || "Batch unavailable",
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          totalRecords,
+          attendedRecords,
+          attendancePercentage,
+          ...counts,
+        },
+        courseStats: courseStats.map((item) => ({
+          courseId: String(item._id),
+          course: item.courseName,
+          total: item.total,
+          present: item.presentCount,
+          absent: item.absent,
+          leave: item.leave,
+          late: item.late,
+          attended: item.present,
+          percentage: item.total
+            ? Math.round((item.present / item.total) * 100)
+            : 0,
+        })),
+        calendar: {
+          month,
+          days: monthRecords.map(serializeRecord),
+        },
+        recentRecords: recentRecords.map(serializeRecord),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

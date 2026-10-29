@@ -21,6 +21,7 @@ import StudentLayout from "./layout/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentCourses from "./pages/student/StudentCourses";
 import StudentCourseDetails from "./pages/student/StudentCourseDetails";
+import StudentAttendance from "./pages/student/StudentAttendance";
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -582,6 +583,7 @@ const App = () => {
           element={<StudentCourseDetails />}
         />
 
+        <Route path="attendance" element={<StudentAttendance />} />
 
       </Route>
 
