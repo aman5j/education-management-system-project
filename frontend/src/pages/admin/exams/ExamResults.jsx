@@ -11,6 +11,8 @@ import {
   FiSend,
 } from "react-icons/fi";
 
+import { useNavigate } from "react-router-dom";
+
 import { getExams, getExam } from "../../../services/examService";
 import { getExamCandidates, saveExamResult, publishExamResult } from "../../../services/examResultService";
 import { getSubjectQuestionBank } from "../../../services/subjectQuestionBankService";
@@ -45,6 +47,7 @@ const formatDate = (value) => {
 };
 
 export default function ExamResults() {
+  const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [examId, setExamId] = useState("");
   const [exam, setExam] = useState(null);
@@ -432,9 +435,15 @@ export default function ExamResults() {
                           <button
                             type="button"
                             className="er-secondary-btn er-small-btn"
-                            onClick={() => openStudent(student)}
+                            onClick={() => {
+                              if (student.result?._id) {
+                                navigate(`/admin/exams/results/${student.result._id}/review`);
+                              } else {
+                                openStudent(student);
+                              }
+                            }}
                           >
-                            {student.result ? "Review / Edit" : "Enter Result"}
+                            {student.result ? "Review Answer Sheet" : "Enter Result"}
                           </button>
                         </td>
                       </tr>
