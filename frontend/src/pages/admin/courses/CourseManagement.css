@@ -569,7 +569,7 @@
 
 .course-subject-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 14px;
 }
@@ -625,4 +625,32 @@
   border-radius: 8px;
   background: #fef2f2;
   color: #b91c1c;
+}
+
+
+.course-subject-list .student-document-file-icon {
+    width: 50px;
+    height: 50px;
+    flex: 0 0 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: #eff4fc;
+    color: #536a8c;
+    font-size: 22px;
+}
+.course-subject-list .student-document-card {
+    min-height: 60px;
+    cursor: pointer;
+}
+.course-subject-list .student-document-card:has(input:checked) {
+    border-color: #2563eb;
+} 
+.course-subject-list input {
+    width: 17px;
+    height: 17px;
+}
+.course-subject-list .student-document-info{
+  flex: inherit;
 }

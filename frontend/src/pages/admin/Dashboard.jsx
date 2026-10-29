@@ -174,18 +174,18 @@ const Dashboard = () => {
         icon: GiExpense,
         type: "danger",
       },
-      {
-        title: "Admissions This Month",
-        value: summary?.newAdmissions ?? 0,
-        icon: FiClipboard,
-        type: "bluewarning",
-      },
-      {
-        title: "Outstanding Fees",
-        value: formatCurrency(summary?.pendingFees),
-        icon: FiDollarSign,
-        type: "danger",
-      },
+      // {
+      //   title: "Admissions This Month",
+      //   value: summary?.newAdmissions ?? 0,
+      //   icon: FiClipboard,
+      //   type: "bluewarning",
+      // },
+      // {
+      //   title: "Outstanding Fees",
+      //   value: formatCurrency(summary?.pendingFees),
+      //   icon: FiDollarSign,
+      //   type: "danger",
+      // },
     ],
     [summary]
   );

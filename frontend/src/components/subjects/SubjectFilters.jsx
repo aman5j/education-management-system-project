@@ -7,8 +7,8 @@ export default function SubjectFilters({ filters, onChange, onReset }) {
   };
 
   return (
-    <div className="subject-filters subject-filters-independent">
-      <div className="subject-filter-group subject-search">
+    <div className="common-card-filters">
+      <div className="input-search">
         <label htmlFor="subject-search">Search</label>
         <div className="subject-search-box">
           <FiSearch aria-hidden="true" />
@@ -24,7 +24,7 @@ export default function SubjectFilters({ filters, onChange, onReset }) {
         </div>
       </div>
 
-      <div className="subject-filter-group">
+      <div className="input-search">
         <label htmlFor="subject-status-filter">Status</label>
         <select
           id="subject-status-filter"
@@ -38,7 +38,7 @@ export default function SubjectFilters({ filters, onChange, onReset }) {
         </select>
       </div>
 
-      <button type="button" className="subject-reset-btn" onClick={onReset}>
+      <button type="button" className="themebtn themebtnline" onClick={onReset}>
         <FiRefreshCw aria-hidden="true" />
         Reset
       </button>
