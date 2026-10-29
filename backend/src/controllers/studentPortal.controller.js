@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import Student from "../models/Student.js";
 import StudentAdmission from "../models/StudentAdmission.js";
 import Course from "../models/Course.js";
+import Payment from "../models/Payment.js";
 import Attendance from "../models/Attendance.js";
 import HallTicket from "../models/HallTicket.js";
 import ExamResult from "../models/ExamResult.js";
@@ -953,6 +954,139 @@ export const getMyAttendance = async (req, res, next) => {
           days: monthRecords.map(serializeRecord),
         },
         recentRecords: recentRecords.map(serializeRecord),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+
+/**
+ * GET /api/student-portal/fees
+ *
+ * Read-only fee overview and payment history for the authenticated
+ * student's linked Student record.
+ */
+export const getMyFees = async (req, res, next) => {
+  try {
+    if (req.user?.role !== "student") {
+      return fail(res, 403, "Student portal access only.");
+    }
+
+    const studentId = req.user.studentRecord;
+
+    if (!studentId || !mongoose.isValidObjectId(studentId)) {
+      return fail(
+        res,
+        409,
+        "Your login account is not linked to a student record. Please contact your institute administrator."
+      );
+    }
+
+    const studentExists = await Student.exists({ _id: studentId });
+
+    if (!studentExists) {
+      return fail(res, 404, "Linked student record not found.");
+    }
+
+    const [admissions, payments] = await Promise.all([
+      StudentAdmission.find({ student_id: studentId })
+        .populate("course_id", "courseTitle courseType")
+        .populate("batch_id", "batch_name")
+        .sort({ admission_date: -1 })
+        .lean(),
+
+      Payment.find({ student_id: studentId })
+        .populate({
+          path: "admission_id",
+          select: "course_id admission_date final_amount paid_amount status",
+          populate: {
+            path: "course_id",
+            select: "courseTitle courseType",
+          },
+        })
+        .sort({ payment_date: -1, createdAt: -1 })
+        .limit(100)
+        .lean(),
+    ]);
+
+    const feeAdmissions = admissions.map((admission) => {
+      const total = Number(admission.final_amount || 0);
+      const paid = Number(admission.paid_amount || 0);
+      const outstanding = Math.max(0, total - paid);
+
+      return {
+        admissionId: String(admission._id),
+        course: admission.course_id?.courseTitle || "Course unavailable",
+        courseType: admission.course_id?.courseType || "",
+        batch: admission.batch_id?.batch_name || "Batch unavailable",
+        admissionDate: admission.admission_date || null,
+        admissionStatus: admission.status || "",
+        total: Number(total.toFixed(2)),
+        paid: Number(paid.toFixed(2)),
+        outstanding: Number(outstanding.toFixed(2)),
+        paymentPercentage: total > 0
+          ? Math.min(100, Math.round((paid / total) * 100))
+          : 0,
+      };
+    });
+
+    const paymentHistory = payments.map((payment) => ({
+      id: String(payment._id),
+      admissionId: payment.admission_id
+        ? String(payment.admission_id._id)
+        : "",
+      course: payment.admission_id?.course_id?.courseTitle
+        || "Course unavailable",
+      amount: Number(Number(payment.amount || 0).toFixed(2)),
+      date: payment.payment_date || null,
+      mode: payment.payment_mode || "",
+      receiptNo: payment.receipt_no || "",
+      status: payment.status || "Pending",
+      notes: payment.notes || "",
+    }));
+
+    const summary = feeAdmissions.reduce(
+      (totals, admission) => {
+        totals.totalFees += admission.total;
+        totals.totalPaid += admission.paid;
+        totals.outstanding += admission.outstanding;
+        return totals;
+      },
+      {
+        totalFees: 0,
+        totalPaid: 0,
+        outstanding: 0,
+      }
+    );
+
+    for (const key of ["totalFees", "totalPaid", "outstanding"]) {
+      summary[key] = Number(summary[key].toFixed(2));
+    }
+
+    const verifiedPayments = paymentHistory
+      .filter((payment) => payment.status === "Verified")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    const pendingPayments = paymentHistory
+      .filter((payment) => payment.status === "Pending")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          ...summary,
+          admissionCount: feeAdmissions.length,
+          verifiedPayments: Number(verifiedPayments.toFixed(2)),
+          pendingPayments: Number(pendingPayments.toFixed(2)),
+        },
+        admissions: feeAdmissions,
+        payments: paymentHistory,
       },
     });
   } catch (error) {

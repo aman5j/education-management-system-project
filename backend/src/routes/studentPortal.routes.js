@@ -9,6 +9,7 @@ import {
   linkStudentAccount,
   resetStudentLoginPassword,
   getMyAttendance,
+  getMyFees,
 } from "../controllers/studentPortal.controller.js";
 
 import {
@@ -56,5 +57,6 @@ router.get("/dashboard", getStudentDashboard);
 router.get("/courses", getMyCourses);
 router.get("/recommended-courses", getRecommendedCourses);
 router.get("/attendance", getMyAttendance);
+router.get("/fees", getMyFees);
 
 export default router;

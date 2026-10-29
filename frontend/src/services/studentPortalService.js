@@ -27,6 +27,11 @@ const studentPortalService = {
     return response.data;
   },
 
+  async getMyFees() {
+    const response = await api.get("/student-portal/fees");
+    return response.data;
+  },
+
 };
 
 export default studentPortalService;
