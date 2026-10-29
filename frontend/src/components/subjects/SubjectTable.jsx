@@ -34,11 +34,11 @@ export default function SubjectTable({
   }
 
   return (
-    <div className="subject-table-wrapper">
-      <table className="subject-table">
+    <div className="common-table-wrapper">
+      <table className="common-table">
         <thead>
           <tr>
-            <th>S. No.</th>
+            {/* <th>S. No.</th> */}
             <th>Subject Name</th>
             <th>Subject Code</th>
             <th>Description</th>
@@ -54,14 +54,14 @@ export default function SubjectTable({
 
             return (
               <tr key={id || `${subject.subjectCode}-${index}`}>
-                <td>{index + 1}</td>
+                {/* <td>{index + 1}</td> */}
                 <td>
-                  <span className="subject-table-name">
-                    {subject.subjectName || "—"}
-                  </span>
+                 <strong className="tabletitle"> {subject.subjectName || "—"}</strong>
+                   
+                 
                 </td>
                 <td>
-                  <span className="subject-table-code">
+                  <span className="batchtag">
                     {subject.subjectCode || "—"}
                   </span>
                 </td>
@@ -85,15 +85,15 @@ export default function SubjectTable({
                   </span>
                 </td>
                 <td>
-                  <div className="subject-actions">
+                  <div className="admission-actions">
 
                     {canViewQuestionBank && (
                     <button
                       type="button"
-                      className="subject-action-view"
+                      className="tooltip" data-tooltip="Manage Question Bank"
                       onClick={() => onQuestionBank?.(id)}
                       disabled={!id}
-                      title="Manage Question Bank"
+                     
                       aria-label={`Manage Question Bank for ${subject.subjectName}`}
                     >
                       <FiList />
@@ -103,10 +103,10 @@ export default function SubjectTable({
                     {canView && (
                     <button
                       type="button"
-                      className="subject-action-view"
+                     className="tooltip" data-tooltip="View subject"
                       onClick={() => onView?.(id)}
                       disabled={!id}
-                      title="View subject"
+                   
                       aria-label="View subject"
                     >
                       <FiEye />
@@ -116,10 +116,10 @@ export default function SubjectTable({
                     {canUpdate && (
                     <button
                       type="button"
-                      className="subject-action-edit"
+                     className="tooltip" data-tooltip="Edit subject"
                       onClick={() => onEdit?.(id)}
                       disabled={!id}
-                      title="Edit subject"
+                     
                       aria-label="Edit subject"
                     >
                       <FiEdit2 />
@@ -129,10 +129,10 @@ export default function SubjectTable({
                     {canDelete && (
                     <button
                       type="button"
-                      className="subject-action-delete"
+                     className="tooltip" data-tooltip="Delete subject"
                       onClick={() => onDelete?.(subject)}
                       disabled={!id}
-                      title="Delete subject"
+                     
                       aria-label="Delete subject"
                     >
                       <FiTrash2 />

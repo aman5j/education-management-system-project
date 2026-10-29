@@ -211,16 +211,13 @@ export default function SubjectManagement() {
 
   return (
     <div className="subject-page">
-      <div className="subject-page-header">
-        <div>
-          <h1>Subject Management</h1>
-          <p>Manage reusable subjects, syllabus, and subject status.</p>
-        </div>
+    
 
+      <div class="page-header"><div><h1>Subject Management {pagination.total || 0}</h1> </div>
         {canCreate && (
           <button
             type="button"
-            className="subject-primary-btn"
+            className="themebtn"
             onClick={() => navigate(`${basePath}/subjects/add`)}
           >
             <FiPlus aria-hidden="true" />
@@ -228,6 +225,7 @@ export default function SubjectManagement() {
           </button>
         )}
       </div>
+
 
       {error && (
         <div className="subject-alert subject-alert-error" role="alert">
@@ -241,23 +239,16 @@ export default function SubjectManagement() {
         </div>
       )}
 
-      <div className="subject-card">
+     
         <SubjectFilters
           filters={filters}
           onChange={handleFilterChange}
           onReset={handleReset}
         />
 
-      </div>
+    
 
-      <div className="subject-card">
-        <div className="subject-table-heading">
-          <h2>Subjects</h2>
-          <span>
-            Total: {pagination.total || 0}
-          </span>
-        </div>
-
+      <div className="common-card">
         <SubjectTable
           subjects={subjects}
           loading={loading}

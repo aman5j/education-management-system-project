@@ -8,6 +8,7 @@ import { getCategories } from "../../services/categoryService";
 
 import { getAssetUrl } from "../../utils/assetUrl";
 import RichTextEditor from "../common/RichTextEditor";
+import { FiFile, FiFileText } from "react-icons/fi";
 
 const initialState = {
   courseTitle: "",
@@ -706,7 +707,7 @@ const CourseForm = ({
       {/* BASIC INFORMATION */}
 
       <div className="common-card">
-        <div class="panel-header"><div><h3>Basic Information </h3> </div></div>
+        <div className="panel-header"><div><h3>Basic Information </h3> </div></div>
       
         <div className="cardbody">
         <div className="course-form-grid">
@@ -820,7 +821,7 @@ const CourseForm = ({
       {/* COURSE SUBJECTS */}
 
       <div className="common-card">
-                <div class="panel-header"><div>
+                <div className="panel-header"><div>
                   <h3>Course Subjects </h3>
                 <p>
           Select the subjects included in this course.
@@ -875,20 +876,23 @@ const CourseForm = ({
                 return (
                   <label
                     key={subject._id}
-                    className="course-subject-option"
+                    className="student-document-card"
                   >
                     <input
                       type="checkbox"
                       checked={selected}
                       onChange={() => toggleSubject(String(subject._id))}
                     />
+                     <div className="student-document-file-icon">
+                <FiFileText />
+                        </div>
 
-                    <span>
+                    <span className="student-document-info">
                       <strong>{subject.subjectName}</strong>
-                      <small>{subject.subjectCode}</small>
+                      <small className="tag-success">{subject.subjectCode}</small>
                     </span>
 
-                    {selected && <span>Selected</span>}
+                    {/* {selected && <span className="tag-success">Selected</span>} */}
                   </label>
                 );
               })
@@ -896,9 +900,9 @@ const CourseForm = ({
           </div>
         )}
 
-        <p>
+        {/* <p>
           Selected subjects: {(form.subjects || []).length}
-        </p>
+        </p> */}
 
         {fieldError("subjects")}
         </div>
@@ -911,7 +915,7 @@ const CourseForm = ({
 
       <div className="common-card">
 
-        <div class="panel-header"><div>
+        <div className="panel-header"><div>
                   <h3>Pricing & Duration </h3>
                  </div></div>
 
@@ -1002,7 +1006,7 @@ const CourseForm = ({
       {/* COURSE MEDIA */}
 
       <div className="common-card">
-         <div class="panel-header"><div>
+         <div className="panel-header"><div>
                   <h3>Course Media </h3>
                  </div></div>
        
@@ -1068,7 +1072,7 @@ const CourseForm = ({
       {/* COURSE DETAILS */}
 
       <div className="common-card">
-        <div class="panel-header"><div>
+        <div className="panel-header"><div>
                   <h3>Course Details </h3>
                  </div></div>
        
@@ -1250,7 +1254,7 @@ const CourseForm = ({
 
       <div className="common-card">
        
-         <div class="panel-header"><div>
+         <div className="panel-header"><div>
                   <h3> Visibility & Status </h3>
                  </div></div>
 

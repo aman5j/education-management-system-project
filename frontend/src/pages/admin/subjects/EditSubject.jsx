@@ -170,15 +170,11 @@ export default function EditSubject() {
   if (error && !formData.subjectName) {
     return (
       <div className="subject-page">
-        <div className="subject-page-header">
-          <div><h1>Edit Subject</h1></div>
-          <button
-            type="button"
-            className="subject-secondary-btn"
-            onClick={() => navigate(`${basePath}/subjects`)}
-          >
-            <FiArrowLeft /> Back to Subjects
-          </button>
+         <div className="page-header">
+        <div> 
+          <h1>Edit Subject</h1>
+          
+        </div>
         </div>
         <div className="subject-alert subject-alert-error" role="alert">
           {error}
@@ -189,19 +185,12 @@ export default function EditSubject() {
 
   return (
     <div className="subject-page subject-form-page">
-      <div className="subject-page-header">
-        <div>
+       <div className="page-header">
+        <div> 
           <h1>Edit Subject</h1>
-          <p>Update subject information.</p>
+          
         </div>
-        <button
-          type="button"
-          className="subject-secondary-btn"
-          onClick={() => navigate(`${basePath}/subjects`)}
-        >
-          <FiArrowLeft /> Back to Subjects
-        </button>
-      </div>
+        </div>
 
       {error && (
         <div className="subject-alert subject-alert-error" role="alert">
@@ -209,11 +198,12 @@ export default function EditSubject() {
         </div>
       )}
 
-      <div className="subject-card">
+      <div className="common-card">
+        <div className="cardbody">
         <form onSubmit={handleSubmit} noValidate>
           <div className="subject-form-grid">
-            <div className="subject-field">
-              <label htmlFor="subjectName">Subject Name *</label>
+            <div className="input-felid admission-form-full ">
+              <label htmlFor="subjectName">Subject Name  <span className="required">*</span></label>
               <input
                 id="subjectName"
                 name="subjectName"
@@ -227,8 +217,8 @@ export default function EditSubject() {
               )}
             </div>
 
-            <div className="subject-field">
-              <label htmlFor="subjectCode">Subject Code *</label>
+            <div className="input-felid">
+              <label htmlFor="subjectCode">Subject Code <span className="required">*</span> </label>
               <input
                 id="subjectCode"
                 name="subjectCode"
@@ -242,7 +232,7 @@ export default function EditSubject() {
               )}
             </div>
 
-            <div className="subject-field">
+            <div className="input-felid">
               <label htmlFor="status">Status</label>
               <select
                 id="status"
@@ -255,12 +245,12 @@ export default function EditSubject() {
               </select>
             </div>
 
-            <div className="subject-field subject-field-full">
+            <div className="input-felid admission-form-full">
               <label htmlFor="description">Description</label>
               <textarea
                 id="description"
                 name="description"
-                rows={3}
+                rows={5}
                 maxLength={1000}
                 value={formData.description}
                 onChange={changeField}
@@ -271,7 +261,7 @@ export default function EditSubject() {
           <div className="subject-form-actions">
             <button
               type="button"
-              className="subject-secondary-btn"
+              className="themebtn themebtnline"
               onClick={() => navigate("/admin/subjects")}
               disabled={saving}
             >
@@ -279,13 +269,14 @@ export default function EditSubject() {
             </button>
             <button
               type="submit"
-              className="subject-primary-btn"
+              className="themebtn"
               disabled={saving}
             >
               <FiSave /> {saving ? "Saving..." : "Update Subject"}
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

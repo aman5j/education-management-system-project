@@ -91,15 +91,15 @@ export default function AddSubject() {
 
   return (
     <div className="subject-page subject-form-page">
-      <div className="subject-page-header">
-        <div>
+      <div className="page-header">
+        <div> 
           <h1>Add Subject</h1>
-          <p>Create a reusable subject independent of courses.</p>
+          
         </div>
 
         <button
           type="button"
-          className="subject-secondary-btn"
+          className="themebtn"
           onClick={() => navigate(`${basePath}/subjects`)}
         >
           <FiArrowLeft /> Back to Subjects
@@ -112,10 +112,10 @@ export default function AddSubject() {
         </div>
       )}
 
-      <div className="subject-card">
-        <form onSubmit={handleSubmit} noValidate>
+      <div className="common-card">
+        <form onSubmit={handleSubmit} noValidate className="cardbody">
           <div className="subject-form-grid">
-            <div className="subject-field">
+            <div className="input-felid admission-form-full">
               <label htmlFor="subjectName">Subject Name *</label>
               <input
                 id="subjectName"
@@ -130,7 +130,7 @@ export default function AddSubject() {
               )}
             </div>
 
-            <div className="subject-field">
+            <div className="input-felid ">
               <label htmlFor="subjectCode">Subject Code *</label>
               <input
                 id="subjectCode"
@@ -146,7 +146,7 @@ export default function AddSubject() {
               )}
             </div>
 
-            <div className="subject-field">
+            <div className="input-felid ">
               <label htmlFor="status">Status</label>
               <select
                 id="status"
@@ -159,12 +159,12 @@ export default function AddSubject() {
               </select>
             </div>
 
-            <div className="subject-field subject-field-full">
+            <div className="input-felid admission-form-full">
               <label htmlFor="description">Description</label>
               <textarea
                 id="description"
                 name="description"
-                rows={3}
+                rows={5}
                 maxLength={1000}
                 value={formData.description}
                 onChange={changeField}
@@ -176,7 +176,7 @@ export default function AddSubject() {
           <div className="subject-form-actions">
             <button
               type="button"
-              className="subject-secondary-btn"
+              className="themebtn themebtnline"
               onClick={() => navigate(`${basePath}/subjects`)}
               disabled={saving}
             >
@@ -184,7 +184,7 @@ export default function AddSubject() {
             </button>
             <button
               type="submit"
-              className="subject-primary-btn"
+              className="themebtn"
               disabled={saving}
             >
               <FiSave /> {saving ? "Saving..." : "Save Subject"}

@@ -932,3 +932,10 @@ label.admission-checkbox-label span {
     /* color: #f8fafc; */
 }
 
+
+.tabletitle{
+color: #172b4d;
+    font-size: 12px;
+    font-weight: 700;
+    display: block;
+}
