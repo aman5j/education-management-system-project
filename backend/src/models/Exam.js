@@ -15,6 +15,42 @@ const selectedQuestionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const answerKeyOverrideSchema = new mongoose.Schema(
+  {
+    subject_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+      required: true,
+    },
+    question_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+    correctAnswer: {
+      type: String,
+      enum: ["A", "B", "C", "D"],
+      required: true,
+    },
+    reason: {
+      type: String,
+      trim: true,
+      required: true,
+      maxlength: 1000,
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
+
 const examSchema = new mongoose.Schema(
   {
     course_id: {
@@ -59,6 +95,13 @@ const examSchema = new mongoose.Schema(
         message: "Selected question count must equal total questions.",
       },
     },
+
+    answerKeyOverrides: {
+      type: [answerKeyOverrideSchema],
+      default: [],
+    },
+
+
   },
   {
     timestamps: true,

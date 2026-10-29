@@ -26,9 +26,71 @@ const examAnswerSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+
+    correctAnswerSnapshot: {
+      type: String,
+      enum: ["A", "B", "C", "D", ""],
+      default: "",
+    },
+    marksOverridden: {
+      type: Boolean,
+      default: false,
+    },
+    overrideReason: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 1000,
+    },
+  },
+
+  { _id: false }
+);
+
+
+const resultAuditSchema = new mongoose.Schema(
+  {
+    action: {
+      type: String,
+      enum: [
+        "UNPUBLISHED",
+        "MARKS_OVERRIDDEN",
+        "ANSWER_KEY_RECALCULATED",
+        "REPUBLISHED",
+      ],
+      required: true,
+    },
+    reason: {
+      type: String,
+      trim: true,
+      required: true,
+      maxlength: 1000,
+    },
+    question_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    previousValue: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    newValue: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    changedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    changedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { _id: false }
 );
+
 
 const examResultSchema = new mongoose.Schema(
   {
@@ -54,6 +116,12 @@ const examResultSchema = new mongoose.Schema(
       type: [examAnswerSchema],
       default: [],
     },
+
+    auditHistory: {
+      type: [resultAuditSchema],
+      default: [],
+    },
+    
     totalQuestions: {
       type: Number,
       required: true,
