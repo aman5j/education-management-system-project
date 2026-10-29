@@ -11,7 +11,7 @@ import {
   FiRefreshCw,
   FiShield,
   FiTarget,
-  FiTrophy,
+  FiAward,
 } from "react-icons/fi";
 
 import studentPortalService from "../../services/studentPortalService";
@@ -581,7 +581,7 @@ export default function StudentExams() {
         </header>
 
         <section className="se-result-hero">
-          <div className="se-trophy"><FiTrophy /></div>
+          <div className="se-trophy"><FiAward /></div>
           <div>
             <span className={`se-badge ${resultDetail.passStatus === "Pass" ? "se-badge--pass" : "se-badge--fail"}`}>
               {resultDetail.passStatus}
@@ -671,7 +671,7 @@ export default function StudentExams() {
         <ExamStat icon={FiCalendar} title="Upcoming Exams" value={upcoming.length} note="Scheduled for you" tone="blue" />
         <ExamStat icon={FiClock} title="In Progress" value={exams.filter((item) => item.scheduleStatus === "In progress" && item.attemptStatus === "InProgress").length} note="Active attempts" tone="orange" />
         <ExamStat icon={FiFileText} title="Submitted" value={exams.filter((item) => item.attemptStatus === "Submitted").length} note="Awaiting publication" tone="purple" />
-        <ExamStat icon={FiTrophy} title="Published Results" value={results.length} note="Available to review" tone="green" />
+        <ExamStat icon={FiAward} title="Published Results" value={results.length} note="Available to review" tone="green" />
       </section>
 
       <section className="se-panel se-list-panel">
@@ -692,7 +692,7 @@ export default function StudentExams() {
             <div className="se-result-list">
               {results.map((result) => (
                 <article className="se-result-row" key={result.id}>
-                  <div className="se-list-icon se-list-icon--purple"><FiTrophy /></div>
+                  <div className="se-list-icon se-list-icon--purple"><FiAward /></div>
                   <div className="se-row-main">
                     <strong>{result.course}</strong>
                     <span>Published {dateText(result.publishedAt)} · Grade {result.grade}</span>
@@ -709,7 +709,7 @@ export default function StudentExams() {
             </div>
           ) : (
             <div className="se-empty">
-              <FiTrophy />
+              <FiAward />
               <h2>No published results yet</h2>
               <p>Your results will appear here after the institute publishes them.</p>
             </div>
