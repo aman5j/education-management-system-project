@@ -367,6 +367,14 @@ export const saveExamResult = async (req, res, next) => {
 
     const existing = await ExamResult.findOne({ exam_id, student_id });
 
+    if (existing?.attemptStatus === "Submitted") {
+      return fail(
+        res,
+        409,
+        "This student has already submitted the online exam. Use the Review Result page to review or correct this submission."
+      );
+    }
+
     if (existing?.resultStatus === "Published") {
       return fail(
         res,
