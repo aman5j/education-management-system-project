@@ -28,10 +28,6 @@
   margin-bottom: 22px;
 }
 
-.staff-management__header h1 {
-  margin: 0;
-  font-size: clamp(24px, 3vw, 30px);
-}
 
 .staff-management__header p,
 .staff-management__panel-header p,
