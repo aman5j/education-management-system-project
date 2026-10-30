@@ -1,6 +1,11 @@
 import express from "express";
 
 import {
+  getMyExamAccessRequest,
+  requestMyExamAccess,
+} from "../controllers/studentExamAccess.controller.js";
+
+import {
   getMyExams,
   getMyExamInstructions,
   startMyExam,
@@ -71,6 +76,15 @@ router.get("/fees", getMyFees);
 router.get("/exams", getMyExams);
 router.get("/exams/results", getMyExamResults);
 router.get("/exams/results/:resultId", getMyExamResultById);
+router.get(
+  "/exams/:ticketId/access-request",
+  getMyExamAccessRequest
+);
+
+router.post(
+  "/exams/:ticketId/access-request",
+  requestMyExamAccess
+);
 router.get("/exams/:ticketId/instructions", getMyExamInstructions);
 router.post("/exams/:ticketId/start", startMyExam);
 router.post("/exams/:ticketId/submit", submitMyExam);

@@ -4,6 +4,7 @@ import HallTicket from "../models/HallTicket.js";
 import ExamResult from "../models/ExamResult.js";
 import Student from "../models/Student.js";
 import Subject from "../models/Subject.js";
+import ExamAccessRequest from "../models/ExamAccessRequest.js";
 
 const fail = (res, status, message) =>
   res.status(status).json({ success: false, message });
@@ -198,6 +199,13 @@ export const getMyExamInstructions = async (req, res, next) => {
     const endAt = getScheduledTime(ticket.examDate, ticket.endTime);
     const now = Date.now();
 
+    const accessRequest = await ExamAccessRequest.findOne({
+    exam_id: exam._id,
+    student_id: linked.student._id,
+    }).select("status rejectionReason requestedAt reviewedAt").lean();
+
+    const accessApproved = accessRequest?.status === "Approved";
+
     return res.json({
       success: true,
       data: {
@@ -216,12 +224,18 @@ export const getMyExamInstructions = async (req, res, next) => {
           now >= startAt.getTime() &&
           now < endAt.getTime() &&
           ticket.status === "Active" &&
-          !["Submitted"].includes(result?.attemptStatus) &&
+          (
+            accessApproved ||
+            result?.attemptStatus === "InProgress"
+          ) &&
+          result?.attemptStatus !== "Submitted" &&
           result?.resultStatus !== "Published"
         ),
         startsAt: startAt,
         endsAt: endAt,
         alreadyStarted: result?.attemptStatus === "InProgress",
+        accessRequestStatus: accessRequest?.status || "NotRequested",
+        accessRequestReason: accessRequest?.rejectionReason || "",
       },
     });
   } catch (error) {
@@ -260,6 +274,26 @@ export const startMyExam = async (req, res, next) => {
       exam_id: exam._id,
       student_id: linked.student._id,
     });
+
+
+    // A new attempt requires Admin approval.
+    // An existing InProgress attempt can resume without a new request.
+    if (result?.attemptStatus !== "InProgress") {
+    const approvedRequest = await ExamAccessRequest.findOne({
+        exam_id: exam._id,
+        student_id: linked.student._id,
+        ticket_id: ticket._id,
+        status: "Approved",
+    }).lean();
+
+    if (!approvedRequest) {
+        return fail(
+        res,
+        403,
+        "Admin approval is required before you can start this exam."
+        );
+    }
+    }
 
     if (result?.resultStatus === "Published" || result?.attemptStatus === "Submitted") {
       return fail(res, 409, "This exam attempt has already been submitted.");

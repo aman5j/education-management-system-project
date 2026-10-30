@@ -55,6 +55,7 @@ import instituteSettingsRoutes from "./routes/instituteSettings.routes.js";
 
 import studentPortalRoutes from "./routes/studentPortal.routes.js";
 
+import examAccessRoutes from "./routes/examAccess.routes.js";
 
 
 
@@ -298,6 +299,7 @@ app.use(
 
 
 app.use("/api/student-portal", studentPortalRoutes);
+app.use("/api/exam-access-requests", examAccessRoutes);
 
 
 // app.use(
