@@ -4,6 +4,7 @@ import {
   getEligibleHallTicketStudents,
   generateHallTickets,
   cancelHallTicket,
+  rescheduleMissedHallTicket,
 } from "../controllers/hallTicket.controller.js";
 
 import {
@@ -20,5 +21,9 @@ router.get("/", getHallTickets);
 router.get("/eligible-students", getEligibleHallTicketStudents);
 router.post("/generate", generateHallTickets);
 router.patch("/:id/cancel", cancelHallTicket);
+router.patch(
+  "/:id/reschedule-missed",
+  rescheduleMissedHallTicket
+);
 
 export default router;

@@ -4,7 +4,7 @@ import Course from "../models/Course.js";
 import Student from "../models/Student.js";
 import HallTicket from "../models/HallTicket.js";
 import StudentAdmission from "../models/StudentAdmission.js";
-
+import ExamResult from "../models/ExamResult.js";
 
 const validId = (value) => mongoose.isValidObjectId(value);
 
@@ -377,6 +377,122 @@ export const cancelHallTicket = async (req, res, next) => {
       data: ticket,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+export const rescheduleMissedHallTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      examDate: examDateInput,
+      startTime,
+      endTime,
+      reportingTime,
+    } = req.body || {};
+
+    if (!validId(id)) {
+      return fail(res, 400, "Invalid hall ticket ID.");
+    }
+
+    const examDate = parseDate(examDateInput);
+
+    if (!examDate) {
+      return fail(res, 400, "Please select a valid new exam date.");
+    }
+
+    if (
+      !isTime(startTime) ||
+      !isTime(endTime) ||
+      !isTime(reportingTime)
+    ) {
+      return fail(res, 400, "Please provide valid exam and reporting times.");
+    }
+
+    if (startTime >= endTime) {
+      return fail(res, 400, "End time must be later than start time.");
+    }
+
+    if (reportingTime > startTime) {
+      return fail(
+        res,
+        400,
+        "Reporting time must be at or before the exam start time."
+      );
+    }
+
+    const ticket = await HallTicket.findById(id);
+
+    if (!ticket) {
+      return fail(res, 404, "Hall ticket not found.");
+    }
+
+    const result = await ExamResult.findOne({
+      exam_id: ticket.exam_id,
+      student_id: ticket.student_id,
+    })
+      .select("attemptStatus resultStatus")
+      .lean();
+
+    if (
+      result?.attemptStatus === "Submitted" ||
+      result?.resultStatus === "Published"
+    ) {
+      return fail(
+        res,
+        409,
+        "This student has already completed the exam. A new hall ticket cannot be issued for the same exam."
+      );
+    }
+
+    if (result?.attemptStatus === "InProgress") {
+      return fail(
+        res,
+        409,
+        "This student has an unfinished exam attempt. Review the existing attempt before scheduling another exam."
+      );
+    }
+
+    // Only allow reissue after the original scheduled exam window has passed.
+    const oldDate = ticket.examDate.toISOString().slice(0, 10);
+    const oldEnd = new Date(
+      `${oldDate}T${ticket.endTime}:00+05:30`
+    );
+
+    if (Date.now() < oldEnd.getTime()) {
+      return fail(
+        res,
+        409,
+        "The original exam window has not ended yet. This hall ticket cannot be rescheduled."
+      );
+    }
+
+    ticket.examDate = examDate;
+    ticket.startTime = startTime;
+    ticket.endTime = endTime;
+    ticket.reportingTime = reportingTime;
+    ticket.hallTicketNo = makeTicketNo(ticket.student_id);
+    ticket.status = "Active";
+
+    await ticket.save();
+
+    return res.json({
+      success: true,
+      message: "Missed exam hall ticket rescheduled successfully.",
+      data: ticket,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return fail(
+        res,
+        409,
+        "The new hall ticket number already exists. Please retry."
+      );
+    }
+
     next(error);
   }
 };

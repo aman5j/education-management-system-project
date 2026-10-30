@@ -28,13 +28,6 @@ const recalculateResult = (result, exam, questionMap) => {
     const key = `${String(answer.subject_id)}:${String(answer.question_id)}`;
     const question = questionMap.get(key);
 
-    if (!question) {
-      throw Object.assign(
-        new Error(`Question ${String(answer.question_id)} could not be found.`),
-        { status: 409 }
-      );
-    }
-
     const override = (exam.answerKeyOverrides || []).find(
       (item) =>
         String(item.subject_id) === String(answer.subject_id) &&
@@ -44,12 +37,24 @@ const recalculateResult = (result, exam, questionMap) => {
     const correctAnswer =
       override?.correctAnswer ||
       answer.correctAnswerSnapshot ||
-      question.correctAnswer;
+      question?.correctAnswer ||
+      "";
 
-    answer.correctAnswerSnapshot = correctAnswer;
-    answer.isCorrect = Boolean(
-      answer.answer && answer.answer === correctAnswer
-    );
+    if (!question && !correctAnswer && !answer.marksOverridden) {
+      throw Object.assign(
+        new Error(
+          `Question ${String(answer.question_id)} is unavailable and has no saved answer-key snapshot.`
+        ),
+        { status: 409 }
+      );
+    }
+
+    if (correctAnswer) {
+      answer.correctAnswerSnapshot = correctAnswer;
+      answer.isCorrect = Boolean(
+        answer.answer && answer.answer === correctAnswer
+      );
+    }
 
     if (!answer.marksOverridden) {
       answer.marksAwarded = answer.isCorrect
@@ -118,7 +123,10 @@ export const getExamResultReview = async (req, res, next) => {
     if (!validId(id)) return fail(res, 400, "Invalid result ID.");
 
     const result = await ExamResult.findById(id)
-      .populate("exam_id", "course_id totalQuestions totalMarks marksPerQuestion answerKeyOverrides")
+      .populate(
+        "exam_id",
+        "course_id totalQuestions totalMarks marksPerQuestion answerKeyOverrides selectedQuestions"
+        )
       .populate("course_id", "courseTitle")
       .populate("student_id", "rollNo firstName surname email")
       .lean();
@@ -147,7 +155,10 @@ export const getExamResultReview = async (req, res, next) => {
         number: index + 1,
         subjectId: String(answer.subject_id),
         questionId: String(answer.question_id),
-        subjectName: question.subjectName || "Subject",
+        subjectName:
+            answer.subjectNameSnapshot ||
+            question.subjectName ||
+            "Subject",
         questionText: answer.questionTextSnapshot || question.questionText || "Question unavailable",
         options: [
           { key: "A", text: answer.optionASnapshot || question.optionA || "" },
@@ -157,10 +168,10 @@ export const getExamResultReview = async (req, res, next) => {
         ],
         selectedAnswer: answer.answer || "",
         correctAnswer:
-          override?.correctAnswer ||
-          answer.correctAnswerSnapshot ||
-          question.correctAnswer ||
-          "",
+        override?.correctAnswer ||
+        answer.correctAnswerSnapshot ||
+        question.correctAnswer ||
+        "",
         isCorrect: Boolean(answer.isCorrect),
         marksAwarded: Number(answer.marksAwarded || 0),
         marksOverridden: Boolean(answer.marksOverridden),

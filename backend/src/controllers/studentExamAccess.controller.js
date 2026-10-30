@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Student from "../models/Student.js";
 import HallTicket from "../models/HallTicket.js";
 import ExamAccessRequest from "../models/ExamAccessRequest.js";
+import { getStudentExamFeeStatus } from "../utils/examFeeEligibility.js";
 
 const fail = (res, status, message) =>
   res.status(status).json({
@@ -133,12 +134,29 @@ export const requestMyExamAccess = async (req, res, next) => {
       return fail(res, 403, "Your student record is not active.");
     }
 
+    const feeStatus = await getStudentExamFeeStatus(
+    linked.student._id,
+    ticket.course_id
+    );
+
+    if (!feeStatus.eligible) {
+    return fail(res, 403, feeStatus.message);
+    }
+
     const startAt = getScheduledTime(ticket.examDate, ticket.startTime);
     const endAt = getScheduledTime(ticket.examDate, ticket.endTime);
     const now = new Date();
 
     if (!startAt || !endAt || endAt <= startAt) {
       return fail(res, 409, "The exam schedule is invalid.");
+    }
+
+    if (now < startAt) {
+    return fail(
+        res,
+        409,
+        "The exam has not started yet. You can request access at the scheduled start time."
+    );
     }
 
     if (now >= endAt) {

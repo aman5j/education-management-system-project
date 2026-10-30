@@ -55,7 +55,7 @@ const hallTicketSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Active", "Cancelled"],
+      enum: ["Active", "Cancelled", "Completed"],
       default: "Active",
       index: true,
     },
@@ -68,7 +68,11 @@ const hallTicketSchema = new mongoose.Schema(
 
 hallTicketSchema.index(
   { exam_id: 1, student_id: 1 },
-  { unique: true, name: "unique_exam_student_ticket" }
+  { 
+    unique: true, 
+    name: "unique_exam_student_ticket",
+    partialFilterExpression: { status: "Active" }
+  }
 );
 
 hallTicketSchema.index({ course_id: 1, examDate: 1 });
