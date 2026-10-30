@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import staffService from "../../services/staffService";
 import roleService from "../../services/roleService";
 import "./StaffManagement.css";
+import { FiPlus } from "react-icons/fi";
 
 const emptyForm = {
   name: "",
@@ -245,24 +246,19 @@ const handlePasswordReset = async (member) => {
 
   return (
     <main className="staff-management">
-      <header className="staff-management__header">
-        <div>
-          <h1>Staff Management</h1>
-          <p>
-            Create staff accounts and assign their access roles.
-          </p>
-        </div>
-
-        {!showForm && (
+      
+      <div class="page-header"><div><h1>Staff Management</h1></div>
+       {!showForm && (
           <button
             type="button"
-            className="staff-management__primary"
+            className="themebtn"
             onClick={openCreateForm}
           >
-            + Create Staff
+            <FiPlus /> Create Staff
           </button>
         )}
-      </header>
+      </div>
+
 
       {error && (
         <div className="staff-management__alert staff-management__alert--error">
@@ -436,12 +432,13 @@ const handlePasswordReset = async (member) => {
       ) : (
         <section className="staff-management__panel">
           <div className="staff-management__toolbar">
-            <div>
+            {/* <div>
               <h2>Staff Accounts</h2>
               <p>{pagination.total} total staff accounts</p>
-            </div>
+            </div> */}
 
-            <div className="staff-management__filters">
+            <div className="common-card-filters">
+              <div className="input-search">
               <input
                 type="search"
                 value={search}
@@ -452,7 +449,8 @@ const handlePasswordReset = async (member) => {
                 placeholder="Search staff..."
                 aria-label="Search staff"
               />
-
+              </div>
+<div className="input-search">
               <select
                 value={status}
                 onChange={(event) => {
@@ -465,6 +463,7 @@ const handlePasswordReset = async (member) => {
                 <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
               </select>
+              </div>
             </div>
           </div>
 
@@ -478,8 +477,9 @@ const handlePasswordReset = async (member) => {
               <p>Create a staff account or adjust your search.</p>
             </div>
           ) : (
-            <div className="staff-management__table-wrap">
-              <table className="staff-management__table">
+            <div className="common-card">
+              <div className="common-table-wrapper">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>Staff member</th>
@@ -495,8 +495,12 @@ const handlePasswordReset = async (member) => {
                   {staff.map((member) => (
                     <tr key={member.id}>
                       <td>
-                        <strong>{member.name}</strong>
-                        <small>{member.email}</small>
+
+                        <div class="student-name-cell">
+                          <div class="student-avatar-wrapper"><img alt="utpam singh" class="student-avatar" src="http://localhost:5000/uploads/students/1792903718008-81YP9oMWB1L-_SX569_.jpg" /></div>
+                          <div><strong>{member.name}</strong>{member.email}</div></div>
+
+                       
                       </td>
                       <td>{member.phone || "—"}</td>
                       <td>
@@ -546,6 +550,7 @@ const handlePasswordReset = async (member) => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
