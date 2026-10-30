@@ -123,7 +123,10 @@ export const getExamResultReview = async (req, res, next) => {
     if (!validId(id)) return fail(res, 400, "Invalid result ID.");
 
     const result = await ExamResult.findById(id)
-      .populate("exam_id", "course_id totalQuestions totalMarks marksPerQuestion answerKeyOverrides")
+      .populate(
+        "exam_id",
+        "course_id totalQuestions totalMarks marksPerQuestion answerKeyOverrides selectedQuestions"
+        )
       .populate("course_id", "courseTitle")
       .populate("student_id", "rollNo firstName surname email")
       .lean();

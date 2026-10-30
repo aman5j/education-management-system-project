@@ -18,6 +18,11 @@ const examAnswerSchema = new mongoose.Schema(
       default: "",
     },
 
+    subjectNameSnapshot: {
+      type: String,
+      default: "",
+    },
+
     optionASnapshot: {
       type: String,
       default: "",

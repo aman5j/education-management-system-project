@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
   useLocation,
@@ -168,6 +168,12 @@ export default function StudentExams() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  const autoSubmitAttempted = useRef(false);
+
+  useEffect(() => {
+    autoSubmitAttempted.current = false;
+  }, [ticketId]);
 
   // --------------------------------------------------
   // Load exam list and results
@@ -630,24 +636,26 @@ export default function StudentExams() {
   ]);
 
   // Automatically submit when the server expiry time is reached.
-  useEffect(() => {
+    useEffect(() => {
     if (
-      isTakingExam &&
-      !loading &&
-      questions.length > 0 &&
-      remainingMs <= 0 &&
-      !busy
+        isTakingExam &&
+        !loading &&
+        questions.length > 0 &&
+        remainingMs <= 0 &&
+        !busy &&
+        !autoSubmitAttempted.current
     ) {
-      submitAttempt(true);
+        autoSubmitAttempted.current = true;
+        submitAttempt(true);
     }
-  }, [
+    }, [
     isTakingExam,
     loading,
     questions.length,
     remainingMs,
     busy,
     submitAttempt,
-  ]);
+    ]);
 
   // --------------------------------------------------
   // Loading state

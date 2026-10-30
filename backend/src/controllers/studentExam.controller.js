@@ -93,45 +93,106 @@ function serializeTicket(ticket, result) {
   };
 }
 
-async function getQuestionPayload(exam) {
-  const selected = exam.selectedQuestions || [];
-  const subjectIds = [...new Set(selected.map((item) => String(item.subject_id)))];
 
-  const subjects = await Subject.find({ _id: { $in: subjectIds } })
+async function getQuestionPayload(exam, savedAnswers = []) {
+  const selected = exam.selectedQuestions || [];
+
+  const subjectIds = [
+    ...new Set(selected.map((item) => String(item.subject_id))),
+  ];
+
+  const subjects = await Subject.find({
+    _id: { $in: subjectIds },
+  })
     .select("subjectName questionBank")
     .lean();
 
-  const subjectMap = new Map(subjects.map((item) => [String(item._id), item]));
+  const subjectMap = new Map(
+    subjects.map((item) => [String(item._id), item])
+  );
+
+  const savedMap = new Map(
+    savedAnswers.map((item) => [
+      `${String(item.subject_id)}:${String(item.question_id)}`,
+      item,
+    ])
+  );
 
   return selected.map((item, index) => {
+    const key = `${String(item.subject_id)}:${String(item.question_id)}`;
+
+    const saved = savedMap.get(key);
+
     const subject = subjectMap.get(String(item.subject_id));
-    const question = (subject?.questionBank || []).find(
+
+    const liveQuestion = (subject?.questionBank || []).find(
       (entry) => String(entry._id) === String(item.question_id)
     );
 
-    if (!question) {
+    // Prefer the original snapshot for an already-started attempt.
+    const hasSnapshot = Boolean(saved?.questionTextSnapshot);
+
+    const source = hasSnapshot ? saved : liveQuestion;
+
+    if (!source) {
       throw Object.assign(
-        new Error("An exam question is no longer available. Contact your institute administrator."),
+        new Error(
+          `Question ${index + 1} is unavailable. Contact your institute administrator.`
+        ),
         { status: 409 }
       );
     }
 
-    // IMPORTANT: Never include correctAnswer in a student question payload.
+    const subjectName =
+      saved?.subjectNameSnapshot ||
+      subject?.subjectName ||
+      "Subject";
+
+    const snapshot = {
+      subject_id: item.subject_id,
+      question_id: item.question_id,
+      subjectNameSnapshot: subjectName,
+      questionTextSnapshot:
+        saved?.questionTextSnapshot || source.questionText || "",
+      optionASnapshot:
+        saved?.optionASnapshot || source.optionASnapshot || source.optionA || "",
+      optionBSnapshot:
+        saved?.optionBSnapshot || source.optionBSnapshot || source.optionB || "",
+      optionCSnapshot:
+        saved?.optionCSnapshot || source.optionCSnapshot || source.optionC || "",
+      optionDSnapshot:
+        saved?.optionDSnapshot || source.optionDSnapshot || source.optionD || "",
+      correctAnswerSnapshot:
+        saved?.correctAnswerSnapshot ||
+        source.correctAnswer ||
+        "",
+      answer: saved?.answer || "",
+      isCorrect: Boolean(saved?.isCorrect),
+      marksAwarded: Number(saved?.marksAwarded || 0),
+      marksOverridden: Boolean(saved?.marksOverridden),
+      overrideReason: saved?.overrideReason || "",
+    };
+
     return {
-      number: index + 1,
-      subjectId: String(item.subject_id),
-      subjectName: subject.subjectName || "Subject",
-      questionId: String(item.question_id),
-      questionText: question.questionText,
-      options: [
-        { key: "A", text: question.optionA },
-        { key: "B", text: question.optionB },
-        { key: "C", text: question.optionC },
-        { key: "D", text: question.optionD },
-      ],
+      snapshot,
+
+      question: {
+        number: index + 1,
+        subjectId: String(item.subject_id),
+        subjectName,
+        questionId: String(item.question_id),
+        questionText: snapshot.questionTextSnapshot,
+        options: [
+          { key: "A", text: snapshot.optionASnapshot },
+          { key: "B", text: snapshot.optionBSnapshot },
+          { key: "C", text: snapshot.optionCSnapshot },
+          { key: "D", text: snapshot.optionDSnapshot },
+        ],
+      },
     };
   });
 }
+
 
 export const getMyExams = async (req, res, next) => {
   try {
@@ -355,11 +416,20 @@ export const startMyExam = async (req, res, next) => {
         result.startedAt = now;
         result.expiresAt = endAt;
       }
-
-      await result.save();
     }
 
-    const questions = await getQuestionPayload(exam);
+    // Load original question data, preferring snapshots already saved.
+    const questionRecords = await getQuestionPayload(
+      exam,
+      result.answers || []
+    );
+
+    // Save the original question and answer-key snapshots at exam start.
+    result.answers = questionRecords.map((item) => item.snapshot);
+
+    await result.save();
+
+    const questions = questionRecords.map((item) => item.question);
     const expiresAt = result.expiresAt || endAt;
 
     return res.json({
@@ -409,15 +479,36 @@ export const submitMyExam = async (req, res, next) => {
     }
 
     const now = new Date();
-    const scheduledEnd = getScheduledTime(ticket.examDate, ticket.endTime);
-    const deadline = result.expiresAt
-      ? new Date(Math.min(new Date(result.expiresAt).getTime(), scheduledEnd.getTime()))
-      : scheduledEnd;
 
-    if (now > deadline) {
-      // Allow the deadline-triggered submission but never extend the timer.
-      // Continue to evaluate the answers already sent by the client.
+    const scheduledEnd = getScheduledTime(
+    ticket.examDate,
+    ticket.endTime
+    );
+
+    if (!scheduledEnd) {
+    return fail(res, 409, "The exam end time is invalid.");
     }
+
+    const storedExpiry = result.expiresAt
+    ? new Date(result.expiresAt).getTime()
+    : scheduledEnd.getTime();
+
+    const deadlineMs = Math.min(
+    storedExpiry,
+    scheduledEnd.getTime()
+    );
+
+    // Allow a small 60-second network grace period for automatic submission.
+    const submissionGraceMs = 60 * 1000;
+
+    if (now.getTime() > deadlineMs + submissionGraceMs) {
+    return fail(
+        res,
+        409,
+        "The exam submission window has ended. Contact your institute administrator."
+    );
+    }
+    
 
     const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
     const selected = exam.selectedQuestions || [];
@@ -448,52 +539,121 @@ export const submitMyExam = async (req, res, next) => {
       if (!allowed.has(key)) return fail(res, 400, "An answer references a question outside this exam.");
     }
 
-    const subjectIds = [...new Set(selected.map((item) => String(item.subject_id)))];
-    const subjects = await Subject.find({ _id: { $in: subjectIds } })
-      .select("questionBank")
-      .lean();
+    // const subjectIds = [...new Set(selected.map((item) => String(item.subject_id)))];
 
-    const questionMap = new Map();
+    
+    const savedSnapshotMap = new Map(
+    (result.answers || []).map((item) => [
+        `${String(item.subject_id)}:${String(item.question_id)}`,
+        item,
+    ])
+    );
+
+    // Fetch current Question Bank records only as a fallback for
+    // older attempts that do not yet contain snapshots.
+    const missingSnapshots = selected.filter((item) => {
+    const saved = savedSnapshotMap.get(
+        `${String(item.subject_id)}:${String(item.question_id)}`
+    );
+
+    return !saved?.questionTextSnapshot;
+    });
+
+    const subjectIds = [
+    ...new Set(missingSnapshots.map((item) => String(item.subject_id))),
+    ];
+
+    const subjects = subjectIds.length
+    ? await Subject.find({ _id: { $in: subjectIds } })
+        .select("subjectName questionBank")
+        .lean()
+    : [];
+
+    const liveQuestionMap = new Map();
+
     for (const subject of subjects) {
-      for (const question of subject.questionBank || []) {
-        questionMap.set(`${String(subject._id)}:${String(question._id)}`, question);
-      }
+    for (const question of subject.questionBank || []) {
+        liveQuestionMap.set(
+        `${String(subject._id)}:${String(question._id)}`,
+        {
+            ...question,
+            subjectName: subject.subjectName,
+        }
+        );
+    }
     }
 
     let obtainedMarks = 0;
     const marksPerQuestion = Number(exam.marksPerQuestion || 0);
 
     const calculatedAnswers = selected.map((item) => {
-      const key = `${String(item.subject_id)}:${String(item.question_id)}`;
-      const question = questionMap.get(key);
-      if (!question) {
-        throw Object.assign(new Error("An exam question no longer exists in the question bank."), { status: 409 });
-      }
+    const key = `${String(item.subject_id)}:${String(item.question_id)}`;
 
-      const answer = answerMap.get(key) || "";
-      const isCorrect = Boolean(answer && answer === question.correctAnswer);
-      const marksAwarded = isCorrect ? marksPerQuestion : 0;
-      obtainedMarks += marksAwarded;
+    const saved = savedSnapshotMap.get(key);
+    const live = liveQuestionMap.get(key);
 
-      return {
+    if (!saved?.questionTextSnapshot && !live) {
+        throw Object.assign(
+        new Error(
+            "An exam question is unavailable and its original snapshot could not be found."
+        ),
+        { status: 409 }
+        );
+    }
+
+    const questionText =
+        saved?.questionTextSnapshot || live?.questionText || "";
+
+    const optionA =
+        saved?.questionTextSnapshot
+        ? saved.optionASnapshot
+        : live?.optionA || "";
+
+    const optionB =
+        saved?.questionTextSnapshot
+        ? saved.optionBSnapshot
+        : live?.optionB || "";
+
+    const optionC =
+        saved?.questionTextSnapshot
+        ? saved.optionCSnapshot
+        : live?.optionC || "";
+
+    const optionD =
+        saved?.questionTextSnapshot
+        ? saved.optionDSnapshot
+        : live?.optionD || "";
+
+    const correctAnswer =
+        saved?.correctAnswerSnapshot || live?.correctAnswer || "";
+
+    const answer = answerMap.get(key) || "";
+
+    const isCorrect = Boolean(
+        answer && correctAnswer && answer === correctAnswer
+    );
+
+    const marksAwarded = isCorrect ? marksPerQuestion : 0;
+
+    obtainedMarks += marksAwarded;
+
+    return {
         subject_id: item.subject_id,
         question_id: item.question_id,
-
         answer,
-
         isCorrect,
         marksAwarded,
 
-        // Preserve the exact question shown to the student.
-        questionTextSnapshot: question.questionText || "",
-        optionASnapshot: question.optionA || "",
-        optionBSnapshot: question.optionB || "",
-        optionCSnapshot: question.optionC || "",
-        optionDSnapshot: question.optionD || "",
+        subjectNameSnapshot:
+        saved?.subjectNameSnapshot || live?.subjectName || "Subject",
 
-        // Preserve the answer key used when this attempt was evaluated.
-        correctAnswerSnapshot: question.correctAnswer || "",
-        };
+        questionTextSnapshot: questionText,
+        optionASnapshot: optionA,
+        optionBSnapshot: optionB,
+        optionCSnapshot: optionC,
+        optionDSnapshot: optionD,
+        correctAnswerSnapshot: correctAnswer,
+    };
     });
 
     obtainedMarks = Number(obtainedMarks.toFixed(4));
