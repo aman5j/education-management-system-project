@@ -155,7 +155,10 @@ export const getExamResultReview = async (req, res, next) => {
         number: index + 1,
         subjectId: String(answer.subject_id),
         questionId: String(answer.question_id),
-        subjectName: question.subjectName || "Subject",
+        subjectName:
+            answer.subjectNameSnapshot ||
+            question.subjectName ||
+            "Subject",
         questionText: answer.questionTextSnapshot || question.questionText || "Question unavailable",
         options: [
           { key: "A", text: answer.optionASnapshot || question.optionA || "" },

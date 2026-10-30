@@ -587,6 +587,13 @@ export const submitMyExam = async (req, res, next) => {
     const marksPerQuestion = Number(exam.marksPerQuestion || 0);
 
     const calculatedAnswers = selected.map((item) => {
+    
+    const answerKeyOverrideMap = new Map(
+    (exam.answerKeyOverrides || []).map((item) => [
+        `${String(item.subject_id)}:${String(item.question_id)}`,
+        item.correctAnswer,
+    ])
+    );
     const key = `${String(item.subject_id)}:${String(item.question_id)}`;
 
     const saved = savedSnapshotMap.get(key);
@@ -625,7 +632,10 @@ export const submitMyExam = async (req, res, next) => {
         : live?.optionD || "";
 
     const correctAnswer =
-        saved?.correctAnswerSnapshot || live?.correctAnswer || "";
+        answerKeyOverrideMap.get(key) ||
+        saved?.correctAnswerSnapshot ||
+        live?.correctAnswer ||
+        "";
 
     const answer = answerMap.get(key) || "";
 
@@ -835,7 +845,10 @@ export const getMyExamResultById = async (req, res, next) => {
         return {
           number: index + 1,
 
-          subjectName: question.subjectName || "Subject",
+          subjectName:
+            answer.subjectNameSnapshot ||
+            question.subjectName ||
+            "Subject",
 
           questionText:
             answer.questionTextSnapshot ||
