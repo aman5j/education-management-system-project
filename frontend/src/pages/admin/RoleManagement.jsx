@@ -1,15 +1,19 @@
-
-
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import roleService from "../../services/roleService";
 import "./RoleManagement.css";
-
+import { RiTeamLine } from "react-icons/ri";
+import { MdOutlineFeaturedPlayList } from "react-icons/md";
+import {
+  FiEdit2,
+  FiPlus,
+  FiTrash2,
+  FiShield,
+  FiCheckSquare,
+  FiCheckCircle,
+  FiSearch,
+  FiX,
+} from "react-icons/fi";
 
 const GROUP_LABELS = {
   dashboard: "Dashboard",
@@ -18,10 +22,8 @@ const GROUP_LABELS = {
   students: "Students",
   admissions: "Admissions",
   courses: "Courses",
-
   subjects: "Subjects",
   question_bank: "Question Bank",
-
   batches: "Batches",
   attendance: "Attendance",
   fees: "Fees",
@@ -48,6 +50,12 @@ const formatPermission = (permission) =>
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+const formatRoleLabel = (value = "") =>
+  value
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 const emptyForm = {
   name: "",
   label: "",
@@ -56,13 +64,12 @@ const emptyForm = {
 };
 
 export default function RoleManagement() {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { roleId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { roleId } = useParams();
 
-    const isCreatePage = location.pathname === "/admin/roles/new";
-    const showForm = isCreatePage || Boolean(roleId);
-
+  const isCreatePage = location.pathname === "/admin/roles/new";
+  const showForm = isCreatePage || Boolean(roleId);
 
   const [roles, setRoles] = useState([]);
   const [availablePermissions, setAvailablePermissions] = useState([]);
@@ -71,27 +78,24 @@ export default function RoleManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(location.state?.notice || "");
   const [search, setSearch] = useState("");
   const [permissionSearch, setPermissionSearch] = useState("");
-  //   const [showForm, setShowForm] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
-
     try {
       const [rolesResponse, permissionsResponse] = await Promise.all([
         roleService.getRoles(),
         roleService.getPermissions(),
       ]);
-
-      setRoles(
-        Array.isArray(rolesResponse.data) ? rolesResponse.data : []
-      );
+      setRoles(Array.isArray(rolesResponse.data) ? rolesResponse.data : []);
       setAvailablePermissions(
         Array.isArray(permissionsResponse.data)
-          ? permissionsResponse.data
+          ? permissionsResponse.data.filter(
+              (permission) => typeof permission === "string" && permission.trim()
+            )
           : []
       );
     } catch (err) {
@@ -108,134 +112,100 @@ export default function RoleManagement() {
     loadData();
   }, [loadData]);
 
-  
+  useEffect(() => {
+    if (isCreatePage) {
+      setEditingRole(null);
+      setPermissionSearch("");
+      setForm(emptyForm);
+      setError("");
+      return;
+    }
+    if (!roleId) return;
 
-useEffect(() => {
-  if (isCreatePage) {
-    setEditingRole(null);
-    setPermissionSearch(""); // <-- Add this line here
+    const role = roles.find((item) => String(item.id) === String(roleId));
+    if (!role) {
+      if (roles.length > 0) {
+        setError("Role not found. Return to the role list and try again.");
+      }
+      return;
+    }
+
+    setEditingRole(role);
     setForm({
-      name: "",
-      label: "",
-      description: "",
-      permissions: [],
+      name: role.name || "",
+      label: role.label || "",
+      description: role.description || "",
+      permissions: Array.isArray(role.permissions) ? [...role.permissions] : [],
     });
     setError("");
-    return;
-  }
+  }, [isCreatePage, roleId, roles]);
 
-  if (!roleId) return;
+  const permissionGroups = useMemo(() => {
+    const query = permissionSearch.trim().toLowerCase();
+    const uniquePermissions = [...new Set(availablePermissions)];
 
-  const role = roles.find((item) => item.id === roleId);
+    return uniquePermissions
+      .filter((permission) => {
+        if (!query) return true;
+        const group = getPermissionGroup(permission);
+        const groupLabel = GROUP_LABELS[group] || group;
+        return (
+          permission.toLowerCase().includes(query) ||
+          groupLabel.toLowerCase().includes(query) ||
+          formatPermission(permission).toLowerCase().includes(query)
+        );
+      })
+      .reduce((groups, permission) => {
+        const group = getPermissionGroup(permission);
+        if (!groups[group]) groups[group] = [];
+        groups[group].push(permission);
+        return groups;
+      }, {});
+  }, [availablePermissions, permissionSearch]);
 
-  if (!role) {
-    if (roles.length > 0) {
-      setError("Role not found. Return to the role list and try again.");
-    }
-    return;
-  }
-
-  setEditingRole(role);
-  setForm({
-    name: role.name,
-    label: role.label,
-    description: role.description || "",
-    permissions: [...(role.permissions || [])],
-  });
-  setError("");
-}, [isCreatePage, roleId, roles]);
-
-
-
-    
-const permissionGroups = useMemo(() => {
-  const query = permissionSearch.trim().toLowerCase();
-
-  // Remove duplicate permission keys before filtering and grouping.
-  const uniquePermissions = [
-    ...new Set(
-      availablePermissions.filter(
-        (permission) =>
-          typeof permission === "string" && permission.trim() !== ""
-      )
-    ),
-  ];
-
-  return uniquePermissions
-    .filter((permission) => {
-      if (!query) return true;
-
-      const group = getPermissionGroup(permission);
-      const groupLabel = GROUP_LABELS[group] || group;
-
-      return (
-        permission.toLowerCase().includes(query) ||
-        groupLabel.toLowerCase().includes(query) ||
-        formatPermission(permission).toLowerCase().includes(query)
-      );
-    })
-    .reduce((groups, permission) => {
-      const group = getPermissionGroup(permission);
-
-      if (!groups[group]) {
-        groups[group] = [];
-      }
-
-      groups[group].push(permission);
-
-      return groups;
-    }, {});
-}, [availablePermissions, permissionSearch]);
-
-
+  const permissionGroupList = useMemo(
+    () =>
+      Object.entries(permissionGroups).map(([key, permissions]) => ({
+        key,
+        label: GROUP_LABELS[key] || key,
+        permissions,
+      })),
+    [permissionGroups]
+  );
 
   const filteredRoles = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return roles;
-
     return roles.filter((role) =>
-      `${role.label} ${role.name} ${role.description || ""}`
+      `${role.label || ""} ${role.name || ""} ${role.description || ""}`
         .toLowerCase()
         .includes(query)
     );
   }, [roles, search]);
 
+  const openCreateForm = () => {
+    if (saving) return;
+    setPermissionSearch("");
+    setError("");
+    setNotice("");
+    setEditingRole(null);
+    setForm(emptyForm);
+    navigate("/admin/roles/new");
+  };
 
+  const openEditForm = (role) => {
+    if (saving) return;
+    setPermissionSearch("");
+    setError("");
+    setNotice("");
+    navigate(`/admin/roles/${role.id}/edit`);
+  };
 
-const openCreateForm = () => {
-  if (saving) return;
-
-  setPermissionSearch("");
-  setError("");
-  setNotice("");
-  setEditingRole(null);
-
-  setForm({
-    name: "",
-    label: "",
-    description: "",
-    permissions: [],
-  });
-
-  navigate("/admin/roles/new");
-};
-
-
-const openEditForm = (role) => {
-  if (saving) return;
-
-  setPermissionSearch("");
-  setError("");
-  setNotice("");
-  navigate(`/admin/roles/${role.id}/edit`);
-};
-
-const closeForm = () => {
-  if (saving) return;
-  setError("");
-  navigate("/admin/roles");
-};
-
+  const closeForm = () => {
+    if (saving) return;
+    setError("");
+    navigate("/admin/roles");
+  };
 
   const updateField = (event) => {
     const { name, value } = event.target;
@@ -245,13 +215,8 @@ const closeForm = () => {
   const togglePermission = (permission) => {
     setForm((current) => {
       const selected = new Set(current.permissions);
-
-      if (selected.has(permission)) {
-        selected.delete(permission);
-      } else {
-        selected.add(permission);
-      }
-
+      if (selected.has(permission)) selected.delete(permission);
+      else selected.add(permission);
       return { ...current, permissions: [...selected] };
     });
   };
@@ -259,15 +224,11 @@ const closeForm = () => {
   const toggleGroup = (permissions) => {
     setForm((current) => {
       const selected = new Set(current.permissions);
-      const allSelected = permissions.every((permission) =>
-        selected.has(permission)
-      );
-
+      const allSelected = permissions.every((permission) => selected.has(permission));
       permissions.forEach((permission) => {
         if (allSelected) selected.delete(permission);
         else selected.add(permission);
       });
-
       return { ...current, permissions: [...selected] };
     });
   };
@@ -277,43 +238,34 @@ const closeForm = () => {
     setError("");
     setNotice("");
 
+    const roleName = form.name.trim();
     const payload = {
-      label: form.label.trim(),
+      label: form.label.trim() || formatRoleLabel(roleName),
       description: form.description.trim(),
       permissions: form.permissions,
     };
-
-    if (!editingRole) {
-      payload.name = form.name.trim().toLowerCase();
-    }
+    if (!editingRole) payload.name = roleName.toLowerCase();
 
     setSaving(true);
-
     try {
       if (editingRole) {
         await roleService.updateRole(editingRole.id, payload);
-        setNotice("Role updated successfully.");
       } else {
         await roleService.createRole(payload);
-        setNotice("Role created successfully.");
       }
-
-      setEditingRole(null);
-    setForm(emptyForm);
-    await loadData();
-    navigate("/admin/roles", {
-    replace: true,
-    state: {
-        notice: editingRole
+      const successMessage = editingRole
         ? "Role updated successfully."
-        : "Role created successfully.",
-    },
-    });
-
+        : "Role created successfully.";
+      setEditingRole(null);
+      setForm(emptyForm);
+      await loadData();
+      navigate("/admin/roles", {
+        replace: true,
+        state: { notice: successMessage },
+      });
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Unable to save the role. Please try again."
+        err.response?.data?.message || "Unable to save the role. Please try again."
       );
     } finally {
       setSaving(false);
@@ -322,361 +274,192 @@ const closeForm = () => {
 
   const handleDelete = async (role) => {
     const confirmed = window.confirm(
-      `Delete the "${role.label}" role? This cannot be undone.`
+      `Delete the "${role.label || role.name}" role? This cannot be undone.`
     );
-
     if (!confirmed) return;
-
     setError("");
     setNotice("");
-
     try {
       await roleService.deleteRole(role.id);
       setNotice("Role deleted successfully.");
       await loadData();
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to delete the role."
-      );
+      setError(err.response?.data?.message || "Unable to delete the role.");
     }
   };
 
+  const allPermissionsSelected =
+    availablePermissions.length > 0 &&
+    availablePermissions.every((permission) => form.permissions.includes(permission));
+
   return (
-  <main className="role-management">
-    {!showForm && (
-      <>
-        <header className="role-management__header">
-        <div>
-          <p className="role-management__eyebrow">ADMINISTRATION</p>
-          <h1>Role Management</h1>
-          <p className="role-management__subtitle">
-            Create staff roles and control which parts of EMS they can access.
-          </p>
-        </div>
+    <main className="role-management">
+     
 
-        <button
-          type="button"
-          className="role-management__primary-button"
-          onClick={openCreateForm}
-        >
-          + Create Role
-        </button>
-      </header>
+      {!showForm && (
+        <>
+          <div className="page-header">
+            <div><h1>Role Management</h1></div>
+            <button type="button" className="themebtn" onClick={openCreateForm}>
+              <FiPlus /> Create Role
+            </button>
+          </div>
 
-      {error && (
-        <div className="role-management__alert role-management__alert--error">
-          {error}
-        </div>
+          {error && <div className="role-management__alert role-management__alert--error">{error}</div>}
+          {notice && <div className="role-management__alert role-management__alert--success">{notice}</div>}
+
+          <section className="role-management__summary">
+            <article className="dashboard-stat-card card-success">
+              <div className="stat-card-top"><div className="stat-icon stat-icon-success"><RiTeamLine /></div></div>
+              <div className="stat-card-body"><span className="stat-card-title">Total Staff Roles</span><strong className="stat-card-value">{roles.length}</strong></div>
+            </article>
+            <article className="dashboard-stat-card card-purple">
+              <div className="stat-card-top"><div className="stat-icon stat-icon-purple"><MdOutlineFeaturedPlayList /></div></div>
+              <div className="stat-card-body"><span className="stat-card-title">Available Permissions</span><strong className="stat-card-value">{availablePermissions.length}</strong></div>
+            </article>
+          </section>
+
+          <div className="common-card-filters">
+            <div className="input-search">
+              <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search roles..." aria-label="Search roles" />
+              <FiSearch />
+            </div>
+          </div>
+
+          <section className="common-card">
+            {loading ? (
+              <p className="role-management__state">Loading roles...</p>
+            ) : filteredRoles.length === 0 ? (
+              <div className="role-management__state"><strong>No roles found</strong><p>Create a role or change your search.</p></div>
+            ) : (
+              <div className="common-table-wrapper">
+                <table className="common-table">
+                  <thead><tr><th>Roles</th><th>Permissions</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {filteredRoles.map((role) => (
+                      <tr key={role.id}>
+                        <td><strong className="tabletitle">{role.name}</strong></td>
+                        {/* <td>{role.description || "—"}</td> */}
+                        <td><span className="batchtag">{(role.permissions || []).length} permissions</span></td>
+                        <td><span className={`role-management__status ${role.isActive ? "tag-success" : "tag-danger"}`}>{role.isActive ? "Active" : "Inactive"}</span></td>
+                        <td><div className="admission-actions">
+                          <button type="button" data-tooltip="Edit" className="tooltip" onClick={() => openEditForm(role)}><FiEdit2 /></button>
+                          <button type="button" data-tooltip="Delete" className="tooltip" onClick={() => handleDelete(role)}><FiTrash2 /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
       )}
-
-      {notice && (
-        <div className="role-management__alert role-management__alert--success">
-          {notice}
-        </div>
-      )}
-
-      <section className="role-management__summary">
-        <div className="role-management__summary-card">
-          <span>Total staff roles</span>
-          <strong>{roles.length}</strong>
-        </div>
-        <div className="role-management__summary-card">
-          <span>Available permissions</span>
-          <strong>{availablePermissions.length}</strong>
-        </div>
-      </section>
-
-      <section className="role-management__panel">
-        <div className="role-management__toolbar">
-          <div>
-            <h2>Staff roles</h2>
-            <p>Manage permissions assigned to staff accounts.</p>
-          </div>
-
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search roles..."
-            aria-label="Search roles"
-          />
-        </div>
-
-        {loading ? (
-          <p className="role-management__state">Loading roles...</p>
-        ) : filteredRoles.length === 0 ? (
-          <div className="role-management__state">
-            <strong>No roles found</strong>
-            <p>Create a role or change your search.</p>
-          </div>
-        ) : (
-          <div className="role-management__table-wrap">
-            <table className="role-management__table">
-              <thead>
-                <tr>
-                  <th>Role</th>
-                  <th>Description</th>
-                  <th>Permissions</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRoles.map((role) => (
-                  <tr key={role.id}>
-                    <td>
-                      <strong>{role.label}</strong>
-                      <small>{role.name}</small>
-                    </td>
-                    <td>{role.description || "—"}</td>
-                    <td>
-                      <span className="role-management__count">
-                        {(role.permissions || []).length} permissions
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`role-management__status ${
-                          role.isActive
-                            ? "role-management__status--active"
-                            : "role-management__status--inactive"
-                        }`}
-                      >
-                        {role.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="role-management__actions">
-                        <button
-                          type="button"
-                          className="role-management__text-button"
-                          onClick={() => openEditForm(role)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="role-management__text-button role-management__text-button--danger"
-                          onClick={() => handleDelete(role)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* Insert them right here */}
-      </>
-    )}
 
       {showForm && (
-        <div
-          className="role-management__page-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeForm();
-          }}
-        >
-          <section
-            className="role-management__form-page"
-            aria-labelledby="role-form-title"
-          >
-            <header className="role-management__modal-header">
-              <div>
-                <h2 id="role-form-title">
-                  {editingRole ? "Edit staff role" : "Create staff role"}
-                </h2>
-                <p>Choose a clear role name and assign only necessary permissions.</p>
-              </div>
-              <button
-                type="button"
-                className="role-management__secondary-button"
-                onClick={closeForm}
-                disabled={saving}
-                >
-                ← Back to Roles
-              </button>
-            </header>
+        <div className="role-management__page-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeForm(); }}>
+          <section className="role-management__form-page" aria-labelledby="role-form-title">
+            <div className="page-header">
+              <div><h1 id="role-form-title">{editingRole ? "Edit Role" : "Create Role"}</h1></div>
+              
+            </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="role-management__form-fields">
-                <label>
-                  Role name
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={updateField}
-                    placeholder="e.g. accountant"
-                    required
-                    minLength={2}
-                    maxLength={80}
-                    pattern="[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*"
-                    disabled={Boolean(editingRole) || saving}
-                  />
-                  <small>
-                    Used internally; lowercase letters, numbers, hyphens and underscores.
-                  </small>
-                </label>
+            {error && <div className="role-management__alert role-management__alert--error">{error}</div>}
 
-                <label>
-                  Display label
-                  <input
-                    name="label"
-                    value={form.label}
-                    onChange={updateField}
-                    placeholder="e.g. Accountant"
-                    required
-                    minLength={1}
-                    maxLength={80}
-                    disabled={saving}
-                  />
-                </label>
-
-                <label>
-                  Description
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={updateField}
-                    placeholder="Describe this role's responsibilities"
-                    maxLength={300}
-                    rows={2}
-                    disabled={saving}
-                  />
-                </label>
-              </div>
+            <div className="common-card">
+              <form onSubmit={handleSubmit}>
+                <div className="cardbody">
+                  <div className="role-form-grid">
+                    <div className="input-felid admission-form-full">
+                      <label htmlFor="role-name">Role name</label>
+                      <input id="role-name" name="name" value={form.name} onChange={updateField} placeholder="e.g. accountant" required minLength={2} maxLength={80} pattern="[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*" disabled={Boolean(editingRole) || saving} />
+                    </div>
+                  </div>
+                
 
               
-            <div className="role-management__permissions-heading">
-            <div>
-                <h3>Assign Permissions</h3>
-                <p>
-                {form.permissions.length} of {availablePermissions.length} selected
-                </p>
-            </div>
+                <div className="role-management__permissions-card">
 
-            <button
-                type="button"
-                className="role-management__text-button"
-                onClick={() =>
-                setForm((current) => ({
-                    ...current,
-                    permissions: [],
-                }))
-                }
-                disabled={saving}
-            >
-                Clear all
-            </button>
-            </div>
+               
 
-            <div className="role-management__permission-search">
-            <input
-                type="search"
-                value={permissionSearch}
-                onChange={(event) => setPermissionSearch(event.target.value)}
-                placeholder="Search permissions, e.g. attendance or reports..."
-                aria-label="Search available permissions"
-            />
-            </div>
+                 
 
-            <div className="role-management__permission-groups">
-            {Object.entries(permissionGroups).map(([group, permissions]) => {
-                const selectedCount = permissions.filter((permission) =>
-                form.permissions.includes(permission)
-                ).length;
+                  <div class="panel-header"><div><h3>Assign Permissions</h3>
+                  <p>Select the permissions that will be assigned to this role.
 
-                const allSelected = selectedCount === permissions.length;
+</p> </div>
 
-                return (
-                <fieldset
-                    className="role-management__permission-group"
-                    key={group}
-                >
-                    <legend>{GROUP_LABELS[group] || group}</legend>
+<div className="search-count">
+                            
 
-                    <div className="role-management__group-toolbar">
-                    <span>
-                        {selectedCount} of {permissions.length} selected
-                    </span>
+                          
 
-                    <button
-                        type="button"
-                        className="role-management__text-button"
-                        onClick={() => toggleGroup(permissions)}
-                        disabled={saving}
-                    >
-                        {allSelected ? "Clear group" : "Select all"}
+                          <div className="role-management__permissions-toolbar">
+                            <div className="role-management__permissions-count"><FiCheckCircle /><span><strong>{form.permissions.length}</strong> of <strong>{availablePermissions.length}</strong> selected</span></div>
+                             <button type="button" className="role-management__text-button" onClick={() => setForm((current) => ({ ...current, permissions: allPermissionsSelected ? current.permissions.filter((permission) => !availablePermissions.includes(permission)) : [...new Set([...current.permissions, ...availablePermissions])] }))} disabled={saving || availablePermissions.length === 0}>
+                      <FiCheckSquare /> {allPermissionsSelected ? "Deselect All" : "Select All"}
                     </button>
-                    </div>
+                          </div>
+                          <div className="role-management__module-search">
+                            <FiSearch />
+                            <input type="search" placeholder="Search modules or permissions..." value={permissionSearch} onChange={(event) => setPermissionSearch(event.target.value)} aria-label="Search permissions" />
+                          </div>
+                  </div>
 
-                    <div className="role-management__permission-options">
-                    {permissions.map((permission) => (
-                        <label
-                        className="role-management__permission-option"
-                        key={permission}
-                        >
-                        <input
-                            type="checkbox"
-                            checked={form.permissions.includes(permission)}
-                            onChange={() => togglePermission(permission)}
-                            disabled={saving}
-                        />
+</div>
+                 
+                  <div className="common-table-wrapper">
+                    <table className="common-table">
+                      <thead><tr><th> Modules</th><th>VIEW</th><th>ADD</th><th>EDIT</th><th>DELETE</th><th>OTHER</th></tr></thead>
+                      <tbody>
+                        {permissionGroupList.map((group) => {
+                          const groupPermissions = group.permissions;
+                          const selectedCount = groupPermissions.filter((permission) => form.permissions.includes(permission)).length;
+                          const allSelected = groupPermissions.length > 0 && selectedCount === groupPermissions.length;
+                          const findPermission = (action) => groupPermissions.find((permission) => permission.split(".").pop().toLowerCase() === action);
+                          const otherPermissions = groupPermissions.filter((permission) => !["view", "create", "update", "delete"].includes(permission.split(".").pop().toLowerCase()));
 
-                        <span>
-                            <strong>{formatPermission(permission)}</strong>
-                            <small>{permission}</small>
-                        </span>
-                        </label>
-                    ))}
-                    </div>
-                </fieldset>
-                );
-            })}
+                          return (
+                            <tr key={group.key}>
+                              <td className="table-left-header">
+                                <label className="role-management__module-name"><input type="checkbox" checked={allSelected} disabled={saving} onChange={() => toggleGroup(groupPermissions)} /><span>{group.label}</span></label>
+                                {/* <small className="role-management__module-count">{selectedCount}/{groupPermissions.length} selected</small> */}
+                              </td>
+                              {["view", "create", "update", "delete"].map((action) => {
+                                const permission = findPermission(action);
+                                return <td key={action}>{permission ? (
+                                  <label className="role-management__permission-checkbox"><input type="checkbox" checked={form.permissions.includes(permission)} disabled={saving} onChange={() => togglePermission(permission)} /><span /></label>
+                                ) : <span className="role-management__permission-unavailable">—</span>}</td>;
+                              })}
+                              <td>{otherPermissions.length ? <div className="role-management__other-permissions">{otherPermissions.map((permission) => (
+                                <label className="role-management__other-permission" key={permission} title={permission}><input type="checkbox" checked={form.permissions.includes(permission)} disabled={saving} onChange={() => togglePermission(permission)} /><span>{formatPermission(permission) || permission}</span></label>
+                              ))}</div> : <span className="role-management__permission-unavailable">—</span>}</td>
+                            </tr>
+                          );
+                        })}
+                        {permissionGroupList.length === 0 && <tr><td colSpan="6"><div className="role-management__no-permissions">No matching modules or permissions found.</div></td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
 
-            {Object.keys(permissionGroups).length === 0 && (
-                <p className="role-management__no-permissions">
-                No matching permissions. Try another search.
-                </p>
-            )}
+                <footer className="role-management__form-footer">
+                  <div>
+                {form.permissions.length === 0 && <div className="role-management__form-hint text-alert">Please select at least one permission for this role.</div>}
+
+                  </div>
+
+                  <div>
+                    {/* <button type="button" className="themebtn themebtnline" onClick={closeForm} disabled={saving}>Cancel</button> */}
+                  <button type="submit" className="themebtn " disabled={saving || availablePermissions.length === 0}>{saving ? "Saving..." : editingRole ? "Save Changes" : "Create Role"}</button>
+                  </div>
+                </footer>
+              </form>
             </div>
-
-
-              
-
-              <footer className="role-management__form-footer">
-                <button
-                  type="button"
-                  className="role-management__secondary-button"
-                  onClick={closeForm}
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="role-management__primary-button"
-                  disabled={saving || availablePermissions.length === 0}
-                >
-                  {saving
-                    ? "Saving..."
-                    : editingRole
-                      ? "Save Changes"
-                      : "Create Role"}
-                </button>
-              </footer>
-            </form>
           </section>
         </div>
       )}
     </main>
-    
-    
   );
 }
