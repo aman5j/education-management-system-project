@@ -162,12 +162,10 @@ export const getExamResultReview = async (req, res, next) => {
         ],
         selectedAnswer: answer.answer || "",
         correctAnswer:
-          result.resultStatus === "Published"
-            ? override?.correctAnswer ||
-              answer.correctAnswerSnapshot ||
-              question.correctAnswer ||
-              ""
-            : "",
+        override?.correctAnswer ||
+        answer.correctAnswerSnapshot ||
+        question.correctAnswer ||
+        "",
         isCorrect: Boolean(answer.isCorrect),
         marksAwarded: Number(answer.marksAwarded || 0),
         marksOverridden: Boolean(answer.marksOverridden),

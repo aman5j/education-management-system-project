@@ -516,16 +516,23 @@ export const submitMyExam = async (req, res, next) => {
 
     await result.save();
 
-    return res.json({
-      success: true,
-      message: "Exam submitted successfully. Your result will be available after the institute publishes it.",
-      data: {
+    
+    return res.status(200).json({
+    success: true,
+    message: "Exam submitted successfully. Your provisional result is ready.",
+    data: {
         resultId: String(result._id),
         attemptStatus: result.attemptStatus,
         resultStatus: result.resultStatus,
         submittedAt: result.submittedAt,
-      },
+        obtainedMarks: result.obtainedMarks,
+        totalMarks: result.totalMarks,
+        percentage: result.percentage,
+        grade: result.grade,
+        passStatus: result.passStatus,
+    },
     });
+
   } catch (error) {
     if (error.status) return fail(res, error.status, error.message);
     next(error);
