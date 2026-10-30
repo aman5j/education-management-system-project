@@ -1,6 +1,12 @@
 import express from "express";
 
 import {
+  getAdminUpdateMarksList,
+  getAdminFinalResult,
+  updateAdminFinalResult,
+} from "../controllers/adminFinalResult.controller.js";
+
+import {
   getExamResults,
   getExamCandidates,
   getExamResultById,
@@ -53,6 +59,12 @@ router.patch(
 );
 
 router.get("/:id/review", getExamResultReview);
+
+
+router.get("/admin/update-marks", getAdminUpdateMarksList);
+router.get("/admin/update-marks/:id", getAdminFinalResult);
+router.patch("/admin/update-marks/:id", updateAdminFinalResult);
+
 
 router.get("/:id", getExamResultById);
 

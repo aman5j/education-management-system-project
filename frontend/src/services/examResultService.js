@@ -55,3 +55,23 @@ export const applyAnswerKeyCorrection = (examId, payload) =>
     `/exam-results/exams/${examId}/answer-key/apply`,
     payload
   );
+
+
+
+/*Admin control the marks and percentage */
+
+export const getAdminUpdateMarksList = (params = {}) =>
+  api.get("/exam-results/admin/update-marks", { params });
+
+export const getAdminFinalResult = (resultId) => {
+  if (!resultId) throw new Error("Result ID is required.");
+  return api.get(`/exam-results/admin/update-marks/${resultId}`);
+};
+
+export const updateAdminFinalResult = (resultId, payload) => {
+  if (!resultId) throw new Error("Result ID is required.");
+  return api.patch(
+    `/exam-results/admin/update-marks/${resultId}`,
+    payload
+  );
+};

@@ -89,6 +89,7 @@ const resultAuditSchema = new mongoose.Schema(
         "MARKS_OVERRIDDEN",
         "ANSWER_KEY_RECALCULATED",
         "REPUBLISHED",
+        "ADMIN_FINAL_RESULT_UPDATED",
       ],
       required: true,
     },
@@ -169,6 +170,51 @@ const examResultSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+
+    // Institute-controlled final marks breakdown
+    objectiveTotalMarks: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    objectiveObtainedMarks: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    practicalTotalMarks: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    practicalObtainedMarks: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Original automatic score, retained when Admin edits final marks
+    autoCalculatedMarks: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    autoCalculatedPercentage: {
+      type: Number,
+      default: null,
+      min: 0,
+      max: 100,
+    },
+    adminMarksUpdatedAt: {
+      type: Date,
+      default: null,
+    },
+    adminMarksUpdatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     percentage: {
       type: Number,
       default: 0,

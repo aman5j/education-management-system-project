@@ -89,6 +89,8 @@ import VerifyHallTicket from "./pages/public/VerifyHallTicket";
 import ExamResults from "./pages/admin/exams/ExamResults";
 import ExamResultReview from "./pages/admin/exams/ExamResultReview";
 import ExamAccessRequests from "./pages/admin/exams/ExamAccessRequests";
+import UpdateMarks from "./pages/admin/exams/UpdateMarks";
+
 
 import Expenses from "./pages/admin/expenses/Expenses";
 import AddExpense from "./pages/admin/expenses/AddExpense";
@@ -329,6 +331,9 @@ const App = () => {
           path="exams/access-requests"
           element={<ExamAccessRequests />}
         />
+
+        <Route path="exams/update-marks" element={<UpdateMarks />} />
+        
 
         {/* Expenses Management */}
         <Route path="expenses" element={<Expenses />} />

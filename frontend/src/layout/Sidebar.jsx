@@ -164,6 +164,10 @@ const menuItems = [
         path: "/admin/exams/results",
       },
       {
+        label: "Update Marks",
+        path: "/admin/exams/update-marks",
+      },
+      {
         label: "Result Reports",
         path: "/admin/result-reports",
       },
@@ -277,6 +281,7 @@ const PATH_PERMISSION_MAP = {
   "/admin/exams/schedule": "exams.view",
   "/admin/hall-tickets": "exams.view",
   "/admin/exams/results": "results.view",
+  "/admin/exams/update-marks": "results.view",  // update this for admin control marks 
   "/admin/result-reports": "results.view",
 
   "/admin/certificates": "certificates.view",
