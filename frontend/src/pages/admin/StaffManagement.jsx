@@ -4,7 +4,12 @@ import { useNavigate } from "react-router-dom";
 import staffService from "../../services/staffService";
 import roleService from "../../services/roleService";
 import "./StaffManagement.css";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus, FiSearch } from "react-icons/fi";
+import { IoIosCall } from "react-icons/io";
+import { MdOutgoingMail } from "react-icons/md";
+import { MdDateRange } from "react-icons/md";
+import { RiTeamLine } from "react-icons/ri";
+
 
 const emptyForm = {
   name: "",
@@ -274,26 +279,27 @@ const handlePasswordReset = async (member) => {
 
       {showForm ? (
         <section className="staff-management__panel">
-          <div className="staff-management__panel-header">
-            <div>
-              <h2>Create Staff Account</h2>
-              <p>Enter account details and assign a custom staff role.</p>
-            </div>
-
+        
+           {/* <div class="page-header"><div><h1>Create Staff Account</h1></div>
             <button
               type="button"
-              className="staff-management__secondary"
+              className="themebtn"
               onClick={closeCreateForm}
               disabled={saving}
             >
               Back to Staff
-            </button>
-          </div>
+            </button> </div> */}
 
-          <form onSubmit={handleSubmit}>
-            <div className="staff-management__form-grid">
+
+
+         <div className="common-card">
+ <form onSubmit={handleSubmit}>
+        <div className="cardbody">
+            <div className="StaffManagement-form-grid">
+              <div className="input-felid">
               <label>
-                Full name *
+                Full name <span className="required">*</span>
+                 </label>
                 <input
                   name="name"
                   value={form.name}
@@ -304,10 +310,13 @@ const handlePasswordReset = async (member) => {
                   autoComplete="name"
                   placeholder="Enter staff name"
                 />
-              </label>
+             
+              </div>
 
+<div className="input-felid">
               <label>
-                Email address *
+                Email address <span className="required">*</span>
+                 </label>
                 <input
                   name="email"
                   type="email"
@@ -317,10 +326,13 @@ const handlePasswordReset = async (member) => {
                   autoComplete="email"
                   placeholder="staff@example.com"
                 />
-              </label>
+             
 
+</div>
+<div className="input-felid">
               <label>
                 Phone number
+                  </label>
                 <input
                   name="phone"
                   type="tel"
@@ -330,29 +342,44 @@ const handlePasswordReset = async (member) => {
                   autoComplete="tel"
                   placeholder="Enter phone number"
                 />
-              </label>
+            
+              </div>
 
-              {/* <label>
-                Initial password *
-                <input
-                  name="password"
-                  type="password"
-                  value={form.password}
+            
+
+ <div className="input-felid">
+              <label className="staff-management__full-width">
+                Staff role <span className="required">*</span>
+                   </label>
+                <select
+                  name="assignedRoleId"
+                  value={form.assignedRoleId}
                   onChange={updateField}
-                  minLength={12}
                   required
-                  autoComplete="new-password"
-                  placeholder="At least 12 characters"
-                />
-                <small>
-                  Share this securely with the staff member.
-                  Never reuse an existing password.
-                </small>
-              </label> */}
+                >
+                  <option value="">Select a staff role</option>
+                  {roles
+                    .filter((role) => role.isActive !== false)
+                    .map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.label || role.name}
+                      </option>
+                    ))}
+                </select>
 
-              
+                {roles.length === 0 && (
+                  <small>
+                    No staff roles found. Create a role under
+                    Settings → Roles first.
+                  </small>
+                )}
+           
+            </div>
+
+              <div className="input-felid">
             <label>
-            Initial password *
+            Initial password <span className="required"> *</span>
+               </label>
             <div className="staff-management__password-field">
                 <input
                 name="password"
@@ -379,40 +406,14 @@ const handlePasswordReset = async (member) => {
                 Use at least 12 characters. Share the initial password securely
                 with the staff member.
             </small>
-            </label>
-
-
-              <label className="staff-management__full-width">
-                Staff role *
-                <select
-                  name="assignedRoleId"
-                  value={form.assignedRoleId}
-                  onChange={updateField}
-                  required
-                >
-                  <option value="">Select a staff role</option>
-                  {roles
-                    .filter((role) => role.isActive !== false)
-                    .map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.label || role.name}
-                      </option>
-                    ))}
-                </select>
-
-                {roles.length === 0 && (
-                  <small>
-                    No staff roles found. Create a role under
-                    Settings → Roles first.
-                  </small>
-                )}
-              </label>
+         
+            </div>
             </div>
 
-            <footer className="staff-management__form-footer">
+            <footer className="subject-form-actions">
               <button
                 type="button"
-                className="staff-management__secondary"
+                className="themebtn themebtnline"
                 onClick={closeCreateForm}
                 disabled={saving}
               >
@@ -421,13 +422,15 @@ const handlePasswordReset = async (member) => {
 
               <button
                 type="submit"
-                className="staff-management__primary"
+                className="themebtn"
                 disabled={saving || roles.length === 0}
               >
                 {saving ? "Creating..." : "Create Staff"}
               </button>
             </footer>
+            </div>
           </form>
+         </div>
         </section>
       ) : (
         <section className="staff-management__panel">
@@ -439,6 +442,7 @@ const handlePasswordReset = async (member) => {
 
             <div className="common-card-filters">
               <div className="input-search">
+                 <FiSearch />
               <input
                 type="search"
                 value={search}
@@ -482,9 +486,9 @@ const handlePasswordReset = async (member) => {
               <table className="common-table">
                 <thead>
                   <tr>
-                    <th>Staff member</th>
+                    <th>Staff / Role</th>
                     <th>Phone</th>
-                    <th>Assigned role</th>
+                    {/* <th>Assigned role</th> */}
                     <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -498,31 +502,46 @@ const handlePasswordReset = async (member) => {
 
                         <div class="student-name-cell">
                           <div class="student-avatar-wrapper"><img alt="utpam singh" class="student-avatar" src="http://localhost:5000/uploads/students/1792903718008-81YP9oMWB1L-_SX569_.jpg" /></div>
-                          <div><strong>{member.name}</strong>{member.email}</div></div>
+                          <div><strong>{member.name}</strong>  <label className="roleassign">  <RiTeamLine /> {member.assignedRole?.label ||
+                          member.assignedRole?.name ||
+                          "No role assigned"}</label></div></div>
 
                        
                       </td>
-                      <td>{member.phone || "—"}</td>
                       <td>
-                        {member.assignedRole?.label ||
+                         <div className="contact-details">
+                     <div className="contact-li"> <IoIosCall />  <span> {member.phone || "—"}</span></div>
+                    <div className="contact-li"> <MdOutgoingMail /> <span>{member.email}</span></div>
+                    </div>
+                       </td>
+                      {/* <td>
+                       
+
+                        <span className="roleassign">  <RiTeamLine /> {member.assignedRole?.label ||
                           member.assignedRole?.name ||
-                          "No role assigned"}
-                      </td>
+                          "No role assigned"}</span>
+                      </td> */}
                       <td>
                         <span
                           className={`staff-management__status ${
                             member.status === "active"
-                              ? "staff-management__status--active"
-                              : "staff-management__status--inactive"
+                              ? "tag-success"
+                              : "tag-danger"
                           }`}
                         >
                           {member.status}
                         </span>
                       </td>
                       <td>
-                        {member.createdAt
+
+                        <div className="contact-details">
+                                             <div className="contact-li"><MdDateRange />  <span> {member.createdAt
                           ? new Date(member.createdAt).toLocaleDateString()
-                          : "—"}
+                          : "—"}</span></div>
+                                            
+                                            </div>
+
+                       
                       </td>
 
                       
@@ -530,7 +549,7 @@ const handlePasswordReset = async (member) => {
                         <div className="staff-management__row-actions">
                             <button
                             type="button"
-                            className="staff-management__secondary"
+                            className=" themebtn smallbtn"
                             onClick={() => handleStatusChange(member)}
                             >
                             {member.status === "active" ? "Suspend" : "Activate"}
@@ -538,7 +557,7 @@ const handlePasswordReset = async (member) => {
 
                             <button
                             type="button"
-                            className="staff-management__secondary"
+                            className=" themebtn smallbtn"
                             onClick={() => handlePasswordReset(member)}
                             >
                             Reset Password
