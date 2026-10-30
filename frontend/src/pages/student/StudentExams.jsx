@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import StudentExamAccessPanel from "./StudentExamAccessPanel";
 import {
   FiAlertCircle,
   FiArrowLeft,
@@ -355,6 +356,11 @@ export default function StudentExams() {
                 </li>
               ))}
             </ul>
+
+            <StudentExamAccessPanel
+            ticketId={ticketId}
+            onUpdated={loadInstructions}
+            />
 
             {error && <p className="se-error">{error}</p>}
 

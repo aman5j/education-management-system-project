@@ -1,0 +1,540 @@
+
+.exam-access-page {
+  width: 100%;
+  min-width: 0;
+  color: #172033;
+}
+
+.ear-header,
+.ear-toolbar,
+.ear-pagination,
+.ear-modal-heading,
+.ear-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ear-header {
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.ear-header h1 {
+  margin: 5px 0;
+  color: #10254a;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.ear-header p,
+.ear-modal-heading p {
+  margin: 5px 0 0;
+  color: #718096;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ear-eyebrow {
+  display: block;
+  color: #3267e9;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.ear-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ear-button:disabled,
+.ear-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ear-button--light {
+  border-color: #d8e0eb;
+  background: #fff;
+  color: #334155;
+}
+
+.ear-button--light:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.ear-button--danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.ear-button--danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.ear-spin {
+  animation: ear-spin 1s linear infinite;
+}
+
+@keyframes ear-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ear-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.ear-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid #e4eaf2;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.ear-summary-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf1ff;
+  color: #2563eb;
+  font-size: 19px;
+}
+
+.ear-summary-icon--orange {
+  background: #fff2df;
+  color: #c26b12;
+}
+
+.ear-summary-card small,
+.ear-summary-card strong {
+  display: block;
+}
+
+.ear-summary-card small {
+  color: #718096;
+  font-size: 11px;
+}
+
+.ear-summary-card strong {
+  margin-top: 4px;
+  color: #172033;
+  font-size: 23px;
+}
+
+.ear-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e4eaf2;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.ear-toolbar {
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ear-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ear-tabs button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ear-tabs button:hover {
+  background: #f8fafc;
+}
+
+.ear-tabs button.is-active {
+  border-color: #0d9488;
+  background: #0d9488;
+  color: #fff;
+}
+
+.ear-tabs button span {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 5px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 10px;
+}
+
+.ear-tabs button.is-active span {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ear-search {
+  display: flex;
+  min-width: 240px;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #d7e0eb;
+  border-radius: 7px;
+  color: #64748b;
+}
+
+.ear-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1e293b;
+  font: inherit;
+  font-size: 12px;
+}
+
+.ear-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+}
+
+.ear-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: collapse;
+}
+
+.ear-table th,
+.ear-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e8edf4;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+.ear-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ear-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ear-table tbody tr:hover {
+  background: #fbfdff;
+}
+
+.ear-student,
+.ear-exam {
+  display: flex;
+  min-width: 140px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ear-student strong,
+.ear-exam strong {
+  color: #1e293b;
+  font-size: 12px;
+}
+
+.ear-student span,
+.ear-exam span,
+.ear-muted {
+  color: #718096;
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ear-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ear-status--pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.ear-status--approved {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.ear-status--rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ear-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ear-icon-button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.ear-icon-button--approve {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.ear-icon-button--reject {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.ear-icon-button--approve:hover:not(:disabled) {
+  background: #d1fae5;
+}
+
+.ear-icon-button--reject:hover:not(:disabled) {
+  background: #ffe4e6;
+}
+
+.ear-pagination {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.ear-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+
+.ear-state {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+}
+
+.ear-state > svg {
+  font-size: 26px;
+}
+
+.ear-state strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+.ear-state p {
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.ear-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 15px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ear-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ear-alert--error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ear-alert--success {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.ear-modal-backdrop {
+  position: fixed;
+  z-index: 1500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.ear-modal {
+  width: min(100%, 500px);
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.ear-modal-heading {
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.ear-modal-heading h2 {
+  margin: 5px 0;
+  color: #10254a;
+  font-size: 19px;
+}
+
+.ear-modal-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.ear-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ear-field textarea {
+  width: 100%;
+  min-height: 105px;
+  resize: vertical;
+  padding: 11px;
+  border: 1px solid #d7e0eb;
+  border-radius: 7px;
+  outline: none;
+  color: #172033;
+  font: inherit;
+  font-size: 13px;
+}
+
+.ear-field textarea:focus {
+  border-color: #3267e9;
+  box-shadow: 0 0 0 3px rgba(50, 103, 233, 0.1);
+}
+
+.ear-field small {
+  color: #718096;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.ear-modal-actions {
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@media (max-width: 760px) {
+  .ear-header,
+  .ear-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ear-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ear-search {
+    width: 100%;
+  }
+
+  .ear-card {
+    padding: 12px;
+  }
+
+  .ear-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .ear-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ear-header h1 {
+    font-size: 22px;
+  }
+
+  .ear-tabs button {
+    padding: 0 9px;
+    font-size: 11px;
+  }
+}

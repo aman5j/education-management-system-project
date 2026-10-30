@@ -152,6 +152,10 @@ const menuItems = [
         path: "/admin/exams/schedule",
       },
       {
+        label: "Exam Access Requests",
+        path: "/admin/exams/access-requests",
+      },
+      {
         label: "Hall Ticket Management",
         path: "/admin/hall-tickets",
       },
@@ -173,9 +177,19 @@ const menuItems = [
   },
 
   {
-    label: "Faculty & Staff",
-    path: "/admin/staff",
+    label: "Roles & Staff",
+    // path: "/admin/staff",
     icon: FiUsers,
+    children: [
+      {
+        label: "Roles",
+        path: "/admin/roles",
+      },
+      {
+        label: "Faculty & Staff",
+        path: "/admin/staff",
+      },
+    ],
   },
 
   {

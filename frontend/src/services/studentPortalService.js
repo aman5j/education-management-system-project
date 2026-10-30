@@ -45,6 +45,22 @@ const studentPortalService = {
     return response.data;
   },
 
+  async getMyExamAccessRequest(ticketId) {
+    const response = await api.get(
+      `/student-portal/exams/${ticketId}/access-request`
+    );
+
+    return response.data;
+  },
+
+  async requestMyExamAccess(ticketId) {
+    const response = await api.post(
+      `/student-portal/exams/${ticketId}/access-request`
+    );
+
+    return response.data;
+  },
+
   async startMyExam(ticketId) {
     const response = await api.post(
       `/student-portal/exams/${ticketId}/start`
