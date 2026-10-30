@@ -11,7 +11,6 @@ import {
   FiAward,
   FiPercent,
   FiStar,
-  FiTrophy,
 } from "react-icons/fi";
 
 import {
@@ -292,7 +291,7 @@ export default function UpdateMarks() {
               <small>Admin-controlled percentage</small>
             </article>
             <article>
-              <FiTrophy />
+              <FiAward />
               <span>Grade</span>
               <strong>{form.grade}</strong>
               <small>{form.passStatus}</small>
