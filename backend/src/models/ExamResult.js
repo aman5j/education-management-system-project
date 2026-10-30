@@ -12,6 +12,33 @@ const examAnswerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
+
+    questionTextSnapshot: {
+      type: String,
+      default: "",
+    },
+
+    optionASnapshot: {
+      type: String,
+      default: "",
+    },
+
+    optionBSnapshot: {
+      type: String,
+      default: "",
+    },
+
+    optionCSnapshot: {
+      type: String,
+      default: "",
+    },
+
+    optionDSnapshot: {
+      type: String,
+      default: "",
+    },
+
+    
     answer: {
       type: String,
       enum: ["A", "B", "C", "D", ""],
@@ -121,7 +148,7 @@ const examResultSchema = new mongoose.Schema(
       type: [resultAuditSchema],
       default: [],
     },
-    
+
     totalQuestions: {
       type: Number,
       required: true,

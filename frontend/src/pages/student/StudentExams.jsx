@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import StudentExamAccessPanel from "./StudentExamAccessPanel";
+
 import {
   FiAlertCircle,
   FiArrowLeft,
@@ -55,6 +55,21 @@ const clockText = (milliseconds) => {
   return `${hours}:${minutes}:${remaining}`;
 };
 
+const durationText = (milliseconds) => {
+  const totalSeconds = Math.floor(
+    Math.max(0, Number(milliseconds || 0)) / 1000
+  );
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return hours > 0
+    ? `${hours}h ${minutes}m`
+    : `${minutes}m ${seconds}s`;
+};
+
+
 function ExamStat({ icon: Icon, title, value, note, tone }) {
   return (
     <article className={`se-stat se-stat--${tone}`}>
@@ -92,6 +107,10 @@ export default function StudentExams() {
   const isTakingExam = path.endsWith("/take");
   const isResultDetail = path.includes("/results/");
 
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState("Pending");
+  const [approvalReason, setApprovalReason] = useState("");
+
   const [exams, setExams] = useState([]);
   const [results, setResults] = useState([]);
   const [examInfo, setExamInfo] = useState(null);
@@ -106,6 +125,133 @@ export default function StudentExams() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  const handleStartExam = async () => {
+    if (busy) return;
+
+    if (examInfo?.feeClearance?.eligible === false) {
+        setError(
+        examInfo.feeClearance.message ||
+        "Your fee is due. Please complete your fee payment before starting the exam."
+        );
+        return;
+    }
+
+    setBusy(true);
+    setError("");
+    setNotice("");
+
+    try {
+        // An existing attempt should resume, not create another request.
+        if (examInfo?.alreadyStarted) {
+        await studentPortalService.startMyExam(ticketId);
+        navigate(`/student/exams/${ticketId}/take`);
+        return;
+        }
+
+        const existing =
+        await studentPortalService.getMyExamAccessRequest(ticketId);
+
+        let status = existing?.data?.status || "NotRequested";
+        let reason = existing?.data?.request?.rejectionReason || "";
+
+        if (status !== "Approved" && status !== "Pending") {
+        const submitted =
+            await studentPortalService.requestMyExamAccess(ticketId);
+
+        status = submitted?.data?.status || "Pending";
+        reason = submitted?.data?.rejectionReason || "";
+        }
+
+        if (status === "Approved") {
+        await studentPortalService.startMyExam(ticketId);
+        navigate(`/student/exams/${ticketId}/take`);
+        return;
+        }
+
+        setApprovalStatus(status);
+        setApprovalReason(reason);
+        setApprovalModalOpen(true);
+    } catch (err) {
+        setError(
+        err?.response?.data?.message ||
+        "Unable to request exam access. Please try again."
+        );
+    } finally {
+        setBusy(false);
+    }
+  };
+
+
+  useEffect(() => {
+  if (!approvalModalOpen || approvalStatus !== "Pending") {
+    return undefined;
+  }
+
+  let checking = false;
+
+  const checkApproval = async () => {
+    if (checking) return;
+
+    checking = true;
+
+    try {
+      const response =
+        await studentPortalService.getMyExamAccessRequest(ticketId);
+
+      const data = response?.data || {};
+      const status = data.status || "Pending";
+
+      setApprovalStatus(status);
+      setApprovalReason(
+        data.request?.rejectionReason || ""
+      );
+
+      if (status === "Approved") {
+        const instructions =
+          await studentPortalService.getExamInstructions(ticketId);
+
+        if (!instructions?.data?.canStart) {
+          setApprovalStatus("Approved");
+          return;
+        }
+
+        setApprovalModalOpen(false);
+        setBusy(true);
+
+        try {
+          await studentPortalService.startMyExam(ticketId);
+          navigate(`/student/exams/${ticketId}/take`);
+        } catch (err) {
+          setError(
+            err?.response?.data?.message ||
+            "Approval was received, but the exam could not be started."
+          );
+        } finally {
+          setBusy(false);
+        }
+      }
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+        "Unable to check your approval status."
+      );
+    } finally {
+      checking = false;
+    }
+  };
+
+  const timer = window.setInterval(checkApproval, 3000);
+
+  return () => window.clearInterval(timer);
+}, [
+  approvalModalOpen,
+  approvalStatus,
+  ticketId,
+  navigate,
+]);
+
+
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -241,13 +387,22 @@ export default function StudentExams() {
         answer: answers[question.questionId] || "",
       }));
 
-      await studentPortalService.submitMyExam(ticketId, payload);
+      const response = await studentPortalService.submitMyExam(
+        ticketId,
+        payload
+        );
 
-      setNotice(
-        "Your exam has been submitted. The institute must publish your result before it appears here."
-      );
+        const submittedResultId = response?.data?.resultId;
 
-      navigate("/student/exams", { replace: true });
+        if (!submittedResultId) {
+        throw new Error(
+            "Exam was submitted, but the result reference was not returned. Refresh your exam results."
+        );
+        }
+
+        navigate(`/student/exams/results/${submittedResultId}`, {
+        replace: true,
+        });
     } catch (err) {
       setError(
         err?.response?.data?.message ||
@@ -357,37 +512,123 @@ export default function StudentExams() {
               ))}
             </ul>
 
-            <StudentExamAccessPanel
-            ticketId={ticketId}
-            onUpdated={loadInstructions}
-            />
 
             {error && <p className="se-error">{error}</p>}
 
             <button
-              type="button"
-              className="se-button se-button--primary se-button--wide"
-              disabled={!examInfo.canStart || busy}
-              onClick={async () => {
-                setBusy(true);
-                setError("");
-                try {
-                  await studentPortalService.startMyExam(ticketId);
-                  navigate(`/student/exams/${ticketId}/take`);
-                } catch (err) {
-                  setError(
-                    err?.response?.data?.message ||
-                      "The exam could not be started."
-                  );
-                } finally {
-                  setBusy(false);
+                type="button"
+                className="se-button se-button--primary se-button--wide"
+                disabled={
+                    (!examInfo.canRequestAccess && !examInfo.alreadyStarted) ||
+                    busy
                 }
-              }}
-            >
-              {busy ? "Starting…" : examInfo.alreadyStarted ? "Resume Exam" : "I have read the instructions — Start Exam"}
-              <FiArrowRight />
+                onClick={handleStartExam}
+                >
+                {busy
+                    ? "Processing..."
+                    : examInfo.alreadyStarted
+                    ? "Resume Exam"
+                    : "Start Exam"}
+                <FiArrowRight />
             </button>
 
+
+            {approvalModalOpen && (
+            <div className="se-approval-backdrop">
+                <section
+                className="se-approval-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="se-approval-title"
+                >
+                <div className="se-approval-icon">
+                    {approvalStatus === "Approved"
+                    ? <FiCheckCircle />
+                    : approvalStatus === "Rejected"
+                        ? <FiAlertCircle />
+                        : <FiClock />}
+                </div>
+
+                <h2 id="se-approval-title">
+                    {approvalStatus === "Approved"
+                    ? "Exam Access Approved"
+                    : approvalStatus === "Rejected"
+                        ? "Request Rejected"
+                        : "Awaiting Admin Approval"}
+                </h2>
+
+                <p>
+                    {approvalStatus === "Approved"
+                    ? "Your exam access has been approved. You can proceed when the scheduled exam window is available."
+                    : approvalStatus === "Rejected"
+                        ? approvalReason || "Please contact your institute administrator."
+                        : "Your request has been sent to the institute administrator. This screen will update automatically after approval."}
+                </p>
+
+                {approvalStatus === "Pending" && (
+                    <div className="se-approval-wait">
+                    <span />
+                    Waiting for administrator...
+                    </div>
+                )}
+
+                {approvalStatus === "Rejected" && (
+                    <button
+                    type="button"
+                    className="se-button se-button--primary"
+                    onClick={() => {
+                        setApprovalModalOpen(false);
+                        handleStartExam();
+                    }}
+                    >
+                    Request Again
+                    </button>
+                )}
+
+                {approvalStatus === "Approved" && (
+                    <button
+                    type="button"
+                    className="se-button se-button--primary"
+                    onClick={async () => {
+                        try {
+                        setBusy(true);
+                        const response =
+                            await studentPortalService.getExamInstructions(ticketId);
+
+                        if (!response?.data?.canStart) {
+                            setError("The exam schedule is not currently available.");
+                            return;
+                        }
+
+                        await studentPortalService.startMyExam(ticketId);
+                        setApprovalModalOpen(false);
+                        navigate(`/student/exams/${ticketId}/take`);
+                        } catch (err) {
+                        setError(
+                            err?.response?.data?.message ||
+                            "Unable to start the exam."
+                        );
+                        } finally {
+                        setBusy(false);
+                        }
+                    }}
+                    >
+                    Start Exam
+                    </button>
+                )}
+
+                <button
+                    type="button"
+                    className="se-approval-close"
+                    onClick={() => setApprovalModalOpen(false)}
+                >
+                    Close
+                </button>
+                </section>
+            </div>
+            )}
+
+            
             {!examInfo.canStart && (
               <p className="se-help">
                 This exam cannot be started right now. Confirm the schedule and hall-ticket status with your institute.
@@ -573,35 +814,123 @@ export default function StudentExams() {
     );
   }
 
-  if (isResultDetail && resultDetail) {
-    return (
-      <main className="student-exams">
-        <button className="se-back" onClick={() => navigate("/student/exams")}>
-          <FiArrowLeft /> Back to Exams & Results
-        </button>
 
-        <header className="se-heading">
-          <span className="se-eyebrow">RESULT / ANSWER SHEET</span>
-          <h1>Exam Result</h1>
-          <p>{resultDetail.course}</p>
-        </header>
 
-        <section className="se-result-hero">
-          <div className="se-trophy"><FiAward /></div>
+if (isResultDetail && resultDetail) {
+  const provisional = resultDetail.isProvisional;
+
+  const percentage = Number(resultDetail.percentage || 0);
+  const passed = resultDetail.passStatus === "Pass";
+
+  return (
+    <main className="student-exams se-completion-page">
+      <section className="se-completion-hero">
+        <div className="se-completion-trophy">
+          <FiAward />
+        </div>
+
+        <span className="se-eyebrow">EXAM COMPLETION</span>
+
+        <h1>Exam Completed!</h1>
+
+        <p>
+          Your exam has been successfully submitted.
+        </p>
+
+        <span
+          className={`se-badge ${
+            provisional
+              ? "se-badge--upcoming"
+              : passed
+                ? "se-badge--pass"
+                : "se-badge--fail"
+          }`}
+        >
+          {provisional
+            ? "Provisional Result"
+            : resultDetail.passStatus}
+        </span>
+      </section>
+
+      <section className="se-completion-stats">
+        <article className="se-completion-stat">
+          <span>Total Questions</span>
+          <strong>{resultDetail.totalQuestions}</strong>
+        </article>
+
+        <article className="se-completion-stat">
+          <span>Answered</span>
+          <strong>{resultDetail.answeredCount}</strong>
+        </article>
+
+        <article className="se-completion-stat">
+          <span>Skipped</span>
+          <strong>{resultDetail.skippedCount}</strong>
+        </article>
+
+        <article className="se-completion-stat">
+          <span>Time Taken</span>
+          <strong>{durationText(resultDetail.timeTakenMs)}</strong>
+        </article>
+      </section>
+
+      <section className="se-completion-score-grid">
+        <article className="se-completion-score se-score-blue">
+          <span>Your Score</span>
+          <strong>
+            {money(resultDetail.obtainedMarks)} /{" "}
+            {money(resultDetail.totalMarks)}
+          </strong>
+          <small>
+            {provisional ? "Provisional marks" : "Official marks"}
+          </small>
+        </article>
+
+        <article className="se-completion-score se-score-green">
+          <span>Percentage</span>
+          <strong>{percentage.toFixed(2)}%</strong>
+          <small>Overall performance</small>
+        </article>
+
+        <article className="se-completion-score se-score-orange">
+          <span>Grade</span>
+          <strong>{resultDetail.grade || "—"}</strong>
+          <small>{resultDetail.passStatus || "Result pending"}</small>
+        </article>
+      </section>
+
+      <section className="se-completion-message">
+        <FiCheckCircle />
+        <div>
+          <strong>
+            {provisional
+              ? "Your exam has been submitted successfully!"
+              : passed
+                ? "Great effort!"
+                : "Keep learning and improving!"}
+          </strong>
+
+          <p>
+            {provisional
+              ? "Your marks and percentage are available now. The institute may verify or correct marks before publishing the official result."
+              : "Your official exam result is available."}
+          </p>
+        </div>
+      </section>
+
+      {provisional ? (
+        <section className="se-provisional-note">
+          <FiShield />
           <div>
-            <span className={`se-badge ${resultDetail.passStatus === "Pass" ? "se-badge--pass" : "se-badge--fail"}`}>
-              {resultDetail.passStatus}
-            </span>
-            <h2>{resultDetail.percentage}%</h2>
-            <p>{resultDetail.passStatus === "Pass" ? "Congratulations on completing your exam." : "Review your answer sheet and keep learning."}</p>
-          </div>
-          <div className="se-result-score">
-            <span>Marks obtained</span>
-            <strong>{money(resultDetail.obtainedMarks)} / {money(resultDetail.totalMarks)}</strong>
-            <span>Grade: {resultDetail.grade || "—"}</span>
+            <strong>Awaiting institute verification</strong>
+            <p>
+              Your current score is provisional. The institute can
+              review your answer sheet and update marks before
+              publishing the final result.
+            </p>
           </div>
         </section>
-
+      ) : (
         <section className="se-panel se-answer-sheet">
           <div className="se-panel-heading">
             <div>
@@ -612,36 +941,76 @@ export default function StudentExams() {
           </div>
 
           {(resultDetail.answers || []).map((answer) => (
-            <article className="se-review-question" key={`${answer.number}-${answer.questionText}`}>
+            <article
+              className="se-review-question"
+              key={`${answer.number}-${answer.questionText}`}
+            >
               <div className="se-review-heading">
-                <strong>Q{answer.number}. {answer.questionText}</strong>
-                <span className={`se-badge ${answer.isCorrect ? "se-badge--pass" : "se-badge--fail"}`}>
+                <strong>
+                  Q{answer.number}. {answer.questionText}
+                </strong>
+
+                <span
+                  className={`se-badge ${
+                    answer.isCorrect
+                      ? "se-badge--pass"
+                      : "se-badge--fail"
+                  }`}
+                >
                   {answer.isCorrect ? "Correct" : "Incorrect"}
                 </span>
               </div>
+
               <div className="se-review-options">
                 {answer.options.map((option) => (
                   <div
                     key={option.key}
                     className={[
                       "se-review-option",
-                      option.key === answer.correctAnswer ? "is-correct" : "",
-                      option.key === answer.selectedAnswer && !answer.isCorrect ? "is-wrong" : "",
-                    ].filter(Boolean).join(" ")}
+                      option.key === answer.correctAnswer
+                        ? "is-correct"
+                        : "",
+                      option.key === answer.selectedAnswer &&
+                      !answer.isCorrect
+                        ? "is-wrong"
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                   >
                     <strong>{option.key}</strong> {option.text}
-                    {option.key === answer.correctAnswer && " — Correct answer"}
-                    {option.key === answer.selectedAnswer && " — Your answer"}
+
+                    {option.key === answer.correctAnswer &&
+                      " — Correct answer"}
+
+                    {option.key === answer.selectedAnswer &&
+                      " — Your answer"}
                   </div>
                 ))}
               </div>
-              <small>Marks awarded: {money(answer.marksAwarded)}</small>
+
+              <small>
+                Marks awarded: {money(answer.marksAwarded)}
+              </small>
             </article>
           ))}
         </section>
-      </main>
-    );
-  }
+      )}
+
+      <div className="se-completion-actions">
+        <button
+          type="button"
+          className="se-button se-button--primary"
+          onClick={() => navigate("/student/exams")}
+        >
+          <FiArrowLeft /> Return to Exams & Results
+        </button>
+      </div>
+    </main>
+  );
+}
+
+
 
   const upcoming = exams.filter((item) =>
     ["Upcoming", "In progress"].includes(item.scheduleStatus) &&
@@ -677,8 +1046,55 @@ export default function StudentExams() {
         <ExamStat icon={FiCalendar} title="Upcoming Exams" value={upcoming.length} note="Scheduled for you" tone="blue" />
         <ExamStat icon={FiClock} title="In Progress" value={exams.filter((item) => item.scheduleStatus === "In progress" && item.attemptStatus === "InProgress").length} note="Active attempts" tone="orange" />
         <ExamStat icon={FiFileText} title="Submitted" value={exams.filter((item) => item.attemptStatus === "Submitted").length} note="Awaiting publication" tone="purple" />
-        <ExamStat icon={FiAward} title="Published Results" value={results.length} note="Available to review" tone="green" />
+        <ExamStat
+        icon={FiAward}
+        title="Published Results"
+        value={
+            results.filter(
+            (item) => item.resultStatus === "Published"
+            ).length
+        }
+        note="Official results"
+        tone="green"
+        />
       </section>
+
+      <ul className="se-instruction-list">
+              {(examInfo.instructions || []).map((item, index) => (
+                <li key={item}>
+                  <span>{index + 1}</span>
+                  {item}
+                </li>
+              ))}
+      </ul>
+
+      {error && <p className="se-error">{error}</p>}
+
+      {examInfo.feeClearance?.eligible === false && (
+              <div className="se-error" role="alert">
+                <FiAlertCircle />
+                {examInfo.feeClearance.message}
+              </div>
+        )}
+
+      <button
+                type="button"
+                className="se-button se-button--primary se-button--wide"
+                disabled={
+                    (!examInfo.canRequestAccess && !examInfo.alreadyStarted) ||
+                    busy
+                }
+                onClick={handleStartExam}
+                >
+                {busy
+                    ? "Processing..."
+                    : examInfo.alreadyStarted
+                    ? "Resume Exam"
+                    : "Start Exam"}
+                <FiArrowRight />
+            </button>
+
+            
 
       <section className="se-panel se-list-panel">
         <div className="se-tabs">
@@ -701,7 +1117,12 @@ export default function StudentExams() {
                   <div className="se-list-icon se-list-icon--purple"><FiAward /></div>
                   <div className="se-row-main">
                     <strong>{result.course}</strong>
-                    <span>Published {dateText(result.publishedAt)} · Grade {result.grade}</span>
+                    <span>
+                        {result.isProvisional
+                            ? `Submitted ${dateText(result.submittedAt)} · Provisional`
+                            : `Published ${dateText(result.publishedAt)} · Official`}
+                        {" · "}Grade {result.grade}
+                    </span>
                   </div>
                   <div className="se-row-score">
                     <strong>{money(result.obtainedMarks)} / {money(result.totalMarks)}</strong>

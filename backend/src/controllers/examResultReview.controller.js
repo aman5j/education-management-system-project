@@ -28,13 +28,6 @@ const recalculateResult = (result, exam, questionMap) => {
     const key = `${String(answer.subject_id)}:${String(answer.question_id)}`;
     const question = questionMap.get(key);
 
-    if (!question) {
-      throw Object.assign(
-        new Error(`Question ${String(answer.question_id)} could not be found.`),
-        { status: 409 }
-      );
-    }
-
     const override = (exam.answerKeyOverrides || []).find(
       (item) =>
         String(item.subject_id) === String(answer.subject_id) &&
@@ -44,12 +37,24 @@ const recalculateResult = (result, exam, questionMap) => {
     const correctAnswer =
       override?.correctAnswer ||
       answer.correctAnswerSnapshot ||
-      question.correctAnswer;
+      question?.correctAnswer ||
+      "";
 
-    answer.correctAnswerSnapshot = correctAnswer;
-    answer.isCorrect = Boolean(
-      answer.answer && answer.answer === correctAnswer
-    );
+    if (!question && !correctAnswer && !answer.marksOverridden) {
+      throw Object.assign(
+        new Error(
+          `Question ${String(answer.question_id)} is unavailable and has no saved answer-key snapshot.`
+        ),
+        { status: 409 }
+      );
+    }
+
+    if (correctAnswer) {
+      answer.correctAnswerSnapshot = correctAnswer;
+      answer.isCorrect = Boolean(
+        answer.answer && answer.answer === correctAnswer
+      );
+    }
 
     if (!answer.marksOverridden) {
       answer.marksAwarded = answer.isCorrect
@@ -157,10 +162,12 @@ export const getExamResultReview = async (req, res, next) => {
         ],
         selectedAnswer: answer.answer || "",
         correctAnswer:
-          override?.correctAnswer ||
-          answer.correctAnswerSnapshot ||
-          question.correctAnswer ||
-          "",
+          result.resultStatus === "Published"
+            ? override?.correctAnswer ||
+              answer.correctAnswerSnapshot ||
+              question.correctAnswer ||
+              ""
+            : "",
         isCorrect: Boolean(answer.isCorrect),
         marksAwarded: Number(answer.marksAwarded || 0),
         marksOverridden: Boolean(answer.marksOverridden),

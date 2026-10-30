@@ -5,6 +5,7 @@ import ExamResult from "../models/ExamResult.js";
 import Student from "../models/Student.js";
 import Subject from "../models/Subject.js";
 import ExamAccessRequest from "../models/ExamAccessRequest.js";
+import { getStudentExamFeeStatus } from "../utils/examFeeEligibility.js";
 
 const fail = (res, status, message) =>
   res.status(status).json({ success: false, message });
@@ -195,6 +196,11 @@ export const getMyExamInstructions = async (req, res, next) => {
       student_id: linked.student._id,
     }).lean();
 
+    const feeStatus = await getStudentExamFeeStatus(
+    linked.student._id,
+    ticket.course_id?._id || ticket.course_id
+    );
+
     const startAt = getScheduledTime(ticket.examDate, ticket.startTime);
     const endAt = getScheduledTime(ticket.examDate, ticket.endTime);
     const now = Date.now();
@@ -218,6 +224,11 @@ export const getMyExamInstructions = async (req, res, next) => {
           "Your answers are evaluated by the server after submission.",
           "Once submitted, an attempt cannot be restarted.",
         ],
+        feeClearance: {
+        eligible: feeStatus.eligible,
+        outstanding: feeStatus.outstanding,
+        message: feeStatus.message,
+        },
         canStart: Boolean(
           startAt &&
           endAt &&
@@ -231,6 +242,17 @@ export const getMyExamInstructions = async (req, res, next) => {
           result?.attemptStatus !== "Submitted" &&
           result?.resultStatus !== "Published"
         ),
+        canRequestAccess: Boolean(
+        startAt &&
+        endAt &&
+        now >= startAt.getTime() &&
+        now < endAt.getTime() &&
+        ticket.status === "Active" &&
+        feeStatus.eligible &&
+        result?.attemptStatus !== "Submitted" &&
+        result?.resultStatus !== "Published"
+        ),
+
         startsAt: startAt,
         endsAt: endAt,
         alreadyStarted: result?.attemptStatus === "InProgress",
@@ -274,6 +296,17 @@ export const startMyExam = async (req, res, next) => {
       exam_id: exam._id,
       student_id: linked.student._id,
     });
+
+    if (result?.attemptStatus !== "InProgress") {
+    const feeStatus = await getStudentExamFeeStatus(
+        linked.student._id,
+        ticket.course_id?._id || ticket.course_id
+    );
+
+    if (!feeStatus.eligible) {
+        return fail(res, 403, feeStatus.message);
+    }
+    }
 
 
     // A new attempt requires Admin approval.
@@ -445,10 +478,22 @@ export const submitMyExam = async (req, res, next) => {
       return {
         subject_id: item.subject_id,
         question_id: item.question_id,
+
         answer,
+
         isCorrect,
         marksAwarded,
-      };
+
+        // Preserve the exact question shown to the student.
+        questionTextSnapshot: question.questionText || "",
+        optionASnapshot: question.optionA || "",
+        optionBSnapshot: question.optionB || "",
+        optionCSnapshot: question.optionC || "",
+        optionDSnapshot: question.optionD || "",
+
+        // Preserve the answer key used when this attempt was evaluated.
+        correctAnswerSnapshot: question.correctAnswer || "",
+        };
     });
 
     obtainedMarks = Number(obtainedMarks.toFixed(4));
@@ -490,15 +535,18 @@ export const submitMyExam = async (req, res, next) => {
 export const getMyExamResults = async (req, res, next) => {
   try {
     const linked = await getLinkedStudent(req);
-    if (linked.error) return fail(res, linked.error.status, linked.error.message);
+
+    if (linked.error) {
+      return fail(res, linked.error.status, linked.error.message);
+    }
 
     const results = await ExamResult.find({
       student_id: linked.student._id,
-      resultStatus: "Published",
+      attemptStatus: "Submitted",
     })
       .populate("course_id", "courseTitle")
       .populate("exam_id", "totalQuestions totalMarks")
-      .sort({ publishedAt: -1, updatedAt: -1 })
+      .sort({ submittedAt: -1, updatedAt: -1 })
       .lean();
 
     return res.json({
@@ -507,12 +555,18 @@ export const getMyExamResults = async (req, res, next) => {
         results: results.map((result) => ({
           id: String(result._id),
           course: result.course_id?.courseTitle || "Course unavailable",
+
           totalQuestions: result.totalQuestions,
           totalMarks: result.totalMarks,
           obtainedMarks: result.obtainedMarks,
           percentage: result.percentage,
           grade: result.grade,
           passStatus: result.passStatus,
+
+          resultStatus: result.resultStatus,
+          isProvisional: result.resultStatus !== "Published",
+
+          submittedAt: result.submittedAt,
           publishedAt: result.publishedAt,
         })),
       },
@@ -525,72 +579,156 @@ export const getMyExamResults = async (req, res, next) => {
 export const getMyExamResultById = async (req, res, next) => {
   try {
     const linked = await getLinkedStudent(req);
-    if (linked.error) return fail(res, linked.error.status, linked.error.message);
 
-    if (!validId(req.params.resultId)) return fail(res, 400, "Invalid result ID.");
+    if (linked.error) {
+      return fail(res, linked.error.status, linked.error.message);
+    }
+
+    if (!validId(req.params.resultId)) {
+      return fail(res, 400, "Invalid result ID.");
+    }
 
     const result = await ExamResult.findOne({
       _id: req.params.resultId,
       student_id: linked.student._id,
-      resultStatus: "Published",
+      attemptStatus: "Submitted",
     })
       .populate("course_id", "courseTitle")
       .populate("exam_id", "totalQuestions totalMarks")
       .lean();
 
-    if (!result) return fail(res, 404, "Published result not found.");
+    if (!result) {
+      return fail(res, 404, "Submitted exam result not found.");
+    }
 
-    const selected = result.answers || [];
-    const subjectIds = [...new Set(selected.map((item) => String(item.subject_id)))];
-    const subjects = await Subject.find({ _id: { $in: subjectIds } })
-      .select("subjectName questionBank")
-      .lean();
+    const answers = result.answers || [];
+    const isPublished = result.resultStatus === "Published";
 
-    const questionMap = new Map();
-    for (const subject of subjects) {
-      for (const question of subject.questionBank || []) {
-        questionMap.set(`${String(subject._id)}:${String(question._id)}`, {
-          subjectName: subject.subjectName,
-          questionText: question.questionText,
-          correctAnswer: question.correctAnswer,
-          optionA: question.optionA,
-          optionB: question.optionB,
-          optionC: question.optionC,
-          optionD: question.optionD,
-        });
+    const answeredCount = answers.filter(
+      (answer) => Boolean(answer.answer)
+    ).length;
+
+    const skippedCount = Math.max(
+      0,
+      Number(result.totalQuestions || 0) - answeredCount
+    );
+
+    const timeTakenMs =
+      result.startedAt && result.submittedAt
+        ? Math.max(
+            0,
+            new Date(result.submittedAt).getTime() -
+              new Date(result.startedAt).getTime()
+          )
+        : 0;
+
+    let answerSheet = [];
+
+    if (isPublished) {
+      const subjectIds = [
+        ...new Set(answers.map((item) => String(item.subject_id))),
+      ];
+
+      const subjects = await Subject.find({
+        _id: { $in: subjectIds },
+      })
+        .select("subjectName questionBank")
+        .lean();
+
+      const questionMap = new Map();
+
+      for (const subject of subjects) {
+        for (const question of subject.questionBank || []) {
+          questionMap.set(
+            `${String(subject._id)}:${String(question._id)}`,
+            {
+              subjectName: subject.subjectName,
+              questionText: question.questionText,
+              correctAnswer: question.correctAnswer,
+              optionA: question.optionA,
+              optionB: question.optionB,
+              optionC: question.optionC,
+              optionD: question.optionD,
+            }
+          );
+        }
       }
+
+      answerSheet = answers.map((answer, index) => {
+        const key =
+          `${String(answer.subject_id)}:${String(answer.question_id)}`;
+
+        const question = questionMap.get(key) || {};
+
+        const correctAnswer =
+          answer.correctAnswerSnapshot ||
+          question.correctAnswer ||
+          "";
+
+        return {
+          number: index + 1,
+
+          subjectName: question.subjectName || "Subject",
+
+          questionText:
+            answer.questionTextSnapshot ||
+            question.questionText ||
+            "Question unavailable",
+
+          options: [
+            {
+              key: "A",
+              text: answer.optionASnapshot || question.optionA || "",
+            },
+            {
+              key: "B",
+              text: answer.optionBSnapshot || question.optionB || "",
+            },
+            {
+              key: "C",
+              text: answer.optionCSnapshot || question.optionC || "",
+            },
+            {
+              key: "D",
+              text: answer.optionDSnapshot || question.optionD || "",
+            },
+          ],
+
+          selectedAnswer: answer.answer || "",
+          correctAnswer,
+          isCorrect: Boolean(answer.isCorrect),
+          marksAwarded: Number(answer.marksAwarded || 0),
+        };
+      });
     }
 
     return res.json({
       success: true,
       data: {
         id: String(result._id),
-        course: result.course_id?.courseTitle || "Course unavailable",
+
+        course:
+          result.course_id?.courseTitle || "Course unavailable",
+
         totalQuestions: result.totalQuestions,
         totalMarks: result.totalMarks,
         obtainedMarks: result.obtainedMarks,
         percentage: result.percentage,
         grade: result.grade,
         passStatus: result.passStatus,
+
+        resultStatus: result.resultStatus,
+        isProvisional: !isPublished,
+
+        answeredCount,
+        skippedCount,
+        timeTakenMs,
+
+        startedAt: result.startedAt,
+        submittedAt: result.submittedAt,
         publishedAt: result.publishedAt,
-        answers: selected.map((answer, index) => {
-          const question = questionMap.get(`${String(answer.subject_id)}:${String(answer.question_id)}`) || {};
-          return {
-            number: index + 1,
-            subjectName: question.subjectName || "Subject",
-            questionText: question.questionText || "Question unavailable",
-            options: [
-              { key: "A", text: question.optionA || "" },
-              { key: "B", text: question.optionB || "" },
-              { key: "C", text: question.optionC || "" },
-              { key: "D", text: question.optionD || "" },
-            ],
-            selectedAnswer: answer.answer || "",
-            correctAnswer: question.correctAnswer || "",
-            isCorrect: Boolean(answer.isCorrect),
-            marksAwarded: Number(answer.marksAwarded || 0),
-          };
-        }),
+
+        answers: answerSheet,
       },
     });
   } catch (error) {
