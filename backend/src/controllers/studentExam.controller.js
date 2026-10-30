@@ -331,6 +331,14 @@ export const startMyExam = async (req, res, next) => {
     const linked = await getLinkedStudent(req);
     if (linked.error) return fail(res, linked.error.status, linked.error.message);
 
+    if (linked.student.status !== "active") {
+    return fail(
+        res,
+        403,
+        "Your student account is not active. Contact your institute administrator."
+    );
+    }
+
     const ticket = await getOwnedTicket(linked.student._id, req.params.ticketId);
     if (!ticket) return fail(res, 404, "Active hall ticket not found.");
 
@@ -586,14 +594,14 @@ export const submitMyExam = async (req, res, next) => {
     let obtainedMarks = 0;
     const marksPerQuestion = Number(exam.marksPerQuestion || 0);
 
-    const calculatedAnswers = selected.map((item) => {
-    
     const answerKeyOverrideMap = new Map(
-    (exam.answerKeyOverrides || []).map((item) => [
-        `${String(item.subject_id)}:${String(item.question_id)}`,
-        item.correctAnswer,
+    (exam.answerKeyOverrides || []).map((override) => [
+        `${String(override.subject_id)}:${String(override.question_id)}`,
+        override.correctAnswer,
     ])
     );
+
+    const calculatedAnswers = selected.map((item) => {
     const key = `${String(item.subject_id)}:${String(item.question_id)}`;
 
     const saved = savedSnapshotMap.get(key);
