@@ -5,7 +5,13 @@ const certificateAuditSchema = new mongoose.Schema(
   {
     action: {
       type: String,
-      enum: ["GENERATED", "SHARED", "REVOKED"],
+      enum: [
+        "GENERATING",
+        "GENERATED",
+        "SHARED",
+        "REVOKED",
+        "GENERATION_FAILED",
+      ],
       required: true,
     },
     performedBy: {
@@ -81,7 +87,7 @@ const certificateSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Student information captured at issue time.
+    // Student snapshot
     studentNameSnapshot: {
       type: String,
       required: true,
@@ -113,7 +119,7 @@ const certificateSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Course information captured at issue time.
+    // Course snapshot
     courseNameSnapshot: {
       type: String,
       required: true,
@@ -126,7 +132,7 @@ const certificateSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Published result snapshot.
+    // Published result snapshot
     totalMarksSnapshot: {
       type: Number,
       required: true,
@@ -169,9 +175,45 @@ const certificateSchema = new mongoose.Schema(
       required: true,
     },
 
+    // PDF generation lifecycle
+    generationState: {
+      type: String,
+      enum: [
+        "Generating",
+        "Generated",
+        "Failed",
+      ],
+      default: "Generating",
+      index: true,
+    },
+
+    generationStartedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    // Extra add    
+    generationToken: {
+    type: String,
+    default: "",
+    select: false,
+    },
+
+
+    generationError: {
+      type: String,
+      default: "",
+      maxlength: 1000,
+    },
+
+    // Existing business status
     status: {
       type: String,
-      enum: ["Generated", "Shared", "Revoked"],
+      enum: [
+        "Generated",
+        "Shared",
+        "Revoked",
+      ],
       default: "Generated",
       index: true,
     },

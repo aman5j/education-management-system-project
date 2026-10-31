@@ -58,6 +58,7 @@ import studentPortalRoutes from "./routes/studentPortal.routes.js";
 import examAccessRoutes from "./routes/examAccess.routes.js";
 
 import certificateRoutes from "./routes/certificate.routes.js";
+import publicCertificateRoutes from "./routes/publicCertificate.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -287,6 +288,10 @@ app.use("/api/public/hall-tickets", publicHallTicketRoutes);
 app.use("/api/exam-results", examResultRoutes);
 
 app.use("/api/certificates", certificateRoutes);
+app.use(
+  "/api/public/certificates",
+  publicCertificateRoutes
+);
 
 
 app.use(
@@ -304,6 +309,7 @@ app.use(
 
 app.use("/api/student-portal", studentPortalRoutes);
 app.use("/api/exam-access-requests", examAccessRoutes);
+
 
 
 // app.use(

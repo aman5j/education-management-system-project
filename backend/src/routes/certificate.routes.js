@@ -19,22 +19,25 @@ const router = express.Router();
 router.use(authenticate);
 router.use(authorizeRoles("admin"));
 
-// Admin certificate list.
+// Certificate list.
 router.get("/", getCertificates);
 
-// Published results that do not yet have a certificate.
+// Eligible published results.
 router.get(
   "/eligible-students",
   getEligibleCertificateResults
 );
 
-// Generate a certificate from a published exam result.
+// Generate PDF certificate.
 router.post(
   "/generate/:resultId",
   generateCertificate
 );
 
-// Get one certificate.
-router.get("/:id", getCertificateById);
+// Certificate detail.
+router.get(
+  "/:id",
+  getCertificateById
+);
 
 export default router;
