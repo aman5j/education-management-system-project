@@ -86,8 +86,14 @@ import Attendance from "./pages/admin/attendance/Attendance";
 import ExamSchedule from "./pages/admin/exams/ExamSchedule";
 import HallTicketManagement from "./pages/admin/students/HallTicketManagement";
 import VerifyHallTicket from "./pages/public/VerifyHallTicket";
-import ExamResults from "./pages/admin/exams/ExamResults";
-import ExamResultReview from "./pages/admin/exams/ExamResultReview";
+
+import ExamAnswerSheet from "./pages/admin/exams/ExamAnswerSheet";
+
+// !!!!!!!!_REMOVE_START_!!!!!!!!
+// import ExamResults from "./pages/admin/exams/ExamResults";
+// import ExamResultReview from "./pages/admin/exams/ExamResultReview";
+// !!!!!!!!_REMOVE_END_!!!!!!!!
+
 import ExamAccessRequests from "./pages/admin/exams/ExamAccessRequests";
 import UpdateMarks from "./pages/admin/exams/UpdateMarks";
 
@@ -320,20 +326,34 @@ const App = () => {
 
         {/* <Route path="exams/results" element={<ExamResults />} /> */}
 
-        <Route path="exams/results" element={<ExamResults />} />
+        {/* !!!!!!!!_REMOVE_START_!!!!!!!! */}
+
+        {/* <Route path="exams/results" element={<ExamResults />} />
 
         <Route
           path="exams/results/:resultId/review"
           element={<ExamResultReview />}
-        />
+        /> */}
+
+        {/* !!!!!!!!_REMOVE_END_!!!!!!!! */}
 
         <Route
           path="exams/access-requests"
           element={<ExamAccessRequests />}
         />
 
-        <Route path="exams/update-marks" element={<UpdateMarks />} />
-        
+        <Route
+          path="exams/answer-sheet/:resultId"
+          element={<ExamAnswerSheet />}
+        />
+
+        <Route
+          path="exams/update-marks"
+          element={<UpdateMarks />}
+        />
+
+        {/* <Route path="exams/update-marks" element={<UpdateMarks />} /> */}
+
 
         {/* Expenses Management */}
         <Route path="expenses" element={<Expenses />} />

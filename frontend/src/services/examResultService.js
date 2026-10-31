@@ -75,3 +75,12 @@ export const updateAdminFinalResult = (resultId, payload) => {
     payload
   );
 };
+
+
+export const publishAdminFinalResult = (resultId) => {
+  if (!resultId) throw new Error("Result ID is required.");
+
+  return api.patch(
+    `/exam-results/admin/update-marks/${resultId}/publish`
+  );
+};

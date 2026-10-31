@@ -473,3 +473,144 @@
     min-width: 0;
   }
 }
+
+
+
+
+
+/* new css for update marks */
+
+.um-row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  min-width: 145px;
+}
+
+.um-publish {
+  background: #087b52;
+  color: #fff;
+}
+
+.um-publish:hover:not(:disabled) {
+  background: #066641;
+}
+
+.um-locked-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #13834f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.um-table td {
+  vertical-align: middle;
+}
+
+.um-table td:last-child {
+  min-width: 165px;
+}
+
+
+/* ExamAnswerSheet.jsx file css */
+
+.um-answer-list {
+  display: grid;
+  gap: 14px;
+}
+
+.um-answer-card {
+  padding: 17px;
+  border: 1px solid #e3eaf3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.um-answer-heading,
+.um-answer-marks {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.um-answer-card h3 {
+  margin: 14px 0 7px;
+  color: #1c2d46;
+  font-size: 15px;
+}
+
+.um-answer-card > p {
+  color: #8491a5;
+  font-size: 12px;
+}
+
+.um-answer-result {
+  padding: 5px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.um-answer-result.correct {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.um-answer-result.incorrect {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.um-answer-result.unanswered {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.um-answer-options {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.um-answer-option {
+  padding: 10px 12px;
+  border: 1px solid #e7edf5;
+  border-radius: 7px;
+  color: #526176;
+  font-size: 12px;
+}
+
+.um-answer-option.selected {
+  border-color: #f4a4a4;
+  background: #fff5f5;
+}
+
+.um-answer-option.correct-option {
+  border-color: #86d5a0;
+  background: #f0fdf4;
+}
+
+.um-answer-option span {
+  float: right;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.um-answer-marks {
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid #edf1f6;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.um-answer-marks span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

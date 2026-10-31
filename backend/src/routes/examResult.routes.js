@@ -4,6 +4,7 @@ import {
   getAdminUpdateMarksList,
   getAdminFinalResult,
   updateAdminFinalResult,
+  publishAdminFinalResult,
 } from "../controllers/adminFinalResult.controller.js";
 
 import {
@@ -64,6 +65,10 @@ router.get("/:id/review", getExamResultReview);
 router.get("/admin/update-marks", getAdminUpdateMarksList);
 router.get("/admin/update-marks/:id", getAdminFinalResult);
 router.patch("/admin/update-marks/:id", updateAdminFinalResult);
+router.patch(
+  "/admin/update-marks/:id/publish",
+  publishAdminFinalResult
+);
 
 
 router.get("/:id", getExamResultById);

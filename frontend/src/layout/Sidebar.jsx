@@ -159,10 +159,10 @@ const menuItems = [
         label: "Hall Ticket Management",
         path: "/admin/hall-tickets",
       },
-      {
-        label: "Exam Results",
-        path: "/admin/exams/results",
-      },
+      // {
+      //   label: "Exam Results",
+      //   path: "/admin/exams/results",
+      // },
       {
         label: "Update Marks",
         path: "/admin/exams/update-marks",
@@ -286,6 +286,7 @@ const PATH_PERMISSION_MAP = {
 
   "/admin/certificates": "certificates.view",
   "/admin/staff": "users.view",
+  "/admin/communication": "settings.manage",
   "/admin/communication": "settings.manage",
 
   "/admin/website-editor": "website.view",
