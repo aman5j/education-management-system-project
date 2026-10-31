@@ -18,6 +18,10 @@ const certificateService = {
   getCertificateById(id) {
     return api.get(`/certificates/${id}`);
   },
+
+  shareCertificate(id) {
+    return api.patch(`/certificates/${id}/share`);
+  },
 };
 
 export default certificateService;

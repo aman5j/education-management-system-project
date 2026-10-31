@@ -1,4 +1,3 @@
-
 import express from "express";
 
 import {
@@ -7,6 +6,10 @@ import {
   generateCertificate,
   getCertificateById,
 } from "../controllers/certificate.controller.js";
+
+import {
+  shareCertificate,
+} from "../controllers/certificateSharing.controller.js";
 
 import {
   authenticate,
@@ -32,6 +35,12 @@ router.get(
 router.post(
   "/generate/:resultId",
   generateCertificate
+);
+
+// Share a generated certificate with its linked student.
+router.patch(
+  "/:id/share",
+  shareCertificate
 );
 
 // Certificate detail.

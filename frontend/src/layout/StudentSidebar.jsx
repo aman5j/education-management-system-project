@@ -35,7 +35,11 @@ const navigation = [
     icon: FiClipboard,
     path: "/student/exams",
   },
-  { label: "Certificates & Achievements", icon: FiCheckCircle, phase: 7 },
+  {
+    label: "My Certificates",
+    icon: FiCheckCircle,
+    path: "/student/certificates",
+  },
   { label: "My Admission Details", icon: FiFileText, phase: 8 },
   { label: "My Documents", icon: FiFileText, phase: 9 },
   { label: "Notifications", icon: FiBell, phase: 10 },

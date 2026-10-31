@@ -27,6 +27,10 @@ import {
 } from "../controllers/studentPortal.controller.js";
 
 import {
+  getMySharedCertificates,
+} from "../controllers/certificateSharing.controller.js";
+
+import {
   authenticate,
   authorizeRoles,
 } from "../middleware/auth.middleware.js";
@@ -34,7 +38,7 @@ import {
 const router = express.Router();
 
 // Admin-only account linking.
-// This route must be registered before student-only middleware.
+// These routes must be registered before student-only middleware.
 router.post(
   "/admin/link-account",
   authenticate,
@@ -73,9 +77,16 @@ router.get("/recommended-courses", getRecommendedCourses);
 router.get("/attendance", getMyAttendance);
 router.get("/fees", getMyFees);
 
+// Shared certificates belonging only to the authenticated student.
+router.get(
+  "/certificates",
+  getMySharedCertificates
+);
+
 router.get("/exams", getMyExams);
 router.get("/exams/results", getMyExamResults);
 router.get("/exams/results/:resultId", getMyExamResultById);
+
 router.get(
   "/exams/:ticketId/access-request",
   getMyExamAccessRequest
@@ -85,8 +96,20 @@ router.post(
   "/exams/:ticketId/access-request",
   requestMyExamAccess
 );
-router.get("/exams/:ticketId/instructions", getMyExamInstructions);
-router.post("/exams/:ticketId/start", startMyExam);
-router.post("/exams/:ticketId/submit", submitMyExam);
+
+router.get(
+  "/exams/:ticketId/instructions",
+  getMyExamInstructions
+);
+
+router.post(
+  "/exams/:ticketId/start",
+  startMyExam
+);
+
+router.post(
+  "/exams/:ticketId/submit",
+  submitMyExam
+);
 
 export default router;

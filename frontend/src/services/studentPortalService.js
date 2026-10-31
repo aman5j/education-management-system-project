@@ -32,7 +32,6 @@ const studentPortalService = {
     return response.data;
   },
 
-
   async getMyExams() {
     const response = await api.get("/student-portal/exams");
     return response.data;
@@ -88,6 +87,12 @@ const studentPortalService = {
     return response.data;
   },
 
+  async getMyCertificates() {
+    const response = await api.get(
+      "/student-portal/certificates"
+    );
+    return response.data;
+  },
 };
 
 export default studentPortalService;

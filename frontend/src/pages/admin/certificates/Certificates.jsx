@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 
 import certificateService from "../../../services/certificateService";
+import CertificateShareAction from "./CertificateShareAction";
 import { getAssetUrl } from "../../../utils/assetUrl";
 
 import "./Certificates.css";
@@ -924,32 +925,33 @@ const Certificates = () => {
                         <td>
                           <div className="cert-row-actions">
                             <button
-                              type="button"
-                              className="cert-icon-button"
-                              title="View certificate details"
-                              onClick={() =>
-                                handleViewCertificate(item)
-                              }
+                                type="button"
+                                className="cert-icon-button"
+                                title="View certificate details"
+                                onClick={() => handleViewCertificate(item)}
                             >
-                              <FiEye />
+                                <FiEye />
                             </button>
 
                             {item.generationState === "Generated" &&
-                              item.certificateUrl && (
+                                item.certificateUrl && (
                                 <button
-                                  type="button"
-                                  className="cert-icon-button cert-download-button"
-                                  title="Open PDF"
-                                  onClick={() =>
-                                    handleOpenPdf(
-                                      item.certificateUrl
-                                    )
-                                  }
+                                    type="button"
+                                    className="cert-icon-button cert-download-button"
+                                    title="Open PDF"
+                                    onClick={() =>
+                                    handleOpenPdf(item.certificateUrl)
+                                    }
                                 >
-                                  <FiDownload />
+                                    <FiDownload />
                                 </button>
-                              )}
-                          </div>
+                                )}
+
+                                <CertificateShareAction
+                                    certificate={item}
+                                    onShared={() => loadData(true)}
+                                />
+                            </div>
                         </td>
                       </tr>
                     ))}
