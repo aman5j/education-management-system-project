@@ -89,6 +89,9 @@ import VerifyHallTicket from "./pages/public/VerifyHallTicket";
 
 import ExamAnswerSheet from "./pages/admin/exams/ExamAnswerSheet";
 
+import Certificates from "./pages/admin/certificates/Certificates";
+
+
 // !!!!!!!!_REMOVE_START_!!!!!!!!
 // import ExamResults from "./pages/admin/exams/ExamResults";
 // import ExamResultReview from "./pages/admin/exams/ExamResultReview";
@@ -350,6 +353,17 @@ const App = () => {
         <Route
           path="exams/update-marks"
           element={<UpdateMarks />}
+        />
+
+
+        {/* Certificates Management */}
+        <Route
+          path="certificates"
+          element={
+            <PermissionRoute permission="certificates.view">
+              <Certificates />
+            </PermissionRoute>
+          }
         />
 
         {/* <Route path="exams/update-marks" element={<UpdateMarks />} /> */}
