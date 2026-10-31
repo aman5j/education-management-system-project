@@ -1,6 +1,10 @@
 import express from "express";
 
 import {
+  getExamResultById,
+} from "../controllers/examResult.controller.js";
+
+import {
   getAdminUpdateMarksList,
   getAdminFinalResult,
   updateAdminFinalResult,
@@ -8,19 +12,7 @@ import {
 } from "../controllers/adminFinalResult.controller.js";
 
 import {
-  getExamResults,
-  getExamCandidates,
-  getExamResultById,
-  saveExamResult,
-  publishExamResult,
-} from "../controllers/examResult.controller.js";
-
-import {
   getExamResultReview,
-  unpublishExamResultForCorrection,
-  overrideStudentQuestionMarks,
-  previewExamAnswerKeyCorrection,
-  applyExamAnswerKeyCorrection,
 } from "../controllers/examResultReview.controller.js";
 
 import {
@@ -30,47 +22,65 @@ import {
 
 const router = express.Router();
 
+// All routes in this file are Admin-only.
 router.use(authenticate);
 router.use(authorizeRoles("admin"));
 
-router.get("/", getExamResults);
+/*
+|--------------------------------------------------------------------------
+| Admin Update Marks
+|--------------------------------------------------------------------------
+*/
 
-// Keep named routes before "/:id".
-router.get("/exams/:examId/candidates", getExamCandidates);
-
-router.post(
-  "/exams/:examId/answer-key/preview",
-  previewExamAnswerKeyCorrection
+// List submitted exam attempts.
+router.get(
+  "/admin/update-marks",
+  getAdminUpdateMarksList
 );
 
-router.post(
-  "/exams/:examId/answer-key/apply",
-  applyExamAnswerKeyCorrection
+// Get one result for the Update Marks editor.
+router.get(
+  "/admin/update-marks/:id",
+  getAdminFinalResult
 );
 
-router.post("/", saveExamResult);
-
-router.patch("/:id/publish", publishExamResult);
-
-router.patch("/:id/unpublish", unpublishExamResultForCorrection);
-
+// Update only obtained marks.
+// Total marks, percentage, grade and pass/fail are calculated server-side.
 router.patch(
-  "/:id/questions/:questionId/marks",
-  overrideStudentQuestionMarks
+  "/admin/update-marks/:id",
+  updateAdminFinalResult
 );
 
-router.get("/:id/review", getExamResultReview);
-
-
-router.get("/admin/update-marks", getAdminUpdateMarksList);
-router.get("/admin/update-marks/:id", getAdminFinalResult);
-router.patch("/admin/update-marks/:id", updateAdminFinalResult);
+// Publish the final result.
+// Published results become locked.
 router.patch(
   "/admin/update-marks/:id/publish",
   publishAdminFinalResult
 );
 
+/*
+|--------------------------------------------------------------------------
+| Read-only Exam Answer Sheet
+|--------------------------------------------------------------------------
+*/
 
-router.get("/:id", getExamResultById);
+// Used by ExamAnswerSheet.jsx.
+// This route must remain available.
+router.get(
+  "/:id/review",
+  getExamResultReview
+);
+
+/*
+|--------------------------------------------------------------------------
+| Single Exam Result
+|--------------------------------------------------------------------------
+*/
+
+// Retained for compatibility with any existing Admin consumer.
+router.get(
+  "/:id",
+  getExamResultById
+);
 
 export default router;
