@@ -57,6 +57,7 @@ import studentPortalRoutes from "./routes/studentPortal.routes.js";
 
 import examAccessRoutes from "./routes/examAccess.routes.js";
 
+import certificateRoutes from "./routes/certificate.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -284,6 +285,9 @@ app.use("/api/exams", examRoutes);
 app.use("/api/hall-tickets", hallTicketRoutes);
 app.use("/api/public/hall-tickets", publicHallTicketRoutes);
 app.use("/api/exam-results", examResultRoutes);
+
+app.use("/api/certificates", certificateRoutes);
+
 
 app.use(
   "/api/expenses",
