@@ -6,12 +6,14 @@ import {
   FiCheckCircle,
   FiEdit,
   FiFileText,
+  FiInfo,
   FiPercent,
   FiRefreshCw,
   FiSave,
   FiSearch,
   FiStar,
   FiUpload,
+  FiX,
 } from "react-icons/fi";
 
 import {
@@ -56,13 +58,19 @@ export default function UpdateMarks() {
   const [results, setResults] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
+
   const [selected, setSelected] = useState(null);
   const [obtainedMarks, setObtainedMarks] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [publishingId, setPublishingId] = useState("");
+
   const [error, setError] = useState("");
+  const [modalError, setModalError] = useState("");
   const [success, setSuccess] = useState("");
+  const [modalSuccess, setModalSuccess] = useState("");
 
   const loadResults = useCallback(async () => {
     setLoading(true);
@@ -89,9 +97,33 @@ export default function UpdateMarks() {
     loadResults();
   }, [loadResults]);
 
+  // Lock background scrolling while the marks modal is open.
+  useEffect(() => {
+    if (!selected) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && !saving) {
+        closeEditor();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [selected, saving]);
+
   const openResult = async (item) => {
+    setOpening(true);
     setError("");
     setSuccess("");
+    setModalError("");
+    setModalSuccess("");
 
     try {
       const response = await getAdminFinalResult(item._id);
@@ -101,18 +133,28 @@ export default function UpdateMarks() {
       setObtainedMarks(String(result.obtainedMarks ?? 0));
     } catch (err) {
       setError(errorText(err));
+    } finally {
+      setOpening(false);
     }
   };
 
   const closeEditor = () => {
+    if (saving) return;
+
     setSelected(null);
     setObtainedMarks("");
-    setError("");
-    setSuccess("");
+    setModalError("");
+    setModalSuccess("");
   };
 
-  const totalMarks = Number(selected?.exam_id?.totalMarks ?? selected?.totalMarks ?? 0);
-  const enteredMarks = obtainedMarks === "" ? 0 : Number(obtainedMarks);
+  const totalMarks = Number(
+    selected?.exam_id?.totalMarks ??
+    selected?.totalMarks ??
+    0
+  );
+
+  const enteredMarks =
+    obtainedMarks === "" ? 0 : Number(obtainedMarks);
 
   const previewPercentage =
     totalMarks > 0 && Number.isFinite(enteredMarks)
@@ -120,7 +162,8 @@ export default function UpdateMarks() {
       : 0;
 
   const previewGrade = gradeFor(previewPercentage);
-  const previewStatus = previewPercentage >= 40 ? "Pass" : "Fail";
+  const previewStatus =
+    previewPercentage >= 40 ? "Pass" : "Fail";
 
   const handleSave = async (event) => {
     event.preventDefault();
@@ -128,7 +171,7 @@ export default function UpdateMarks() {
     if (!selected) return;
 
     if (selected.resultStatus === "Published") {
-      setError("Published results cannot be edited.");
+      setModalError("Published results cannot be edited.");
       return;
     }
 
@@ -138,13 +181,15 @@ export default function UpdateMarks() {
       enteredMarks < 0 ||
       enteredMarks > totalMarks
     ) {
-      setError(`Obtained marks must be between 0 and ${totalMarks}.`);
+      setModalError(
+        `Obtained marks must be between 0 and ${fmt(totalMarks)}.`
+      );
       return;
     }
 
     setSaving(true);
-    setError("");
-    setSuccess("");
+    setModalError("");
+    setModalSuccess("");
 
     try {
       const response = await updateAdminFinalResult(selected._id, {
@@ -152,12 +197,14 @@ export default function UpdateMarks() {
       });
 
       const updated = unwrap(response);
+
       setSelected(updated);
-      setObtainedMarks(String(updated.obtainedMarks));
-      setSuccess("Obtained marks updated successfully.");
+      setObtainedMarks(String(updated.obtainedMarks ?? 0));
+      setModalSuccess("Obtained marks updated successfully.");
+
       await loadResults();
     } catch (err) {
-      setError(errorText(err));
+      setModalError(errorText(err));
     } finally {
       setSaving(false);
     }
@@ -180,163 +227,17 @@ export default function UpdateMarks() {
       const response = await publishAdminFinalResult(item._id);
       const data = unwrap(response);
 
-      setSuccess(data?.message || "Result published successfully.");
-      await loadResults();
+      setSuccess(
+        data?.message || "Result published successfully."
+      );
 
-      if (selected?._id === item._id) {
-        const refreshed = await getAdminFinalResult(item._id);
-        setSelected(unwrap(refreshed));
-      }
+      await loadResults();
     } catch (err) {
       setError(errorText(err));
     } finally {
       setPublishingId("");
     }
   };
-
-  if (selected) {
-    const locked = selected.resultStatus === "Published";
-
-    return (
-      <main className="um-page">
-        <header className="um-header">
-          <div>
-            <button className="um-back" type="button" onClick={closeEditor}>
-              ← Back to Update Marks
-            </button>
-            <span className="um-eyebrow">ACADEMIC MANAGEMENT / RESULT</span>
-            <h1>Update Student Marks</h1>
-            <p>Only obtained marks can be changed. Total marks are fixed.</p>
-          </div>
-
-          <span className={`um-status ${locked ? "published" : "draft"}`}>
-            {selected.resultStatus || "Draft"}
-          </span>
-        </header>
-
-        {error && <div className="um-alert error">{error}</div>}
-        {success && <div className="um-alert success">{success}</div>}
-
-        <section className="um-card um-student">
-          <div className="um-avatar">
-            {fullName(selected.student_id).charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h2>{fullName(selected.student_id).toUpperCase()}</h2>
-            <p>
-              {selected.course_id?.courseTitle || "Course"} · Roll No:{" "}
-              {selected.student_id?.rollNo || "—"}
-            </p>
-          </div>
-        </section>
-
-        <form className="um-card um-form" onSubmit={handleSave}>
-          <div className="um-section-title">
-            <div>
-              <h2>Exam Result Details</h2>
-              <p>Total marks are taken directly from the scheduled exam.</p>
-            </div>
-          </div>
-
-          <div className="um-summary-grid">
-            <article>
-              <FiStar />
-              <span>Total Marks</span>
-              <strong>{fmt(totalMarks)}</strong>
-              <small>Fixed by exam configuration</small>
-            </article>
-            <article>
-              <FiCheckCircle />
-              <span>Obtained Marks</span>
-              <strong>{fmt(enteredMarks)}</strong>
-              <small>{locked ? "Published score" : "Admin editable"}</small>
-            </article>
-            <article>
-              <FiPercent />
-              <span>Percentage</span>
-              <strong>{fmt(previewPercentage)}%</strong>
-              <small>Automatically calculated</small>
-            </article>
-            <article>
-              <FiAward />
-              <span>Grade</span>
-              <strong>{previewGrade}</strong>
-              <small>{previewStatus}</small>
-            </article>
-          </div>
-
-          <div className="um-field-grid">
-            <label>
-              Total Marks
-              <input value={fmt(totalMarks)} readOnly disabled />
-              <small>Cannot be changed from this page.</small>
-            </label>
-
-            <label>
-              Obtained Marks
-              <input
-                type="number"
-                min="0"
-                max={totalMarks}
-                step="0.01"
-                value={obtainedMarks}
-                onChange={(event) => setObtainedMarks(event.target.value)}
-                disabled={locked || saving}
-                required
-              />
-              <small>Maximum allowed: {fmt(totalMarks)}</small>
-            </label>
-
-            <label>
-              Percentage
-              <input value={`${fmt(previewPercentage)}%`} readOnly disabled />
-            </label>
-
-            <label>
-              Grade
-              <input value={previewGrade} readOnly disabled />
-            </label>
-
-            <label>
-              Result
-              <input value={previewStatus} readOnly disabled />
-            </label>
-          </div>
-
-          <div className="um-helper">
-            Percentage, grade and pass/fail are calculated automatically from
-            the obtained marks and the exam's fixed total marks.
-          </div>
-
-          <div className="um-actions">
-            <button
-              type="button"
-              className="um-button um-light"
-              onClick={closeEditor}
-            >
-              Back to List
-            </button>
-
-            {!locked && (
-              <button
-                type="submit"
-                className="um-button um-primary"
-                disabled={saving}
-              >
-                <FiSave /> {saving ? "Saving..." : "Update Obtained Marks"}
-              </button>
-            )}
-
-            {locked && (
-              <span className="um-locked-note">
-                <FiCheckCircle /> Published — marks locked
-              </span>
-            )}
-          </div>
-        </form>
-      </main>
-    );
-  }
 
   return (
     <main className="um-page">
@@ -356,7 +257,8 @@ export default function UpdateMarks() {
           onClick={loadResults}
           disabled={loading}
         >
-          <FiRefreshCw /> Refresh
+          <FiRefreshCw />
+          Refresh
         </button>
       </header>
 
@@ -385,7 +287,9 @@ export default function UpdateMarks() {
         </div>
 
         {loading ? (
-          <div className="um-empty">Loading submitted exam results...</div>
+          <div className="um-empty">
+            Loading submitted exam results...
+          </div>
         ) : results.length === 0 ? (
           <div className="um-empty">
             No submitted exam results found.
@@ -406,9 +310,15 @@ export default function UpdateMarks() {
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {results.map((item, index) => {
-                  const total = Number(item.exam_id?.totalMarks ?? item.totalMarks ?? 0);
+                  const total = Number(
+                    item.exam_id?.totalMarks ??
+                    item.totalMarks ??
+                    0
+                  );
+
                   const obtained = Number(item.obtainedMarks || 0);
                   const locked = item.resultStatus === "Published";
 
@@ -416,40 +326,52 @@ export default function UpdateMarks() {
                     <tr key={item._id}>
                       <td>{index + 1}</td>
                       <td>{item.student_id?.rollNo || "—"}</td>
-                      <td><strong>{fullName(item.student_id)}</strong></td>
+                      <td>
+                        <strong>{fullName(item.student_id)}</strong>
+                      </td>
                       <td>{item.course_id?.courseTitle || "—"}</td>
                       <td>{fmt(total)}</td>
                       <td>{fmt(obtained)}</td>
+
                       <td>
                         <div>{fmt(item.percentage)}%</div>
                         <div>Grade: {item.grade || "—"}</div>
                         <div>{item.passStatus || "Pending"}</div>
                       </td>
+
                       <td>
-                        <span className={`um-status ${locked ? "published" : "draft"}`}>
+                        <span
+                          className={`um-status ${
+                            locked ? "published" : "draft"
+                          }`}
+                        >
                           {item.resultStatus || "Draft"}
                         </span>
                       </td>
+
                       <td>
                         <div className="um-row-actions">
                           <button
                             type="button"
                             className="um-button um-light um-small"
                             onClick={() =>
-                            //   navigate(`/admin/exams/results/${item._id}/review`)
-                            navigate(`/admin/exams/answer-sheet/${item._id}`)
+                              navigate(
+                                `/admin/exams/answer-sheet/${item._id}`
+                              )
                             }
                           >
-                            <FiFileText /> Answer Sheet
+                            <FiFileText />
+                            Answer Sheet
                           </button>
 
                           <button
                             type="button"
                             className="um-button um-primary um-small"
                             onClick={() => openResult(item)}
-                            disabled={locked}
+                            disabled={locked || opening}
                           >
-                            <FiEdit /> Update Marks
+                            <FiEdit />
+                            {opening ? "Loading..." : "Update Marks"}
                           </button>
 
                           {!locked ? (
@@ -460,11 +382,14 @@ export default function UpdateMarks() {
                               disabled={publishingId === item._id}
                             >
                               <FiUpload />
-                              {publishingId === item._id ? "Publishing..." : "Publish Exam"}
+                              {publishingId === item._id
+                                ? "Publishing..."
+                                : "Publish Exam"}
                             </button>
                           ) : (
                             <span className="um-locked-note">
-                              <FiCheckCircle /> Published
+                              <FiCheckCircle />
+                              Published
                             </span>
                           )}
                         </div>
@@ -477,6 +402,224 @@ export default function UpdateMarks() {
           </div>
         )}
       </section>
+
+      {/* Update Marks Modal */}
+      {selected && (
+        <div
+          className="um-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeEditor();
+            }
+          }}
+        >
+          <section
+            className="um-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="um-modal-title"
+          >
+            <header className="um-modal-header">
+              <div className="um-modal-heading">
+                <div className="um-modal-icon">
+                  <FiEdit />
+                </div>
+
+                <div>
+                  <h2 id="um-modal-title">Mark Update</h2>
+                  <p>Update the obtained marks for this exam.</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="um-modal-close"
+                onClick={closeEditor}
+                disabled={saving}
+                aria-label="Close modal"
+              >
+                <FiX />
+              </button>
+            </header>
+
+            <form onSubmit={handleSave}>
+              <div className="um-modal-body">
+                {modalError && (
+                  <div className="um-alert error">
+                    {modalError}
+                  </div>
+                )}
+
+                {modalSuccess && (
+                  <div className="um-alert success">
+                    {modalSuccess}
+                  </div>
+                )}
+
+                <section className="um-modal-student">
+                  <div className="um-modal-avatar">
+                    {fullName(selected.student_id)
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+
+                  <div className="um-modal-student-info">
+                    <h3>
+                      {fullName(selected.student_id).toUpperCase()}
+                    </h3>
+
+                    <p>
+                      {selected.course_id?.courseTitle || "Course"}
+                      <span>•</span>
+                      Roll No: {selected.student_id?.rollNo || "—"}
+                    </p>
+                  </div>
+                </section>
+
+                <div className="um-modal-section-title">
+                  <h3>Exam Result Details</h3>
+                  <p>
+                    Update the obtained marks. Percentage, grade and result
+                    will be calculated automatically.
+                  </p>
+                </div>
+
+                <div className="um-modal-fields">
+                  <label>
+                    <span>Total Marks</span>
+                    <input
+                      type="text"
+                      value={fmt(totalMarks)}
+                      readOnly
+                      disabled
+                    />
+                    <small>Cannot be changed from this page.</small>
+                  </label>
+
+                  <label>
+                    <span>
+                      Obtained Marks <b>*</b>
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={totalMarks}
+                      step="0.01"
+                      value={obtainedMarks}
+                      onChange={(event) => {
+                        setObtainedMarks(event.target.value);
+                        setModalError("");
+                        setModalSuccess("");
+                      }}
+                      disabled={
+                        selected.resultStatus === "Published" || saving
+                      }
+                      required
+                    />
+                    <small>
+                      Maximum allowed: {fmt(totalMarks)}
+                    </small>
+                  </label>
+                </div>
+
+                <div className="um-modal-summary">
+                  <article className="um-metric-total">
+                    <div className="um-metric-icon">
+                      <FiStar />
+                    </div>
+                    <div>
+                      <span>Total Marks</span>
+                      <strong>{fmt(totalMarks)}</strong>
+                    </div>
+                  </article>
+
+                  <article className="um-metric-obtained">
+                    <div className="um-metric-icon">
+                      <FiCheckCircle />
+                    </div>
+                    <div>
+                      <span>Obtained Marks</span>
+                      <strong>{fmt(enteredMarks)}</strong>
+                    </div>
+                  </article>
+
+                  <article className="um-metric-percentage">
+                    <div className="um-metric-icon">
+                      <FiPercent />
+                    </div>
+                    <div>
+                      <span>Percentage</span>
+                      <strong>{fmt(previewPercentage)}%</strong>
+                    </div>
+                  </article>
+
+                  <article className="um-metric-grade">
+                    <div className="um-metric-icon">
+                      <FiAward />
+                    </div>
+                    <div>
+                      <span>Grade</span>
+                      <strong>{previewGrade}</strong>
+                    </div>
+                  </article>
+                </div>
+
+                <div className="um-modal-result-field">
+                  <label>Result</label>
+                  <div
+                    className={
+                      previewStatus === "Pass"
+                        ? "um-result-pass"
+                        : "um-result-fail"
+                    }
+                  >
+                    {previewStatus}
+                  </div>
+                </div>
+
+                <div className="um-modal-helper">
+                  <FiInfo />
+                  <span>
+                    Percentage, grade and pass/fail are calculated
+                    automatically from the obtained marks and the exam's
+                    fixed total marks.
+                  </span>
+                </div>
+
+                {selected.resultStatus === "Published" && (
+                  <div className="um-modal-locked">
+                    <FiCheckCircle />
+                    This result has been published and can no longer be
+                    edited.
+                  </div>
+                )}
+              </div>
+
+              <footer className="um-modal-footer">
+                <button
+                  type="button"
+                  className="um-button um-light um-modal-cancel"
+                  onClick={closeEditor}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+
+                {selected.resultStatus !== "Published" && (
+                  <button
+                    type="submit"
+                    className="um-button um-primary um-modal-submit"
+                    disabled={saving}
+                  >
+                    <FiSave />
+                    {saving ? "Updating..." : "Update Marks"}
+                  </button>
+                )}
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
