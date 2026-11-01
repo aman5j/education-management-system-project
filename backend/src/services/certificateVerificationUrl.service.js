@@ -1,28 +1,29 @@
-export const buildCertificateVerificationUrl = (
-  verificationCode
-) => {
-  if (!verificationCode || !/^[A-F0-9]{40}$/i.test(verificationCode)) {
-    throw new Error("Invalid certificate verification code.");
-  }
 
-  let frontendUrl = process.env.FRONTEND_PUBLIC_URL;
+const getFrontendBaseUrl = () => {
+  // Prefer the explicit public URL, but retain compatibility
+  // with the FRONTEND_URL already configured in Render.
+  const configuredUrl =
+    process.env.FRONTEND_PUBLIC_URL ||
+    process.env.FRONTEND_URL;
 
-  if (!frontendUrl) {
+  if (!configuredUrl) {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
-        "FRONTEND_PUBLIC_URL must be configured in production."
+        "Set FRONTEND_PUBLIC_URL or FRONTEND_URL in the backend environment."
       );
     }
 
-    frontendUrl = "http://localhost:5173";
+    return "http://localhost:5173";
   }
 
   let parsed;
 
   try {
-    parsed = new URL(frontendUrl);
+    parsed = new URL(configuredUrl.trim());
   } catch {
-    throw new Error("FRONTEND_PUBLIC_URL is not a valid URL.");
+    throw new Error(
+      "FRONTEND_PUBLIC_URL or FRONTEND_URL is not a valid URL."
+    );
   }
 
   if (
@@ -31,12 +32,25 @@ export const buildCertificateVerificationUrl = (
     parsed.password
   ) {
     throw new Error(
-      "FRONTEND_PUBLIC_URL must be a valid HTTP or HTTPS website URL."
+      "The frontend URL must use HTTP or HTTPS and must not contain credentials."
     );
   }
 
-  return (
-    `${parsed.origin}/verify-certificate/` +
-    encodeURIComponent(verificationCode.toUpperCase())
-  );
+  return parsed.origin;
+};
+
+export const buildCertificateVerificationUrl = (
+  verificationCode
+) => {
+  const code = String(verificationCode || "")
+    .trim()
+    .toUpperCase();
+
+  if (!/^[A-F0-9]{40}$/.test(code)) {
+    throw new Error("Invalid certificate verification code.");
+  }
+
+  const frontendBaseUrl = getFrontendBaseUrl();
+
+  return `${frontendBaseUrl}/verify-certificate/${encodeURIComponent(code)}`;
 };

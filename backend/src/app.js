@@ -109,13 +109,49 @@ app.use(
 //   })
 // );
 
+// app.use(
+//   cors({
+//     origin: [
+//       "http://localhost:5173",
+//       "https://education-management-frontend.netlify.app",
+//       process.env.FRONTEND_URL // keeps support for any environment variable you set later
+//     ].filter(Boolean), // safely removes undefined values if the env variable isn't set
+//     credentials: true,
+//   })
+// );
+
+const normalizeOrigin = (value) => {
+  if (!value) return null;
+
+  try {
+    return new URL(value.trim()).origin;
+  } catch {
+    throw new Error(
+      `Invalid frontend origin configured: ${value}`
+    );
+  }
+};
+
+const allowedOrigins = new Set(
+  [
+    "http://localhost:5173",
+    "https://education-management-frontend.netlify.app",
+    normalizeOrigin(process.env.FRONTEND_URL),
+    normalizeOrigin(process.env.FRONTEND_PUBLIC_URL),
+  ].filter(Boolean)
+);
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://education-management-frontend.netlify.app",
-      process.env.FRONTEND_URL // keeps support for any environment variable you set later
-    ].filter(Boolean), // safely removes undefined values if the env variable isn't set
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error(`CORS blocked this origin: ${origin}`)
+      );
+    },
     credentials: true,
   })
 );
