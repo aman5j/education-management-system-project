@@ -48,7 +48,7 @@ export default function CertificateShareAction({
       setShared(true);
       // !!!!!!! END
 
-      setShared(data?.status === "Shared" || true);
+    //   setShared(data?.status === "Shared" || true);
 
       if (onShared) {
         await onShared();
