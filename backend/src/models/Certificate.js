@@ -11,7 +11,8 @@ const certificateAuditSchema = new mongoose.Schema(
         "SHARED",
         "REVOKED",
         "GENERATION_FAILED",
-      ],
+        "QR_REFRESHED",
+        ],
       required: true,
     },
     performedBy: {

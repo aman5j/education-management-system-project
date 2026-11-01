@@ -7,6 +7,9 @@ import ExamResult from "../models/ExamResult.js";
 import Student from "../models/Student.js";
 import Course from "../models/Course.js";
 import InstituteSettings from "../models/InstituteSettings.js";
+import {
+  buildCertificateVerificationUrl,
+} from "../services/certificateVerificationUrl.service.js";
 
 import {
   deleteCertificatePdf,
@@ -73,44 +76,44 @@ const populateCertificate = (query) =>
 |--------------------------------------------------------------------------
 */
 
-const getBackendBaseUrl = (req) => {
-  const configured =
-    process.env.BACKEND_PUBLIC_URL ||
-    process.env.API_BASE_URL;
+// const getBackendBaseUrl = (req) => {
+//   const configured =
+//     process.env.BACKEND_PUBLIC_URL ||
+//     process.env.API_BASE_URL;
 
-  if (configured) {
-    const parsed = new URL(configured);
+//   if (configured) {
+//     const parsed = new URL(configured);
 
-    if (
-      !["http:", "https:"].includes(parsed.protocol)
-    ) {
-      throw new Error(
-        "BACKEND_PUBLIC_URL must use HTTP or HTTPS."
-      );
-    }
+//     if (
+//       !["http:", "https:"].includes(parsed.protocol)
+//     ) {
+//       throw new Error(
+//         "BACKEND_PUBLIC_URL must use HTTP or HTTPS."
+//       );
+//     }
 
-    return configured.replace(/\/+$/, "");
-  }
+//     return configured.replace(/\/+$/, "");
+//   }
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "BACKEND_PUBLIC_URL must be configured in production."
-    );
-  }
+//   if (process.env.NODE_ENV === "production") {
+//     throw new Error(
+//       "BACKEND_PUBLIC_URL must be configured in production."
+//     );
+//   }
 
-  const host = req.get("host");
+//   const host = req.get("host");
 
-  if (
-    !host ||
-    !/^localhost(?::\d+)?$|^127\.0\.0\.1(?::\d+)?$/i.test(host)
-  ) {
-    throw new Error(
-      "Set BACKEND_PUBLIC_URL before generating certificates."
-    );
-  }
+//   if (
+//     !host ||
+//     !/^localhost(?::\d+)?$|^127\.0\.0\.1(?::\d+)?$/i.test(host)
+//   ) {
+//     throw new Error(
+//       "Set BACKEND_PUBLIC_URL before generating certificates."
+//     );
+//   }
 
-  return `${req.protocol}://${host}`;
-};
+//   return `${req.protocol}://${host}`;
+// };
 
 /*
 |--------------------------------------------------------------------------
@@ -583,7 +586,7 @@ export const generateCertificate = async (
       );
     }
 
-    const baseUrl = getBackendBaseUrl(req);
+    // const baseUrl = getBackendBaseUrl(req);
 
     const performer = actorId(req);
 
@@ -851,8 +854,9 @@ export const generateCertificate = async (
     */
 
     const verificationUrl =
-      `${baseUrl}/api/public/certificates/verify/` +
-      encodeURIComponent(certificate.verificationCode);
+    buildCertificateVerificationUrl(
+        certificate.verificationCode
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -965,9 +969,9 @@ export const generateCertificate = async (
     }
 
     if (
-      /BACKEND_PUBLIC_URL/.test(error.message || "")
+    /FRONTEND_PUBLIC_URL/.test(error.message || "")
     ) {
-      return fail(res, 500, error.message);
+    return fail(res, 500, error.message);
     }
 
     return fail(

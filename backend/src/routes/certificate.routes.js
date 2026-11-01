@@ -1,6 +1,10 @@
 import express from "express";
 
 import {
+  refreshCertificateQr,
+} from "../controllers/certificateQr.controller.js";
+
+import {
   getCertificates,
   getEligibleCertificateResults,
   generateCertificate,
@@ -41,6 +45,12 @@ router.post(
 router.patch(
   "/:id/share",
   shareCertificate
+);
+
+
+router.post(
+  "/:id/refresh-qr",
+  refreshCertificateQr
 );
 
 // Certificate detail.

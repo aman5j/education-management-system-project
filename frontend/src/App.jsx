@@ -26,6 +26,8 @@ import StudentFees from "./pages/student/StudentFees";
 import StudentExams from "./pages/student/StudentExams";
 import StudentCertificates from "./pages/student/StudentCertificates";
 
+import VerifyCertificate from "./pages/public/VerifyCertificate";
+
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -200,6 +202,11 @@ const App = () => {
       <Route
         path="/verify-hall-ticket/:id"
         element={<VerifyHallTicket />}
+      />
+
+      <Route
+        path="/verify-certificate/:verificationCode"
+        element={<VerifyCertificate />}
       />
 
       {/* Admin portal */}

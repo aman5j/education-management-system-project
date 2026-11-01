@@ -485,10 +485,10 @@ const DEFAULT_LAYOUT = {
     },
 
     qrCode: {
-      x: 27,
-      y: 645,
-      width: 66,
-      height: 66,
+    x: 450,
+    y: 295,
+    width: 66,
+    height: 66,
     },
   },
 };
