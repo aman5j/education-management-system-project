@@ -26,6 +26,23 @@ const formatDate = (value) => {
   });
 };
 
+const formatAppliedDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 const getPersonName = (student) => {
   if (!student) return "Student";
 
@@ -271,15 +288,16 @@ export default function LeaveRequests() {
             <table className="la-table">
               <thead>
                 <tr>
-                  <th>Student</th>
-                  <th>Course / Batch</th>
-                  <th>Leave Dates</th>
-                  <th>Type</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Review</th>
+                    <th>Student</th>
+                    <th>Applied On</th>
+                    <th>Course / Batch</th>
+                    <th>Leave Dates</th>
+                    <th>Type</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Review</th>
                 </tr>
-              </thead>
+                </thead>
               <tbody>
                 {requests.map((request) => {
                   const student = request.student_id || {};
@@ -291,6 +309,9 @@ export default function LeaveRequests() {
                       <td>
                         <strong>{getPersonName(student)}</strong>
                         <small>Roll No: {student.rollNo || "—"}</small>
+                      </td>
+                      <td>
+                        <strong>{formatAppliedDate(request.createdAt)}</strong>
                       </td>
                       <td>
                         <strong>{course.courseTitle || "—"}</strong>
@@ -398,6 +419,10 @@ export default function LeaveRequests() {
             <div className="la-detail-grid">
               <div><small>Student</small><strong>{getPersonName(selectedRequest.student_id)}</strong></div>
               <div><small>Roll Number</small><strong>{selectedRequest.student_id?.rollNo || "—"}</strong></div>
+              <div>
+                <small>Applied On</small>
+                <strong>{formatAppliedDate(selectedRequest.createdAt)}</strong>
+            </div>
               <div><small>Course</small><strong>{selectedRequest.course_id?.courseTitle || "—"}</strong></div>
               <div><small>Batch</small><strong>{selectedRequest.batch_id?.batch_name || "—"}</strong></div>
               <div><small>Leave Type</small><strong>{selectedRequest.leave_type}</strong></div>

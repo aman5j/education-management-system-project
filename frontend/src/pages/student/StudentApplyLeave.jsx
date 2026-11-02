@@ -36,6 +36,23 @@ const formatDate = (value) => {
   });
 };
 
+const formatAppliedDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 const getId = (value) =>
   typeof value === "object" ? value?._id : value;
 
@@ -391,15 +408,16 @@ export default function StudentApplyLeave() {
             <table className="sl-table">
               <thead>
                 <tr>
-                  <th>Date / Range</th>
-                  <th>Course / Batch</th>
-                  <th>Leave Type</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Admin Remark</th>
-                  <th>Action</th>
+                    <th>Applied On</th>
+                    <th>Leave Date / Range</th>
+                    <th>Course / Batch</th>
+                    <th>Leave Type</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Admin Remark</th>
+                    <th>Action</th>
                 </tr>
-              </thead>
+                </thead>
               <tbody>
                 {requests.map((request) => {
                   const course =
@@ -410,9 +428,14 @@ export default function StudentApplyLeave() {
                   return (
                     <tr key={request._id}>
                       <td>
+                        <strong>{formatAppliedDate(request.createdAt)}</strong>
+                      </td>
+
+                      <td>
                         <strong>{formatDate(request.from_date)}</strong>
                         <small>to {formatDate(request.to_date)}</small>
                       </td>
+                      
                       <td>
                         <strong>{course}</strong>
                         <small>{batch}</small>
