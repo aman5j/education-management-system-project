@@ -126,6 +126,12 @@ const menuItems = [
   },
 
   {
+    label: "HelpDesk & Support",
+    path: "/admin/support",
+    icon: FiHelpCircle,
+  },
+
+  {
     label: "Fees Management",
     icon: FiDollarSign,
     children: [
@@ -295,6 +301,8 @@ const PATH_PERMISSION_MAP = {
   "/admin/staff": "users.view",
   "/admin/communication": "settings.manage",
   "/admin/communication": "settings.manage",
+
+  "/admin/support": "settings.manage",
 
   "/admin/website-editor": "website.view",
   "/admin/pages": "website.view",
