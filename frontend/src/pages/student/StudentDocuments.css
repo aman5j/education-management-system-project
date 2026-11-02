@@ -1,3 +1,4 @@
+
 .student-documents {
   width: 100%;
   min-width: 0;
@@ -161,57 +162,68 @@
 
 .student-document-card__preview {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: calc(100% - 32px);
-  height: 220px;
+  height: 240px;
   margin: 16px;
   overflow: hidden;
-  border: 0;
+  border: 1px solid #e7edf6;
   border-radius: 11px;
-  background: #eef4ff;
+  background: #f5f8fd;
   cursor: pointer;
+  outline-offset: 3px;
 }
 
-.student-document-card__preview > img {
+.student-document-card__image {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  padding: 8px;
+  object-fit: contain;
+  object-position: center;
+  background: #fff;
 }
 
-.student-document-card__file-icon {
+.student-document-card__pdf {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+  pointer-events: none;
+}
+
+.student-document-card__file-fallback {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   height: 100%;
+  padding: 16px;
   color: #3976d7;
+  text-align: center;
 }
 
-.student-document-card__file-icon > svg {
-  font-size: 70px;
-  stroke-width: 1.25;
+.student-document-card__file-fallback > svg {
+  font-size: 58px;
+  stroke-width: 1.3;
 }
 
-.student-document-card__file-icon small {
+.student-document-card__file-fallback strong {
   padding: 5px 10px;
   border-radius: 6px;
   background: #dce9ff;
   color: #285db4;
   font-size: 11px;
-  font-weight: 800;
 }
 
-.student-document-card__file-icon--pdf {
-  color: #dc4b4b;
-}
-
-.student-document-card__file-icon--pdf small {
-  background: #ffebeb;
-  color: #bd3030;
+.student-document-card__file-fallback span {
+  color: #8490a4;
+  font-size: 11px;
 }
 
 .student-document-card__view {
@@ -223,10 +235,11 @@
   gap: 6px;
   padding: 7px 10px;
   border-radius: 7px;
-  background: rgba(20, 33, 61, 0.82);
+  background: rgba(20, 33, 61, 0.84);
   color: #fff;
   font-size: 11px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.18s ease;
 }
 
