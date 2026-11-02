@@ -730,3 +730,44 @@
 
 
 
+/* =========================================
+   STUDENT PORTAL SIDEBAR SPACING
+========================================= */
+
+.student-layout__sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.student-layout__nav {
+  gap: 6px;
+  padding: 4px 12px 18px;
+}
+
+.student-layout__nav-item {
+  min-height: 44px;
+  padding: 11px 12px;
+  gap: 12px;
+}
+
+.student-layout__nav-item > svg {
+  flex: 0 0 18px;
+}
+
+/* Collapsed sidebar */
+.student-layout--collapsed .student-layout__nav {
+  gap: 7px;
+  padding: 4px 8px 18px;
+}
+
+/* Mobile sidebar */
+@media (max-width: 760px) {
+  .student-layout__nav {
+    gap: 5px;
+    padding: 4px 12px 18px;
+  }
+
+  .student-layout__nav-item {
+    min-height: 45px;
+  }
+}

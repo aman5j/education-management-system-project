@@ -2,8 +2,11 @@
 .student-helpdesk {
   width: 100%;
   max-width: 1500px;
+  min-width: 0;
   margin: 0 auto;
+  padding: 24px 28px 16px;
   color: #172033;
+  box-sizing: border-box;
 }
 
 .student-helpdesk__heading,
@@ -662,5 +665,78 @@
 
   .sh-priority-choice {
     flex: 1 1 calc(50% - 9px);
+  }
+}
+
+
+
+/* =========================================
+   STUDENT HELPDESK - RESPONSIVE PAGE SPACING
+========================================= */
+
+.student-helpdesk,
+.student-helpdesk * {
+  box-sizing: border-box;
+}
+
+.student-helpdesk {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  padding: 24px 28px 20px;
+}
+
+/* Keep cards and sections inside the available outlet width */
+.student-helpdesk__heading,
+.sh-stats,
+.sh-ticket-section,
+.sh-form-card,
+.sh-conversation {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Tablet */
+@media (max-width: 1050px) {
+  .student-helpdesk {
+    padding: 22px 20px 18px;
+  }
+
+  .sh-stats {
+    gap: 12px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 760px) {
+  .student-helpdesk {
+    padding: 18px 16px 16px;
+  }
+
+  .student-helpdesk__heading {
+    gap: 14px;
+  }
+
+  .sh-ticket-section,
+  .sh-form-card,
+  .sh-conversation {
+    padding: 17px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .student-helpdesk {
+    padding: 15px 12px 14px;
+  }
+
+  .sh-ticket-section,
+  .sh-form-card,
+  .sh-conversation {
+    padding: 13px;
+  }
+
+  .sh-stats {
+    gap: 9px;
   }
 }
