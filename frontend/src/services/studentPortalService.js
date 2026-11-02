@@ -160,6 +160,31 @@ const studentPortalService = {
     return response.data;
   },
 
+  /* Leave Service apis  */
+  
+  async getMyLeaveAdmissions() {
+    const response = await api.get("/student-portal/leave/admissions");
+    return response.data;
+  },
+
+  async applyForLeave(payload) {
+    const response = await api.post("/student-portal/leave", payload);
+    return response.data;
+  },
+
+  async getMyLeaveRequests() {
+    const response = await api.get("/student-portal/leave");
+    return response.data;
+  },
+
+  async cancelMyLeaveRequest(requestId) {
+    const response = await api.patch(
+      `/student-portal/leave/${requestId}/cancel`
+    );
+    return response.data;
+  },
+
+
 };
 
 export default studentPortalService;

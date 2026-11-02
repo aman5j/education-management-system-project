@@ -120,6 +120,12 @@ const menuItems = [
   },
 
   {
+    label: "Leave Requests",
+    path: "/admin/leave-requests",
+    icon: FiCalendar,
+  },
+
+  {
     label: "Fees Management",
     icon: FiDollarSign,
     children: [
@@ -273,6 +279,7 @@ const PATH_PERMISSION_MAP = {
 
   "/admin/batches": "batches.view",
   "/admin/attendance": "attendance.view",
+  "/admin/leave-requests": "attendance.view",
 
   "/admin/expenses": "expenses.view",
   "/admin/payments": "payments.view",

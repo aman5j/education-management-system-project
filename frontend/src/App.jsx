@@ -31,6 +31,9 @@ import StudentAdmissionDetails from "./pages/student/StudentAdmissionDetails";
 import StudentDocuments from "./pages/student/StudentDocuments";
 import StudentProfile from "./pages/student/StudentProfile";
 
+import StudentApplyLeave from "./pages/student/StudentApplyLeave";
+import LeaveRequests from "./pages/admin/leave/LeaveRequests";
+
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -326,6 +329,16 @@ const App = () => {
           }
         />
 
+
+        <Route
+          path="leave-requests"
+          element={
+            <PermissionRoute permission="attendance.view">
+              <LeaveRequests />
+            </PermissionRoute>
+          }
+        />
+
         {/* Exams */}
         {/* Exam Schedule */}
         <Route
@@ -499,6 +512,16 @@ const App = () => {
           }
         />
 
+
+        <Route
+          path="leave-requests"
+          element={
+            <PermissionRoute permission="attendance.view">
+              <LeaveRequests />
+            </PermissionRoute>
+          }
+        />
+
         {/* Payments — access is checked by StaffRouteGuard */}
         <Route path="payments" element={<Payments />} />
         <Route path="payments/add" element={<AddPayment />} />
@@ -649,6 +672,7 @@ const App = () => {
           element={<StudentCourseDetails />}
         />
 
+        <Route path="leave" element={<StudentApplyLeave />} />
         <Route path="attendance" element={<StudentAttendance />} />
         <Route path="fees" element={<StudentFees />} />
 

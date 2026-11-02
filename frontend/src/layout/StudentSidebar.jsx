@@ -52,7 +52,11 @@ const navigation = [
   },
   { label: "Notifications", icon: FiBell, phase: 10 },
   { label: "Helpdesk & Support", icon: FiHelpCircle, phase: 11 },
-  { label: "Apply for Leave", icon: FiCalendar, phase: 12 },
+  {
+    label: "Apply for Leave",
+    icon: FiCalendar,
+    path: "/student/leave",
+  },
   { label: "My Profile", icon: FiUser, path: "/student/profile" },
 ];
 
