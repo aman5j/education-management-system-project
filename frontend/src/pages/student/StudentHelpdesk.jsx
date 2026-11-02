@@ -1,5 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
+
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -9,9 +10,10 @@ import {
   FiRefreshCw,
   FiSend,
   FiShield,
-  FiTicket,
+  FiTag,
   FiX,
 } from "react-icons/fi";
+
 
 import supportService from "../../services/supportService";
 import "./StudentHelpdesk.css";
@@ -433,7 +435,7 @@ export default function StudentHelpdesk() {
         <>
           <section className="sh-stats">
             <div className="sh-stat sh-stat--total">
-              <span className="sh-stat__icon"><FiTicket /></span>
+              <span className="sh-stat__icon"><FiTag /></span>
               <strong>{stats.total || 0}</strong>
               <small>Total Tickets</small>
             </div>

@@ -1,5 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
+
 import {
   FiCheckCircle,
   FiClock,
@@ -9,8 +10,9 @@ import {
   FiSearch,
   FiSend,
   FiShield,
-  FiTicket,
+  FiTag,
 } from "react-icons/fi";
+
 
 import supportService from "../../../services/supportService";
 import "./AdminSupport.css";
@@ -260,7 +262,7 @@ export default function AdminSupport() {
 
       <section className="as-stats">
         <div className="as-stat as-stat--total">
-          <span><FiTicket /></span>
+          <span><FiTag /></span>
           <strong>{stats.total || 0}</strong>
           <small>Total Tickets</small>
         </div>
@@ -440,7 +442,7 @@ export default function AdminSupport() {
         <section className="as-list-panel">
           <div className="as-list-panel__heading">
             <div>
-              <h2><FiTicket /> All Support Tickets</h2>
+              <h2><FiTag /> All Support Tickets</h2>
               <p>Search, filter and open a ticket to manage it.</p>
             </div>
             <span className="as-total-label">{pagination.total || 0} tickets</span>
