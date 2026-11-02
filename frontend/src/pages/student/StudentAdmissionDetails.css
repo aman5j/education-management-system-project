@@ -1,0 +1,485 @@
+.student-admission-details {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  color: #172554;
+}
+
+.sad-page-header,
+.sad-student-card,
+.sad-admission-card,
+.sad-institute-card,
+.sad-panel {
+  background: #fff;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.035);
+}
+
+.sad-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sad-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sad-page-header h1 {
+  margin: 0;
+  color: #14213d;
+  font-size: 25px;
+}
+
+.sad-page-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.sad-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 1px solid #dbe3ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sad-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sad-student-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.sad-student-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.sad-student-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 125px;
+  height: 135px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #eef3ff;
+  color: #64748b;
+  font-size: 38px;
+}
+
+.sad-student-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sad-student-info h2 {
+  margin: 5px 0 10px;
+  color: #172554;
+  font-size: 22px;
+}
+
+.sad-student-info p {
+  margin: 5px 0;
+  color: #64748b;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.sad-student-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 130px;
+  padding: 12px;
+  border-left: 1px solid #e5eaf2;
+}
+
+.sad-student-qr img {
+  width: 115px;
+  height: 115px;
+  object-fit: contain;
+}
+
+.sad-student-qr strong {
+  color: #172554;
+  font-size: 13px;
+}
+
+.sad-student-qr small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.sad-qr-placeholder {
+  display: grid;
+  place-items: center;
+  width: 115px;
+  height: 115px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sad-institute-card {
+  padding: 20px;
+  margin-bottom: 26px;
+}
+
+.sad-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+  color: #4f46e5;
+}
+
+.sad-panel-heading h3 {
+  margin: 0;
+  color: #172554;
+  font-size: 15px;
+}
+
+.sad-institute-content {
+  display: grid;
+  grid-template-columns: 90px 1fr 1.4fr 1fr;
+  align-items: center;
+  gap: 18px;
+}
+
+.sad-institute-logo {
+  width: 75px;
+  height: 65px;
+  object-fit: contain;
+}
+
+.sad-institute-content > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sad-institute-content span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sad-institute-content strong {
+  color: #172554;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.sad-institute-content small {
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.sad-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 25px 0 14px;
+}
+
+.sad-section-heading h2 {
+  margin: 0;
+  color: #172554;
+  font-size: 20px;
+}
+
+.sad-count {
+  padding: 7px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.sad-admission-list {
+  display: grid;
+  gap: 18px;
+}
+
+.sad-admission-card {
+  padding: 20px;
+}
+
+.sad-admission-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.sad-admission-index {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sad-admission-heading h2 {
+  margin: 5px 0;
+  color: #172554;
+  font-size: 17px;
+}
+
+.sad-admission-heading small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sad-status {
+  padding: 6px 11px;
+  border-radius: 30px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sad-status--active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sad-status--completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sad-status--dropped {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.sad-information-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.sad-panel {
+  padding: 18px;
+  box-shadow: none;
+  background: #fbfcff;
+}
+
+.sad-detail-row,
+.sad-finance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 11px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.sad-detail-row:last-child,
+.sad-finance-item:last-child {
+  border-bottom: 0;
+}
+
+.sad-detail-row span,
+.sad-finance-item span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sad-detail-row strong,
+.sad-finance-item strong {
+  color: #172554;
+  font-size: 12px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.sad-finance-highlight {
+  margin: 0 -8px;
+  padding-right: 8px;
+  padding-left: 8px;
+  border-radius: 7px;
+  background: #eef2ff;
+}
+
+.sad-finance-highlight strong {
+  color: #4338ca;
+}
+
+.sad-empty,
+.sad-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 55px 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #fff;
+  color: #64748b;
+  text-align: center;
+}
+
+.sad-empty > svg {
+  font-size: 30px;
+}
+
+.sad-empty h3 {
+  margin: 0;
+  color: #172554;
+}
+
+.sad-empty p,
+.sad-state p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.sad-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+  margin-bottom: 18px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.sad-error button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #b91c1c;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.sad-spin {
+  animation: sad-spin 1s linear infinite;
+}
+
+@keyframes sad-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .sad-institute-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .sad-page-header {
+    align-items: flex-start;
+  }
+
+  .sad-page-header h1 {
+    font-size: 21px;
+  }
+
+  .sad-student-card {
+    align-items: flex-start;
+  }
+
+  .sad-student-avatar {
+    width: 95px;
+    height: 110px;
+  }
+
+  .sad-student-main {
+    gap: 12px;
+  }
+
+  .sad-student-info h2 {
+    font-size: 17px;
+  }
+
+  .sad-student-qr {
+    min-width: 95px;
+    padding: 8px;
+  }
+
+  .sad-student-qr img,
+  .sad-qr-placeholder {
+    width: 85px;
+    height: 85px;
+  }
+
+  .sad-information-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .sad-page-header {
+    flex-direction: column;
+  }
+
+  .sad-refresh {
+    width: 100%;
+  }
+
+  .sad-student-card {
+    flex-direction: column;
+  }
+
+  .sad-student-qr {
+    align-self: stretch;
+    border-top: 1px solid #e5eaf2;
+    border-left: 0;
+  }
+
+  .sad-institute-content {
+    grid-template-columns: 1fr;
+  }
+
+  .sad-admission-card {
+    padding: 14px;
+  }
+
+  .sad-detail-row,
+  .sad-finance-item {
+    gap: 8px;
+  }
+}

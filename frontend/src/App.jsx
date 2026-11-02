@@ -27,6 +27,8 @@ import StudentExams from "./pages/student/StudentExams";
 import StudentCertificates from "./pages/student/StudentCertificates";
 
 import VerifyCertificate from "./pages/public/VerifyCertificate";
+import StudentAdmissionDetails from "./pages/student/StudentAdmissionDetails";
+
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -650,9 +652,16 @@ const App = () => {
         <Route path="fees" element={<StudentFees />} />
 
         <Route
+          path="admission-details"
+          element={<StudentAdmissionDetails />}
+        />
+
+        <Route
           path="certificates"
           element={<StudentCertificates />}
         />
+
+        
 
         <Route path="exams" element={<StudentExams />} />
 

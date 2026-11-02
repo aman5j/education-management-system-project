@@ -6,6 +6,10 @@ import {
 } from "../controllers/studentExamAccess.controller.js";
 
 import {
+  getMyAdmissionDetails,
+} from "../controllers/studentAdmissionDetails.controller.js";
+
+import {
   getMyExams,
   getMyExamInstructions,
   startMyExam,
@@ -72,6 +76,10 @@ router.use(authenticate);
 router.use(authorizeRoles("student"));
 
 router.get("/dashboard", getStudentDashboard);
+router.get(
+  "/admission-details",
+  getMyAdmissionDetails
+);
 router.get("/courses", getMyCourses);
 router.get("/recommended-courses", getRecommendedCourses);
 router.get("/attendance", getMyAttendance);

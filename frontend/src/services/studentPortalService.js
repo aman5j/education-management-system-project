@@ -6,6 +6,14 @@ const studentPortalService = {
     return response.data;
   },
 
+  async getMyAdmissionDetails() {
+    const response = await api.get(
+      "/student-portal/admission-details"
+    );
+
+    return response.data;
+  },
+
   async getMyCourses() {
     const response = await api.get("/student-portal/courses");
     return response.data;

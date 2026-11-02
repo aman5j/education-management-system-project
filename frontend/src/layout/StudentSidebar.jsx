@@ -40,7 +40,11 @@ const navigation = [
     icon: FiCheckCircle,
     path: "/student/certificates",
   },
-  { label: "My Admission Details", icon: FiFileText, phase: 8 },
+  {
+    label: "My Admission Details",
+    icon: FiFileText,
+    path: "/student/admission-details",
+  },
   { label: "My Documents", icon: FiFileText, phase: 9 },
   { label: "Notifications", icon: FiBell, phase: 10 },
   { label: "Helpdesk & Support", icon: FiHelpCircle, phase: 11 },
