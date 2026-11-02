@@ -119,16 +119,15 @@ export const updateMyProfile = async (req, res, next) => {
             : value;
     }
 
-    const email = String(student.email || "").trim().toLowerCase();
     const firstName = String(student.firstName || "").trim();
     const surname = String(student.surname || "").trim();
 
     if (firstName.length < 2) {
-      return fail(res, 400, "First name must contain at least 2 characters.");
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return fail(res, 400, "Please enter a valid email address.");
+      return fail(
+        res,
+        400,
+        "First name must contain at least 2 characters."
+      );
     }
 
     if (!student.mobile || !String(student.mobile).trim()) {
@@ -139,32 +138,61 @@ export const updateMyProfile = async (req, res, next) => {
       return fail(res, 400, "Please enter a valid date of birth.");
     }
 
-    const [existingStudent, existingUser] = await Promise.all([
-      Student.findOne({
-        email,
-        _id: { $ne: student._id },
-      }).select("_id"),
+    // Only perform email ownership checks when the student actually
+    // changes the email saved in the Student record.
+    const requestedEmail = String(student.email || "")
+      .trim()
+      .toLowerCase();
 
-      User.findOne({
-        email,
-        _id: { $ne: user._id },
-      }).select("_id"),
-    ]);
+    const previousStudentEmail = String(
+      Student.isValidObjectId?.(student._id)
+        ? student.email || ""
+        : ""
+    ).trim().toLowerCase();
 
-    if (existingStudent || existingUser) {
-      return fail(
-        res,
-        409,
-        "This email address is already being used by another account."
-      );
+    // Read the original email from the database before saving.
+    const originalStudent = await Student.findById(student._id).select("email");
+    const originalStudentEmail = String(
+      originalStudent?.email || ""
+    ).trim().toLowerCase();
+
+    const emailChanged = requestedEmail !== originalStudentEmail;
+
+    if (emailChanged) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+        return fail(res, 400, "Please enter a valid email address.");
+      }
+
+      const [existingStudent, existingUser] = await Promise.all([
+        Student.findOne({
+          email: requestedEmail,
+          _id: { $ne: student._id },
+        }).select("_id"),
+
+        User.findOne({
+          email: requestedEmail,
+          _id: { $ne: user._id },
+        }).select("_id"),
+      ]);
+
+      if (existingStudent || existingUser) {
+        return fail(
+          res,
+          409,
+          "This email address is already being used by another account. Please use a different email."
+        );
+      }
+
+      student.email = requestedEmail;
+      user.email = requestedEmail;
     }
 
-    student.email = email;
+    // Save student details without unnecessarily changing the login email.
     await student.save();
 
     user.name = [firstName, surname].filter(Boolean).join(" ");
-    user.email = email;
     user.phone = student.mobile || "";
+
     await user.save();
 
     return res.status(200).json({
@@ -183,7 +211,7 @@ export const updateMyProfile = async (req, res, next) => {
       return fail(
         res,
         409,
-        "This email address is already registered."
+        "This email address is already registered. Please use a different email."
       );
     }
 

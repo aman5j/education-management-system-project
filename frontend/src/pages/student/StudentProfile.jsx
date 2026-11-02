@@ -10,6 +10,8 @@ import {
   FiRefreshCw,
   FiAlertCircle,
   FiCheckCircle,
+  FiEye,
+  FiEyeOff,
 } from "react-icons/fi";
 
 import { useAuth } from "../../context/AuthContext";
@@ -64,6 +66,12 @@ export default function StudentProfile() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  const [passwordVisibility, setPasswordVisibility] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+    });
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -527,57 +535,68 @@ export default function StudentProfile() {
             <p>Use a strong password that you do not use on other websites.</p>
           </div>
 
-          <div className="student-profile__password-fields">
-            <label>
-              Current Password *
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={passwordForm.currentPassword}
-                onChange={(event) =>
-                  setPasswordForm((current) => ({
-                    ...current,
-                    currentPassword: event.target.value,
-                  }))
-                }
-                required
-              />
-            </label>
+        <div className="student-profile__password-fields">
+            {[
+                {
+                name: "currentPassword",
+                label: "Current Password *",
+                autoComplete: "current-password",
+                },
+                {
+                name: "newPassword",
+                label: "New Password *",
+                autoComplete: "new-password",
+                },
+                {
+                name: "confirmPassword",
+                label: "Confirm New Password *",
+                autoComplete: "new-password",
+                },
+            ].map((field) => (
+                <label key={field.name}>
+                {field.label}
 
-            <label>
-              New Password *
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                value={passwordForm.newPassword}
-                onChange={(event) =>
-                  setPasswordForm((current) => ({
-                    ...current,
-                    newPassword: event.target.value,
-                  }))
-                }
-                required
-              />
-            </label>
+                <div className="student-profile__password-input-wrap">
+                    <input
+                    type={passwordVisibility[field.name] ? "text" : "password"}
+                    autoComplete={field.autoComplete}
+                    minLength={field.name === "currentPassword" ? undefined : 8}
+                    value={passwordForm[field.name]}
+                    onChange={(event) =>
+                        setPasswordForm((current) => ({
+                        ...current,
+                        [field.name]: event.target.value,
+                        }))
+                    }
+                    required
+                    />
 
-            <label>
-              Confirm New Password *
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                value={passwordForm.confirmPassword}
-                onChange={(event) =>
-                  setPasswordForm((current) => ({
-                    ...current,
-                    confirmPassword: event.target.value,
-                  }))
-                }
-                required
-              />
-            </label>
-          </div>
+                    <button
+                    type="button"
+                    className="student-profile__password-toggle"
+                    aria-label={
+                        passwordVisibility[field.name]
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                    title={
+                        passwordVisibility[field.name]
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                    onClick={() =>
+                        setPasswordVisibility((current) => ({
+                        ...current,
+                        [field.name]: !current[field.name],
+                        }))
+                    }
+                    >
+                    {passwordVisibility[field.name] ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                </div>
+                </label>
+            ))}
+        </div>
 
           <div className="student-profile__password-note">
             Your account will be signed out after the password is changed.
