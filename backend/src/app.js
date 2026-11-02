@@ -61,6 +61,8 @@ import certificateRoutes from "./routes/certificate.routes.js";
 import publicCertificateRoutes from "./routes/publicCertificate.routes.js";
 
 
+import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
+
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
 
@@ -268,6 +270,8 @@ app.use(
   "/api/attendance",
   attendanceRoutes
 );
+
+app.use("/api/leave-requests", leaveRequestRoutes);
 
 
 

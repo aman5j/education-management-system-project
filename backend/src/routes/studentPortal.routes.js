@@ -3,6 +3,14 @@ import express from "express";
 import studentUpload from "../middleware/studentUpload.middleware.js";
 
 import {
+  getMyLeaveAdmissions,
+  createMyLeaveRequest,
+  getMyLeaveRequests,
+  cancelMyLeaveRequest,
+} from "../controllers/leaveRequest.controller.js";
+
+
+import {
   getMyProfile,
   updateMyProfile,
   uploadMyProfilePhoto,
@@ -90,6 +98,13 @@ router.use(authenticate);
 router.use(authorizeRoles("student"));
 
 router.get("/dashboard", getStudentDashboard);
+
+
+// Student leave applications — ownership comes from req.user.studentRecord.
+router.get("/leave/admissions", getMyLeaveAdmissions);
+router.get("/leave", getMyLeaveRequests);
+router.post("/leave", createMyLeaveRequest);
+router.patch("/leave/:id/cancel", cancelMyLeaveRequest);
 
 
 // Student profile — always uses the authenticated student's own record.
