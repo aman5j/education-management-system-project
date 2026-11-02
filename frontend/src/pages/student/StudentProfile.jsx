@@ -28,7 +28,6 @@ const initialForm = {
   gender: "",
   mobile: "",
   alternateMobile: "",
-  email: "",
   address: "",
   pincode: "",
 };
@@ -55,6 +54,7 @@ export default function StudentProfile() {
   const [activeTab, setActiveTab] = useState("personal");
   const [form, setForm] = useState(initialForm);
   const [student, setStudent] = useState(null);
+  const [loginEmail, setLoginEmail] = useState(user?.email || "");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -71,7 +71,7 @@ export default function StudentProfile() {
     currentPassword: false,
     newPassword: false,
     confirmPassword: false,
-    });
+  });
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -82,8 +82,11 @@ export default function StudentProfile() {
       const response = await studentPortalService.getMyProfile();
       const data = response?.data || {};
       const profile = data.student || {};
+      const account = data.account || {};
 
       setStudent(profile);
+      setLoginEmail(account.email || user?.email || profile.email || "");
+
       setForm({
         firstName: profile.firstName || "",
         surname: profile.surname || "",
@@ -93,23 +96,19 @@ export default function StudentProfile() {
         gender: profile.gender || "",
         mobile: profile.mobile || "",
         alternateMobile: profile.alternateMobile || "",
-        email: profile.email || "",
         address: profile.address || "",
         pincode: profile.pincode || "",
       });
 
-      if (data.account) {
-        updateUser({
-          name: data.account.name,
-          email: data.account.email,
-        });
+      if (account.name) {
+        updateUser({ name: account.name });
       }
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [updateUser]);
+  }, [updateUser, user?.email]);
 
   useEffect(() => {
     loadProfile();
@@ -117,6 +116,7 @@ export default function StudentProfile() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
     setForm((current) => ({
       ...current,
       [name]: value,
@@ -133,27 +133,41 @@ export default function StudentProfile() {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
     setSaving(true);
 
     try {
+      // Login email is intentionally excluded from this request.
       const response = await studentPortalService.updateMyProfile({
-        ...form,
-        email: form.email.trim().toLowerCase(),
+        firstName: form.firstName,
+        surname: form.surname,
+        fatherName: form.fatherName,
+        motherName: form.motherName,
+        dob: form.dob,
+        gender: form.gender,
+        mobile: form.mobile,
+        alternateMobile: form.alternateMobile,
+        address: form.address,
+        pincode: form.pincode,
       });
 
       const updatedStudent = response?.data?.student;
-      setStudent(updatedStudent || student);
 
-      if (response?.data?.account) {
-        updateUser(response.data.account);
+      if (updatedStudent) {
+        setStudent(updatedStudent);
       }
 
-      setSuccess(response?.message || "Profile updated successfully.");
+      if (response?.data?.account?.name) {
+        updateUser({ name: response.data.account.name });
+      }
+
+      // Keep the account email displayed as the login email.
+      if (response?.data?.account?.email) {
+        setLoginEmail(response.data.account.email);
+      }
+
+      setSuccess(
+        response?.message || "Profile updated successfully."
+      );
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -210,7 +224,9 @@ export default function StudentProfile() {
       return;
     }
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    if (
+      passwordForm.newPassword !== passwordForm.confirmPassword
+    ) {
       setError("New password and confirmation do not match.");
       return;
     }
@@ -224,7 +240,8 @@ export default function StudentProfile() {
       navigate("/login", {
         replace: true,
         state: {
-          message: "Password changed successfully. Please sign in again.",
+          message:
+            "Password changed successfully. Please sign in again.",
         },
       });
     } catch (err) {
@@ -237,7 +254,9 @@ export default function StudentProfile() {
     : "";
 
   const displayName =
-    [student?.firstName, student?.surname].filter(Boolean).join(" ") ||
+    [student?.firstName, student?.surname]
+      .filter(Boolean)
+      .join(" ") ||
     user?.name ||
     "Student";
 
@@ -256,11 +275,15 @@ export default function StudentProfile() {
         <div className="student-profile__title-icon">
           <FiUser />
         </div>
+
         <div>
-          <span className="student-profile__eyebrow">STUDENT PORTAL</span>
+          <span className="student-profile__eyebrow">
+            STUDENT PORTAL
+          </span>
           <h1>My Profile</h1>
           <p>View and manage your personal account information.</p>
         </div>
+
         <button
           type="button"
           className="student-profile__refresh"
@@ -275,7 +298,9 @@ export default function StudentProfile() {
         <div className="student-profile__alert student-profile__alert--error">
           <FiAlertCircle />
           <span>{error}</span>
-          <button type="button" onClick={() => setError("")}>Dismiss</button>
+          <button type="button" onClick={() => setError("")}>
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -283,7 +308,9 @@ export default function StudentProfile() {
         <div className="student-profile__alert student-profile__alert--success">
           <FiCheckCircle />
           <span>{success}</span>
-          <button type="button" onClick={() => setSuccess("")}>Dismiss</button>
+          <button type="button" onClick={() => setSuccess("")}>
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -330,7 +357,9 @@ export default function StudentProfile() {
                 {imageUrl ? (
                   <img src={imageUrl} alt={displayName} />
                 ) : (
-                  <span>{displayName.charAt(0).toUpperCase()}</span>
+                  <span>
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
                 )}
               </div>
 
@@ -412,15 +441,18 @@ export default function StudentProfile() {
                 </label>
 
                 <label className="student-profile__field-full">
-                  Email Address *
+                  Login Email Address
                   <input
                     type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                    maxLength={150}
+                    value={loginEmail}
+                    readOnly
+                    aria-readonly="true"
+                    title="Your login email can only be managed by the institute administrator."
                   />
+                  <small>
+                    This email is your student login ID. Contact your
+                    institute administrator if it needs to be changed.
+                  </small>
                 </label>
 
                 <label>
@@ -491,7 +523,10 @@ export default function StudentProfile() {
         >
           <div className="student-profile__section-heading">
             <h2>Guardian Information</h2>
-            <p>Manage the parent or guardian details associated with your student record.</p>
+            <p>
+              Manage the parent or guardian details associated with
+              your student record.
+            </p>
           </div>
 
           <div className="student-profile__fields student-profile__guardian-fields">
@@ -518,7 +553,11 @@ export default function StudentProfile() {
 
           <div className="student-profile__actions">
             <button type="submit" disabled={saving}>
-              {saving ? <FiRefreshCw className="student-profile__spin" /> : <FiSave />}
+              {saving ? (
+                <FiRefreshCw className="student-profile__spin" />
+              ) : (
+                <FiSave />
+              )}
               {saving ? "Saving..." : "Update Guardian Details"}
             </button>
           </div>
@@ -532,71 +571,81 @@ export default function StudentProfile() {
         >
           <div className="student-profile__section-heading">
             <h2>Change Password</h2>
-            <p>Use a strong password that you do not use on other websites.</p>
+            <p>
+              Use a strong password that you do not use on other websites.
+            </p>
           </div>
 
-        <div className="student-profile__password-fields">
+          <div className="student-profile__password-fields">
             {[
-                {
+              {
                 name: "currentPassword",
                 label: "Current Password *",
                 autoComplete: "current-password",
-                },
-                {
+              },
+              {
                 name: "newPassword",
                 label: "New Password *",
                 autoComplete: "new-password",
-                },
-                {
+              },
+              {
                 name: "confirmPassword",
                 label: "Confirm New Password *",
                 autoComplete: "new-password",
-                },
+              },
             ].map((field) => (
-                <label key={field.name}>
+              <label key={field.name}>
                 {field.label}
 
                 <div className="student-profile__password-input-wrap">
-                    <input
-                    type={passwordVisibility[field.name] ? "text" : "password"}
+                  <input
+                    type={
+                      passwordVisibility[field.name] ? "text" : "password"
+                    }
                     autoComplete={field.autoComplete}
-                    minLength={field.name === "currentPassword" ? undefined : 8}
+                    minLength={
+                      field.name === "currentPassword" ? undefined : 8
+                    }
                     value={passwordForm[field.name]}
                     onChange={(event) =>
-                        setPasswordForm((current) => ({
+                      setPasswordForm((current) => ({
                         ...current,
                         [field.name]: event.target.value,
-                        }))
+                      }))
                     }
                     required
-                    />
+                  />
 
-                    <button
+                  <button
                     type="button"
                     className="student-profile__password-toggle"
                     aria-label={
-                        passwordVisibility[field.name]
+                      passwordVisibility[field.name]
                         ? "Hide password"
                         : "Show password"
                     }
                     title={
-                        passwordVisibility[field.name]
+                      passwordVisibility[field.name]
                         ? "Hide password"
                         : "Show password"
                     }
                     onClick={() =>
-                        setPasswordVisibility((current) => ({
+                      setPasswordVisibility((current) => ({
                         ...current,
                         [field.name]: !current[field.name],
-                        }))
+                      }))
                     }
-                    >
-                    {passwordVisibility[field.name] ? <FiEyeOff /> : <FiEye />}
-                    </button>
+                  >
+                    {passwordVisibility[field.name] ? (
+                      <FiEyeOff />
+                    ) : (
+                      <FiEye />
+                    )}
+                  </button>
                 </div>
-                </label>
+              </label>
             ))}
-        </div>
+          </div>
 
           <div className="student-profile__password-note">
             Your account will be signed out after the password is changed.
