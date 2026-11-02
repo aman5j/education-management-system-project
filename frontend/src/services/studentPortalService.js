@@ -101,6 +101,30 @@ const studentPortalService = {
     );
     return response.data;
   },
+
+
+  async getMyDocuments() {
+    const response = await api.get("/student-portal/documents");
+    return response.data;
+  },
+
+  async viewMyDocument(documentId) {
+    const response = await api.get(
+      `/student-portal/documents/${documentId}/view`,
+      { responseType: "blob" }
+    );
+
+    return response.data;
+  },
+
+  async downloadMyDocument(documentId) {
+    const response = await api.get(
+      `/student-portal/documents/${documentId}/download`,
+      { responseType: "blob" }
+    );
+
+    return response.data;
+  },
 };
 
 export default studentPortalService;

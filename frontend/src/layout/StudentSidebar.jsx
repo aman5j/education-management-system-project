@@ -45,7 +45,11 @@ const navigation = [
     icon: FiFileText,
     path: "/student/admission-details",
   },
-  { label: "My Documents", icon: FiFileText, phase: 9 },
+  {
+    label: "My Documents",
+    icon: FiFileText,
+    path: "/student/documents",
+  },
   { label: "Notifications", icon: FiBell, phase: 10 },
   { label: "Helpdesk & Support", icon: FiHelpCircle, phase: 11 },
   { label: "Apply for Leave", icon: FiCalendar, phase: 12 },

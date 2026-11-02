@@ -1,6 +1,12 @@
 import express from "express";
 
 import {
+  getMyDocuments,
+  viewMyDocument,
+  downloadMyDocument,
+} from "../controllers/studentPortalDocument.controller.js";
+
+import {
   getMyExamAccessRequest,
   requestMyExamAccess,
 } from "../controllers/studentExamAccess.controller.js";
@@ -76,6 +82,20 @@ router.use(authenticate);
 router.use(authorizeRoles("student"));
 
 router.get("/dashboard", getStudentDashboard);
+
+// Student can access only documents belonging to their own account.
+router.get("/documents", getMyDocuments);
+
+router.get(
+  "/documents/:documentId/view",
+  viewMyDocument
+);
+
+router.get(
+  "/documents/:documentId/download",
+  downloadMyDocument
+);
+
 router.get(
   "/admission-details",
   getMyAdmissionDetails
