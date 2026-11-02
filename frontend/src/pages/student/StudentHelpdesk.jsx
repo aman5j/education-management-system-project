@@ -136,6 +136,27 @@ export default function StudentHelpdesk() {
     }
   };
 
+  const refreshConversation = async () => {
+    if (!selectedTicket || detailLoading) return;
+
+    try {
+        setDetailLoading(true);
+        setError("");
+
+        const [ticketResponse, messageResponse] = await Promise.all([
+        supportService.getMyTicket(selectedTicket._id),
+        supportService.getMyMessages(selectedTicket._id),
+        ]);
+
+        setSelectedTicket(ticketResponse.data);
+        setMessages(messageResponse.data || []);
+    } catch (err) {
+        setError(getError(err));
+    } finally {
+        setDetailLoading(false);
+    }
+    };
+
   const handleCreateTicket = async (event) => {
     event.preventDefault();
 
@@ -253,12 +274,26 @@ export default function StudentHelpdesk() {
         <section className="sh-conversation">
           <div className="sh-conversation__top">
             <button className="sh-back" onClick={closeDetails}>
-              <FiArrowLeft /> Back to tickets
+                <FiArrowLeft /> Back to tickets
             </button>
-            <span className={`sh-status sh-status--${statusClass(selectedTicket.status)}`}>
-              {selectedTicket.status}
-            </span>
-          </div>
+
+            <div className="sh-conversation__actions">
+                <span className={`sh-status sh-status--${statusClass(selectedTicket.status)}`}>
+                {selectedTicket.status}
+                </span>
+
+                <button
+                type="button"
+                className="sh-refresh-chat"
+                onClick={refreshConversation}
+                disabled={detailLoading}
+                title="Refresh conversation"
+                aria-label="Refresh conversation"
+                >
+                <FiRefreshCw className={detailLoading ? "sh-refresh-chat--spinning" : ""} />
+                </button>
+            </div>
+            </div>
 
           <div className="sh-ticket-summary">
             <div>
