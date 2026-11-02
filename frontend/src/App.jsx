@@ -29,7 +29,7 @@ import StudentCertificates from "./pages/student/StudentCertificates";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import StudentAdmissionDetails from "./pages/student/StudentAdmissionDetails";
 import StudentDocuments from "./pages/student/StudentDocuments";
-
+import StudentProfile from "./pages/student/StudentProfile";
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -666,6 +666,8 @@ const App = () => {
           path="documents"
           element={<StudentDocuments />}
         />
+
+        <Route path="profile" element={<StudentProfile />} />
 
         
 

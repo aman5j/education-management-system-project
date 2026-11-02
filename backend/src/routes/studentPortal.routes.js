@@ -1,5 +1,13 @@
 import express from "express";
 
+import studentUpload from "../middleware/studentUpload.middleware.js";
+
+import {
+  getMyProfile,
+  updateMyProfile,
+  uploadMyProfilePhoto,
+} from "../controllers/studentProfile.controller.js";
+
 import {
   getMyDocuments,
   viewMyDocument,
@@ -82,6 +90,19 @@ router.use(authenticate);
 router.use(authorizeRoles("student"));
 
 router.get("/dashboard", getStudentDashboard);
+
+
+// Student profile — always uses the authenticated student's own record.
+router.get("/profile", getMyProfile);
+
+router.put("/profile", updateMyProfile);
+
+router.post(
+  "/profile/photo",
+  studentUpload.single("profileImage"),
+  uploadMyProfilePhoto
+);
+
 
 // Student can access only documents belonging to their own account.
 router.get("/documents", getMyDocuments);

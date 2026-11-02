@@ -18,7 +18,8 @@ export default function StudentTopbar({
   onMenuToggle,
   onPlannedItem,
   onLogout,
-}) {
+  onProfile,
+}) { 
   const [profileOpen, setProfileOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [student, setStudent] = useState(null);
@@ -199,8 +200,10 @@ export default function StudentTopbar({
               <button
                 type="button"
                 onClick={() => {
+                  // setProfileOpen(false);
+                  // onPlannedItem({ label: "My Profile", phase: 13 });
                   setProfileOpen(false);
-                  onPlannedItem({ label: "My Profile", phase: 13 });
+                  onProfile?.();
                 }}
               >
                 <FiUser />

@@ -125,6 +125,41 @@ const studentPortalService = {
 
     return response.data;
   },
+
+
+
+
+
+  async getMyProfile() {
+    const response = await api.get("/student-portal/profile");
+    return response.data;
+  },
+
+  async updateMyProfile(payload) {
+    const response = await api.put(
+      "/student-portal/profile",
+      payload
+    );
+    return response.data;
+  },
+
+  async uploadMyProfilePhoto(file) {
+    const formData = new FormData();
+    formData.append("profileImage", file);
+
+    const response = await api.post(
+      "/student-portal/profile/photo",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data;
+  },
+
 };
 
 export default studentPortalService;

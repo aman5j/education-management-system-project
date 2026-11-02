@@ -105,6 +105,7 @@ export default function StudentLayout() {
           onMenuToggle={handleMenuToggle}
           onPlannedItem={handlePlannedItem}
           onLogout={handleLogout}
+          onProfile={() => navigate("/student/profile")}
         />
 
         {notice && (
