@@ -821,33 +821,57 @@ export const studentSavePracticeAnswers = async (req, res, next) => {
   try {
     const studentId = getStudentId(req);
 
-    const attempt = await PracticeAttempt.findOne({
-      _id: req.params.id,
-      student_id: studentId,
-    });
-
-    if (!attempt) return fail(res, 404, "Attempt not found.");
-
-    if (attempt.status !== "In Progress") {
-      return fail(res, 409, "This attempt is already submitted.");
+    if (!studentId || !validId(String(studentId))) {
+      return fail(res, 409, "Student account is not linked.");
     }
 
-    if (new Date() >= attempt.expiresAt) {
-      return fail(res, 410, "Time has expired. Submit the test.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid attempt ID.");
     }
 
     if (!Array.isArray(req.body.answers)) {
       return fail(res, 400, "Answers must be an array.");
     }
 
+    const attempt = await PracticeAttempt.findOne({
+      _id: req.params.id,
+      student_id: studentId,
+    }).select("questions.question_id status expiresAt");
+
+    if (!attempt) {
+      return fail(res, 404, "Attempt not found.");
+    }
+
+    if (attempt.status !== "In Progress") {
+      return fail(res, 409, "This attempt is already submitted.");
+    }
+
+    const now = new Date();
+
+    if (now >= attempt.expiresAt) {
+      return fail(res, 410, "Time has expired. Submit the test.");
+    }
+
+    const updates = {};
+    const updatedAnswers = new Set();
+
     for (const answer of req.body.answers) {
-      const question = attempt.questions.find(
-        (item) => String(item.question_id) === String(answer.question_id)
+      const questionIndex = attempt.questions.findIndex(
+        (question) =>
+          String(question.question_id) === String(answer.question_id)
       );
 
-      if (!question) {
+      if (questionIndex === -1) {
         return fail(res, 400, "An answer contains an invalid question ID.");
       }
+
+      const questionId = String(answer.question_id);
+
+      if (updatedAnswers.has(questionId)) {
+        return fail(res, 400, "Duplicate question answers are not allowed.");
+      }
+
+      updatedAnswers.add(questionId);
 
       const selected = String(answer.selectedAnswer || "").toUpperCase();
 
@@ -855,18 +879,51 @@ export const studentSavePracticeAnswers = async (req, res, next) => {
         return fail(res, 400, "Answer must be A, B, C, or D.");
       }
 
-      question.selectedAnswer = selected;
+      updates[`questions.${questionIndex}.selectedAnswer`] = selected;
     }
 
-    await attempt.save();
+    // Atomic update: an attempt cannot be saved after submission or expiry.
+    const result = await PracticeAttempt.updateOne(
+      {
+        _id: req.params.id,
+        student_id: studentId,
+        status: "In Progress",
+        expiresAt: { $gt: now },
+      },
+      { $set: updates }
+    );
+
+    if (!result.matchedCount) {
+      const latest = await PracticeAttempt.findOne({
+        _id: req.params.id,
+        student_id: studentId,
+      }).select("status expiresAt");
+
+      if (!latest) {
+        return fail(res, 404, "Attempt not found.");
+      }
+
+      if (latest.status !== "In Progress") {
+        return fail(res, 409, "This attempt is already submitted.");
+      }
+
+      return fail(res, 410, "Time has expired. Submit the test.");
+    }
+
+    const savedCount = attempt.questions.filter((question, index) => {
+      const key = `questions.${index}.selectedAnswer`;
+      const selected = updates[key];
+
+      return selected !== undefined
+        ? Boolean(selected)
+        : false;
+    }).length;
 
     return res.json({
       success: true,
       message: "Answers saved successfully.",
       data: {
-        savedCount: attempt.questions.filter(
-          (question) => question.selectedAnswer
-        ).length,
+        savedCount,
         expiresAt: attempt.expiresAt,
       },
     });
@@ -883,27 +940,56 @@ export const studentSubmitPracticeTest = async (req, res, next) => {
   try {
     const studentId = getStudentId(req);
 
+    if (!studentId || !validId(String(studentId))) {
+      return fail(res, 409, "Student account is not linked.");
+    }
+
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid attempt ID.");
+    }
+
     const attempt = await PracticeAttempt.findOne({
       _id: req.params.id,
       student_id: studentId,
     }).select("+questions.correctAnswer");
 
-    if (!attempt) return fail(res, 404, "Attempt not found.");
+    if (!attempt) {
+      return fail(res, 404, "Attempt not found.");
+    }
 
     if (attempt.status !== "In Progress") {
       return fail(res, 409, "This attempt has already been submitted.");
     }
 
-    // Accept final answers sent with submit as well.
-    if (Array.isArray(req.body.answers)) {
+    const now = new Date();
+    const isExpired = now >= attempt.expiresAt;
+
+    // Before expiry, accept the final answer snapshot.
+    // After expiry, ignore all client-supplied answers.
+    if (!isExpired && req.body.answers !== undefined) {
+      if (!Array.isArray(req.body.answers)) {
+        return fail(res, 400, "Answers must be an array.");
+      }
+
+      const updatedAnswers = new Set();
+
       for (const answer of req.body.answers) {
         const question = attempt.questions.find(
-          (item) => String(item.question_id) === String(answer.question_id)
+          (item) =>
+            String(item.question_id) === String(answer.question_id)
         );
 
         if (!question) {
           return fail(res, 400, "An answer contains an invalid question ID.");
         }
+
+        const questionId = String(answer.question_id);
+
+        if (updatedAnswers.has(questionId)) {
+          return fail(res, 400, "Duplicate question answers are not allowed.");
+        }
+
+        updatedAnswers.add(questionId);
 
         const selected = String(answer.selectedAnswer || "").toUpperCase();
 
@@ -914,8 +1000,6 @@ export const studentSubmitPracticeTest = async (req, res, next) => {
         question.selectedAnswer = selected;
       }
     }
-
-    const now = new Date();
 
     let correct = 0;
     let incorrect = 0;
@@ -948,35 +1032,58 @@ export const studentSubmitPracticeTest = async (req, res, next) => {
       Math.floor((now.getTime() - attempt.startedAt.getTime()) / 1000)
     );
 
-    attempt.correctCount = correct;
-    attempt.incorrectCount = incorrect;
-    attempt.unansweredCount = unanswered;
-    attempt.marksObtained = marksObtained;
-    attempt.percentage = percentage;
-    attempt.timeTakenSeconds = Math.min(
+    const timeTakenSeconds = Math.min(
       elapsedSeconds,
       maxDurationSeconds
     );
-    attempt.submittedAt = now;
-    attempt.status = now >= attempt.expiresAt ? "Timed Out" : "Submitted";
 
-    await attempt.save();
+    const finalStatus = isExpired ? "Timed Out" : "Submitted";
+
+    // Atomic final update: subsequent autosaves cannot modify this attempt.
+    const submittedAttempt = await PracticeAttempt.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        student_id: studentId,
+        status: "In Progress",
+      },
+      {
+        $set: {
+          questions: attempt.questions,
+          correctCount: correct,
+          incorrectCount: incorrect,
+          unansweredCount: unanswered,
+          marksObtained,
+          percentage,
+          timeTakenSeconds,
+          submittedAt: now,
+          status: finalStatus,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("+questions.correctAnswer");
+
+    if (!submittedAttempt) {
+      return fail(res, 409, "This attempt has already been submitted.");
+    }
 
     return res.json({
       success: true,
       message: "Practice test submitted successfully.",
       data: {
-        attemptId: attempt._id,
-        status: attempt.status,
-        totalQuestions: attempt.totalQuestions,
-        correctCount: correct,
-        incorrectCount: incorrect,
-        unansweredCount: unanswered,
-        marksObtained,
-        totalMarks: attempt.totalMarks,
-        percentage,
-        timeTakenSeconds: attempt.timeTakenSeconds,
-        questions: attempt.questions.map((question) => ({
+        attemptId: submittedAttempt._id,
+        status: submittedAttempt.status,
+        totalQuestions: submittedAttempt.totalQuestions,
+        correctCount: submittedAttempt.correctCount,
+        incorrectCount: submittedAttempt.incorrectCount,
+        unansweredCount: submittedAttempt.unansweredCount,
+        marksObtained: submittedAttempt.marksObtained,
+        totalMarks: submittedAttempt.totalMarks,
+        percentage: submittedAttempt.percentage,
+        timeTakenSeconds: submittedAttempt.timeTakenSeconds,
+        questions: submittedAttempt.questions.map((question) => ({
           ...safeQuestion(question),
           correctAnswer: question.correctAnswer,
           isCorrect:

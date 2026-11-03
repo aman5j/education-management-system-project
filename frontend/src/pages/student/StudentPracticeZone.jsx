@@ -588,22 +588,25 @@ export default function StudentPracticeZone() {
     );
 
     try {
-      const response = await practiceStudentService.submitTest(
-        current.attemptId,
-        payload
-      );
+        // Finish any already queued autosave before final submission.
+        await saveQueueRef.current.catch(() => undefined);
 
-      showSubmittedResult(
-        getData(response),
-        current.title
-      );
-    } catch (err) {
-      setSubmitError(getError(err));
-      setSaveStatus("Submission failed — please retry");
-    } finally {
-      submittingRef.current = false;
-      setSubmitting(false);
-    }
+        const response = await practiceStudentService.submitTest(
+            current.attemptId,
+            payload
+        );
+
+        showSubmittedResult(
+            getData(response),
+            current.title
+        );
+        } catch (err) {
+        setSubmitError(getError(err));
+        setSaveStatus("Submission failed — please retry");
+        } finally {
+        submittingRef.current = false;
+        setSubmitting(false);
+        }
   }, [showSubmittedResult]);
 
   // Keep the timer callback current without restarting the interval.
