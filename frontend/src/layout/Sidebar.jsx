@@ -188,8 +188,17 @@ const menuItems = [
 
   {
     label: "Practice Zone",
-    path: "/admin/practice",
     icon: FiActivity,
+    children: [
+      {
+        label: "Manage Practice Tests",
+        path: "/admin/practice",
+      },
+      {
+        label: "Attempts & Results",
+        path: "/admin/practice/attempts",
+      },
+    ],
   },
 
   {

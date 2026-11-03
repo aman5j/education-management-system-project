@@ -28,3 +28,19 @@ export const deletePracticeTest = (id) => {
   if (!id) throw new Error("Practice test ID is required.");
   return api.delete(`${BASE_URL}/tests/${id}`);
 };
+
+
+
+// Existing imports and functions remain unchanged.
+// Add these functions at the bottom of practiceService.js.
+
+export const getPracticeAttempts = (params = {}) =>
+  api.get(`${BASE_URL}/attempts`, { params });
+
+export const getPracticeAttempt = (id) => {
+  if (!id) {
+    throw new Error("Practice attempt ID is required.");
+  }
+
+  return api.get(`${BASE_URL}/attempts/${id}`);
+};

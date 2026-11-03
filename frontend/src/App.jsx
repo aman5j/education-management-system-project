@@ -39,6 +39,7 @@ import AdminSupport from "./pages/admin/support/AdminSupport";
 
 
 import PracticeZone from "./pages/admin/practice/PracticeZone";
+import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -391,6 +392,11 @@ const App = () => {
       <Route
         path="practice"
         element={<PracticeZone />}
+      />
+
+      <Route
+        path="practice/attempts"
+        element={<PracticeAttempts />}
       />
 
 
