@@ -90,6 +90,14 @@ export const PERMISSIONS = Object.freeze({
 
   // Institute settings
   SETTINGS_MANAGE: "settings.manage",
+
+
+    // Notes Management
+    NOTES_VIEW: "notes.view",
+    NOTES_CREATE: "notes.create",
+    NOTES_UPDATE: "notes.update",
+    NOTES_DELETE: "notes.delete",
+    NOTES_PUBLISH: "notes.publish",
 });
 
 export const ALL_PERMISSION_KEYS = Object.freeze(
