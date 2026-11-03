@@ -38,6 +38,9 @@ import StudentHelpdesk from "./pages/student/StudentHelpdesk";
 import AdminSupport from "./pages/admin/support/AdminSupport";
 
 
+import PracticeZone from "./pages/admin/practice/PracticeZone";
+
+
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
 
@@ -383,6 +386,12 @@ const App = () => {
           path="exams/update-marks"
           element={<UpdateMarks />}
         />
+
+      
+      <Route
+        path="practice"
+        element={<PracticeZone />}
+      />
 
 
         {/* Certificates Management */}

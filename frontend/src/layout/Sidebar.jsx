@@ -187,6 +187,12 @@ const menuItems = [
   },
 
   {
+    label: "Practice Zone",
+    path: "/admin/practice",
+    icon: FiActivity,
+  },
+
+  {
     label: "Certificates",
     path: "/admin/certificates",
     icon: FiAward,
