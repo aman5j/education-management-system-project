@@ -16,6 +16,7 @@ import {
   FiX,
   FiUser,
   FiTarget,
+  FiAward,
 } from "react-icons/fi";
 
 const navigation = [
@@ -25,6 +26,11 @@ const navigation = [
     label: "Practice Zone",
     icon: FiTarget,
     path: "/student/practice",
+  },
+  {
+    label: "My Practice Results",
+    icon: FiAward,
+    path: "/student/practice/results",
   },
   {
     label: "My Attendance",

@@ -702,6 +702,49 @@ export const studentStartPracticeTest = async (req, res, next) => {
 // STUDENT: RESUME OWN ATTEMPT
 // GET /api/practice/student/attempts/:id
 // =========================================================
+// export const studentGetPracticeAttempt = async (req, res, next) => {
+//   try {
+//     const studentId = getStudentId(req);
+
+//     if (!studentId || !validId(String(studentId))) {
+//       return fail(res, 409, "Student account is not linked.");
+//     }
+
+//     if (!validId(req.params.id)) {
+//       return fail(res, 400, "Invalid attempt ID.");
+//     }
+
+//     const attempt = await PracticeAttempt.findOne({
+//       _id: req.params.id,
+//       student_id: studentId,
+//     })
+//       .select("-questions.correctAnswer")
+//       .lean();
+
+//     if (!attempt) return fail(res, 404, "Attempt not found.");
+
+//     if (attempt.status === "In Progress" && new Date() >= attempt.expiresAt) {
+//       return fail(
+//         res,
+//         410,
+//         "This attempt has expired. Submit it to view your result."
+//       );
+//     }
+
+//     return res.json({
+//       success: true,
+//       data: {
+//         ...attempt,
+//         questions: attempt.questions.map(safeQuestion),
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+
 export const studentGetPracticeAttempt = async (req, res, next) => {
   try {
     const studentId = getStudentId(req);
@@ -718,12 +761,20 @@ export const studentGetPracticeAttempt = async (req, res, next) => {
       _id: req.params.id,
       student_id: studentId,
     })
-      .select("-questions.correctAnswer")
+      .select("+questions.correctAnswer")
+      .populate("practiceTest_id", "title")
+      .populate("course_id", "courseTitle")
+      .populate("subject_id", "subjectName")
       .lean();
 
-    if (!attempt) return fail(res, 404, "Attempt not found.");
+    if (!attempt) {
+      return fail(res, 404, "Attempt not found.");
+    }
 
-    if (attempt.status === "In Progress" && new Date() >= attempt.expiresAt) {
+    if (
+      attempt.status === "In Progress" &&
+      new Date() >= new Date(attempt.expiresAt)
+    ) {
       return fail(
         res,
         410,
@@ -731,17 +782,36 @@ export const studentGetPracticeAttempt = async (req, res, next) => {
       );
     }
 
+    const questions = (attempt.questions || []).map((question) => {
+      const safe = safeQuestion(question);
+
+      // Never reveal correct answers while the attempt is active.
+      if (attempt.status === "In Progress") {
+        return safe;
+      }
+
+      return {
+        ...safe,
+        correctAnswer: question.correctAnswer,
+        isCorrect:
+          Boolean(question.selectedAnswer) &&
+          question.selectedAnswer === question.correctAnswer,
+      };
+    });
+
     return res.json({
       success: true,
       data: {
         ...attempt,
-        questions: attempt.questions.map(safeQuestion),
+        questions,
       },
     });
   } catch (error) {
     next(error);
   }
 };
+
+
 
 // =========================================================
 // STUDENT: SAVE ANSWERS

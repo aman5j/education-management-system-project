@@ -41,7 +41,7 @@ import AdminSupport from "./pages/admin/support/AdminSupport";
 import PracticeZone from "./pages/admin/practice/PracticeZone";
 import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
 import StudentPracticeZone from "./pages/student/StudentPracticeZone";
-
+import StudentPracticeResults from "./pages/student/StudentPracticeResults";
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -697,6 +697,11 @@ const App = () => {
         <Route
           path="practice"
           element={<StudentPracticeZone />}
+        />
+
+        <Route
+          path="practice/results"
+          element={<StudentPracticeResults />}
         />
 
         <Route path="leave" element={<StudentApplyLeave />} />
