@@ -127,14 +127,57 @@ export default function NotesManagement() {
     }
   }, [page, search, courseFilter, subjectFilter, statusFilter]);
 
-  const loadCourses = useCallback(async () => {
-    try {
-      const response = await getCourses({ page: 1, limit: 100 });
-      setCourses(getArray(response, "courses"));
+//   const loadCourses = useCallback(async () => {
+//     try {
+//       const response = await getCourses({ page: 1, limit: 100 });
+//       setCourses(getArray(response, "courses"));
+//     } catch (err) {
+//       setError(getError(err));
+//     }
+//   }, []);
+
+  
+const loadCourses = useCallback(async () => {
+  try {
+    setError("");
+
+    const response = await getCourses({
+      page: 1,
+      limit: 100,
+    });
+
+    // Backend getCourses returns:
+    // { success: true, data: [...courses], pagination: {...} }
+
+    const responseData = response?.data?.data;
+
+    const courseList = Array.isArray(responseData)
+        ? responseData
+        : Array.isArray(responseData?.courses)
+            ? responseData.courses
+            : Array.isArray(response?.data?.courses)
+            ? response.data.courses
+            : [];
+
+        setCourses(courseList);
+
+        if (courseList.length === 0) {
+        console.warn(
+            "Notes Management: No courses returned by the Courses API.",
+            response?.data
+        );
+        }
     } catch (err) {
-      setError(getError(err));
+        console.error("Notes Management - Load Courses Error:", err);
+
+        setCourses([]);
+        setError(
+        err?.response?.data?.message ||
+        "Unable to load courses. Please check your course permissions and try again."
+        );
     }
-  }, []);
+    }, []);
+
 
   useEffect(() => {
     loadCourses();
