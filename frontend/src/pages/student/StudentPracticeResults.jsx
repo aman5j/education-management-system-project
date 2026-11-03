@@ -16,6 +16,7 @@ import {
   FiSearch,
   FiTarget,
   FiXCircle,
+  FiX,
   FiChevronDown,
   FiArrowRight,
 } from "react-icons/fi";
