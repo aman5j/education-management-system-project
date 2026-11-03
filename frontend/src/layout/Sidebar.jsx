@@ -20,6 +20,7 @@ import {
   FiGlobe,
   FiHelpCircle,
   FiX,
+  FiBook,
 } from "react-icons/fi";
 import { HiOutlineBars3 } from "react-icons/hi2";
 
@@ -202,6 +203,12 @@ const menuItems = [
   },
 
   {
+    label: "Notes",
+    path: "/admin/notes",
+    icon: FiBook,
+  },
+
+  {
     label: "Certificates",
     path: "/admin/certificates",
     icon: FiAward,
@@ -316,6 +323,8 @@ const PATH_PERMISSION_MAP = {
   "/admin/staff": "users.view",
   "/admin/communication": "settings.manage",
   "/admin/communication": "settings.manage",
+
+  "/admin/notes": "notes.view",
 
   "/admin/support": "settings.manage",
 

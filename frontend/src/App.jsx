@@ -37,6 +37,7 @@ import LeaveRequests from "./pages/admin/leave/LeaveRequests";
 import StudentHelpdesk from "./pages/student/StudentHelpdesk";
 import AdminSupport from "./pages/admin/support/AdminSupport";
 
+import NotesManagement from "./pages/admin/notes/NotesManagement";
 
 import PracticeZone from "./pages/admin/practice/PracticeZone";
 import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
@@ -337,6 +338,16 @@ const App = () => {
             </PermissionRoute>
           }
         />
+        
+        {/* Attendance Routes */}
+        <Route
+          path="notes"
+          element={
+            <PermissionRoute permission="notes.view">
+              <NotesManagement />
+            </PermissionRoute>
+          }
+        />
 
 
         <Route
@@ -530,6 +541,16 @@ const App = () => {
           element={
             <PermissionRoute permission="attendance.view">
               <Attendance />
+            </PermissionRoute>
+          }
+        />
+
+        {/* Attendance Notes */}
+        <Route
+          path="notes"
+          element={
+            <PermissionRoute permission="notes.view">
+              <NotesManagement />
             </PermissionRoute>
           }
         />
