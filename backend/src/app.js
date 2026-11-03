@@ -63,6 +63,7 @@ import publicCertificateRoutes from "./routes/publicCertificate.routes.js";
 
 import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
 import supportRoutes from "./routes/support.routes.js";
+import practiceRoutes from "./routes/practice.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -324,6 +325,7 @@ app.use("/api/reports", expenseReportRoutes);
 
 
 app.use("/api/exams", examRoutes);
+app.use("/api/practice", practiceRoutes);
 
 app.use("/api/hall-tickets", hallTicketRoutes);
 app.use("/api/public/hall-tickets", publicHallTicketRoutes);
