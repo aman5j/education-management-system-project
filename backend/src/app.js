@@ -62,6 +62,7 @@ import publicCertificateRoutes from "./routes/publicCertificate.routes.js";
 
 
 import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
+import supportRoutes from "./routes/support.routes.js";
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -273,6 +274,7 @@ app.use(
 
 app.use("/api/leave-requests", leaveRequestRoutes);
 
+app.use("/api/support", supportRoutes);
 
 
 // app.use(

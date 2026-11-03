@@ -34,6 +34,9 @@ import StudentProfile from "./pages/student/StudentProfile";
 import StudentApplyLeave from "./pages/student/StudentApplyLeave";
 import LeaveRequests from "./pages/admin/leave/LeaveRequests";
 
+import StudentHelpdesk from "./pages/student/StudentHelpdesk";
+import AdminSupport from "./pages/admin/support/AdminSupport";
+
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
@@ -338,6 +341,8 @@ const App = () => {
             </PermissionRoute>
           }
         />
+
+        <Route path="support" element={<AdminSupport />} />
 
         {/* Exams */}
         {/* Exam Schedule */}
@@ -693,7 +698,7 @@ const App = () => {
 
         <Route path="profile" element={<StudentProfile />} />
 
-        
+        <Route path="support" element={<StudentHelpdesk />} />
 
         <Route path="exams" element={<StudentExams />} />
 
