@@ -40,6 +40,8 @@ import AdminSupport from "./pages/admin/support/AdminSupport";
 
 import PracticeZone from "./pages/admin/practice/PracticeZone";
 import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
+import StudentPracticeZone from "./pages/student/StudentPracticeZone";
+
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -692,6 +694,11 @@ const App = () => {
           element={<StudentCourseDetails />}
         />
 
+        <Route
+          path="practice"
+          element={<StudentPracticeZone />}
+        />
+
         <Route path="leave" element={<StudentApplyLeave />} />
         <Route path="attendance" element={<StudentAttendance />} />
         <Route path="fees" element={<StudentFees />} />
@@ -716,6 +723,8 @@ const App = () => {
         <Route path="support" element={<StudentHelpdesk />} />
 
         <Route path="exams" element={<StudentExams />} />
+
+        
 
         <Route
           path="exams/:ticketId/instructions"

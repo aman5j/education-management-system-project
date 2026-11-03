@@ -15,11 +15,17 @@ import {
   FiLogOut,
   FiX,
   FiUser,
+  FiTarget,
 } from "react-icons/fi";
 
 const navigation = [
   { label: "Dashboard", icon: FiGrid, path: "/student/dashboard" },
   { label: "My Courses", icon: FiBookOpen, path: "/student/courses" },
+  {
+    label: "Practice Zone",
+    icon: FiTarget,
+    path: "/student/practice",
+  },
   {
     label: "My Attendance",
     icon: FiActivity,

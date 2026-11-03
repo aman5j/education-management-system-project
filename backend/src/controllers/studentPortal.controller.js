@@ -116,7 +116,7 @@ export const getStudentDashboard = async (req, res, next) => {
 
     const student = await Student.findById(req.user.studentRecord)
       .select(
-        "rollNo firstName surname fatherName motherName dob gender mobile alternateMobile email address pincode profileImage status"
+        "rollNo firstName surname fatherName motherName dob gender mobile alternateMobile email address pincode profileImage signature status"
       )
       .lean();
 
@@ -137,7 +137,7 @@ export const getStudentDashboard = async (req, res, next) => {
       publishedResults,
     ] = await Promise.all([
       StudentAdmission.find({ student_id: studentId })
-        .populate("course_id", "courseTitle courseType")
+        .populate("course_id", "courseTitle courseType courseImage")
         .populate("batch_id", "batch_name status")
         .sort({ admission_date: -1 })
         .lean(),
