@@ -38,6 +38,7 @@ import StudentHelpdesk from "./pages/student/StudentHelpdesk";
 import AdminSupport from "./pages/admin/support/AdminSupport";
 
 import NotesManagement from "./pages/admin/notes/NotesManagement";
+import StudentNotes from "./pages/student/StudentNotes";
 
 import PracticeZone from "./pages/admin/practice/PracticeZone";
 import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
@@ -714,6 +715,8 @@ const App = () => {
           path="courses/:admissionId"
           element={<StudentCourseDetails />}
         />
+
+        <Route path="notes" element={<StudentNotes />} />
 
         <Route
           path="practice"

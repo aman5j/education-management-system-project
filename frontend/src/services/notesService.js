@@ -30,3 +30,20 @@ export const getNoteFile = (id, fileId, action = "view") =>
   api.get(`/notes/${id}/files/${fileId}/${action}`, {
     responseType: "blob",
   });
+
+
+// ----------------------------------------------------
+// STUDENT NOTES API
+// ----------------------------------------------------
+
+export const getStudentNotes = (params = {}) =>
+  api.get("/notes/student", { params });
+
+export const getStudentNote = (id) =>
+  api.get(`/notes/student/${id}`);
+
+export const getStudentNoteFile = (id, fileId, action = "view") =>
+  api.get(`/notes/student/${id}/files/${fileId}/${action}`, {
+    responseType: "blob",
+  });
+

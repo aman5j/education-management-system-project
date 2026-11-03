@@ -17,11 +17,17 @@ import {
   FiUser,
   FiTarget,
   FiAward,
+  // FiFileText
 } from "react-icons/fi";
 
 const navigation = [
   { label: "Dashboard", icon: FiGrid, path: "/student/dashboard" },
   { label: "My Courses", icon: FiBookOpen, path: "/student/courses" },
+  {
+    label: "My Notes",
+    icon: FiFileText,
+    path: "/student/notes",
+  },
   {
     label: "Practice Zone",
     icon: FiTarget,
