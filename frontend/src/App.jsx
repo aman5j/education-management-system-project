@@ -51,6 +51,10 @@ import AssignmentSubmissions from "./pages/admin/assignments/AssignmentSubmissio
 import AssignmentEvaluation from "./pages/admin/assignments/AssignmentEvaluation";
 
 
+import StudentAssignments from "./pages/student/StudentAssignments";
+import StudentAssignmentDetails from "./pages/student/StudentAssignmentDetails";
+
+
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
 
@@ -761,6 +765,17 @@ const App = () => {
         />
 
         <Route path="notes" element={<StudentNotes />} />
+
+        <Route
+          path="assignments"
+          element={<StudentAssignments />}
+        />
+
+        <Route
+          path="assignments/:id"
+          element={<StudentAssignmentDetails />}
+        />
+
 
         <Route
           path="practice"

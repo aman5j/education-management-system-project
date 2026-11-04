@@ -1604,12 +1604,15 @@ export const studentGetAssignment = async (
       .populate("latestVersion_id")
       .lean();
 
-    const evaluation = submission
-      ? await AssignmentEvaluation.findOne({
-          submission_id: submission._id,
-          status: "Published",
-        }).lean()
-      : null;
+    const evaluation = submission?.latestVersion_id
+    ? await AssignmentEvaluation.findOne({
+        submission_id: submission._id,
+        submissionVersion_id: submission.latestVersion_id._id,
+        status: "Published",
+        })
+        .select("marksObtained feedback status publishedAt")
+        .lean()
+    : null;
 
     return res.json({
       success: true,
@@ -1853,6 +1856,72 @@ export const studentGetAssignmentHistory = async (
     next(error);
   }
 };
+
+
+/**
+ * STUDENT: DOWNLOAD OWN SUBMISSION VERSION FILE
+ * GET /api/assignments/student/:id/history/:versionId/files/:fileId/download
+ */
+export const studentDownloadSubmissionFile = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const { id, versionId, fileId } = req.params;
+
+    if (
+      !validId(id) ||
+      !validId(versionId) ||
+      !validId(fileId)
+    ) {
+      return fail(res, 400, "Invalid assignment, version or file ID.");
+    }
+
+    const studentResult = await getStudent(req);
+
+    if (studentResult.error) {
+      return fail(
+        res,
+        studentResult.error.status,
+        studentResult.error.message
+      );
+    }
+
+    // Verify that this student is still eligible for this assignment.
+    const access = await getAssignmentForStudent(
+      id,
+      studentResult.student._id
+    );
+
+    if (access.error) {
+      return fail(res, access.status, access.error);
+    }
+
+    // Verify assignment + student ownership + version ID together.
+    const version = await AssignmentSubmissionVersion.findOne({
+      _id: versionId,
+      assignment_id: id,
+      student_id: studentResult.student._id,
+    });
+
+    if (!version) {
+      return fail(res, 404, "Submission version not found.");
+    }
+
+    const file = version.files.id(fileId);
+
+    if (!file) {
+      return fail(res, 404, "Submission file not found.");
+    }
+
+    return sendPrivateFile(res, file, true);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 // =====================================================
 // ADMIN: DOWNLOAD REFERENCE FILE

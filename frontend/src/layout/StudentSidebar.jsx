@@ -29,6 +29,11 @@ const navigation = [
     path: "/student/notes",
   },
   {
+    label: "My Assignments",
+    icon: FiClipboard,
+    path: "/student/assignments",
+  },
+  {
     label: "Practice Zone",
     icon: FiTarget,
     path: "/student/practice",

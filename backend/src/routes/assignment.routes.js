@@ -37,6 +37,7 @@ import {
   studentSubmitAssignment,
   studentGetAssignmentHistory,
   studentDownloadAssignmentFile,
+  studentDownloadSubmissionFile,
 } from "../controllers/assignment.controller.js";
 
 const router = express.Router();
@@ -70,6 +71,12 @@ router.get(
   "/student/:id/history",
   authorizeRoles("student"),
   studentGetAssignmentHistory
+);
+
+router.get(
+  "/student/:id/history/:versionId/files/:fileId/download",
+  authorizeRoles("student"),
+  studentDownloadSubmissionFile
 );
 
 router.get(
