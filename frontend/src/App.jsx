@@ -44,6 +44,7 @@ import PracticeZone from "./pages/admin/practice/PracticeZone";
 import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
 import StudentPracticeZone from "./pages/student/StudentPracticeZone";
 import StudentPracticeResults from "./pages/student/StudentPracticeResults";
+import AssignmentManagement from "./pages/admin/assignments/AssignmentManagement";
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -350,6 +351,17 @@ const App = () => {
           }
         />
 
+        {/* Assignment Routes */}
+        <Route
+          path="assignments"
+          element={
+            <PermissionRoute permission="assignments.view">
+              <AssignmentManagement />
+            </PermissionRoute>
+          }
+        />
+
+
 
         <Route
           path="leave-requests"
@@ -457,7 +469,7 @@ const App = () => {
         }
       /> */}
 
-{/* Staff portal: same layout, permission-filtered sidebar */}
+    {/* Staff portal: same layout, permission-filtered sidebar */}
       <Route
         path="/staff"
         element={
@@ -552,6 +564,16 @@ const App = () => {
           element={
             <PermissionRoute permission="notes.view">
               <NotesManagement />
+            </PermissionRoute>
+          }
+        />
+
+        {/* Assignment Route */}
+        <Route
+          path="assignments"
+          element={
+            <PermissionRoute permission="assignments.view">
+              <AssignmentManagement />
             </PermissionRoute>
           }
         />

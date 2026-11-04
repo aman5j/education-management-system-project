@@ -21,6 +21,7 @@ import {
   FiHelpCircle,
   FiX,
   FiBook,
+  // FiClipboard,
 } from "react-icons/fi";
 import { HiOutlineBars3 } from "react-icons/hi2";
 
@@ -209,6 +210,12 @@ const menuItems = [
   },
 
   {
+    label: "Assignments",
+    path: "/admin/assignments",
+    icon: FiClipboard,
+  },
+
+  {
     label: "Certificates",
     path: "/admin/certificates",
     icon: FiAward,
@@ -325,6 +332,7 @@ const PATH_PERMISSION_MAP = {
   "/admin/communication": "settings.manage",
 
   "/admin/notes": "notes.view",
+  "/admin/assignments": "assignments.view",
 
   "/admin/support": "settings.manage",
 
