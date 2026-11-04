@@ -58,4 +58,4 @@ temp/
 
 
 # Private assignment files - never commit uploaded files
-backend/private_uploads/
+# backend/private_uploads/
