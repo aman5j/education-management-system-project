@@ -522,6 +522,7 @@
   font-size: 11px;
   line-height: 1.55;
   overflow-wrap: anywhere;
+  font-weight: 500;
 }
 
 .spr-review-option > svg {
