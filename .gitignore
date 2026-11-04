@@ -54,3 +54,8 @@ temp/
 # backend/uploads/students/*
 # backend/uploads/courses/*
 # backend/uploads/categories/*
+
+
+
+# Private assignment files - never commit uploaded files
+backend/private_uploads/
