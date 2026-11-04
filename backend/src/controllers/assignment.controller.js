@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 import fs from "fs/promises";
 import path from "path";
@@ -17,8 +16,15 @@ import {
   ASSIGNMENT_UPLOAD_DIRECTORY,
 } from "../middleware/assignmentUpload.middleware.js";
 
+// =====================================================
+// COMMON HELPERS
+// =====================================================
+
 const fail = (res, status, message) =>
-  res.status(status).json({ success: false, message });
+  res.status(status).json({
+    success: false,
+    message,
+  });
 
 const validId = (id) => mongoose.isValidObjectId(id);
 
@@ -26,6 +32,7 @@ const removeFiles = async (files = []) => {
   await Promise.all(
     files.map((file) => {
       const name = path.basename(file.storedName || "");
+
       if (!name) return Promise.resolve();
 
       return fs
@@ -37,7 +44,7 @@ const removeFiles = async (files = []) => {
 
 const uploadedMetadata = (files = []) =>
   files.map((file) => ({
-    originalName: path.basename(file.originalname),
+    originalName: path.basename(file.originalname || "file"),
     storedName: file.filename,
     mimeType: file.mimetype,
     fileSize: file.size,
@@ -57,12 +64,14 @@ const serializeAssignment = (item) => ({
   title: item.title,
   description: item.description || "",
   instructions: item.instructions || "",
+
   course: item.course_id
     ? {
         id: String(item.course_id._id || item.course_id),
         title: item.course_id.courseTitle || "",
       }
     : null,
+
   subject: item.subject_id
     ? {
         id: String(item.subject_id._id || item.subject_id),
@@ -70,17 +79,20 @@ const serializeAssignment = (item) => ({
         code: item.subject_id.subjectCode || "",
       }
     : null,
+
   batches: (item.batch_ids || []).map((batch) => ({
     id: String(batch._id || batch),
     name: batch.batch_name || "",
     status: batch.status || "",
   })),
+
   total_marks: item.total_marks,
   assignedAt: item.assignedAt,
   dueAt: item.dueAt,
   allowLateSubmission: item.allowLateSubmission,
   allowResubmission: item.allowResubmission,
   status: item.status,
+
   attachments: (item.attachments || []).map((file) => ({
     id: String(file._id),
     originalName: file.originalName,
@@ -88,85 +100,26 @@ const serializeAssignment = (item) => ({
     fileSize: file.fileSize,
     uploadedAt: file.uploadedAt,
   })),
+
   publishedAt: item.publishedAt,
   archivedAt: item.archivedAt,
   createdAt: item.createdAt,
   updatedAt: item.updatedAt,
 });
 
-const validateCourseSubjectBatches = async ({
-  courseId,
-  subjectId,
-  batchIds,
-}) => {
-  if (!validId(courseId)) {
-    return { error: "A valid course_id is required." };
+// =====================================================
+// BOOLEAN AND REQUEST-BODY NORMALIZATION
+// =====================================================
+
+const parseBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
   }
 
-  const course = await Course.findById(courseId)
-    .select("_id courseTitle subjects")
-    .lean();
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
 
-  if (!course) return { error: "Course not found.", status: 404 };
-
-  let subject = null;
-
-  if (subjectId) {
-    if (!validId(subjectId)) {
-      return { error: "Invalid subject_id." };
-    }
-
-    subject = await Subject.findById(subjectId)
-      .select("_id subjectName status")
-      .lean();
-
-    if (!subject) {
-      return { error: "Subject not found.", status: 404 };
-    }
-
-    if (subject.status !== "Active") {
-      return { error: "Selected subject is inactive." };
-    }
-
-    const belongs = (course.subjects || []).some(
-      (id) => String(id) === String(subject._id)
-    );
-
-    if (!belongs) {
-      return {
-        error: "Selected subject does not belong to this course.",
-      };
-    }
-  }
-
-  const normalizedBatchIds = Array.isArray(batchIds)
-    ? [...new Set(batchIds.map(String))]
-    : [];
-
-  if (normalizedBatchIds.some((id) => !validId(id))) {
-    return { error: "One or more batch IDs are invalid." };
-  }
-
-  if (normalizedBatchIds.length) {
-    const batches = await Batch.find({
-      _id: { $in: normalizedBatchIds },
-      course_id: course._id,
-    })
-      .select("_id")
-      .lean();
-
-    if (batches.length !== normalizedBatchIds.length) {
-      return {
-        error: "Every selected batch must belong to the selected course.",
-      };
-    }
-  }
-
-  return {
-    course,
-    subject,
-    batchIds: normalizedBatchIds,
-  };
+  return null;
 };
 
 const normalizeAssignmentInput = (body = {}) => {
@@ -174,71 +127,112 @@ const normalizeAssignmentInput = (body = {}) => {
   const description = String(body.description || "").trim();
   const instructions = String(body.instructions || "").trim();
   const course_id = String(body.course_id || "").trim();
+
   const subject_id = body.subject_id
     ? String(body.subject_id).trim()
     : null;
 
-  const batch_ids =
-    body.batch_ids === undefined
-      ? []
-      : Array.isArray(body.batch_ids)
-        ? body.batch_ids
-        : null;
+  let batch_ids = body.batch_ids;
+
+  if (typeof batch_ids === "string") {
+    try {
+      batch_ids = JSON.parse(batch_ids);
+    } catch {
+      return {
+        error: "batch_ids must be a JSON array of batch IDs.",
+      };
+    }
+  }
+
+  if (
+    batch_ids === undefined ||
+    batch_ids === null ||
+    batch_ids === ""
+  ) {
+    batch_ids = [];
+  }
 
   const total_marks = Number(body.total_marks);
+
   const assignedAt = body.assignedAt
     ? new Date(body.assignedAt)
     : new Date();
 
   const dueAt = new Date(body.dueAt);
 
+  const allowLateSubmission = parseBoolean(
+    body.allowLateSubmission
+  );
+
+  const allowResubmission = parseBoolean(
+    body.allowResubmission
+  );
+
+  // Title validation
   if (title.length < 2 || title.length > 200) {
-    return { error: "Title must contain 2 to 200 characters." };
+    return {
+      error: "Title must contain 2 to 200 characters.",
+    };
   }
 
+  // Description validation
   if (description.length > 10000) {
-    return { error: "Description cannot exceed 10,000 characters." };
+    return {
+      error: "Description cannot exceed 10,000 characters.",
+    };
   }
 
+  // Instructions validation
   if (instructions.length > 15000) {
-    return { error: "Instructions cannot exceed 15,000 characters." };
+    return {
+      error: "Instructions cannot exceed 15,000 characters.",
+    };
   }
 
+  // Marks validation
   if (
     !Number.isFinite(total_marks) ||
     total_marks <= 0 ||
     total_marks > 100000
   ) {
-    return { error: "Total marks must be greater than 0 and at most 100,000." };
+    return {
+      error:
+        "Total marks must be greater than 0 and at most 100,000.",
+    };
   }
 
+  // Date validation
   if (
     Number.isNaN(assignedAt.getTime()) ||
     Number.isNaN(dueAt.getTime())
   ) {
-    return { error: "Valid assignedAt and dueAt dates are required." };
+    return {
+      error: "Valid assignedAt and dueAt dates are required.",
+    };
   }
 
   if (dueAt <= assignedAt) {
-    return { error: "Due date must be later than the assigned date." };
+    return {
+      error: "Due date must be later than the assigned date.",
+    };
   }
 
-  if (batch_ids === null) {
-    return { error: "batch_ids must be an array." };
+  // Batch validation
+  if (!Array.isArray(batch_ids)) {
+    return {
+      error: "batch_ids must be an array.",
+    };
   }
 
+  // Boolean validation
   if (
-    typeof body.allowLateSubmission !== "undefined" &&
-    typeof body.allowLateSubmission !== "boolean"
+    allowLateSubmission === null ||
+    allowResubmission === null
   ) {
-    return { error: "allowLateSubmission must be true or false." };
-  }
-
-  if (
-    typeof body.allowResubmission !== "undefined" &&
-    typeof body.allowResubmission !== "boolean"
-  ) {
-    return { error: "allowResubmission must be true or false." };
+    return {
+      error:
+        "Late submission and resubmission settings must be true or false.",
+    };
   }
 
   return {
@@ -252,11 +246,115 @@ const normalizeAssignmentInput = (body = {}) => {
       total_marks,
       assignedAt,
       dueAt,
-      allowLateSubmission: body.allowLateSubmission === true,
-      allowResubmission: body.allowResubmission === true,
+      allowLateSubmission,
+      allowResubmission,
     },
   };
 };
+
+// =====================================================
+// COURSE / SUBJECT / BATCH VALIDATION
+// =====================================================
+
+const validateCourseSubjectBatches = async ({
+  courseId,
+  subjectId,
+  batchIds,
+}) => {
+  if (!validId(courseId)) {
+    return {
+      error: "A valid course_id is required.",
+    };
+  }
+
+  const course = await Course.findById(courseId)
+    .select("_id courseTitle subjects")
+    .lean();
+
+  if (!course) {
+    return {
+      error: "Course not found.",
+      status: 404,
+    };
+  }
+
+  let subject = null;
+
+  // Subject is optional.
+  if (subjectId) {
+    if (!validId(subjectId)) {
+      return {
+        error: "Invalid subject_id.",
+      };
+    }
+
+    subject = await Subject.findById(subjectId)
+      .select("_id subjectName subjectCode status")
+      .lean();
+
+    if (!subject) {
+      return {
+        error: "Subject not found.",
+        status: 404,
+      };
+    }
+
+    if (subject.status !== "Active") {
+      return {
+        error: "Selected subject is inactive.",
+      };
+    }
+
+    const belongsToCourse = (course.subjects || []).some(
+      (id) => String(id) === String(subject._id)
+    );
+
+    if (!belongsToCourse) {
+      return {
+        error: "Selected subject does not belong to this course.",
+      };
+    }
+  }
+
+  // Batches are optional and can contain multiple IDs.
+  const normalizedBatchIds = [
+    ...new Set((batchIds || []).map((id) => String(id).trim())),
+  ];
+
+  if (normalizedBatchIds.some((id) => !validId(id))) {
+    return {
+      error: "One or more batch IDs are invalid.",
+    };
+  }
+
+  if (normalizedBatchIds.length) {
+    const batches = await Batch.find({
+      _id: {
+        $in: normalizedBatchIds,
+      },
+      course_id: course._id,
+    })
+      .select("_id")
+      .lean();
+
+    if (batches.length !== normalizedBatchIds.length) {
+      return {
+        error:
+          "Every selected batch must belong to the selected course.",
+      };
+    }
+  }
+
+  return {
+    course,
+    subject,
+    batchIds: normalizedBatchIds,
+  };
+};
+
+// =====================================================
+// STUDENT ACCESS HELPERS
+// =====================================================
 
 const getStudent = async (req) => {
   const studentId = req.user?.studentRecord;
@@ -265,7 +363,8 @@ const getStudent = async (req) => {
     return {
       error: {
         status: 409,
-        message: "Your login is not linked to a valid student record.",
+        message:
+          "Your login is not linked to a valid student record.",
       },
     };
   }
@@ -279,12 +378,15 @@ const getStudent = async (req) => {
     return {
       error: {
         status: 403,
-        message: "Your student record is inactive or unavailable.",
+        message:
+          "Your student record is inactive or unavailable.",
       },
     };
   }
 
-  return { student };
+  return {
+    student,
+  };
 };
 
 const getEligibleAdmission = async (assignment, studentId) => {
@@ -295,7 +397,9 @@ const getEligibleAdmission = async (assignment, studentId) => {
   };
 
   if (assignment.batch_ids?.length) {
-    filter.batch_id = { $in: assignment.batch_ids };
+    filter.batch_id = {
+      $in: assignment.batch_ids,
+    };
   }
 
   return StudentAdmission.findOne(filter)
@@ -304,6 +408,10 @@ const getEligibleAdmission = async (assignment, studentId) => {
     .lean();
 };
 
+// =====================================================
+// INITIALIZE ELIGIBLE STUDENT TRACKERS
+// =====================================================
+
 const initializeEligibleTrackers = async (assignment) => {
   const admissionFilter = {
     course_id: assignment.course_id,
@@ -311,45 +419,78 @@ const initializeEligibleTrackers = async (assignment) => {
   };
 
   if (assignment.batch_ids?.length) {
-    admissionFilter.batch_id = { $in: assignment.batch_ids };
+    admissionFilter.batch_id = {
+      $in: assignment.batch_ids,
+    };
   }
 
   const admissions = await StudentAdmission.find(admissionFilter)
+    .sort({ createdAt: -1 })
     .select("_id student_id")
     .lean();
 
+  if (!admissions.length) {
+    return 0;
+  }
+
   const studentIds = [
-    ...new Set(admissions.map((item) => String(item.student_id))),
+    ...new Set(
+      admissions.map((item) => String(item.student_id))
+    ),
   ];
 
   const activeStudents = await Student.find({
-    _id: { $in: studentIds },
+    _id: {
+      $in: studentIds,
+    },
     status: "active",
   })
     .select("_id")
     .lean();
 
-  const activeIds = new Set(activeStudents.map((item) => String(item._id)));
+  const activeIds = new Set(
+    activeStudents.map((item) => String(item._id))
+  );
 
-  const operations = admissions
-    .filter((admission) => activeIds.has(String(admission.student_id)))
-    .map((admission) => ({
-      updateOne: {
-        filter: {
+  /*
+   * One tracker is allowed per assignment/student.
+   *
+   * A student may have more than one matching Active admission.
+   * Because admissions are sorted newest first, the first matching
+   * admission is retained for the tracker.
+   */
+  const admissionByStudent = new Map();
+
+  for (const admission of admissions) {
+    const studentId = String(admission.student_id);
+
+    if (
+      activeIds.has(studentId) &&
+      !admissionByStudent.has(studentId)
+    ) {
+      admissionByStudent.set(studentId, admission);
+    }
+  }
+
+  const operations = Array.from(
+    admissionByStudent.values()
+  ).map((admission) => ({
+    updateOne: {
+      filter: {
+        assignment_id: assignment._id,
+        student_id: admission.student_id,
+      },
+      update: {
+        $setOnInsert: {
           assignment_id: assignment._id,
           student_id: admission.student_id,
+          admission_id: admission._id,
+          status: "Pending",
         },
-        update: {
-          $setOnInsert: {
-            assignment_id: assignment._id,
-            student_id: admission.student_id,
-            admission_id: admission._id,
-            status: "Pending",
-          },
-        },
-        upsert: true,
       },
-    }));
+      upsert: true,
+    },
+  }));
 
   if (operations.length) {
     await AssignmentSubmission.bulkWrite(operations, {
@@ -360,34 +501,57 @@ const initializeEligibleTrackers = async (assignment) => {
   return operations.length;
 };
 
-const getAssignmentForStudent = async (assignmentId, studentId) => {
+const getAssignmentForStudent = async (
+  assignmentId,
+  studentId
+) => {
   const assignment = await Assignment.findOne({
     _id: assignmentId,
     status: "Published",
   });
 
-  if (!assignment) return { error: "Published assignment not found.", status: 404 };
+  if (!assignment) {
+    return {
+      error: "Published assignment not found.",
+      status: 404,
+    };
+  }
 
-  const admission = await getEligibleAdmission(assignment, studentId);
+  const admission = await getEligibleAdmission(
+    assignment,
+    studentId
+  );
 
   if (!admission) {
     return {
-      error: "You do not have an Active admission eligible for this assignment.",
+      error:
+        "You do not have an Active admission eligible for this assignment.",
       status: 403,
     };
   }
 
-  return { assignment, admission };
+  return {
+    assignment,
+    admission,
+  };
 };
+
+// =====================================================
+// PRIVATE FILE HELPERS
+// =====================================================
 
 const findAttachment = (assignment, fileId) => {
   if (!validId(fileId)) return null;
+
   return assignment.attachments.id(fileId) || null;
 };
 
-const sendPrivateFile = async (res, file, download) => {
-  const storedName = path.basename(file.storedName || "");
-  if (!storedName) return fail(res, 404, "File not found.");
+const sendPrivateFile = async (res, file, download = true) => {
+  const storedName = path.basename(file?.storedName || "");
+
+  if (!storedName) {
+    return fail(res, 404, "File not found.");
+  }
 
   const filePath = path.resolve(
     ASSIGNMENT_UPLOAD_DIRECTORY,
@@ -408,10 +572,12 @@ const sendPrivateFile = async (res, file, download) => {
     "Content-Type",
     file.mimeType || "application/octet-stream"
   );
+
   res.setHeader("X-Content-Type-Options", "nosniff");
 
-  const safeName = String(file.originalName || "assignment-file")
-    .replace(/[\r\n"]/g, "_");
+  const safeName = String(
+    file.originalName || "assignment-file"
+  ).replace(/[\r\n"]/g, "_");
 
   res.setHeader(
     "Content-Disposition",
@@ -421,20 +587,34 @@ const sendPrivateFile = async (res, file, download) => {
   return res.sendFile(filePath);
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: LIST ASSIGNMENTS
 // GET /api/assignments/admin
-// ---------------------------------------------------------
+// =====================================================
+
 export const adminGetAssignments = async (req, res, next) => {
   try {
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const page = Math.max(
+      1,
+      Number(req.query.page) || 1
+    );
+
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(req.query.limit) || 20)
+    );
+
     const filter = {};
 
     if (req.query.status) {
-      if (!["Draft", "Published", "Archived"].includes(req.query.status)) {
+      if (
+        !["Draft", "Published", "Archived"].includes(
+          req.query.status
+        )
+      ) {
         return fail(res, 400, "Invalid assignment status.");
       }
+
       filter.status = req.query.status;
     }
 
@@ -442,12 +622,16 @@ export const adminGetAssignments = async (req, res, next) => {
       if (!validId(req.query.course_id)) {
         return fail(res, 400, "Invalid course_id.");
       }
+
       filter.course_id = req.query.course_id;
     }
 
     if (req.query.search) {
       filter.title = {
-        $regex: String(req.query.search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $regex: String(req.query.search).replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        ),
         $options: "i",
       };
     }
@@ -459,6 +643,7 @@ export const adminGetAssignments = async (req, res, next) => {
           .skip((page - 1) * limit)
           .limit(limit)
       ).lean(),
+
       Assignment.countDocuments(filter),
     ]);
 
@@ -479,18 +664,25 @@ export const adminGetAssignments = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: CREATE ASSIGNMENT
 // POST /api/assignments/admin
 // multipart/form-data: attachments[]
-// ---------------------------------------------------------
-export const adminCreateAssignment = async (req, res, next) => {
+// =====================================================
+
+export const adminCreateAssignment = async (
+  req,
+  res,
+  next
+) => {
   const files = req.files || [];
 
   try {
     const normalized = normalizeAssignmentInput(req.body);
+
     if (normalized.error) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 400, normalized.error);
     }
 
@@ -504,15 +696,23 @@ export const adminCreateAssignment = async (req, res, next) => {
 
     if (relation.error) {
       await removeFiles(uploadedMetadata(files));
-      return fail(res, relation.status || 400, relation.error);
+
+      return fail(
+        res,
+        relation.status || 400,
+        relation.error
+      );
     }
 
     const assignment = await Assignment.create({
       ...data,
+
       course_id: relation.course._id,
       subject_id: relation.subject?._id || null,
       batch_ids: relation.batchIds,
+
       attachments: uploadedMetadata(files),
+
       status: "Draft",
       createdBy: req.user._id,
     });
@@ -532,19 +732,28 @@ export const adminCreateAssignment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: GET ONE ASSIGNMENT
 // GET /api/assignments/admin/:id
-// ---------------------------------------------------------
-export const adminGetAssignment = async (req, res, next) => {
+// =====================================================
+
+export const adminGetAssignment = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid assignment ID.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid assignment ID.");
+    }
 
     const item = await populateAssignment(
       Assignment.findById(req.params.id)
     ).lean();
 
-    if (!item) return fail(res, 404, "Assignment not found.");
+    if (!item) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
     return res.json({
       success: true,
@@ -555,28 +764,38 @@ export const adminGetAssignment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: UPDATE ASSIGNMENT
 // PUT /api/assignments/admin/:id
-// ---------------------------------------------------------
-export const adminUpdateAssignment = async (req, res, next) => {
+// =====================================================
+
+export const adminUpdateAssignment = async (
+  req,
+  res,
+  next
+) => {
   const files = req.files || [];
 
   try {
     if (!validId(req.params.id)) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 400, "Invalid assignment ID.");
     }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
     if (!assignment) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 404, "Assignment not found.");
     }
 
     if (assignment.status !== "Draft") {
       await removeFiles(uploadedMetadata(files));
+
       return fail(
         res,
         409,
@@ -584,39 +803,58 @@ export const adminUpdateAssignment = async (req, res, next) => {
       );
     }
 
+    /*
+     * For partial FormData updates, retain existing values when
+     * a field is not supplied.
+     *
+     * Boolean strings are passed through normalizeAssignmentInput
+     * so "true" and "false" are handled correctly.
+     */
     const normalized = normalizeAssignmentInput({
       ...assignment.toObject(),
       ...req.body,
-      course_id: req.body.course_id ?? assignment.course_id,
+
+      course_id:
+        req.body.course_id ?? assignment.course_id,
+
       subject_id:
         req.body.subject_id !== undefined
           ? req.body.subject_id
           : assignment.subject_id,
+
       batch_ids:
         req.body.batch_ids !== undefined
           ? req.body.batch_ids
           : assignment.batch_ids.map(String),
-      assignedAt: req.body.assignedAt ?? assignment.assignedAt,
-      dueAt: req.body.dueAt ?? assignment.dueAt,
-      total_marks: req.body.total_marks ?? assignment.total_marks,
+
+      assignedAt:
+        req.body.assignedAt ?? assignment.assignedAt,
+
+      dueAt:
+        req.body.dueAt ?? assignment.dueAt,
+
+      total_marks:
+        req.body.total_marks ?? assignment.total_marks,
+
       allowLateSubmission:
         req.body.allowLateSubmission !== undefined
-          ? req.body.allowLateSubmission === "true" ||
-            req.body.allowLateSubmission === true
+          ? req.body.allowLateSubmission
           : assignment.allowLateSubmission,
+
       allowResubmission:
         req.body.allowResubmission !== undefined
-          ? req.body.allowResubmission === "true" ||
-            req.body.allowResubmission === true
+          ? req.body.allowResubmission
           : assignment.allowResubmission,
     });
 
     if (normalized.error) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 400, normalized.error);
     }
 
     const data = normalized.data;
+
     const relation = await validateCourseSubjectBatches({
       courseId: data.course_id,
       subjectId: data.subject_id,
@@ -625,24 +863,38 @@ export const adminUpdateAssignment = async (req, res, next) => {
 
     if (relation.error) {
       await removeFiles(uploadedMetadata(files));
-      return fail(res, relation.status || 400, relation.error);
+
+      return fail(
+        res,
+        relation.status || 400,
+        relation.error
+      );
     }
 
     assignment.title = data.title;
     assignment.description = data.description;
     assignment.instructions = data.instructions;
+
     assignment.course_id = relation.course._id;
     assignment.subject_id = relation.subject?._id || null;
     assignment.batch_ids = relation.batchIds;
+
     assignment.total_marks = data.total_marks;
     assignment.assignedAt = data.assignedAt;
     assignment.dueAt = data.dueAt;
-    assignment.allowLateSubmission = data.allowLateSubmission;
-    assignment.allowResubmission = data.allowResubmission;
+
+    assignment.allowLateSubmission =
+      data.allowLateSubmission;
+
+    assignment.allowResubmission =
+      data.allowResubmission;
+
     assignment.updatedBy = req.user._id;
 
     if (files.length) {
-      assignment.attachments.push(...uploadedMetadata(files));
+      assignment.attachments.push(
+        ...uploadedMetadata(files)
+      );
     }
 
     await assignment.save();
@@ -662,43 +914,72 @@ export const adminUpdateAssignment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
-// ADMIN: PUBLISH / ARCHIVE
+// =====================================================
+// ADMIN: PUBLISH / ARCHIVE ASSIGNMENT
 // PATCH /api/assignments/admin/:id/status
-// ---------------------------------------------------------
-export const adminUpdateAssignmentStatus = async (req, res, next) => {
+// =====================================================
+
+export const adminUpdateAssignmentStatus = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid assignment ID.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid assignment ID.");
+    }
 
     const { status } = req.body;
 
     if (!["Published", "Archived"].includes(status)) {
-      return fail(res, 400, "Status must be Published or Archived.");
+      return fail(
+        res,
+        400,
+        "Status must be Published or Archived."
+      );
     }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
     if (assignment.status === "Archived") {
-      return fail(res, 409, "Archived assignments cannot be republished.");
+      return fail(
+        res,
+        409,
+        "Archived assignments cannot be republished."
+      );
     }
 
     if (status === "Published") {
-      if (!assignment.title || !assignment.course_id || !assignment.dueAt) {
-        return fail(res, 400, "Assignment details are incomplete.");
+      if (
+        !assignment.title ||
+        !assignment.course_id ||
+        !assignment.dueAt
+      ) {
+        return fail(
+          res,
+          400,
+          "Assignment details are incomplete."
+        );
       }
 
       assignment.status = "Published";
       assignment.publishedAt = new Date();
       assignment.updatedBy = req.user._id;
+
       await assignment.save();
 
       await initializeEligibleTrackers(assignment);
 
       return res.json({
         success: true,
-        message: "Assignment published and eligible students initialized.",
+        message:
+          "Assignment published and eligible students initialized.",
         data: {
           id: assignment._id,
           status: assignment.status,
@@ -710,6 +991,7 @@ export const adminUpdateAssignmentStatus = async (req, res, next) => {
     assignment.status = "Archived";
     assignment.archivedAt = new Date();
     assignment.updatedBy = req.user._id;
+
     await assignment.save();
 
     return res.json({
@@ -726,21 +1008,34 @@ export const adminUpdateAssignmentStatus = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
-// ADMIN: DELETE DRAFT ONLY
+// =====================================================
+// ADMIN: DELETE DRAFT ASSIGNMENT ONLY
 // DELETE /api/assignments/admin/:id
-// ---------------------------------------------------------
-export const adminDeleteAssignment = async (req, res, next) => {
+// =====================================================
+
+export const adminDeleteAssignment = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid assignment ID.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid assignment ID.");
+    }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
     const hasSubmissions = await AssignmentSubmission.exists({
       assignment_id: assignment._id,
-      submissionCount: { $gt: 0 },
+      submissionCount: {
+        $gt: 0,
+      },
     });
 
     if (assignment.status !== "Draft" || hasSubmissions) {
@@ -752,6 +1047,7 @@ export const adminDeleteAssignment = async (req, res, next) => {
     }
 
     await assignment.deleteOne();
+
     await AssignmentSubmission.deleteMany({
       assignment_id: assignment._id,
     });
@@ -767,41 +1063,65 @@ export const adminDeleteAssignment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
-// ADMIN: ADD / REMOVE REFERENCE ATTACHMENTS
+// =====================================================
+// ADMIN: ADD REFERENCE ATTACHMENTS
 // POST /api/assignments/admin/:id/attachments
-// DELETE /api/assignments/admin/:id/attachments/:fileId
-// ---------------------------------------------------------
-export const adminAddAssignmentAttachments = async (req, res, next) => {
+// =====================================================
+
+export const adminAddAssignmentAttachments = async (
+  req,
+  res,
+  next
+) => {
   const files = req.files || [];
 
   try {
     if (!validId(req.params.id)) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 400, "Invalid assignment ID.");
     }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
     if (!assignment) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 404, "Assignment not found.");
     }
 
     if (assignment.status !== "Draft") {
       await removeFiles(uploadedMetadata(files));
-      return fail(res, 409, "Attachments can only be added to Draft assignments.");
+
+      return fail(
+        res,
+        409,
+        "Attachments can only be added to Draft assignments."
+      );
     }
 
-    if (!files.length) return fail(res, 400, "Select at least one file.");
+    if (!files.length) {
+      return fail(res, 400, "Select at least one file.");
+    }
 
     if (assignment.attachments.length + files.length > 20) {
       await removeFiles(uploadedMetadata(files));
-      return fail(res, 400, "An assignment can contain at most 20 attachments.");
+
+      return fail(
+        res,
+        400,
+        "An assignment can contain at most 20 attachments."
+      );
     }
 
-    assignment.attachments.push(...uploadedMetadata(files));
+    assignment.attachments.push(
+      ...uploadedMetadata(files)
+    );
+
     assignment.updatedBy = req.user._id;
+
     await assignment.save();
 
     return res.json({
@@ -814,27 +1134,58 @@ export const adminAddAssignmentAttachments = async (req, res, next) => {
   }
 };
 
-export const adminRemoveAssignmentAttachment = async (req, res, next) => {
+// =====================================================
+// ADMIN: REMOVE REFERENCE ATTACHMENT
+// DELETE /api/assignments/admin/:id/attachments/:fileId
+// =====================================================
+
+export const adminRemoveAssignmentAttachment = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id) || !validId(req.params.fileId)) {
-      return fail(res, 400, "Invalid assignment or file ID.");
+    if (
+      !validId(req.params.id) ||
+      !validId(req.params.fileId)
+    ) {
+      return fail(
+        res,
+        400,
+        "Invalid assignment or file ID."
+      );
     }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
     if (assignment.status !== "Draft") {
-      return fail(res, 409, "Attachments can only be removed from Draft assignments.");
+      return fail(
+        res,
+        409,
+        "Attachments can only be removed from Draft assignments."
+      );
     }
 
-    const attachment = assignment.attachments.id(req.params.fileId);
+    const attachment = assignment.attachments.id(
+      req.params.fileId
+    );
 
-    if (!attachment) return fail(res, 404, "Attachment not found.");
+    if (!attachment) {
+      return fail(res, 404, "Attachment not found.");
+    }
 
     const storedName = attachment.storedName;
+
     attachment.deleteOne();
+
     await assignment.save();
+
     await removeFiles([{ storedName }]);
 
     return res.json({
@@ -846,22 +1197,49 @@ export const adminRemoveAssignmentAttachment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: ELIGIBLE STUDENTS AND SUBMISSION STATUS
 // GET /api/assignments/admin/:id/submissions
-// ---------------------------------------------------------
-export const adminGetAssignmentSubmissions = async (req, res, next) => {
+// =====================================================
+
+export const adminGetAssignmentSubmissions = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid assignment ID.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid assignment ID.");
+    }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    /*
+     * Refresh eligible student trackers before listing submissions.
+     * This also picks up students who received an Active admission
+     * after the assignment was originally published.
+     */
+    await initializeEligibleTrackers(assignment);
 
-    const filter = { assignment_id: assignment._id };
+    const page = Math.max(
+      1,
+      Number(req.query.page) || 1
+    );
+
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(req.query.limit) || 20)
+    );
+
+    const filter = {
+      assignment_id: assignment._id,
+    };
 
     if (req.query.status) {
       const allowed = [
@@ -881,13 +1259,17 @@ export const adminGetAssignmentSubmissions = async (req, res, next) => {
 
     const [items, total] = await Promise.all([
       AssignmentSubmission.find(filter)
-        .populate("student_id", "firstName surname rollNo email mobile")
+        .populate(
+          "student_id",
+          "firstName surname rollNo email mobile"
+        )
         .populate("admission_id", "batch_id")
         .populate("latestVersion_id")
         .sort({ updatedAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
+
       AssignmentSubmission.countDocuments(filter),
     ]);
 
@@ -908,27 +1290,45 @@ export const adminGetAssignmentSubmissions = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: ENABLE / DISABLE RESUBMISSION FOR ONE STUDENT
 // PATCH /api/assignments/admin/:id/submissions/:submissionId/resubmission
-// ---------------------------------------------------------
-export const adminSetStudentResubmission = async (req, res, next) => {
+// =====================================================
+
+export const adminSetStudentResubmission = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { id, submissionId } = req.params;
 
     if (!validId(id) || !validId(submissionId)) {
-      return fail(res, 400, "Invalid assignment or submission ID.");
+      return fail(
+        res,
+        400,
+        "Invalid assignment or submission ID."
+      );
     }
 
     if (typeof req.body.enabled !== "boolean") {
-      return fail(res, 400, "enabled must be true or false.");
+      return fail(
+        res,
+        400,
+        "enabled must be true or false."
+      );
     }
 
     const assignment = await Assignment.findById(id);
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
-    if (!assignment.allowResubmission && req.body.enabled) {
+    if (
+      !assignment.allowResubmission &&
+      req.body.enabled
+    ) {
       return fail(
         res,
         409,
@@ -941,9 +1341,16 @@ export const adminSetStudentResubmission = async (req, res, next) => {
       assignment_id: id,
     });
 
-    if (!submission) return fail(res, 404, "Submission tracker not found.");
+    if (!submission) {
+      return fail(
+        res,
+        404,
+        "Submission tracker not found."
+      );
+    }
 
     submission.resubmissionEnabled = req.body.enabled;
+
     await submission.save();
 
     return res.json({
@@ -961,16 +1368,25 @@ export const adminSetStudentResubmission = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // STUDENT: LIST MY ASSIGNMENTS
 // GET /api/assignments/student
-// ---------------------------------------------------------
-export const studentGetAssignments = async (req, res, next) => {
+// =====================================================
+
+export const studentGetAssignments = async (
+  req,
+  res,
+  next
+) => {
   try {
     const result = await getStudent(req);
 
     if (result.error) {
-      return fail(res, result.error.status, result.error.message);
+      return fail(
+        res,
+        result.error.status,
+        result.error.message
+      );
     }
 
     const admissions = await StudentAdmission.find({
@@ -981,47 +1397,67 @@ export const studentGetAssignments = async (req, res, next) => {
       .lean();
 
     if (!admissions.length) {
-      return res.json({ success: true, data: [] });
+      return res.json({
+        success: true,
+        data: [],
+      });
     }
 
-    const courseIds = [...new Set(admissions.map((a) => String(a.course_id)))];
+    const courseIds = [
+      ...new Set(
+        admissions.map((item) => String(item.course_id))
+      ),
+    ];
 
     const assignments = await populateAssignment(
       Assignment.find({
-        course_id: { $in: courseIds },
+        course_id: {
+          $in: courseIds,
+        },
         status: "Published",
       }).sort({ dueAt: 1 })
     ).lean();
 
     const eligible = assignments.filter((assignment) =>
       admissions.some((admission) => {
-        if (String(admission.course_id) !== String(assignment.course_id._id)) {
+        if (
+          String(admission.course_id) !==
+          String(assignment.course_id._id)
+        ) {
           return false;
         }
 
         return (
           !assignment.batch_ids.length ||
           assignment.batch_ids.some(
-            (batch) => String(batch._id) === String(admission.batch_id)
+            (batch) =>
+              String(batch._id) ===
+              String(admission.batch_id)
           )
         );
       })
     );
 
     const trackers = await AssignmentSubmission.find({
-      assignment_id: { $in: eligible.map((a) => a._id) },
+      assignment_id: {
+        $in: eligible.map((item) => item._id),
+      },
       student_id: result.student._id,
     }).lean();
 
     const trackerMap = new Map(
-      trackers.map((item) => [String(item.assignment_id), item])
+      trackers.map((item) => [
+        String(item.assignment_id),
+        item,
+      ])
     );
 
     return res.json({
       success: true,
       data: eligible.map((assignment) => ({
         ...serializeAssignment(assignment),
-        submission: trackerMap.get(String(assignment._id)) || null,
+        submission:
+          trackerMap.get(String(assignment._id)) || null,
         isPastDue: new Date() > new Date(assignment.dueAt),
       })),
     });
@@ -1030,18 +1466,29 @@ export const studentGetAssignments = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // STUDENT: ASSIGNMENT DETAIL
 // GET /api/assignments/student/:id
-// ---------------------------------------------------------
-export const studentGetAssignment = async (req, res, next) => {
+// =====================================================
+
+export const studentGetAssignment = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid assignment ID.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid assignment ID.");
+    }
 
     const studentResult = await getStudent(req);
 
     if (studentResult.error) {
-      return fail(res, studentResult.error.status, studentResult.error.message);
+      return fail(
+        res,
+        studentResult.error.status,
+        studentResult.error.message
+      );
     }
 
     const access = await getAssignmentForStudent(
@@ -1049,7 +1496,9 @@ export const studentGetAssignment = async (req, res, next) => {
       studentResult.student._id
     );
 
-    if (access.error) return fail(res, access.status, access.error);
+    if (access.error) {
+      return fail(res, access.status, access.error);
+    }
 
     const assignment = await populateAssignment(
       Assignment.findById(access.assignment._id)
@@ -1082,29 +1531,44 @@ export const studentGetAssignment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
-// STUDENT: SUBMIT / RESUBMIT
+// =====================================================
+// STUDENT: SUBMIT / RESUBMIT ASSIGNMENT
 // POST /api/assignments/student/:id/submit
 // multipart/form-data: files[]
-// ---------------------------------------------------------
-export const studentSubmitAssignment = async (req, res, next) => {
+// =====================================================
+
+export const studentSubmitAssignment = async (
+  req,
+  res,
+  next
+) => {
   const files = req.files || [];
 
   try {
     if (!validId(req.params.id)) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, 400, "Invalid assignment ID.");
     }
 
     if (!files.length) {
-      return fail(res, 400, "Upload at least one submission file.");
+      return fail(
+        res,
+        400,
+        "Upload at least one submission file."
+      );
     }
 
     const studentResult = await getStudent(req);
 
     if (studentResult.error) {
       await removeFiles(uploadedMetadata(files));
-      return fail(res, studentResult.error.status, studentResult.error.message);
+
+      return fail(
+        res,
+        studentResult.error.status,
+        studentResult.error.message
+      );
     }
 
     const access = await getAssignmentForStudent(
@@ -1114,16 +1578,23 @@ export const studentSubmitAssignment = async (req, res, next) => {
 
     if (access.error) {
       await removeFiles(uploadedMetadata(files));
+
       return fail(res, access.status, access.error);
     }
 
     const assignment = access.assignment;
     const now = new Date();
+
     const isLate = now > new Date(assignment.dueAt);
 
     if (isLate && !assignment.allowLateSubmission) {
       await removeFiles(uploadedMetadata(files));
-      return fail(res, 409, "The submission deadline has passed.");
+
+      return fail(
+        res,
+        409,
+        "The submission deadline has passed."
+      );
     }
 
     let tracker = await AssignmentSubmission.findOne({
@@ -1141,9 +1612,17 @@ export const studentSubmitAssignment = async (req, res, next) => {
     }
 
     if (tracker.submissionCount > 0) {
-      if (!assignment.allowResubmission || !tracker.resubmissionEnabled) {
+      if (
+        !assignment.allowResubmission ||
+        !tracker.resubmissionEnabled
+      ) {
         await removeFiles(uploadedMetadata(files));
-        return fail(res, 409, "Resubmission is not enabled for your account.");
+
+        return fail(
+          res,
+          409,
+          "Resubmission is not enabled for your account."
+        );
       }
     }
 
@@ -1154,7 +1633,9 @@ export const studentSubmitAssignment = async (req, res, next) => {
       submission_id: tracker._id,
       student_id: studentResult.student._id,
       versionNumber: nextVersion,
-      comment: String(req.body.comment || "").trim().slice(0, 5000),
+      comment: String(req.body.comment || "")
+        .trim()
+        .slice(0, 5000),
       files: uploadedMetadata(files),
       submittedAt: now,
       isLate,
@@ -1162,7 +1643,10 @@ export const studentSubmitAssignment = async (req, res, next) => {
 
     tracker.latestVersion_id = version._id;
     tracker.submissionCount = nextVersion;
-    tracker.firstSubmittedAt = tracker.firstSubmittedAt || now;
+
+    tracker.firstSubmittedAt =
+      tracker.firstSubmittedAt || now;
+
     tracker.lastSubmittedAt = now;
     tracker.isLate = isLate;
     tracker.status = isLate ? "Late" : "Submitted";
@@ -1170,9 +1654,11 @@ export const studentSubmitAssignment = async (req, res, next) => {
 
     await tracker.save();
 
-    // A new submission version invalidates the old evaluation.
+    // A new version invalidates the previous published evaluation.
     await AssignmentEvaluation.updateOne(
-      { submission_id: tracker._id },
+      {
+        submission_id: tracker._id,
+      },
       {
         $set: {
           status: "Draft",
@@ -1201,18 +1687,29 @@ export const studentSubmitAssignment = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // STUDENT: MY SUBMISSION VERSION HISTORY
 // GET /api/assignments/student/:id/history
-// ---------------------------------------------------------
-export const studentGetAssignmentHistory = async (req, res, next) => {
+// =====================================================
+
+export const studentGetAssignmentHistory = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid assignment ID.");
+    if (!validId(req.params.id)) {
+      return fail(res, 400, "Invalid assignment ID.");
+    }
 
     const studentResult = await getStudent(req);
 
     if (studentResult.error) {
-      return fail(res, studentResult.error.status, studentResult.error.message);
+      return fail(
+        res,
+        studentResult.error.status,
+        studentResult.error.message
+      );
     }
 
     const access = await getAssignmentForStudent(
@@ -1220,14 +1717,21 @@ export const studentGetAssignmentHistory = async (req, res, next) => {
       studentResult.student._id
     );
 
-    if (access.error) return fail(res, access.status, access.error);
+    if (access.error) {
+      return fail(res, access.status, access.error);
+    }
 
     const tracker = await AssignmentSubmission.findOne({
       assignment_id: req.params.id,
       student_id: studentResult.student._id,
     }).lean();
 
-    if (!tracker) return res.json({ success: true, data: [] });
+    if (!tracker) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
 
     const versions = await AssignmentSubmissionVersion.find({
       submission_id: tracker._id,
@@ -1243,6 +1747,7 @@ export const studentGetAssignmentHistory = async (req, res, next) => {
         comment: version.comment,
         submittedAt: version.submittedAt,
         isLate: version.isLate,
+
         files: version.files.map((file) => ({
           id: file._id,
           originalName: file.originalName,
@@ -1256,23 +1761,44 @@ export const studentGetAssignmentHistory = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
-// ADMIN: VIEW / DOWNLOAD REFERENCE FILE
+// =====================================================
+// ADMIN: DOWNLOAD REFERENCE FILE
 // GET /api/assignments/admin/:id/files/:fileId/download
-// ---------------------------------------------------------
-export const adminDownloadAssignmentFile = async (req, res, next) => {
+// =====================================================
+
+export const adminDownloadAssignmentFile = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id) || !validId(req.params.fileId)) {
-      return fail(res, 400, "Invalid assignment or file ID.");
+    if (
+      !validId(req.params.id) ||
+      !validId(req.params.fileId)
+    ) {
+      return fail(
+        res,
+        400,
+        "Invalid assignment or file ID."
+      );
     }
 
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findById(
+      req.params.id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
-    const file = findAttachment(assignment, req.params.fileId);
+    const file = findAttachment(
+      assignment,
+      req.params.fileId
+    );
 
-    if (!file) return fail(res, 404, "Attachment not found.");
+    if (!file) {
+      return fail(res, 404, "Attachment not found.");
+    }
 
     return sendPrivateFile(res, file, true);
   } catch (error) {
@@ -1280,20 +1806,36 @@ export const adminDownloadAssignmentFile = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // STUDENT: DOWNLOAD REFERENCE FILE
 // GET /api/assignments/student/:id/files/:fileId/download
-// ---------------------------------------------------------
-export const studentDownloadAssignmentFile = async (req, res, next) => {
+// =====================================================
+
+export const studentDownloadAssignmentFile = async (
+  req,
+  res,
+  next
+) => {
   try {
-    if (!validId(req.params.id) || !validId(req.params.fileId)) {
-      return fail(res, 400, "Invalid assignment or file ID.");
+    if (
+      !validId(req.params.id) ||
+      !validId(req.params.fileId)
+    ) {
+      return fail(
+        res,
+        400,
+        "Invalid assignment or file ID."
+      );
     }
 
     const studentResult = await getStudent(req);
 
     if (studentResult.error) {
-      return fail(res, studentResult.error.status, studentResult.error.message);
+      return fail(
+        res,
+        studentResult.error.status,
+        studentResult.error.message
+      );
     }
 
     const access = await getAssignmentForStudent(
@@ -1301,11 +1843,18 @@ export const studentDownloadAssignmentFile = async (req, res, next) => {
       studentResult.student._id
     );
 
-    if (access.error) return fail(res, access.status, access.error);
+    if (access.error) {
+      return fail(res, access.status, access.error);
+    }
 
-    const file = findAttachment(access.assignment, req.params.fileId);
+    const file = findAttachment(
+      access.assignment,
+      req.params.fileId
+    );
 
-    if (!file) return fail(res, 404, "Attachment not found.");
+    if (!file) {
+      return fail(res, 404, "Attachment not found.");
+    }
 
     return sendPrivateFile(res, file, true);
   } catch (error) {
@@ -1313,16 +1862,25 @@ export const studentDownloadAssignmentFile = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
-// ADMIN: DOWNLOAD A STUDENT SUBMISSION FILE
+// =====================================================
+// ADMIN: DOWNLOAD STUDENT SUBMISSION FILE
 // GET /api/assignments/admin/submissions/:submissionId/files/:fileId
-// ---------------------------------------------------------
-export const adminDownloadSubmissionFile = async (req, res, next) => {
+// =====================================================
+
+export const adminDownloadSubmissionFile = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { submissionId, fileId } = req.params;
 
     if (!validId(submissionId) || !validId(fileId)) {
-      return fail(res, 400, "Invalid submission or file ID.");
+      return fail(
+        res,
+        400,
+        "Invalid submission or file ID."
+      );
     }
 
     const version = await AssignmentSubmissionVersion.findOne({
@@ -1330,7 +1888,13 @@ export const adminDownloadSubmissionFile = async (req, res, next) => {
       "files._id": fileId,
     });
 
-    if (!version) return fail(res, 404, "Submission file not found.");
+    if (!version) {
+      return fail(
+        res,
+        404,
+        "Submission file not found."
+      );
+    }
 
     const file = version.files.id(fileId);
 
@@ -1340,11 +1904,16 @@ export const adminDownloadSubmissionFile = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: SAVE EVALUATION DRAFT
 // POST /api/assignments/admin/submissions/:submissionId/evaluation
-// ---------------------------------------------------------
-export const adminSaveEvaluation = async (req, res, next) => {
+// =====================================================
+
+export const adminSaveEvaluation = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { submissionId } = req.params;
 
@@ -1355,19 +1924,36 @@ export const adminSaveEvaluation = async (req, res, next) => {
     const marksObtained = Number(req.body.marksObtained);
     const feedback = String(req.body.feedback || "").trim();
 
-    if (!Number.isFinite(marksObtained) || marksObtained < 0) {
-      return fail(res, 400, "marksObtained must be zero or greater.");
+    if (
+      !Number.isFinite(marksObtained) ||
+      marksObtained < 0
+    ) {
+      return fail(
+        res,
+        400,
+        "marksObtained must be zero or greater."
+      );
     }
 
-    const submission = await AssignmentSubmission.findById(submissionId);
+    const submission = await AssignmentSubmission.findById(
+      submissionId
+    );
 
     if (!submission || !submission.latestVersion_id) {
-      return fail(res, 404, "Submitted assignment not found.");
+      return fail(
+        res,
+        404,
+        "Submitted assignment not found."
+      );
     }
 
-    const assignment = await Assignment.findById(submission.assignment_id);
+    const assignment = await Assignment.findById(
+      submission.assignment_id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
     if (marksObtained > assignment.total_marks) {
       return fail(
@@ -1377,35 +1963,41 @@ export const adminSaveEvaluation = async (req, res, next) => {
       );
     }
 
-    const evaluation = await AssignmentEvaluation.findOneAndUpdate(
-      { submission_id: submission._id },
-      {
-        $set: {
-          assignment_id: assignment._id,
-          submissionVersion_id: submission.latestVersion_id,
-          student_id: submission.student_id,
-          marksObtained,
-          feedback,
-          status: "Draft",
-          evaluatedBy: req.user._id,
-          publishedAt: null,
-          publishedBy: null,
+    const evaluation =
+      await AssignmentEvaluation.findOneAndUpdate(
+        {
+          submission_id: submission._id,
         },
-      },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-        setDefaultsOnInsert: true,
-      }
-    );
+        {
+          $set: {
+            assignment_id: assignment._id,
+            submissionVersion_id:
+              submission.latestVersion_id,
+            student_id: submission.student_id,
+            marksObtained,
+            feedback,
+            status: "Draft",
+            evaluatedBy: req.user._id,
+            publishedAt: null,
+            publishedBy: null,
+          },
+        },
+        {
+          new: true,
+          upsert: true,
+          runValidators: true,
+          setDefaultsOnInsert: true,
+        }
+      );
 
     submission.status = "UnderEvaluation";
+
     await submission.save();
 
     return res.json({
       success: true,
-      message: "Evaluation saved as Draft. Student cannot see it yet.",
+      message:
+        "Evaluation saved as Draft. Student cannot see it yet.",
       data: evaluation,
     });
   } catch (error) {
@@ -1413,11 +2005,16 @@ export const adminSaveEvaluation = async (req, res, next) => {
   }
 };
 
-// ---------------------------------------------------------
+// =====================================================
 // ADMIN: PUBLISH EVALUATION
 // PATCH /api/assignments/admin/submissions/:submissionId/evaluation/publish
-// ---------------------------------------------------------
-export const adminPublishEvaluation = async (req, res, next) => {
+// =====================================================
+
+export const adminPublishEvaluation = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { submissionId } = req.params;
 
@@ -1425,16 +2022,24 @@ export const adminPublishEvaluation = async (req, res, next) => {
       return fail(res, 400, "Invalid submission ID.");
     }
 
-    const submission = await AssignmentSubmission.findById(submissionId);
+    const submission = await AssignmentSubmission.findById(
+      submissionId
+    );
 
-    if (!submission) return fail(res, 404, "Submission not found.");
+    if (!submission) {
+      return fail(res, 404, "Submission not found.");
+    }
 
     const evaluation = await AssignmentEvaluation.findOne({
       submission_id: submission._id,
     });
 
     if (!evaluation) {
-      return fail(res, 404, "Save an evaluation before publishing.");
+      return fail(
+        res,
+        404,
+        "Save an evaluation before publishing."
+      );
     }
 
     if (
@@ -1448,25 +2053,36 @@ export const adminPublishEvaluation = async (req, res, next) => {
       );
     }
 
-    const assignment = await Assignment.findById(submission.assignment_id);
+    const assignment = await Assignment.findById(
+      submission.assignment_id
+    );
 
-    if (!assignment) return fail(res, 404, "Assignment not found.");
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
 
     if (evaluation.marksObtained > assignment.total_marks) {
-      return fail(res, 400, "Evaluation marks exceed the assignment total.");
+      return fail(
+        res,
+        400,
+        "Evaluation marks exceed the assignment total."
+      );
     }
 
     evaluation.status = "Published";
     evaluation.publishedAt = new Date();
     evaluation.publishedBy = req.user._id;
+
     await evaluation.save();
 
     submission.status = "Evaluated";
+
     await submission.save();
 
     return res.json({
       success: true,
-      message: "Evaluation published. Student can now view marks and feedback.",
+      message:
+        "Evaluation published. Student can now view marks and feedback.",
       data: evaluation,
     });
   } catch (error) {
