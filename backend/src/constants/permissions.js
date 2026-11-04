@@ -98,6 +98,18 @@ export const PERMISSIONS = Object.freeze({
     NOTES_UPDATE: "notes.update",
     NOTES_DELETE: "notes.delete",
     NOTES_PUBLISH: "notes.publish",
+
+    
+  // Assignments Management
+  ASSIGNMENTS_VIEW: "assignments.view",
+  ASSIGNMENTS_CREATE: "assignments.create",
+  ASSIGNMENTS_UPDATE: "assignments.update",
+  ASSIGNMENTS_DELETE: "assignments.delete",
+  ASSIGNMENTS_PUBLISH: "assignments.publish",
+  ASSIGNMENTS_SUBMISSIONS_VIEW: "assignments.submissions.view",
+  ASSIGNMENTS_EVALUATE: "assignments.evaluate",
+  ASSIGNMENTS_RESUBMISSION_MANAGE: "assignments.resubmission.manage",
+
 });
 
 export const ALL_PERMISSION_KEYS = Object.freeze(
