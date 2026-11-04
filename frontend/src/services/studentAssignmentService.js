@@ -14,10 +14,16 @@ const studentAssignmentService = {
       { responseType: "blob" }
     ),
 
+  // Student assignment submission
   submitAssignment: (assignmentId, formData) =>
     api.post(
       `/assignments/student/${assignmentId}/submit`,
-      formData
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     ),
 
   getSubmissionHistory: (assignmentId) =>
