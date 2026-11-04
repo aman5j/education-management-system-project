@@ -295,23 +295,37 @@ export default function AssignmentSubmissions() {
     }
   };
 
-  const handleDownload = async (submissionId, file) => {
-    setActionId(file.id);
-    setError("");
 
-    try {
-      const response = await downloadSubmissionFile(
-        submissionId,
-        file.id
-      );
+const handleDownload = async (submissionId, file) => {
+  // Mongoose populated files use _id.
+  // History API files are serialized with id.
+  const fileId = file?.id || file?._id;
 
-      saveBlob(response.data, file.originalName);
-    } catch (err) {
-      setError(getError(err));
-    } finally {
-      setActionId("");
-    }
-  };
+  if (!submissionId || !fileId) {
+    setError("Unable to download file: submission or file ID is missing.");
+    return;
+  }
+
+  setActionId(fileId);
+  setError("");
+
+  try {
+    const response = await downloadSubmissionFile(
+      submissionId,
+      fileId
+    );
+
+    saveBlob(
+      response.data,
+      file.originalName || "submission-file"
+    );
+  } catch (err) {
+    setError(getError(err));
+  } finally {
+    setActionId("");
+  }
+};
+
 
   const totalEligible = pagination.total || 0;
   const submittedCount = submissions.filter(
@@ -626,16 +640,22 @@ export default function AssignmentSubmissions() {
                               <button
                                 title="Download latest submission"
                                 onClick={() =>
-                                  handleDownload(
+                                    handleDownload(
                                     item._id,
                                     latestVersion.files[0]
-                                  )
+                                    )
                                 }
-                                disabled={isBusy}
-                              >
+                                disabled={
+                                    isBusy ||
+                                    actionId === (
+                                    latestVersion?.files?.[0]?.id ||
+                                    latestVersion?.files?.[0]?._id
+                                    )
+                                }
+                                >
                                 <FiDownload />
                                 Latest file
-                              </button>
+                                </button>
                             )}
                           </div>
                         </td>
