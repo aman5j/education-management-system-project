@@ -65,6 +65,8 @@ import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
 import supportRoutes from "./routes/support.routes.js";
 import practiceRoutes from "./routes/practice.routes.js";
 import notesRoutes from "./routes/notes.routes.js";
+import assignmentRoutes from "./routes/assignment.routes.js";
+
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -355,6 +357,8 @@ app.use(
 app.use("/api/student-portal", studentPortalRoutes);
 app.use("/api/exam-access-requests", examAccessRoutes);
 app.use("/api/notes", notesRoutes);
+app.use("/api/assignments", assignmentRoutes);
+
 
 
 
