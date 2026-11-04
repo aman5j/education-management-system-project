@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -11,6 +11,10 @@ import {
   FiTarget,
   FiClock,
   FiCheckCircle,
+  FiUploadCloud,
+  FiX,
+  FiAlertCircle,
+  FiHistory,
 } from "react-icons/fi";
 
 import studentAssignmentService from "../../services/studentAssignmentService";
@@ -18,7 +22,8 @@ import "./StudentAssignments.css";
 
 const getError = (error) =>
   error?.response?.data?.message ||
-  "Unable to load assignment details.";
+  error?.message ||
+  "Something went wrong. Please try again.";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -46,15 +51,71 @@ const formatSize = (bytes) => {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
+const MAX_FILES = 10;
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".zip",
+];
+
+const getFileExtension = (name) => {
+  const index = name.lastIndexOf(".");
+  return index >= 0 ? name.slice(index).toLowerCase() : "";
+};
+
+const saveBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = filename || "assignment-file";
+
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 export default function StudentAssignmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [assignment, setAssignment] = useState(null);
   const [submission, setSubmission] = useState(null);
+  const [history, setHistory] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const [downloading, setDownloading] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+
+    try {
+      const response =
+        await studentAssignmentService.getSubmissionHistory(id);
+
+      const list = response?.data?.data;
+      setHistory(Array.isArray(list) ? list : []);
+    } catch (err) {
+      setError(getError(err));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [id]);
 
   const loadAssignment = useCallback(async () => {
     setLoading(true);
@@ -85,34 +146,164 @@ export default function StudentAssignmentDetails() {
     loadAssignment();
   }, [loadAssignment]);
 
-  const downloadFile = async (file) => {
-    const key = file.id;
+  useEffect(() => {
+    if (!loading && assignment) {
+      loadHistory();
+    }
+  }, [loading, assignment, loadHistory]);
+
+  const submitted = Number(submission?.submissionCount) > 0;
+
+  const dueDate = useMemo(
+    () => new Date(assignment?.dueAt),
+    [assignment?.dueAt]
+  );
+
+  const isPastDue =
+    assignment &&
+    !Number.isNaN(dueDate.getTime()) &&
+    Date.now() > dueDate.getTime();
+
+  const lateBlocked =
+    Boolean(isPastDue) && !assignment?.allowLateSubmission;
+
+  const canResubmit =
+    submitted &&
+    Boolean(assignment?.allowResubmission) &&
+    Boolean(submission?.resubmissionEnabled);
+
+  const canSubmit = !submitted || canResubmit;
+
+  const submissionBlocked =
+    lateBlocked || (submitted && !canResubmit);
+
+  const downloadFile = async (file, type, versionId = null) => {
+    const key = `${type}-${file.id}`;
+
     setDownloading(key);
     setError("");
 
     try {
       const response =
-        await studentAssignmentService.downloadReferenceFile(
-          id,
-          file.id
-        );
+        type === "reference"
+          ? await studentAssignmentService.downloadReferenceFile(
+              id,
+              file.id
+            )
+          : await studentAssignmentService.downloadSubmissionFile(
+              id,
+              versionId,
+              file.id
+            );
 
-      const blobUrl = URL.createObjectURL(
-        new Blob([response.data])
+      saveBlob(
+        response.data,
+        file.originalName || "assignment-file"
       );
-
-      const anchor = document.createElement("a");
-      anchor.href = blobUrl;
-      anchor.download = file.originalName || "assignment-reference";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-
-      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       setError(getError(err));
     } finally {
       setDownloading("");
+    }
+  };
+
+  const handleFileSelection = (event) => {
+    setError("");
+    setSuccess("");
+
+    const incoming = Array.from(event.target.files || []);
+
+    if (!incoming.length) return;
+
+    if (incoming.length > MAX_FILES) {
+      setError(`You can select a maximum of ${MAX_FILES} files.`);
+      event.target.value = "";
+      return;
+    }
+
+    const invalid = incoming.find((file) => {
+      const extension = getFileExtension(file.name);
+
+      return (
+        !ALLOWED_EXTENSIONS.includes(extension) ||
+        file.size > MAX_FILE_SIZE
+      );
+    });
+
+    if (invalid) {
+      const extension = getFileExtension(invalid.name);
+
+      setError(
+        invalid.size > MAX_FILE_SIZE
+          ? `${invalid.name} exceeds the 20 MB file limit.`
+          : `${invalid.name} has an unsupported file format.`
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedFiles(incoming);
+  };
+
+  const removeSelectedFile = (index) => {
+    setSelectedFiles((current) =>
+      current.filter((_, fileIndex) => fileIndex !== index)
+    );
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (!selectedFiles.length) {
+      setError("Please select at least one file.");
+      return;
+    }
+
+    if (selectedFiles.length > MAX_FILES) {
+      setError(`You can upload a maximum of ${MAX_FILES} files.`);
+      return;
+    }
+
+    if (submissionBlocked) {
+      setError(
+        lateBlocked
+          ? "The deadline has passed and late submissions are not allowed."
+          : "Resubmission has not been enabled by your administrator."
+      );
+      return;
+    }
+
+    const formData = new FormData();
+
+    selectedFiles.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    formData.append("comment", comment.trim());
+
+    setSubmitting(true);
+
+    try {
+      const response =
+        await studentAssignmentService.submitAssignment(id, formData);
+
+      const message =
+        response?.data?.message || "Assignment submitted successfully.";
+
+      setSuccess(message);
+      setSelectedFiles([]);
+      setComment("");
+
+      await loadAssignment();
+      await loadHistory();
+    } catch (err) {
+      setError(getError(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -150,8 +341,6 @@ export default function StudentAssignmentDetails() {
     );
   }
 
-  const submitted = Number(submission?.submissionCount) > 0;
-
   return (
     <div className="sa-page">
       <button
@@ -164,7 +353,13 @@ export default function StudentAssignmentDetails() {
 
       {error && (
         <div className="sa-inline-error" role="alert">
-          {error}
+          <FiAlertCircle /> {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="sa-inline-success" role="status">
+          <FiCheckCircle /> {success}
         </div>
       )}
 
@@ -173,7 +368,7 @@ export default function StudentAssignmentDetails() {
           <span className="sa-eyebrow">ASSIGNMENT DETAILS</span>
           <h1>{assignment.title}</h1>
           <p>
-            Review the assignment information and download its reference files.
+            Review instructions, download reference files and submit your work.
           </p>
         </div>
 
@@ -223,10 +418,10 @@ export default function StudentAssignmentDetails() {
                     <button
                       type="button"
                       className="sa-download-button"
-                      disabled={downloading === file.id}
-                      onClick={() => downloadFile(file)}
+                      disabled={downloading === `reference-${file.id}`}
+                      onClick={() => downloadFile(file, "reference")}
                     >
-                      {downloading === file.id ? (
+                      {downloading === `reference-${file.id}` ? (
                         <FiRefreshCw className="sa-spin" />
                       ) : (
                         <FiDownload />
@@ -302,7 +497,9 @@ export default function StudentAssignmentDetails() {
             <div>
               <small>Resubmission</small>
               <strong>
-                {assignment.allowResubmission ? "Admin controlled" : "Not allowed"}
+                {assignment.allowResubmission
+                  ? "Admin controlled"
+                  : "Not allowed"}
               </strong>
             </div>
           </div>
@@ -327,36 +524,230 @@ export default function StudentAssignmentDetails() {
         </aside>
       </div>
 
-      <section className="sa-panel sa-submission-info">
-        <h2>My submission</h2>
-
-        {submitted ? (
-          <div className="sa-submission-status">
-            <span className="sa-submission-check">
-              <FiCheckCircle />
+      {/* SUBMISSION FORM */}
+      <section className="sa-panel sa-submit-panel">
+        <div className="sa-section-heading">
+          <div>
+            <h2>{submitted ? "Resubmit assignment" : "Submit assignment"}</h2>
+            <p>
+              Upload your completed work. Previous versions are retained.
+            </p>
+          </div>
+          {submitted && (
+            <span className="sa-version">
+              Current version: {submission.submissionCount}
             </span>
+          )}
+        </div>
+
+        {lateBlocked ? (
+          <div className="sa-notice sa-notice-danger">
+            <FiAlertCircle />
             <div>
-              <strong>Assignment submitted</strong>
+              <strong>Submission deadline has passed</strong>
+              <p>Late submissions are not allowed for this assignment.</p>
+            </div>
+          </div>
+        ) : submitted && !canResubmit ? (
+          <div className="sa-notice sa-notice-warning">
+            <FiClock />
+            <div>
+              <strong>Resubmission is currently disabled</strong>
               <p>
-                Latest submission: {formatDate(submission.lastSubmittedAt)}
-              </p>
-              <p>
-                Submission versions: {submission.submissionCount}
+                Your administrator must enable resubmission for this assignment
+                and your student account before you can submit another version.
               </p>
             </div>
           </div>
         ) : (
-          <div className="sa-submission-status">
-            <span className="sa-submission-pending">
-              <FiClock />
-            </span>
-            <div>
-              <strong>No submission yet</strong>
-              <p>
-                Submission and resubmission features will be available in
-                the next assignment phase.
-              </p>
+          <form onSubmit={handleSubmit}>
+            {isPastDue && assignment.allowLateSubmission && (
+              <div className="sa-notice sa-notice-warning">
+                <FiAlertCircle />
+                <div>
+                  <strong>Late submission</strong>
+                  <p>
+                    The deadline has passed. Your submission will be marked late.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <label className="sa-form-label" htmlFor="sa-submission-files">
+              Upload files <span>*</span>
+            </label>
+
+            <label className="sa-upload-zone" htmlFor="sa-submission-files">
+              <FiUploadCloud />
+              <strong>Select your assignment files</strong>
+              <span>
+                PDF, DOC, DOCX, JPG, PNG, WEBP or ZIP · Max 20 MB per file ·
+                Up to 10 files
+              </span>
+              <input
+                id="sa-submission-files"
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip"
+                onChange={handleFileSelection}
+                disabled={submitting}
+              />
+            </label>
+
+            {selectedFiles.length > 0 && (
+              <div className="sa-selected-files">
+                {selectedFiles.map((file, index) => (
+                  <div className="sa-selected-file" key={`${file.name}-${index}`}>
+                    <div>
+                      <FiFileText />
+                      <span>
+                        <strong>{file.name}</strong>
+                        <small>{formatSize(file.size)}</small>
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedFile(index)}
+                      disabled={submitting}
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <label className="sa-form-label" htmlFor="sa-submission-comment">
+              Comment (optional)
+            </label>
+
+            <textarea
+              id="sa-submission-comment"
+              className="sa-comment-input"
+              rows={4}
+              maxLength={5000}
+              placeholder="Add a note for your teacher..."
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              disabled={submitting}
+            />
+
+            <div className="sa-comment-count">
+              {comment.length}/5000 characters
             </div>
+
+            <button
+              type="submit"
+              className="sa-submit-button"
+              disabled={submitting || !selectedFiles.length}
+            >
+              {submitting ? (
+                <>
+                  <FiRefreshCw className="sa-spin" />
+                  Uploading and submitting...
+                </>
+              ) : (
+                <>
+                  <FiUploadCloud />
+                  {submitted ? "Submit new version" : "Submit assignment"}
+                </>
+              )}
+            </button>
+          </form>
+        )}
+      </section>
+
+      {/* SUBMISSION HISTORY */}
+      <section className="sa-panel sa-history-panel">
+        <div className="sa-section-heading">
+          <div>
+            <h2><FiHistory /> Submission history</h2>
+            <p>Every submitted version is preserved for your reference.</p>
+          </div>
+
+          <button
+            type="button"
+            className="sa-history-refresh"
+            onClick={loadHistory}
+            disabled={historyLoading}
+          >
+            <FiRefreshCw className={historyLoading ? "sa-spin" : ""} />
+            Refresh
+          </button>
+        </div>
+
+        {historyLoading ? (
+          <div className="sa-history-empty">
+            <FiRefreshCw className="sa-spin" />
+            Loading submission history...
+          </div>
+        ) : history.length === 0 ? (
+          <div className="sa-history-empty">
+            <FiHistory />
+            <p>No submissions have been made yet.</p>
+          </div>
+        ) : (
+          <div className="sa-history-list">
+            {history.map((version) => (
+              <article className="sa-history-card" key={version.id}>
+                <div className="sa-history-top">
+                  <div>
+                    <span className="sa-history-version">
+                      Version {version.versionNumber}
+                    </span>
+                    <small>{formatDate(version.submittedAt)}</small>
+                  </div>
+
+                  <span
+                    className={`sa-status ${
+                      version.isLate
+                        ? "sa-status-pending"
+                        : "sa-status-submitted"
+                    }`}
+                  >
+                    {version.isLate ? "Late" : "Submitted"}
+                  </span>
+                </div>
+
+                {version.comment && (
+                  <p className="sa-history-comment">{version.comment}</p>
+                )}
+
+                <div className="sa-history-files">
+                  {(version.files || []).map((file) => (
+                    <div className="sa-history-file" key={file.id}>
+                      <div>
+                        <FiFileText />
+                        <span>
+                          <strong>{file.originalName}</strong>
+                          <small>{formatSize(file.fileSize)}</small>
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="sa-download-button"
+                        disabled={
+                          downloading === `history-${file.id}`
+                        }
+                        onClick={() =>
+                          downloadFile(file, "history", version.id)
+                        }
+                      >
+                        {downloading === `history-${file.id}` ? (
+                          <FiRefreshCw className="sa-spin" />
+                        ) : (
+                          <FiDownload />
+                        )}
+                        Download
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </section>

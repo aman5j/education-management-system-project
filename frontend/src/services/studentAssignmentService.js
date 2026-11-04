@@ -13,6 +13,25 @@ const studentAssignmentService = {
       `/assignments/student/${assignmentId}/files/${fileId}/download`,
       { responseType: "blob" }
     ),
+
+  submitAssignment: (assignmentId, formData) =>
+    api.post(
+      `/assignments/student/${assignmentId}/submit`,
+      formData
+    ),
+
+  getSubmissionHistory: (assignmentId) =>
+    api.get(`/assignments/student/${assignmentId}/history`),
+
+  downloadSubmissionFile: (
+    assignmentId,
+    versionId,
+    fileId
+  ) =>
+    api.get(
+      `/assignments/student/${assignmentId}/history/${versionId}/files/${fileId}/download`,
+      { responseType: "blob" }
+    ),
 };
 
 export default studentAssignmentService;
