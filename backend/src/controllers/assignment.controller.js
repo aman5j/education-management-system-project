@@ -1997,6 +1997,135 @@ export const adminDownloadSubmissionFile = async (
   }
 };
 
+
+// =====================================================
+// ADMIN: GET SUBMISSION EVALUATION DETAILS
+// GET /api/assignments/admin/submissions/:submissionId/evaluation
+// =====================================================
+
+export const adminGetSubmissionEvaluation = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const { submissionId } = req.params;
+
+    if (!validId(submissionId)) {
+      return fail(res, 400, "Invalid submission ID.");
+    }
+
+    const submission = await AssignmentSubmission.findById(
+      submissionId
+    )
+      .populate(
+        "student_id",
+        "firstName surname rollNo email mobile"
+      )
+      .populate("latestVersion_id")
+      .lean();
+
+    if (!submission || !submission.latestVersion_id) {
+      return fail(res, 404, "Submitted assignment not found.");
+    }
+
+    const assignment = await Assignment.findById(
+      submission.assignment_id
+    )
+      .populate("course_id", "courseTitle")
+      .populate("subject_id", "subjectName subjectCode")
+      .populate("batch_ids", "batch_name")
+      .lean();
+
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
+
+    const evaluation = await AssignmentEvaluation.findOne({
+      submission_id: submission._id,
+    })
+      .populate("evaluatedBy", "name email")
+      .populate("publishedBy", "name email")
+      .lean();
+
+    return res.json({
+      success: true,
+      data: {
+        assignment: {
+          id: String(assignment._id),
+          title: assignment.title,
+          course: assignment.course_id?.courseTitle || "",
+          subject: assignment.subject_id?.subjectName || "",
+          total_marks: assignment.total_marks,
+          dueAt: assignment.dueAt,
+          status: assignment.status,
+        },
+
+        submission: {
+          id: String(submission._id),
+          status: submission.status,
+          submissionCount: submission.submissionCount,
+          firstSubmittedAt: submission.firstSubmittedAt,
+          lastSubmittedAt: submission.lastSubmittedAt,
+          isLate: Boolean(submission.isLate),
+
+          student: submission.student_id
+            ? {
+                id: String(submission.student_id._id),
+                firstName: submission.student_id.firstName || "",
+                surname: submission.student_id.surname || "",
+                rollNo: submission.student_id.rollNo || "",
+                email: submission.student_id.email || "",
+                mobile: submission.student_id.mobile || "",
+              }
+            : null,
+
+          latestVersion: {
+            id: String(submission.latestVersion_id._id),
+            versionNumber:
+              submission.latestVersion_id.versionNumber,
+            comment: submission.latestVersion_id.comment || "",
+            submittedAt:
+              submission.latestVersion_id.submittedAt,
+            isLate: Boolean(
+              submission.latestVersion_id.isLate
+            ),
+
+            files: (
+              submission.latestVersion_id.files || []
+            ).map((file) => ({
+              id: String(file._id),
+              originalName: file.originalName,
+              mimeType: file.mimeType,
+              fileSize: file.fileSize,
+              uploadedAt: file.uploadedAt,
+            })),
+          },
+        },
+
+        evaluation: evaluation
+          ? {
+              id: String(evaluation._id),
+              marksObtained: evaluation.marksObtained,
+              feedback: evaluation.feedback || "",
+              status: evaluation.status,
+              evaluatedBy: evaluation.evaluatedBy || null,
+              publishedBy: evaluation.publishedBy || null,
+              publishedAt: evaluation.publishedAt,
+              updatedAt: evaluation.updatedAt,
+              submissionVersion_id: String(
+                evaluation.submissionVersion_id
+              ),
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 // =====================================================
 // ADMIN: SAVE EVALUATION DRAFT
 // POST /api/assignments/admin/submissions/:submissionId/evaluation
@@ -2014,17 +2143,30 @@ export const adminSaveEvaluation = async (
       return fail(res, 400, "Invalid submission ID.");
     }
 
+    if (
+      req.body.marksObtained === undefined ||
+      req.body.marksObtained === null ||
+      String(req.body.marksObtained).trim() === ""
+    ) {
+      return fail(res, 400, "Marks obtained are required.");
+    }
+
     const marksObtained = Number(req.body.marksObtained);
     const feedback = String(req.body.feedback || "").trim();
 
-    if (
-      !Number.isFinite(marksObtained) ||
-      marksObtained < 0
-    ) {
+    if (!Number.isFinite(marksObtained) || marksObtained < 0) {
       return fail(
         res,
         400,
-        "marksObtained must be zero or greater."
+        "Marks must be a valid number greater than or equal to zero."
+      );
+    }
+
+    if (feedback.length > 10000) {
+      return fail(
+        res,
+        400,
+        "Feedback cannot exceed 10,000 characters."
       );
     }
 
@@ -2033,11 +2175,7 @@ export const adminSaveEvaluation = async (
     );
 
     if (!submission || !submission.latestVersion_id) {
-      return fail(
-        res,
-        404,
-        "Submitted assignment not found."
-      );
+      return fail(res, 404, "Submitted assignment not found.");
     }
 
     const assignment = await Assignment.findById(
@@ -2056,16 +2194,27 @@ export const adminSaveEvaluation = async (
       );
     }
 
+    const latestVersion = await AssignmentSubmissionVersion.findOne({
+      _id: submission.latestVersion_id,
+      submission_id: submission._id,
+      assignment_id: assignment._id,
+    });
+
+    if (!latestVersion) {
+      return fail(
+        res,
+        409,
+        "Latest submission version could not be verified."
+      );
+    }
+
     const evaluation =
       await AssignmentEvaluation.findOneAndUpdate(
-        {
-          submission_id: submission._id,
-        },
+        { submission_id: submission._id },
         {
           $set: {
             assignment_id: assignment._id,
-            submissionVersion_id:
-              submission.latestVersion_id,
+            submissionVersion_id: latestVersion._id,
             student_id: submission.student_id,
             marksObtained,
             feedback,
@@ -2084,13 +2233,12 @@ export const adminSaveEvaluation = async (
       );
 
     submission.status = "UnderEvaluation";
-
     await submission.save();
 
     return res.json({
       success: true,
       message:
-        "Evaluation saved as Draft. Student cannot see it yet.",
+        "Evaluation saved as Draft. The student cannot see it yet.",
       data: evaluation,
     });
   } catch (error) {
@@ -2119,7 +2267,7 @@ export const adminPublishEvaluation = async (
       submissionId
     );
 
-    if (!submission) {
+    if (!submission || !submission.latestVersion_id) {
       return fail(res, 404, "Submission not found.");
     }
 
@@ -2135,6 +2283,14 @@ export const adminPublishEvaluation = async (
       );
     }
 
+    if (evaluation.status === "Published") {
+      return fail(
+        res,
+        409,
+        "This evaluation has already been published."
+      );
+    }
+
     if (
       String(evaluation.submissionVersion_id) !==
       String(submission.latestVersion_id)
@@ -2142,7 +2298,7 @@ export const adminPublishEvaluation = async (
       return fail(
         res,
         409,
-        "This evaluation is for an older submission version. Re-evaluate the latest submission."
+        "This evaluation belongs to an older submission version. Re-evaluate the latest submission."
       );
     }
 
@@ -2154,11 +2310,15 @@ export const adminPublishEvaluation = async (
       return fail(res, 404, "Assignment not found.");
     }
 
-    if (evaluation.marksObtained > assignment.total_marks) {
+    if (
+      !Number.isFinite(Number(evaluation.marksObtained)) ||
+      evaluation.marksObtained < 0 ||
+      evaluation.marksObtained > assignment.total_marks
+    ) {
       return fail(
         res,
         400,
-        "Evaluation marks exceed the assignment total."
+        "Evaluation marks are invalid for this assignment."
       );
     }
 
@@ -2169,13 +2329,12 @@ export const adminPublishEvaluation = async (
     await evaluation.save();
 
     submission.status = "Evaluated";
-
     await submission.save();
 
     return res.json({
       success: true,
       message:
-        "Evaluation published. Student can now view marks and feedback.",
+        "Evaluation published. The student can now view marks and feedback.",
       data: evaluation,
     });
   } catch (error) {

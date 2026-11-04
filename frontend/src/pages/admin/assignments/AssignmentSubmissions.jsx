@@ -598,6 +598,20 @@ export default function AssignmentSubmissions() {
 
                         <td>
                           <div className="as-actions">
+                            {hasSubmitted && item.status !== "Pending" && (
+                                <button
+                                    title="Evaluate student submission"
+                                    onClick={() =>
+                                    navigate(
+                                        `/admin/assignments/${id}/submissions/${item._id}/evaluate`
+                                    )
+                                    }
+                                >
+                                    <FiCheckCircle />
+                                    Evaluate
+                                </button>
+                                )}
+
                             {hasSubmitted && (
                               <button
                                 title="View version history"

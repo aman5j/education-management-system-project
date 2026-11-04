@@ -30,6 +30,7 @@ import {
   adminDownloadAssignmentFile,
   adminDownloadSubmissionFile,
   adminSaveEvaluation,
+  adminGetSubmissionEvaluation,
   adminPublishEvaluation,
   studentGetAssignments,
   studentGetAssignment,
@@ -103,19 +104,42 @@ router.get(
   adminDownloadSubmissionFile
 );
 
+router.get(
+  "/admin/submissions/:submissionId/evaluation",
+  authorizeRoles("admin"),
+  requirePermission("assignments.evaluate"),
+  adminGetSubmissionEvaluation
+);
+
 router.post(
   "/admin/submissions/:submissionId/evaluation",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.evaluate"),
   adminSaveEvaluation
 );
 
 router.patch(
   "/admin/submissions/:submissionId/evaluation/publish",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.evaluate"),
   adminPublishEvaluation
 );
+
+
+
+// router.post(
+//   "/admin/submissions/:submissionId/evaluation",
+//   authorizeRoles("admin", "staff"),
+//   requirePermission("assignments.evaluate"),
+//   adminSaveEvaluation
+// );
+
+// router.patch(
+//   "/admin/submissions/:submissionId/evaluation/publish",
+//   authorizeRoles("admin", "staff"),
+//   requirePermission("assignments.evaluate"),
+//   adminPublishEvaluation
+// );
 
 router.get(
   "/admin/:id/submissions",

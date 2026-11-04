@@ -1,4 +1,3 @@
-
 import api from "./api";
 
 // Assignment management
@@ -62,4 +61,21 @@ export const downloadSubmissionFile = (submissionId, fileId) =>
   api.get(
     `/assignments/admin/submissions/${submissionId}/files/${fileId}`,
     { responseType: "blob" }
+  );
+
+// Admin evaluation
+export const getSubmissionEvaluation = (submissionId) =>
+  api.get(
+    `/assignments/admin/submissions/${submissionId}/evaluation`
+  );
+
+export const saveSubmissionEvaluation = (submissionId, data) =>
+  api.post(
+    `/assignments/admin/submissions/${submissionId}/evaluation`,
+    data
+  );
+
+export const publishSubmissionEvaluation = (submissionId) =>
+  api.patch(
+    `/assignments/admin/submissions/${submissionId}/evaluation/publish`
   );
