@@ -91,6 +91,7 @@ export default function StudentAssignmentDetails() {
   const [assignment, setAssignment] = useState(null);
   const [submission, setSubmission] = useState(null);
   const [history, setHistory] = useState([]);
+  const [evaluation, setEvaluation] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -134,9 +135,17 @@ export default function StudentAssignmentDetails() {
 
       setAssignment(data.assignment);
       setSubmission(data.submission || null);
+
+      // Only show published evaluation results to students.
+      setEvaluation(
+      data.evaluation?.status === "Published"
+          ? data.evaluation
+          : null
+      );
     } catch (err) {
       setAssignment(null);
       setSubmission(null);
+      setEvaluation(null);
       setError(getError(err));
     } finally {
       setLoading(false);
@@ -752,6 +761,104 @@ export default function StudentAssignmentDetails() {
           </div>
         )}
       </section>
+
+
+      {/* PHASE 7: PUBLISHED ASSIGNMENT RESULT */}
+    <section className="sa-panel sa-result-panel">
+    <div className="sa-section-heading">
+        <div>
+        <h2>
+            <FiCheckCircle />
+            Assignment Result
+        </h2>
+        <p>
+            Your marks and teacher feedback will appear here after evaluation
+            is published.
+        </p>
+        </div>
+
+        {evaluation && (
+        <span className="sa-result-published">
+            Result Published
+        </span>
+        )}
+    </div>
+
+    {!evaluation ? (
+        <div className="sa-result-pending">
+        <FiClock />
+        <div>
+            <strong>Result not published yet</strong>
+            <p>
+            Your assignment may still be awaiting evaluation.
+            Please check again later.
+            </p>
+        </div>
+        </div>
+    ) : (
+        <>
+        <div className="sa-result-score">
+            <div>
+            <small>Marks obtained</small>
+            <strong>
+                {Number(evaluation.marksObtained)}
+                <span> / {Number(assignment.total_marks)}</span>
+            </strong>
+            </div>
+
+            <div className="sa-result-percentage">
+            <small>Percentage</small>
+            <strong>
+                {Number(assignment.total_marks) > 0
+                ? (
+                    (Number(evaluation.marksObtained) /
+                        Number(assignment.total_marks)) *
+                    100
+                    ).toFixed(2)
+                : "0.00"}
+                %
+            </strong>
+            </div>
+        </div>
+
+        <div className="sa-result-progress">
+            <div
+            style={{
+                width: `${
+                Number(assignment.total_marks) > 0
+                    ? Math.min(
+                        100,
+                        Math.max(
+                        0,
+                        (Number(evaluation.marksObtained) /
+                            Number(assignment.total_marks)) *
+                            100
+                        )
+                    )
+                    : 0
+                }%`,
+            }}
+            />
+        </div>
+
+        <div className="sa-result-published-date">
+            <FiCalendar />
+            Published on: {formatDate(evaluation.publishedAt)}
+        </div>
+
+        <div className="sa-result-feedback">
+            <h3>Teacher Feedback</h3>
+            <p>
+            {evaluation.feedback?.trim()
+                ? evaluation.feedback
+                : "No additional feedback provided."}
+            </p>
+        </div>
+        </>
+    )}
+    </section>
+
+
     </div>
   );
 }

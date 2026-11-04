@@ -1075,3 +1075,148 @@
     width: 100%;
   }
 }
+
+
+
+
+/* Phase 7: Student Assignment Results */
+
+.sa-result-panel {
+  margin-top: 16px;
+}
+
+.sa-result-published {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border-radius: 20px;
+  background: #eaf8f0;
+  color: #188451;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sa-result-pending {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #f0dfb8;
+  border-radius: 10px;
+  background: #fff9eb;
+  color: #9a650d;
+}
+
+.sa-result-pending > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  font-size: 20px;
+}
+
+.sa-result-pending strong {
+  display: block;
+  font-size: 12px;
+}
+
+.sa-result-pending p {
+  margin: 5px 0 0;
+  color: #92713a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.sa-result-score {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.sa-result-score > div {
+  padding: 18px;
+  border: 1px solid #e7ecf3;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.sa-result-score small,
+.sa-result-score strong {
+  display: block;
+}
+
+.sa-result-score small {
+  margin-bottom: 8px;
+  color: #7b8799;
+  font-size: 11px;
+}
+
+.sa-result-score strong {
+  color: #1d293d;
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.sa-result-score strong span {
+  color: #8995a7;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sa-result-percentage strong {
+  color: #188451;
+}
+
+.sa-result-progress {
+  height: 9px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #edf0f5;
+}
+
+.sa-result-progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: #219765;
+  transition: width 0.3s ease;
+}
+
+.sa-result-published-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+  color: #7b8799;
+  font-size: 11px;
+}
+
+.sa-result-feedback {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #e7ecf3;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.sa-result-feedback h3 {
+  margin: 0 0 9px;
+  color: #27364c;
+  font-size: 13px;
+}
+
+.sa-result-feedback p {
+  margin: 0;
+  color: #58677d;
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .sa-result-score {
+    grid-template-columns: 1fr;
+  }
+}
+

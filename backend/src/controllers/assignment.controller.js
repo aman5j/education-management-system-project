@@ -1604,12 +1604,15 @@ export const studentGetAssignment = async (
       .populate("latestVersion_id")
       .lean();
 
-    const evaluation = submission
-      ? await AssignmentEvaluation.findOne({
-          submission_id: submission._id,
-          status: "Published",
-        }).lean()
-      : null;
+    const evaluation = submission?.latestVersion_id
+    ? await AssignmentEvaluation.findOne({
+        submission_id: submission._id,
+        submissionVersion_id: submission.latestVersion_id._id,
+        status: "Published",
+        })
+        .select("marksObtained feedback status publishedAt")
+        .lean()
+    : null;
 
     return res.json({
       success: true,
