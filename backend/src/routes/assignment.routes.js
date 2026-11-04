@@ -25,6 +25,7 @@ import {
   adminAddAssignmentAttachments,
   adminRemoveAssignmentAttachment,
   adminGetAssignmentSubmissions,
+  adminGetSubmissionHistory,
   adminSetStudentResubmission,
   adminDownloadAssignmentFile,
   adminDownloadSubmissionFile,
@@ -121,6 +122,13 @@ router.get(
   authorizeRoles("admin", "staff"),
   requirePermission("assignments.submissions.view"),
   adminGetAssignmentSubmissions
+);
+
+router.get(
+  "/admin/:id/submissions/:submissionId/history",
+  authorizeRoles("admin"),
+  requirePermission("assignments.submissions.view"),
+  adminGetSubmissionHistory
 );
 
 router.patch(

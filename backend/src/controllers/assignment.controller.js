@@ -1258,12 +1258,31 @@ export const adminGetAssignmentSubmissions = async (
     }
 
     const [items, total] = await Promise.all([
-      AssignmentSubmission.find(filter)
+    //   AssignmentSubmission.find(filter)
+    //     .populate(
+    //       "student_id",
+    //       "firstName surname rollNo email mobile"
+    //     )
+    //     .populate("admission_id", "batch_id")
+    //     .populate("latestVersion_id")
+    //     .sort({ updatedAt: -1 })
+    //     .skip((page - 1) * limit)
+    //     .limit(limit)
+    //     .lean(),
+
+    AssignmentSubmission.find(filter)
         .populate(
-          "student_id",
-          "firstName surname rollNo email mobile"
+            "student_id",
+            "firstName surname rollNo email mobile"
         )
-        .populate("admission_id", "batch_id")
+        .populate({
+            path: "admission_id",
+            select: "batch_id",
+            populate: {
+            path: "batch_id",
+            select: "batch_name status",
+            },
+        })
         .populate("latestVersion_id")
         .sort({ updatedAt: -1 })
         .skip((page - 1) * limit)
@@ -1289,6 +1308,80 @@ export const adminGetAssignmentSubmissions = async (
     next(error);
   }
 };
+
+
+// =====================================================
+// ADMIN: GET ALL VERSIONS FOR ONE STUDENT SUBMISSION
+// GET /api/assignments/admin/:id/submissions/:submissionId/history
+// =====================================================
+
+export const adminGetSubmissionHistory = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const { id, submissionId } = req.params;
+
+    if (!validId(id) || !validId(submissionId)) {
+      return fail(
+        res,
+        400,
+        "Invalid assignment or submission ID."
+      );
+    }
+
+    const assignment = await Assignment.findById(id)
+      .select("_id title status");
+
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
+
+    const submission = await AssignmentSubmission.findOne({
+      _id: submissionId,
+      assignment_id: assignment._id,
+    }).select("_id student_id assignment_id");
+
+    if (!submission) {
+      return fail(
+        res,
+        404,
+        "Submission does not belong to this assignment."
+      );
+    }
+
+    const versions = await AssignmentSubmissionVersion.find({
+      submission_id: submission._id,
+      assignment_id: assignment._id,
+      student_id: submission.student_id,
+    })
+      .sort({ versionNumber: -1 })
+      .lean();
+
+    return res.json({
+      success: true,
+      data: versions.map((version) => ({
+        id: String(version._id),
+        versionNumber: version.versionNumber,
+        comment: version.comment || "",
+        submittedAt: version.submittedAt,
+        isLate: Boolean(version.isLate),
+
+        files: (version.files || []).map((file) => ({
+          id: String(file._id),
+          originalName: file.originalName,
+          mimeType: file.mimeType,
+          fileSize: file.fileSize,
+          uploadedAt: file.uploadedAt,
+        })),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 // =====================================================
 // ADMIN: ENABLE / DISABLE RESUBMISSION FOR ONE STUDENT

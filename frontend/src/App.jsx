@@ -45,6 +45,7 @@ import PracticeAttempts from "./pages/admin/practice/PracticeAttempts";
 import StudentPracticeZone from "./pages/student/StudentPracticeZone";
 import StudentPracticeResults from "./pages/student/StudentPracticeResults";
 import AssignmentManagement from "./pages/admin/assignments/AssignmentManagement";
+import AssignmentSubmissions from "./pages/admin/assignments/AssignmentSubmissions";
 
 
 import StaffDashboard from "./pages/staff/StaffDashboard";
@@ -357,6 +358,15 @@ const App = () => {
           element={
             <PermissionRoute permission="assignments.view">
               <AssignmentManagement />
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="assignments/:id/submissions"
+          element={
+            <PermissionRoute permission="assignments.submissions.view">
+              <AssignmentSubmissions />
             </PermissionRoute>
           }
         />

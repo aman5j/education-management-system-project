@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiBookOpen,
   FiCalendar,
@@ -14,6 +15,7 @@ import {
   FiTrash2,
   FiUpload,
   FiX,
+  FiUsers,
 } from "react-icons/fi";
 
 import { getCourses, getCourse } from "../../../services/courseService";
@@ -110,6 +112,7 @@ const saveBlob = (blob, filename) => {
 
 export default function AssignmentManagement() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const can = (action) =>
     user?.role === "admin" ||
@@ -729,6 +732,21 @@ export default function AssignmentManagement() {
 
                     <td>
                       <div className="assignment-actions">
+                        {item.status === "Published" &&
+                            user?.role === "admin" &&
+                            can("submissions.view") && (
+                                <button
+                                title="View student submissions"
+                                className="action-publish"
+                                onClick={() =>
+                                    navigate(`/admin/assignments/${item.id}/submissions`)
+                                }
+                                disabled={actionId === item.id}
+                                >
+                                <FiUsers />
+                                </button>
+                            )}
+
                         {item.status === "Draft" && can("update") && (
                           <button
                             title="Edit draft"
