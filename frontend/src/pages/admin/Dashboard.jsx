@@ -8,6 +8,8 @@ import {
   FiSearch,
   FiX,
 } from "react-icons/fi";
+import { FiCalendar } from "react-icons/fi";
+
 import { FaBookOpen, FaUserFriends } from "react-icons/fa";
 import { IoWalletSharp } from "react-icons/io5";
 import { GiExpense } from "react-icons/gi";
@@ -236,7 +238,11 @@ const openStudentDetails = (student) => {
                 Welcome back, {summary?.instituteName || "Admin"}
               </h3>
             </div>
-            <h5>{formatDate()}</h5>
+             <div className="student-profile-banner__date">
+      <FiCalendar />
+      <span>{formatDate()}</span>
+    </div>
+            {/* <h5> <FiCalendar /> {formatDate()}</h5> */}
           </div>
 
           <div className="dashboard-stat-grid">

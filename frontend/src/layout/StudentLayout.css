@@ -18,15 +18,6 @@
   box-sizing: border-box;
 }
 
-.student-layout button,
-.student-layout input {
-  font: inherit;
-}
-
-.student-layout button {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
 
 /* Sidebar */
 .student-layout__sidebar {
@@ -426,6 +417,7 @@
 .student-layout__page {
   min-width: 0;
   flex: 1;
+  padding: 15px;
 }
 
 .student-layout__footer {

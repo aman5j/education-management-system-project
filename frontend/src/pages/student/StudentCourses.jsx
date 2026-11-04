@@ -4,16 +4,25 @@ import { useNavigate } from "react-router-dom";
 import {
   FiArrowRight,
   FiBookOpen,
-  FiCalendar,
-  FiCheckCircle,
   FiClock,
-  FiFileText,
   FiRefreshCw,
   FiSearch,
   FiX,
-  FiFilter,
-} from "react-icons/fi";
 
+} from "react-icons/fi";
+import { FaRegCalendarAlt } from "react-icons/fa";
+import { IoMdTime } from "react-icons/io";
+import { IoBookOutline } from "react-icons/io5";
+import { FaLayerGroup } from "react-icons/fa6";
+import { FaBookOpen } from "react-icons/fa";
+import { IoTimeSharp } from "react-icons/io5";
+
+
+
+
+import { LuRefreshCcw } from "react-icons/lu";
+import online from "../../assets/online.webp";
+import offline from "../../assets/offline.webp";
 import studentPortalService from "../../services/studentPortalService";
 import { getAssetUrl } from "../../utils/assetUrl";
 import "./StudentCourses.css";
@@ -35,6 +44,14 @@ const formatDate = (value) => {
     month: "short",
     year: "numeric",
   });
+};
+
+const stripHtml = (html = "") => {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  return (doc.body.textContent || "")
+    .replace(/\u00a0/g, " ")
+    .trim();
 };
 
 const plainText = (value = "") => {
@@ -67,7 +84,7 @@ const isCompleted = (item) =>
 
 function SummaryCard({ icon: Icon, title, value, caption, color }) {
   return (
-    <article className={`sc-summary-card sc-summary-card--${color}`}>
+    <article className={`sc-summary-card card-${color}`}>
       <div className="sc-summary-card__icon">
         <Icon aria-hidden="true" />
       </div>
@@ -111,7 +128,7 @@ function CourseImage({ course, imageKey, imageErrors, setImageErrors }) {
 export default function StudentCourses() {
   const navigate = useNavigate();
 
-  
+
   const [courses, setCourses] = useState([]);
   const [recommendedCourses, setRecommendedCourses] = useState([]);
   const [dashboard, setDashboard] = useState(null);
@@ -142,7 +159,7 @@ export default function StudentCourses() {
     } catch (err) {
       setError(
         err?.response?.data?.message ||
-          "Unable to load your enrolled courses. Please try again."
+        "Unable to load your enrolled courses. Please try again."
       );
       setCourses([]);
     } finally {
@@ -162,7 +179,7 @@ export default function StudentCourses() {
     } catch (err) {
       setRecommendationsError(
         err?.response?.data?.message ||
-          "Unable to load recommended courses."
+        "Unable to load recommended courses."
       );
       setRecommendedCourses([]);
     } finally {
@@ -263,38 +280,17 @@ export default function StudentCourses() {
 
   return (
     <section className="student-courses">
-      <header className="sc-heading">
-        <div>
-          <span className="sc-eyebrow">LEARNING</span>
-          <h1>My Courses</h1>
-          <p>
-            View your enrolled courses, batch information, syllabus, and fee
-            summary.
-          </p>
-        </div>
+      <div className="page-header"><div><h1>My Courses</h1></div>
 
-        <button
-          type="button"
-          className="sc-refresh"
-          onClick={refreshAll}
-          disabled={loading || recommendationsLoading}
-        >
-          <FiRefreshCw
-            className={
-              loading || recommendationsLoading ? "sc-spin" : ""
-            }
-          />
-          Refresh
-        </button>
-      </header>
+      </div>
 
-      <div className="sc-summary-grid">
+      {/* <div className="sc-summary-grid">
         <SummaryCard
           icon={FiBookOpen}
           title="Active Courses"
           value={activeCourses.length}
           caption="Courses in progress"
-          color="blue"
+          color="success"
         />
         <SummaryCard
           icon={FiCheckCircle}
@@ -321,9 +317,10 @@ export default function StudentCourses() {
           caption="Certificate count not available yet"
           color="purple"
         />
-      </div>
+      </div> */}
 
-      <div className="sc-toolbar">
+
+      <div className="filterheader">
         <div className="sc-tabs" role="tablist" aria-label="Course status">
           <button
             type="button"
@@ -345,8 +342,9 @@ export default function StudentCourses() {
           </button>
         </div>
 
-        <div className="sc-toolbar__actions">
-          <label className="sc-search">
+        <div className="right-filter">
+          <div className="input-search ">
+
             <FiSearch />
             <input
               type="search"
@@ -364,23 +362,11 @@ export default function StudentCourses() {
                 <FiX />
               </button>
             )}
-          </label>
 
-          <button
-            type="button"
-            className={`sc-filter-button ${showFilters ? "is-active" : ""}`}
-            onClick={() => setShowFilters((value) => !value)}
-            aria-expanded={showFilters}
-          >
-            <FiFilter /> Filter
-          </button>
-        </div>
-      </div>
+          </div>
 
-      {showFilters && (
-        <div className="sc-filter-panel">
-          <label>
-            Course category
+          <div className="input-search ">
+
             <select
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
@@ -392,18 +378,26 @@ export default function StudentCourses() {
                 </option>
               ))}
             </select>
-          </label>
-          <button
-            type="button"
+
+          </div>
+
+          {/* <button
+            type="button" className="themebtn themebtnline"
             onClick={() => {
               setCategoryFilter("all");
               setSearch("");
             }}
           >
-            Reset filters
-          </button>
+            <LuRefreshCcw />
+
+            Reset
+          </button> */}
         </div>
-      )}
+
+      </div>
+
+
+
 
       {error && (
         <div className="sc-error" role="alert">
@@ -451,6 +445,8 @@ export default function StudentCourses() {
           )}
         </div>
       ) : (
+        
+
         <div className="sc-course-grid">
           {visibleCourses.map((item) => {
             const course = item.course || {};
@@ -462,7 +458,7 @@ export default function StudentCourses() {
             );
 
             return (
-              <article className="sc-course-card" key={item.admissionId}>
+              <div className=" common-card  cardboxes" key={item.admissionId}>
                 <div className="sc-course-card__cover-wrap">
                   <CourseImage
                     course={course}
@@ -471,178 +467,216 @@ export default function StudentCourses() {
                     setImageErrors={setImageErrors}
                   />
                   <span
-                    className={`sc-status ${
-                      completed ? "sc-status--completed" : ""
-                    }`}
+                    className={`sc-status ${completed ? "sc-status--completed" : ""
+                      }`}
                   >
                     {item.admissionStatus || "Active"}
                   </span>
                 </div>
 
-                <div className="sc-course-card__body">
-                  <div className="sc-meta">
-                    {course.category && <span>{course.category}</span>}
-                    {course.type && <span>{course.type}</span>}
+                <div className="cardbody course-details">
+                  <div className="category-label">
+                    {course.category && <span> {course.category}</span>}
+
                   </div>
+
+                  {course.type && (
+                    <img
+                      src={course.type.toLowerCase() === "online" ? online : offline}
+                      alt={course.type}
+                      className="course-type-image"
+                    />
+                  )}
 
                   <h2>{course.title || "Course details unavailable"}</h2>
-
-                  <div className="sc-batch">
-                    <FiBookOpen />
-                    <span>{item.batch?.name || "Batch not available"}</span>
-                  </div>
-
-                  <p className="sc-batch-status">
-                    Batch status: {item.batch?.status || "Not specified"}
+                  <p className="course-description">
+                    {stripHtml(course.description)}
                   </p>
+                  <ul>
 
-                  <div className="sc-fee">
-                    <div className="sc-fee__line">
-                      <span>Fee paid</span>
-                      <strong>{percentage}%</strong>
-                    </div>
-                    <div
-                      className="sc-progress"
-                      role="progressbar"
-                      aria-label="Course fees paid"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={percentage}
-                    >
-                      <span style={{ width: `${percentage}%` }} />
-                    </div>
-                    <div className="sc-fee__line sc-fee__values">
-                      <span>Paid {formatCurrency(fees.paid)}</span>
-                      <strong>
-                        {Number(fees.outstanding || 0) > 0
-                          ? `${formatCurrency(fees.outstanding)} due`
-                          : "No outstanding fees"}
-                      </strong>
-                    </div>
-                  </div>
 
+
+
+                    <li>
+                      <FaRegCalendarAlt />
+
+                      <span> Admission:  {formatDate(item.admissionDate)}</span>
+                    </li>
+                    <li>
+                      <IoTimeSharp />
+
+
+                      <span>Duration: {course.duration || "Not specified"}  {course.durationUnit}</span>
+                    </li>
+                    <li>
+                      <FaBookOpen />
+
+
+                      <span>Lectures: {course.totalLectures || "Not specified"}</span>
+                    </li>
+
+                    <li>
+                      <FaLayerGroup />
+
+                      <span>Batch status: {item.batch?.status || "Not specified"}</span>
+                    </li>
+
+                  </ul>
                   <div className="sc-course-card__footer">
-                    <span>
-                      <FiCalendar />
-                      {formatDate(item.admissionDate)}
-                    </span>
-                    <button type="button" 
-                     onClick={() =>
+
+                    <label className="course-fee">{formatCurrency(fees.total)} <span className="wasprice">₹15000</span></label>
+
+                    <button type="button" className="themebtn themebtn-outline"
+                      onClick={() =>
                         navigate(`/student/courses/${item.admissionId}`)
                       }
                     >
-                      View Details <FiArrowRight />
+                      View Details
                     </button>
                   </div>
                 </div>
-              </article>
+
+
+              </div>
             );
           })}
         </div>
       )}
 
-      <section className="sc-recommendations">
-        <div className="sc-recommendations__heading">
-          <div>
-            <span className="sc-eyebrow">DISCOVER</span>
-            <h2>Recommended Courses</h2>
-            <p>
-              Explore other published courses offered by your institute.
-            </p>
+      <div className="common-card">
+        <div class="panel-header"><div><h3>Recommended Courses </h3>
+          <p>
+            Explore other published courses offered by your institute.
+          </p>
+        </div>
+          <div className="sc-recommendations__heading">
+
+            <span className="sc-recommendations__count">
+              {recommendedCourses.length} available
+            </span>
           </div>
-          <span className="sc-recommendations__count">
-            {recommendedCourses.length} available
-          </span>
         </div>
 
-        {recommendationsError && (
-          <div className="sc-error" role="alert">
-            <div>
-              <strong>Recommendations unavailable</strong>
-              <p>{recommendationsError}</p>
+        <div className="cardbody">
+
+          {recommendationsError && (
+            <div className="sc-error" role="alert">
+              <div>
+                <strong>Recommendations unavailable</strong>
+                <p>{recommendationsError}</p>
+              </div>
+              <button type="button" onClick={loadRecommendations}>
+                Try again
+              </button>
             </div>
-            <button type="button" onClick={loadRecommendations}>
-              Try again
-            </button>
-          </div>
-        )}
+          )}
 
-        {recommendationsLoading ? (
-          <div className="sc-recommendations__message">
-            <FiRefreshCw className="sc-spin" />
-            Finding published courses...
-          </div>
-        ) : recommendationsError ? null : recommendedCourses.length === 0 ? (
-          <div className="sc-recommendations__message">
-            No additional published courses are available right now.
-          </div>
-        ) : (
-          <div className="sc-recommendation-grid">
-            {recommendedCourses.map((course) => (
-              <article className="sc-recommendation-card" key={course.id}>
-                <div className="sc-recommendation-card__cover">
-                  <CourseImage
-                    course={course}
-                    imageKey={`recommended-${course.id}`}
-                    imageErrors={imageErrors}
-                    setImageErrors={setImageErrors}
-                  />
-                  {course.popular && (
-                    <span className="sc-popular-badge">Popular</span>
-                  )}
-                </div>
-
-                <div className="sc-recommendation-card__body">
-                  <div className="sc-meta">
-                    {course.category && <span>{course.category}</span>}
-                    {course.type && <span>{course.type}</span>}
-                  </div>
-                  <h3>{course.title || "Course"}</h3>
-                  <p className="sc-recommendation-description">
-                    {plainText(course.description) ||
-                      "Contact your institute to learn more about this course."}
-                  </p>
-                  <div className="sc-recommendation-details">
-                    <span>
-                      <FiClock />
-                      {course.duration
-                        ? `${course.duration} ${course.durationUnit || "Months"}`
-                        : "Flexible duration"}
-                    </span>
-                    {Number(course.totalLectures) > 0 && (
-                      <span>
-                        <FiBookOpen /> {course.totalLectures} lectures
-                      </span>
+          {recommendationsLoading ? (
+            <div className="sc-recommendations__message">
+              <FiRefreshCw className="sc-spin" />
+              Finding published courses...
+            </div>
+          ) : recommendationsError ? null : recommendedCourses.length === 0 ? (
+            <div className="sc-recommendations__message">
+              No additional published courses are available right now.
+            </div>
+          ) : (
+            <div className="sc-course-grid">
+              {recommendedCourses.map((course) => (
+                <article className="common-card cardboxes" key={course.id}>
+                  <div className="sc-course-card__cover-wrap">
+                    <CourseImage
+                      course={course}
+                      imageKey={`recommended-${course.id}`}
+                      imageErrors={imageErrors}
+                      setImageErrors={setImageErrors}
+                    />
+                    {course.popular && (
+                      <span className="sc-popular-badge">Popular</span>
                     )}
                   </div>
-                  <div className="sc-recommendation-price">
-                    <strong>{formatCurrency(course.price)}</strong>
-                    {course.mrpVisible &&
-                      Number(course.mrp) > Number(course.price) && (
-                        <del>{formatCurrency(course.mrp)}</del>
-                      )}
-                  </div>
-                  <button
-                    type="button"
-                    className="sc-enroll-button"
-                    onClick={() => setEnrollNotice(course.id)}
-                  >
-                    Enroll Now <FiArrowRight />
-                  </button>
 
-                  {enrollNotice === course.id && (
-                    <p className="sc-enroll-notice" role="status">
-                      To enrol in {course.title}, please contact your institute
-                      administrator. Your official admission record must be created
-                      by the institute.
+                  <div className="cardbody course-details ">
+                    <div className="category-label">
+                      {course.category && <span>{course.category}</span>}
+                      {/* {course.type && <span>{course.type}</span>} */}
+                    </div>
+                    <img
+                      src={course.type.toLowerCase() === "online" ? online : offline}
+                      alt={course.type}
+                      className="course-type-image"
+                    />
+                    <h2>{course.title || "Course"}</h2>
+                    <p className="course-description">
+                      {plainText(course.description) ||
+                        "Contact your institute to learn more about this course."}
                     </p>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+
+                    <ul>
+
+
+                      <li>
+                        <IoTimeSharp />
+
+
+                        <span>Duration:  {course.duration
+                          ? `${course.duration} ${course.durationUnit || "Months"}`
+                          : "Flexible duration"} </span>
+                      </li>
+                      <li>
+                        <FaBookOpen />
+
+
+                        <span>Lectures:   {Number(course.totalLectures) > 0 && (
+                          <span>
+                            {course.totalLectures}
+                          </span>
+                        )} </span>
+                      </li>
+
+                    </ul>
+
+
+                    <div className="sc-course-card__footer">
+
+                      <label className="course-fee">{formatCurrency(course.price)} <span className="wasprice"> {course.mrpVisible &&
+                        Number(course.mrp) > Number(course.price) && (
+                          <del>{formatCurrency(course.mrp)}</del>
+                        )}</span></label>
+
+
+
+                      <button
+                        type="button"
+                        className="themebtn themebtn-outline"
+                        onClick={() => setEnrollNotice(course.id)}
+                      >
+                        Enroll Now <FiArrowRight />
+                      </button>
+                    </div>
+
+                    {enrollNotice === course.id && (
+                      <p className="sc-enroll-notice" role="status">
+                        To enrol in {course.title}, please contact your institute
+                        administrator. Your official admission record must be created
+                        by the institute.
+                      </p>
+                    )}
+
+
+
+                  </div>
+
+
+
+
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
 
       {!loading && !error && courses.length > 0 && (
         <p className="sc-footnote">
@@ -651,7 +685,7 @@ export default function StudentCourses() {
         </p>
       )}
 
-      
+
     </section>
   );
 }
