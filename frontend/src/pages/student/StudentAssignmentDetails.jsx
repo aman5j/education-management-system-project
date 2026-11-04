@@ -14,7 +14,8 @@ import {
   FiUploadCloud,
   FiX,
   FiAlertCircle,
-  FiHistory,
+//   FiHistory,
+//   FiClock,
 } from "react-icons/fi";
 
 import studentAssignmentService from "../../services/studentAssignmentService";
@@ -663,7 +664,7 @@ export default function StudentAssignmentDetails() {
       <section className="sa-panel sa-history-panel">
         <div className="sa-section-heading">
           <div>
-            <h2><FiHistory /> Submission history</h2>
+            <h2><FiClock /> Submission history</h2>
             <p>Every submitted version is preserved for your reference.</p>
           </div>
 
@@ -685,7 +686,7 @@ export default function StudentAssignmentDetails() {
           </div>
         ) : history.length === 0 ? (
           <div className="sa-history-empty">
-            <FiHistory />
+            <FiClock />
             <p>No submissions have been made yet.</p>
           </div>
         ) : (
