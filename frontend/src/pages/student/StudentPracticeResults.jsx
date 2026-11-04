@@ -2,24 +2,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiActivity,
   FiAlertCircle,
   FiArrowLeft,
-  FiAward,
   FiBookOpen,
-  FiCalendar,
   FiCheckCircle,
-  FiClock,
   FiEye,
   FiFileText,
   FiRefreshCw,
   FiSearch,
-  FiTarget,
   FiXCircle,
   FiX,
-  FiChevronDown,
   FiArrowRight,
 } from "react-icons/fi";
+import { CgMathPercent } from "react-icons/cg";
+import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
+import { FaBookOpenReader } from "react-icons/fa6";
+import { MdOutlineAccessTimeFilled } from "react-icons/md";
+import { FaBookmark } from "react-icons/fa6";
+import { IoMdCloseCircle } from "react-icons/io";
+
+
+
+
+import { MdOutlineDateRange } from "react-icons/md";
 
 import practiceStudentService from "../../services/practiceStudentService";
 import "./StudentPracticeResults.css";
@@ -330,90 +335,111 @@ export default function StudentPracticeResults() {
 
     return (
       <main className="spr-page">
-        <button
+       
+        <div class="page-header"><div><h1> Answer Sheet Review {selectedAttempt.practiceTest_id?.title ||
+                "Practice Test"} </h1>
+                 <p>
+              {selectedAttempt.course_id?.courseTitle || "Course"}
+              {" · "}  
+               {selectedAttempt.subject_id?.subjectName || "Subject"}
+            </p>
+                </div>
+         <button
           type="button"
-          className="spr-back-button"
+          className="themebtn"
           onClick={() => setSelectedAttempt(null)}
         >
-          <FiArrowLeft /> Back to Results
+          Back to Results
         </button>
-
-        <section className="spr-detail-header">
-          <div>
-            <span className="spr-eyebrow">
-              PRACTICE ZONE / ANSWER REVIEW
-            </span>
-
-            <h1>
-              {selectedAttempt.practiceTest_id?.title ||
-                "Practice Test"}
-            </h1>
-
-            <p>
-              {selectedAttempt.course_id?.courseTitle || "Course"}
-              {" · "}
-              {selectedAttempt.subject_id?.subjectName || "Subject"}
-            </p>
-          </div>
-
-          <span
-            className={`spr-status ${getStatusClass(
-              selectedAttempt.status
-            )}`}
-          >
-            {selectedAttempt.status}
-          </span>
-        </section>
-
-        <section className="spr-detail-stats">
-          <div>
-            <small>Marks Obtained</small>
-            <strong>
-              {formatNumber(selectedAttempt.marksObtained)} /{" "}
-              {formatNumber(selectedAttempt.totalMarks)}
-            </strong>
-          </div>
-
-          <div>
-            <small>Percentage</small>
-            <strong>
-              {formatNumber(selectedAttempt.percentage)}%
-            </strong>
-          </div>
-
-          <div>
-            <small>Correct</small>
-            <strong>{selectedAttempt.correctCount ?? 0}</strong>
-          </div>
-
-          <div>
-            <small>Incorrect</small>
-            <strong>{selectedAttempt.incorrectCount ?? 0}</strong>
-          </div>
-
-          <div>
-            <small>Unanswered</small>
-            <strong>{selectedAttempt.unansweredCount ?? 0}</strong>
-          </div>
-
-          <div>
-            <small>Time Taken</small>
-            <strong>
-              {formatDuration(selectedAttempt.timeTakenSeconds)}
-            </strong>
-          </div>
-        </section>
-
-        <div className="spr-review-heading">
-          <div>
-            <h2>Question-wise Review</h2>
-            <p>
-              Review your selected answers and the correct answers.
-            </p>
-          </div>
-          <span>{questions.length} Questions</span>
         </div>
+        <section className="spr-detail-stats">
+          <article class="dashboard-stat-card card-purple">
+            <div class="stat-card-top">
+              <div class="stat-icon stat-icon-purple">
+                <FaBookOpenReader />
 
+              </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Marks Obtained</span>
+                <strong class="stat-card-value">{formatNumber(selectedAttempt.marksObtained)} /{" "}
+              {formatNumber(selectedAttempt.totalMarks)}</strong>
+              </div>
+          </article>
+           <article class="dashboard-stat-card card-success">
+            <div class="stat-card-top">
+              <div class="stat-icon stat-icon-success">
+               <IoCheckmarkDoneCircleSharp />
+
+
+              </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Correct</span>
+                <strong class="stat-card-value">{selectedAttempt.correctCount ?? 0}</strong>
+              </div>
+          </article>
+
+           <article class="dashboard-stat-card card-danger">
+            <div class="stat-card-top">
+              <div class="stat-icon stat-icon-danger">
+                <IoMdCloseCircle />
+
+
+              </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Incorrect</span>
+                <strong class="stat-card-value">{selectedAttempt.incorrectCount ?? 0}</strong>
+              </div>
+          </article>
+
+ <article class="dashboard-stat-card card-bluewarning">
+            <div class="stat-card-top">
+              <div class="stat-icon stat-icon-bluewarning">
+               <CgMathPercent />
+
+
+
+              </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Percentage</span>
+                <strong class="stat-card-value">{formatNumber(selectedAttempt.percentage)}%</strong>
+              </div>
+          </article>
+
+          
+
+           <article class="dashboard-stat-card card-warning">
+            <div class="stat-card-top">
+              <div class="stat-icon stat-icon-warning">
+                <FaBookmark />
+
+
+              </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Unanswered</span>
+                <strong class="stat-card-value">{selectedAttempt.unansweredCount ?? 0}</strong>
+              </div>
+          </article>
+
+           <article class="dashboard-stat-card card-purple">
+            <div class="stat-card-top">
+              <div class="stat-icon stat-icon-purple">
+               <MdOutlineAccessTimeFilled />
+
+
+              </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Time Taken</span>
+                <strong class="stat-card-value">{formatDuration(selectedAttempt.timeTakenSeconds)}</strong>
+              </div>
+          </article>
+
+        </section>
         {questions.length === 0 ? (
           <div className="spr-empty">
             <FiFileText />
@@ -421,7 +447,13 @@ export default function StudentPracticeResults() {
             <p>The question review is not available for this attempt.</p>
           </div>
         ) : (
-          <section className="spr-review-list">
+          <div className="common-card">
+           
+             <div class="panel-header"><div><h3>Question-wise Review</h3> </div> 
+              <span className="questionscount">Total Questions: {questions.length} </span>
+             </div>
+            <div className="cardbody">
+               <div className="spr-review-list">
             {questions.map((question, index) => {
               const selected = question.selectedAnswer || "";
               const correct = question.correctAnswer || "";
@@ -440,8 +472,7 @@ export default function StudentPracticeResults() {
                   key={question.question_id || index}
                 >
                   <div className="spr-review-card__top">
-                    <strong>Question {index + 1}</strong>
-
+                   
                     {!selected ? (
                       <span className="spr-review-result spr-review-result--empty">
                         Unanswered
@@ -457,7 +488,7 @@ export default function StudentPracticeResults() {
                     )}
                   </div>
 
-                  <h3>{question.questionText}</h3>
+                  <h3><strong>Q.{index + 1}</strong> {question.questionText}</h3>
 
                   <div className="spr-review-options">
                     {["A", "B", "C", "D"].map((option) => {
@@ -508,7 +539,9 @@ export default function StudentPracticeResults() {
                 </article>
               );
             })}
-          </section>
+          </div>
+            </div>
+          </div>
         )}
       </main>
     );
@@ -516,27 +549,10 @@ export default function StudentPracticeResults() {
 
   return (
     <main className="spr-page">
-      <header className="spr-header">
-        <div>
-          <span className="spr-eyebrow">STUDENT LEARNING</span>
-          <h1>My Practice Results</h1>
-          <p>
-            Track your practice test performance and review completed attempts.
-          </p>
-        </div>
+       <div class="page-header"><div><h1>My Practice Results</h1></div>
+     </div>
 
-        <button
-          type="button"
-          className="spr-refresh"
-          onClick={loadHistory}
-          disabled={loading}
-        >
-          <FiRefreshCw className={loading ? "spr-spin" : ""} />
-          Refresh
-        </button>
-      </header>
-
-      <section className="spr-summary-grid">
+      {/* <section className="spr-summary-grid">
         <SummaryCard
           icon={FiActivity}
           label="Completed Attempts"
@@ -564,10 +580,10 @@ export default function StudentPracticeResults() {
           value={formatNumber(totalMarksObtained)}
           description="Marks obtained across completed attempts"
         />
-      </section>
+      </section> */}
 
-      <section className="spr-filter-panel">
-        <label className="spr-search">
+      <div className=" common-card-filters">
+        <div className="input-search">
           <FiSearch />
           <input
             type="search"
@@ -575,8 +591,8 @@ export default function StudentPracticeResults() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-        </label>
-
+        </div>
+        <div className="input-search">
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
@@ -588,7 +604,8 @@ export default function StudentPracticeResults() {
           <option value="Timed Out">Timed Out</option>
           <option value="In Progress">In Progress</option>
         </select>
-
+</div>
+<div className="input-search">
         <select
           value={courseFilter}
           onChange={(event) => {
@@ -604,7 +621,8 @@ export default function StudentPracticeResults() {
             </option>
           ))}
         </select>
-
+</div>
+<div className="input-search">
         <select
           value={subjectFilter}
           onChange={(event) => setSubjectFilter(event.target.value)}
@@ -617,17 +635,18 @@ export default function StudentPracticeResults() {
             </option>
           ))}
         </select>
+        </div>
 
         {hasFilters && (
           <button
             type="button"
-            className="spr-clear"
+            className="themebtn themebtnline"
             onClick={clearFilters}
           >
             <FiX /> Clear
           </button>
         )}
-      </section>
+      </div>
 
       {loading ? (
         <div className="spr-state">
@@ -646,15 +665,7 @@ export default function StudentPracticeResults() {
         </div>
       ) : (
         <>
-          <div className="spr-list-heading">
-            <div>
-              <h2>Attempt History</h2>
-              <p>
-                Showing {filteredAttempts.length} of {attempts.length} attempts
-              </p>
-            </div>
-          </div>
-
+         
           {filteredAttempts.length === 0 ? (
             <div className="spr-empty">
               <FiBookOpen />
@@ -681,12 +692,13 @@ export default function StudentPracticeResults() {
               )}
             </div>
           ) : (
-            <div className="spr-table-wrap">
-              <table className="spr-table">
+            <div className="common-card">
+            <div className="common-table-wrapper">
+              <table className="common-table spr-table">
                 <thead>
                   <tr>
                     <th>Practice Test</th>
-                    <th>Course / Subject</th>
+                    {/* <th>Course / Subject</th> */}
                     <th>Score</th>
                     <th>Percentage</th>
                     <th>Date</th>
@@ -705,18 +717,22 @@ export default function StudentPracticeResults() {
                     return (
                       <tr key={attempt._id}>
                         <td>
-                          <div className="spr-test-cell">
-                            <span className="spr-test-cell__icon">
+
+                          <div class="student-name-cell"><div class="student-avatar student-avatar-placeholder">
                               <FiFileText />
-                            </span>
-                            <strong>
-                              {attempt.practiceTest_id?.title ||
-                                "Practice Test"}
-                            </strong>
-                          </div>
+                           </div>
+                           <div>
+                              <strong>{attempt.practiceTest_id?.title ||
+                                "Practice Test"}</strong>
+                                
+                              
+                                 </div>
+                              </div>
+
+                         
                         </td>
 
-                        <td>
+                         {/* <td>
                           <div className="spr-course-cell">
                             <strong>
                               {attempt.course_id?.courseTitle || "—"}
@@ -725,23 +741,26 @@ export default function StudentPracticeResults() {
                               {attempt.subject_id?.subjectName || "—"}
                             </small>
                           </div>
-                        </td>
+                        </td> */}
 
                         <td>
-                          {isCompleted
+                          <strong className="tabletitle">{isCompleted
                             ? `${formatNumber(
                                 attempt.marksObtained
                               )} / ${formatNumber(attempt.totalMarks)}`
-                            : "—"}
+                            : "—"}</strong>
                         </td>
 
                         <td>
-                          {isCompleted
+                        <strong className="tabletitle">  {isCompleted
                             ? `${formatNumber(attempt.percentage)}%`
-                            : "—"}
+                            : "—"}</strong>
                         </td>
 
-                        <td>{formatDate(attempt.createdAt)}</td>
+                        <td>
+                          <div class="contact-details"><div class="contact-li"> <MdOutlineDateRange />
+ <span>{formatDate(attempt.createdAt)}</span></div></div>
+                          </td>
 
                         <td>
                           <span
@@ -779,6 +798,7 @@ export default function StudentPracticeResults() {
                   })}
                 </tbody>
               </table>
+            </div>
             </div>
           )}
         </>

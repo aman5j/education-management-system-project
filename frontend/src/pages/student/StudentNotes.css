@@ -1,9 +1,4 @@
 
-.student-notes {
-  padding: 22px 24px 30px;
-  color: #24334c;
-  min-width: 0;
-}
 
 .sn-heading {
   display: flex;
@@ -62,51 +57,6 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 13px;
   margin-bottom: 18px;
-}
-
-.sn-summary article {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid #e3eaf4;
-  border-radius: 11px;
-  background: #fff;
-}
-
-.sn-summary__icon {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  place-items: center;
-  border-radius: 10px;
-  background: #edf3ff;
-  color: #3268dc;
-  font-size: 19px;
-}
-
-.sn-summary article div {
-  display: grid;
-  gap: 4px;
-}
-
-.sn-summary small {
-  color: #7a89a0;
-  font-size: 10px;
-}
-
-.sn-summary strong {
-  color: #253650;
-  font-size: 21px;
-}
-
-.sn-panel {
-  padding: 19px;
-  border: 1px solid #e2e9f3;
-  border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 3px 12px rgba(23, 42, 77, 0.025);
 }
 
 .sn-toolbar {
@@ -209,11 +159,17 @@
   color: #2458d3;
   background: #f5f8ff;
 }
+.margin-remove{
+  margin-bottom: 0px !important;
+}
 
 .sn-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 13px;
+  gap: 20px;
+}
+.sn-grid .common-card{
+margin-bottom: 0px !important;
 }
 
 .sn-card {
@@ -236,7 +192,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 13px 0;
+  padding: 0;
+    background: linear-gradient(1deg, rgb(240 233 250 / 18%) 30%, rgb(202 171 252 / 24%) 80%);
+}
+.course-details h6 {
+    margin: 0;
+    margin-top: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #094a96;
+    margin-bottom: 17px;
+}
+.sn-card__top img {
+    width: 100% !important;
+    max-width: 100%;
 }
 
 .sn-card__icon {
@@ -324,33 +293,6 @@
   border-top: 1px solid #edf1f7;
 }
 
-.sn-card__footer > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #7b8aa2;
-  font-size: 9px;
-}
-
-.sn-card__footer button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 31px;
-  padding: 0 10px;
-  border: 1px solid #d5e2ff;
-  border-radius: 7px;
-  background: #f5f8ff;
-  color: #2458d3;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.sn-card__footer button:hover {
-  border-color: #a9c2ff;
-  background: #eaf1ff;
-}
 
 .sn-state {
   display: flex;
@@ -359,8 +301,6 @@
   align-items: center;
   justify-content: center;
   padding: 25px;
-  border: 1px dashed #dce5f2;
-  border-radius: 10px;
   background: #fbfcff;
   text-align: center;
 }
@@ -549,27 +489,6 @@
   font-size: 11px;
 }
 
-.sn-attachments article {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  padding: 11px;
-  border: 1px solid #e8edf5;
-  border-radius: 9px;
-}
-
-.sn-attachment-icon {
-  display: grid;
-  width: 35px;
-  height: 35px;
-  flex: 0 0 35px;
-  place-items: center;
-  border-radius: 8px;
-  background: #edf3ff;
-  color: #3268dc;
-}
-
 .sn-attachment-info {
   display: grid;
   min-width: 0;
@@ -577,65 +496,7 @@
   gap: 4px;
 }
 
-.sn-attachment-info strong {
-  overflow-wrap: anywhere;
-  color: #344054;
-  font-size: 11px;
-}
 
-.sn-attachment-info small {
-  color: #8490a5;
-  font-size: 9px;
-}
-
-.sn-attachment-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.sn-attachment-actions button {
-  display: grid;
-  width: 31px;
-  height: 31px;
-  place-items: center;
-  border: 1px solid #dce5f2;
-  border-radius: 7px;
-  background: #fff;
-  color: #3268dc;
-  cursor: pointer;
-}
-
-.sn-attachment-actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.sn-modal__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 21px;
-  border-top: 1px solid #edf0f5;
-  background: #fbfcff;
-}
-
-.sn-modal__footer span {
-  color: #8490a5;
-  font-size: 9px;
-}
-
-.sn-modal__footer button {
-  min-height: 33px;
-  padding: 0 13px;
-  border: 1px solid #d7e3ff;
-  border-radius: 8px;
-  background: #f5f8ff;
-  color: #2458d3;
-  font-size: 10px;
-  font-weight: 750;
-  cursor: pointer;
-}
 
 .sn-spin {
   animation: sn-spin 1s linear infinite;

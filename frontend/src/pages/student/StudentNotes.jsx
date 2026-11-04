@@ -11,6 +11,9 @@ import {
   FiSearch,
   FiX,
 } from "react-icons/fi";
+import { FaBookOpen, FaRegCalendarAlt } from "react-icons/fa";
+import { FaFile } from "react-icons/fa";
+import bgnotes from "../../assets/notesbg1.png";
 
 import {
   getStudentNotes,
@@ -221,56 +224,44 @@ export default function StudentNotes() {
 
   return (
     <section className="student-notes">
-      <header className="sn-heading">
-        <div>
-          <span className="sn-eyebrow">LEARNING MATERIAL</span>
-          <h1>My Notes</h1>
-          <p>
-            Access course notes and study materials shared by your institute.
-          </p>
-        </div>
+     <div class="page-header"><div><h1>My Notes</h1></div>
+      
+     </div>
 
-        <button
-          type="button"
-          className="sn-refresh"
-          onClick={() => loadNotes(true)}
-          disabled={loading || refreshing}
-        >
-          <FiRefreshCw className={refreshing ? "sn-spin" : ""} />
-          Refresh
-        </button>
-      </header>
+      {/* <div className="sn-summary">
+        <article class="dashboard-stat-card card-success">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-success"><FiFileText /></div>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-card-title">Available Notes</span>
+              <strong class="stat-card-value">{notes.length}</strong>
+              </div>
+              </article>
 
-      <div className="sn-summary">
-        <article>
-          <span className="sn-summary__icon"><FiFileText /></span>
-          <div>
-            <small>Available Notes</small>
-            <strong>{notes.length}</strong>
-          </div>
-        </article>
+               <article class="dashboard-stat-card card-purple">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-purple"><FiBookOpen /></div>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-card-title">Enrolled Courses</span>
+              <strong class="stat-card-value">{courses.length}</strong>
+              </div>
+              </article>
 
-        <article>
-          <span className="sn-summary__icon"><FiBookOpen /></span>
-          <div>
-            <small>Enrolled Courses</small>
-            <strong>{courses.length}</strong>
-          </div>
-        </article>
-
-        <article>
-          <span className="sn-summary__icon"><FiDownload /></span>
-          <div>
-            <small>Study Attachments</small>
-            <strong>
-              {notes.reduce(
+               <article class="dashboard-stat-card card-bluewarning">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-bluewarning"><FiDownload /></div>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-card-title">Study Attachments</span>
+              <strong class="stat-card-value"> {notes.reduce(
                 (total, note) => total + (note.attachments?.length || 0),
                 0
-              )}
-            </strong>
-          </div>
-        </article>
-      </div>
+              )}</strong>
+              </div>
+              </article>
+      </div> */}
 
       {error && (
         <div className="sn-error" role="alert">
@@ -281,17 +272,47 @@ export default function StudentNotes() {
         </div>
       )}
 
-      <section className="sn-panel">
-        <div className="sn-toolbar">
-          <div>
-            <h2>Course Notes</h2>
-            <p>
-              Showing {filteredNotes.length} of {notes.length} available notes
-            </p>
-          </div>
 
-          <div className="sn-toolbar__actions">
-            <label className="sn-search">
+ 
+
+      <section className="sn-panel">
+
+        {loading ? (
+          <div className="sn-state">
+            <FiRefreshCw className="sn-spin" />
+            <h3>Loading your notes</h3>
+            <p>Retrieving published study materials.</p>
+          </div>
+        ) : error && notes.length === 0 ? (
+          <div className="sn-state common-card">
+            <FiFileText />
+            <h3>Notes could not be loaded</h3>
+            <p>{error}</p>
+            <button type="button" onClick={() => loadNotes()}>
+              Try again
+            </button>
+          </div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="sn-state common-card">
+            <FiBookOpen />
+            <h3>{hasFilters ? "No matching notes" : "No notes available yet"}</h3>
+            <p>
+              {hasFilters
+                ? "Try changing your search or filters."
+                : "Published notes for your active course admissions will appear here."}
+            </p>
+            {hasFilters && (
+              <button type="button" onClick={clearFilters}>
+                Clear filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="common-card">
+            <div class="panel-header"><div><h3>All Assigned Notes</h3> </div>
+              <div className="filterheader margin-remove">
+            <div className="right-filter">
+                <div className="input-search">
               <FiSearch />
               <input
                 type="search"
@@ -300,7 +321,8 @@ export default function StudentNotes() {
                 placeholder="Search notes..."
                 aria-label="Search notes"
               />
-              {search && (
+
+              {/* {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
@@ -308,24 +330,10 @@ export default function StudentNotes() {
                 >
                   <FiX />
                 </button>
-              )}
-            </label>
-
-            <button
-              type="button"
-              className={`sn-filter-button ${showFilters ? "is-active" : ""}`}
-              onClick={() => setShowFilters((value) => !value)}
-              aria-expanded={showFilters}
-            >
-              <FiFilter /> Filters
-            </button>
-          </div>
-        </div>
-
-        {showFilters && (
-          <div className="sn-filter-panel">
-            <label>
-              Course
+              )} */}
+            </div>
+            <div className="input-search">
+          
               <select
                 value={courseFilter}
                 onChange={(event) => {
@@ -340,10 +348,10 @@ export default function StudentNotes() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            <label>
-              Subject
+            <div className="input-search">
+          
               <select
                 value={subjectFilter}
                 onChange={(event) => setSubjectFilter(event.target.value)}
@@ -364,90 +372,71 @@ export default function StudentNotes() {
                     </option>
                   ))}
               </select>
-            </label>
+            </div>
+          </div>
 
-            {hasFilters && (
-              <button type="button" onClick={clearFilters}>
-                Clear filters
-              </button>
-            )}
+            
           </div>
-        )}
-
-        {loading ? (
-          <div className="sn-state">
-            <FiRefreshCw className="sn-spin" />
-            <h3>Loading your notes</h3>
-            <p>Retrieving published study materials.</p>
-          </div>
-        ) : error && notes.length === 0 ? (
-          <div className="sn-state">
-            <FiFileText />
-            <h3>Notes could not be loaded</h3>
-            <p>{error}</p>
-            <button type="button" onClick={() => loadNotes()}>
-              Try again
-            </button>
-          </div>
-        ) : filteredNotes.length === 0 ? (
-          <div className="sn-state">
-            <FiBookOpen />
-            <h3>{hasFilters ? "No matching notes" : "No notes available yet"}</h3>
-            <p>
-              {hasFilters
-                ? "Try changing your search or filters."
-                : "Published notes for your active course admissions will appear here."}
-            </p>
-            {hasFilters && (
-              <button type="button" onClick={clearFilters}>
-                Clear filters
-              </button>
-            )}
-          </div>
-        ) : (
+            </div>
+            <div className="cardbody">
           <div className="sn-grid">
             {filteredNotes.map((note) => (
-              <article className="sn-card" key={note.id}>
+              <article className="common-card" key={note.id}>
                 <div className="sn-card__top">
-                  <span className="sn-card__icon"><FiFileText /></span>
-                  <span className="sn-published">Published</span>
+                  <img src={bgnotes} alt="Note" />
                 </div>
 
-                <div className="sn-card__body">
-                  <span className="sn-course-name">
-                    {note.course?.title || "Course"}
-                  </span>
+                <div className="cardbody course-details">
+                  {/* <div className="category-label">
+                    Published
+                  </div> */}
+                  
 
-                  <h3>{note.title}</h3>
-
-                  <p className="sn-description">
+                  <h2>{note.title}</h2>
+                    <h6>
+                  Course:   {note.course?.title || "Course"}
+                  </h6>
+                   <p className="course-description">
                     {note.description || "Study material shared by your institute."}
                   </p>
 
-                  <div className="sn-meta">
-                    <span>
-                      <FiBookOpen />
-                      {note.subject?.name || "General course note"}
-                    </span>
-                    <span>
-                      <FiCalendar />
-                      {formatDate(note.publishedAt || note.createdAt)}
-                    </span>
-                  </div>
+                    <ul>
+                                      <li>
+                                        <FaRegCalendarAlt />
+                  
+                                        <span>Created Date:   {formatDate(note.publishedAt || note.createdAt)}</span>
+                                      </li>
+                                       <li>
+                                        <FaBookOpen />
+                                        <span> Subject:  {note.subject?.name || "General course note"}</span>
+                                      </li>
+                                      <li>
+                                         <FaFile />
+
+                  
+                  
+                                        <span>Attachment: {note.attachments?.length || 0} file(s)</span>
+                                      </li>
+                  
+                                     
+                  
+                                    </ul>
+
+                
+
                 </div>
 
                 <div className="sn-card__footer">
-                  <span>
-                    <FiFileText />
-                    {note.attachments?.length || 0} attachment(s)
-                  </span>
+                 
 
-                  <button type="button" onClick={() => openNote(note)}>
-                    View Notes <span>→</span>
+                  <button className="themebtn themebtn-outline fullwidth" type="button" onClick={() => openNote(note)}>
+                    View Notes
                   </button>
                 </div>
               </article>
             ))}
+          </div>
+          </div>
           </div>
         )}
       </section>
@@ -467,8 +456,7 @@ export default function StudentNotes() {
           >
             <header className="sn-modal__header">
               <div>
-                <span className="sn-eyebrow">PUBLISHED STUDY MATERIAL</span>
-                <h2 id="sn-modal-title">{selectedNote.title}</h2>
+                <h2 id="sn-modal-title">Download Notes</h2>
               </div>
               <button
                 type="button"
@@ -487,49 +475,26 @@ export default function StudentNotes() {
                 </div>
               ) : (
                 <>
-                  <div className="sn-detail-facts">
-                    <div>
-                      <small>Course</small>
-                      <strong>{selectedNote.course?.title || "—"}</strong>
-                    </div>
-                    <div>
-                      <small>Subject</small>
-                      <strong>
-                        {selectedNote.subject?.name || "General course note"}
-                      </strong>
-                    </div>
-                    <div>
-                      <small>Published</small>
-                      <strong>
-                        {formatDate(selectedNote.publishedAt || selectedNote.createdAt)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {selectedNote.description && (
-                    <div className="sn-detail-description">
-                      <h3>Description</h3>
-                      <p>{selectedNote.description}</p>
-                    </div>
-                  )}
-
-                  <div className="sn-attachments">
-                    <h3>Attachments</h3>
-
+                  
+                  <div className="student-documents-grid">
                     {(selectedNote.attachments || []).length === 0 ? (
                       <p>No attachments are available.</p>
                     ) : (
                       selectedNote.attachments.map((file) => (
-                        <article key={file.id}>
-                          <span className="sn-attachment-icon"><FiFileText /></span>
-                          <div className="sn-attachment-info">
+                        <div className="student-document-card" key={file.id}>
+                          <div className="student-document-file-icon image-file">
+                              <FiFileText />
+                          </div>
+                         
+
+                          <div className="student-document-info">
                             <strong>{file.originalName}</strong>
-                            <small>
+                            <span>
                               {formatSize(file.fileSize)} · {file.mimeType || "File"}
-                            </small>
+                            </span>
                           </div>
 
-                          <div className="sn-attachment-actions">
+                          <div className="student-document-actions">
                             <button
                               type="button"
                               title="View attachment"
@@ -547,20 +512,13 @@ export default function StudentNotes() {
                               {fileAction === `${file.id}-download` ? "..." : <FiDownload />}
                             </button>
                           </div>
-                        </article>
+                        </div>
                       ))
                     )}
                   </div>
                 </>
               )}
             </div>
-
-            <footer className="sn-modal__footer">
-              <span>Only you can access materials for your active admissions.</span>
-              <button type="button" onClick={() => setSelectedNote(null)}>
-                Close
-              </button>
-            </footer>
           </section>
         </div>
       )}
