@@ -1,7 +1,13 @@
 
 import axios from "axios";
-import toast from "react-hot-toast";
-import { getApiErrorMessage } from "../utils/notification";
+
+import notification, {
+  getApiErrorMessage,
+} from "../utils/notification";
+
+// --------------------------------------------------
+// API configuration
+// --------------------------------------------------
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -15,6 +21,10 @@ const api = axios.create({
   },
 });
 
+// --------------------------------------------------
+// Access token management
+// --------------------------------------------------
+
 let accessToken = null;
 
 export const setAccessToken = (token) => {
@@ -25,16 +35,28 @@ export const clearAccessToken = () => {
   accessToken = null;
 };
 
+// --------------------------------------------------
+// Request interceptor
+// --------------------------------------------------
+
 api.interceptors.request.use(
   (config) => {
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      config.headers = config.headers || {};
+
+      config.headers.Authorization =
+        `Bearer ${accessToken}`;
     }
 
     return config;
   },
+
   (error) => Promise.reject(error)
 );
+
+// --------------------------------------------------
+// Response interceptor
+// --------------------------------------------------
 
 api.interceptors.response.use(
   (response) => response,
@@ -42,16 +64,30 @@ api.interceptors.response.use(
   (error) => {
     const config = error.config || {};
 
-    const shouldShowToast =
-      !config.skipGlobalErrorToast &&
-      error.code !== "ERR_CANCELED" &&
-      !axios.isCancel(error);
+    const isCanceled =
+      error.code === "ERR_CANCELED" ||
+      axios.isCancel(error);
 
-    if (shouldShowToast) {
-      toast.error(getApiErrorMessage(error), {
-        duration: 5000,
-        id: `api-error-${error.response?.status || error.code || "network"}`,
-      });
+    // Pages can handle errors themselves by passing
+    // skipGlobalErrorToast: true or silent: true.
+
+    const shouldShowGlobalToast =
+      !config.skipGlobalErrorToast &&
+      !config.silent &&
+      !isCanceled;
+
+    if (shouldShowGlobalToast) {
+      notification.error(
+        getApiErrorMessage(error),
+        {
+          duration: 5000,
+          id: `api-error-${
+            error.response?.status ||
+            error.code ||
+            "network"
+          }`,
+        }
+      );
     }
 
     return Promise.reject(error);
