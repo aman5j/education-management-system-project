@@ -5,11 +5,8 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import api from "../../../services/api";
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
-import Breadcrumb from "../../../common/Breadcrumb";
 import StudentForm from "../../../components/students/StudentForm";
-import {
-  uploadStudentDocuments,
-} from "../../../services/studentDocumentService";
+import { uploadStudentDocuments } from "../../../services/studentDocumentService";
 import "./StudentManagement.css";
 
 const AddStudent = () => {
@@ -26,9 +23,11 @@ const AddStudent = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (formData) => {
-    if (!canCreate || submitting) {
+    if (!canCreate) {
       throw new Error("You do not have permission to create students.");
     }
+
+    if (submitting) return;
 
     setSubmitting(true);
 
@@ -42,15 +41,10 @@ const AddStudent = () => {
         }
       }
 
-      const response = await api.post(
-        "/students",
-        studentFormData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.post("/students", studentFormData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        silent: true,
+      });
 
       const student = response?.data?.data;
 
@@ -63,24 +57,24 @@ const AddStudent = () => {
       if (documents.length > 0) {
         try {
           await uploadStudentDocuments(student._id, documents);
-        } catch (uploadError) {
+        } catch {
           navigate(`${studentsPath}/${student._id}/edit`);
 
           throw new Error(
-            "Student was created, but document upload failed. You have been redirected to Edit Student to retry the upload."
+            "Student was created, but document upload failed. You have been redirected to Edit Student to retry."
           );
         }
       }
 
-      navigate(studentsPath);
-
-    } catch (error) {
-          const message =
-            requestError.response?.data?.message ||
-            requestError.message ||
-            "Unable to save student.";
-
-          throw new Error(message);
+      navigate(studentsPath, {
+        state: { notification: "Student created successfully." },
+      });
+    } catch (requestError) {
+      throw new Error(
+        requestError?.response?.data?.message ||
+        requestError?.message ||
+        "Unable to create student."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -90,20 +84,14 @@ const AddStudent = () => {
     return <div className="student-loading-page">Checking permissions...</div>;
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!canCreate) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canCreate) return <Navigate to="/unauthorized" replace />;
 
   return (
     <div className="student-management-page">
-      {/* <Breadcrumb currentPage="Add Student" /> */}
-
-      <div class="page-header"><div><h1> Add New Student</h1></div></div>
-
+      <div className="page-header">
+        <div><h1>Add New Student</h1></div>
+      </div>
 
       <StudentForm
         onSubmit={handleSubmit}

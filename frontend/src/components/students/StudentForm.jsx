@@ -13,6 +13,10 @@ import {
 
 import StudentDocuments from "./StudentDocuments";
 import { getAssetUrl } from "../../utils/assetUrl";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
+
 
 
 const initialForm = {
@@ -56,8 +60,7 @@ const StudentForm = ({
 
   const [selectedDocuments, setSelectedDocuments] = useState([]);
 
-  const [error, setError] =
-    useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
 
 
@@ -170,7 +173,10 @@ const StudentForm = ({
           : value,
     }));
 
-    setError("");
+    setFieldErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
   };
 
   const handleFileChange = (
@@ -220,44 +226,35 @@ const StudentForm = ({
   ) => {
     event.preventDefault();
 
-    setError("");
+    setFieldErrors({});
+
+    const errors = {};
 
     if (!form.rollNo.trim()) {
-      setError("Roll number is required.");
-      return;
+      errors.rollNo = "Roll number is required.";
     }
 
     if (!form.firstName.trim()) {
-      setError(
-        "First name is required."
-      );
-
-      return;
+      errors.firstName = "First name is required.";
     }
 
     if (!form.mobile.trim()) {
-      setError(
-        "Mobile number is required."
-      );
-
-      return;
+      errors.mobile = "Mobile number is required.";
     }
-    
+
     const normalizedEmail = form.email.trim().toLowerCase();
-
-    if (!normalizedEmail) {
-      setError("Student email is required.");
-      return;
-    }
-
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailPattern.test(normalizedEmail)) {
-      setError("Please enter a valid email address.");
-      return;
+    if (!normalizedEmail) {
+      errors.email = "Student email is required.";
+    } else if (!emailPattern.test(normalizedEmail)) {
+      errors.email = "Please enter a valid email address.";
     }
 
-
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
 
     const formData =
       new FormData();
@@ -301,10 +298,7 @@ const StudentForm = ({
     try {
       await onSubmit(formData);
     } catch (submitError) {
-      setError(
-        submitError.message ||
-        "Unable to save student."
-      );
+      notification.error(getApiErrorMessage(submitError));
     }
   };
 
@@ -313,11 +307,13 @@ const StudentForm = ({
       className="student-form"
       onSubmit={handleSubmit}
     >
-      {error && (
+      {/* {error && (
         <div className="student-form-error">
           {error}
         </div>
-      )}
+      )} */}
+
+      
 
       <section className="common-card">
         <div class="panel-header"><div><h3>Personal Information
@@ -433,6 +429,12 @@ const StudentForm = ({
                 readOnly={Boolean(initialData)}
               />
 
+              {fieldErrors.rollNo && (
+                <small className="student-field-error" role="alert">
+                  {fieldErrors.rollNo}
+                </small>
+              )}
+
               {/* <small className="form-help">
                 {initialData
                 ? "Roll number cannot be changed after student creation."
@@ -457,6 +459,12 @@ const StudentForm = ({
                 }
                 placeholder="Enter first name"
               />
+
+              {fieldErrors.firstName && (
+                <small className="student-field-error" role="alert">
+                  {fieldErrors.firstName}
+                </small>
+              )}
             </div>
 
             <div className="input-felid ">
@@ -625,6 +633,12 @@ const StudentForm = ({
                 }
                 placeholder="Enter mobile number"
               />
+
+              {fieldErrors.mobile && (
+                <small className="student-field-error" role="alert">
+                  {fieldErrors.mobile}
+                </small>
+              )}
             </div>
 
             <div className="input-felid ">
@@ -684,6 +698,12 @@ const StudentForm = ({
               <small id="student-email-help">
                 Enter a valid email address that is not assigned to another student.
               </small>
+
+              {fieldErrors.email && (
+                <small className="student-field-error" role="alert">
+                  {fieldErrors.email}
+                </small>
+              )}
             </div>
 
 

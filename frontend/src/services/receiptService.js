@@ -10,6 +10,7 @@ export const getStudentPayments = (studentId) => {
       sortBy: "payment_date",
       sortOrder: "desc",
     },
+    silent: true,
   });
 };
 

@@ -1954,3 +1954,10 @@
   }
 }
 
+
+.student-field-error {
+  display: block;
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 5px;
+}
