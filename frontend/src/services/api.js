@@ -1,13 +1,6 @@
 
 import axios from "axios";
-
-import notification, {
-  getApiErrorMessage,
-} from "../utils/notification";
-
-// --------------------------------------------------
-// API configuration
-// --------------------------------------------------
+import { getApiErrorMessage } from "../utils/notification";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -21,42 +14,28 @@ const api = axios.create({
   },
 });
 
-// --------------------------------------------------
-// Access token management
-// --------------------------------------------------
-
 let accessToken = null;
 
 export const setAccessToken = (token) => {
-  accessToken = token;
+  accessToken = token || null;
 };
 
 export const clearAccessToken = () => {
   accessToken = null;
 };
 
-// --------------------------------------------------
-// Request interceptor
-// --------------------------------------------------
-
 api.interceptors.request.use(
   (config) => {
     if (accessToken) {
       config.headers = config.headers || {};
-
       config.headers.Authorization =
         `Bearer ${accessToken}`;
     }
 
     return config;
   },
-
   (error) => Promise.reject(error)
 );
-
-// --------------------------------------------------
-// Response interceptor
-// --------------------------------------------------
 
 api.interceptors.response.use(
   (response) => response,
@@ -64,30 +43,21 @@ api.interceptors.response.use(
   (error) => {
     const config = error.config || {};
 
-    const isCanceled =
-      error.code === "ERR_CANCELED" ||
-      axios.isCancel(error);
-
-    // Pages can handle errors themselves by passing
-    // skipGlobalErrorToast: true or silent: true.
-
-    const shouldShowGlobalToast =
+    const shouldShowGlobalError =
       !config.skipGlobalErrorToast &&
       !config.silent &&
-      !isCanceled;
+      error.code !== "ERR_CANCELED" &&
+      !axios.isCancel(error);
 
-    if (shouldShowGlobalToast) {
-      notification.error(
-        getApiErrorMessage(error),
-        {
+    if (shouldShowGlobalError) {
+      // Lazy import avoids unnecessary notification
+      // utility initialization during API module setup.
+      import("react-hot-toast").then(({ default: toast }) => {
+        toast.error(getApiErrorMessage(error), {
           duration: 5000,
-          id: `api-error-${
-            error.response?.status ||
-            error.code ||
-            "network"
-          }`,
-        }
-      );
+          id: `api-error-${error.config?.url || "request"}-${error.response?.status || error.code || "network"}`,
+        });
+      });
     }
 
     return Promise.reject(error);

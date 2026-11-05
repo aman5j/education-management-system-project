@@ -68,3 +68,22 @@
   font-size: 12px;
 }
 
+
+
+.staff-management .field-error {
+  display: block;
+  margin-top: 5px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.staff-management .staff-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8efff;
+  color: #3156d3;
+  font-weight: 700;
+}
