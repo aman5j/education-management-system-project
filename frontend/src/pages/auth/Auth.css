@@ -519,6 +519,13 @@ position: relative;
 .input-search input {
  padding-left: 40px;
 } 
+.fullwidth{
+  width: 100%;
+}
+.halfwidth{
+  width: 50%;
+}
+
 
 .admission-reset-button {
   height: 40px;
