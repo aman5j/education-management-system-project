@@ -86,19 +86,20 @@ router.get(
 );
 
 // =====================================================
-// ADMIN / STAFF ROUTES
+// ADMIN ROUTES
+// Staff access is disabled until resource-scope checks exist.
 // =====================================================
 
 router.get(
   "/admin",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.view"),
   adminGetAssignments
 );
 
 router.post(
   "/admin",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.create"),
   uploadAssignmentAttachments,
   adminCreateAssignment
@@ -106,7 +107,7 @@ router.post(
 
 router.get(
   "/admin/submissions/:submissionId/files/:fileId",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.submissions.view"),
   adminDownloadSubmissionFile
 );
@@ -132,25 +133,9 @@ router.patch(
   adminPublishEvaluation
 );
 
-
-
-// router.post(
-//   "/admin/submissions/:submissionId/evaluation",
-//   authorizeRoles("admin", "staff"),
-//   requirePermission("assignments.evaluate"),
-//   adminSaveEvaluation
-// );
-
-// router.patch(
-//   "/admin/submissions/:submissionId/evaluation/publish",
-//   authorizeRoles("admin", "staff"),
-//   requirePermission("assignments.evaluate"),
-//   adminPublishEvaluation
-// );
-
 router.get(
   "/admin/:id/submissions",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.submissions.view"),
   adminGetAssignmentSubmissions
 );
@@ -164,21 +149,21 @@ router.get(
 
 router.patch(
   "/admin/:id/submissions/:submissionId/resubmission",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.resubmission.manage"),
   adminSetStudentResubmission
 );
 
 router.get(
   "/admin/:id/files/:fileId/download",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.view"),
   adminDownloadAssignmentFile
 );
 
 router.post(
   "/admin/:id/attachments",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.update"),
   uploadAssignmentAttachments,
   adminAddAssignmentAttachments
@@ -186,21 +171,21 @@ router.post(
 
 router.delete(
   "/admin/:id/attachments/:fileId",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.update"),
   adminRemoveAssignmentAttachment
 );
 
 router.get(
   "/admin/:id",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.view"),
   adminGetAssignment
 );
 
 router.put(
   "/admin/:id",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.update"),
   uploadAssignmentAttachments,
   adminUpdateAssignment
@@ -208,14 +193,14 @@ router.put(
 
 router.patch(
   "/admin/:id/status",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.publish"),
   adminUpdateAssignmentStatus
 );
 
 router.delete(
   "/admin/:id",
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   requirePermission("assignments.delete"),
   adminDeleteAssignment
 );
