@@ -14,7 +14,7 @@ import { FaFileImport } from "react-icons/fa";
 
 import { hasPermission } from "../../../utils/permissions";
 import StudentCredentialsModal from "../../../components/students/StudentCredentialsModal";
-
+import notification from "../../../utils/notification";
 
 import {
   getCourses,
@@ -278,10 +278,10 @@ const Students = () => {
             sortOrder
           );
 
-          const response =
-            await api.get(
-              `/students?${params.toString()}`
-            );
+          const response = await api.get(
+            `/students?${params.toString()}`,
+            { skipGlobalErrorToast: true }
+          );
 
           setStudents(
             response.data.data
@@ -404,74 +404,68 @@ const Students = () => {
       }
     };
 
-  const handleDelete =
-    async (student) => {
-      
-      if (!canDeleteStudent) {
-        setError("You do not have permission to delete students.");
-        return;
-      }
+  const handleDelete = async (student) => {
+  if (!canDeleteStudent) {
+    notification.error("You do not have permission to delete students.");
+    return;
+  }
 
-      const confirmed =
-        window.confirm(
-          `Are you sure you want to delete ${student.firstName} ${student.surname || ""}?`
-        );
+  const studentName = [
+    student.firstName,
+    student.surname,
+  ].filter(Boolean).join(" ");
 
-      if (!confirmed) {
-        return;
-      }
+  const confirmed = await notification.confirmDelete(
+    `"${studentName}"`
+  );
 
-      setDeletingStudent(true);
+  if (!confirmed) return;
 
-      try {
-        await api.delete(
-          `/students/${student._id}`
-        );
+  setDeletingStudent(true);
 
-        await fetchStudents(
-          pagination.page
-        );
-      } catch (requestError) {
-        setError(
-          requestError.response
-            ?.data?.message ||
-            "Unable to delete student."
-        );
-      } finally {
-        setDeletingStudent(false);
-      }
-    };
+  try {
+    await api.delete(`/students/${student._id}`, {
+      skipGlobalErrorToast: true,
+    });
 
-  const handleStatusChange =
-    async (
-      student,
-      status
-    ) => {
+    notification.success("Student deleted successfully.");
 
-      if (!canUpdateStudent) {
-        setError("You do not have permission to update student status.");
-        return;
-      }
+    await fetchStudents(pagination.page);
+  } catch (requestError) {
+    notification.error(
+      requestError.response?.data?.message ||
+      "Unable to delete student."
+    );
+  } finally {
+    setDeletingStudent(false);
+  }
+};
 
-      try {
-        await api.patch(
-          `/students/${student._id}/status`,
-          {
-            status,
-          }
-        );
+  const handleStatusChange = async (student, status) => {
+  if (!canUpdateStudent) {
+    notification.error(
+      "You do not have permission to update student status."
+    );
+    return;
+  }
 
-        await fetchStudents(
-          pagination.page
-        );
-      } catch (requestError) {
-        setError(
-          requestError.response
-            ?.data?.message ||
-            "Unable to update student status."
-        );
-      }
-    };
+  try {
+    await api.patch(
+      `/students/${student._id}/status`,
+      { status },
+      { skipGlobalErrorToast: true }
+    );
+
+    notification.success("Student status updated successfully.");
+
+    await fetchStudents(pagination.page);
+  } catch (requestError) {
+    notification.error(
+      requestError.response?.data?.message ||
+      "Unable to update student status."
+    );
+  }
+};
 
   const exportCsv = () => {
     if (!students.length) {
@@ -583,9 +577,11 @@ const Students = () => {
       ) => {
         try {
           if (!student?._id) {
-            alert(
-              "Student information is missing."
-            );
+            await notification.alert({
+              title: "Student information missing",
+              text: "Student information is missing.",
+              icon: "warning",
+            });
 
             return;
           }
@@ -621,9 +617,11 @@ const Students = () => {
           if (
             verifiedPayments.length === 0
           ) {
-            alert(
-              "No verified payment receipt is available for this student."
-            );
+            await notification.alert({
+              title: "No receipt available",
+              text: "No verified payment receipt is available for this student.",
+              icon: "info",
+            });
 
             return;
           }
@@ -644,11 +642,10 @@ const Students = () => {
             error
           );
 
-          alert(
-            error?.response?.data
-              ?.message ||
-              error?.message ||
-              "Unable to download receipt."
+          notification.error(
+            error?.response?.data?.message ||
+            error?.message ||
+            "Unable to download receipt."
           );
         }
       };
