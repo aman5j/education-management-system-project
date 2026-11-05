@@ -2029,6 +2029,7 @@ export const studentDownloadAssignmentFile = async (
 // GET /api/assignments/admin/submissions/:submissionId/files/:fileId
 // =====================================================
 
+
 export const adminDownloadSubmissionFile = async (
   req,
   res,
@@ -2045,8 +2046,29 @@ export const adminDownloadSubmissionFile = async (
       );
     }
 
+    // Verify the submission tracker exists.
+    const submission = await AssignmentSubmission.findById(
+      submissionId
+    ).select("_id assignment_id student_id");
+
+    if (!submission) {
+      return fail(res, 404, "Submission not found.");
+    }
+
+    // Verify that the assignment exists.
+    const assignment = await Assignment.findById(
+      submission.assignment_id
+    ).select("_id status");
+
+    if (!assignment) {
+      return fail(res, 404, "Assignment not found.");
+    }
+
+    // Find a version belonging to this exact submission and assignment.
     const version = await AssignmentSubmissionVersion.findOne({
-      submission_id: submissionId,
+      submission_id: submission._id,
+      assignment_id: assignment._id,
+      student_id: submission.student_id,
       "files._id": fileId,
     });
 
@@ -2060,11 +2082,16 @@ export const adminDownloadSubmissionFile = async (
 
     const file = version.files.id(fileId);
 
+    if (!file) {
+      return fail(res, 404, "Submission file not found.");
+    }
+
     return sendPrivateFile(res, file, true);
   } catch (error) {
     next(error);
   }
 };
+
 
 
 // =====================================================

@@ -1,4 +1,7 @@
+
 import axios from "axios";
+import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../utils/notification";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -31,6 +34,28 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  (response) => response,
+
+  (error) => {
+    const config = error.config || {};
+
+    const shouldShowToast =
+      !config.skipGlobalErrorToast &&
+      error.code !== "ERR_CANCELED" &&
+      !axios.isCancel(error);
+
+    if (shouldShowToast) {
+      toast.error(getApiErrorMessage(error), {
+        duration: 5000,
+        id: `api-error-${error.response?.status || error.code || "network"}`,
+      });
+    }
+
+    return Promise.reject(error);
+  }
 );
 
 export default api;
