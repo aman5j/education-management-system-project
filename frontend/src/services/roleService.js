@@ -3,8 +3,8 @@ import api from "./api";
 
 const roleService = {
   // Fetch custom staff roles
-  getRoles: async () => {
-    const response = await api.get("/roles");
+  getRoles: async (config = {}) => {
+    const response = await api.get("/roles", config);
     return response.data;
   },
 

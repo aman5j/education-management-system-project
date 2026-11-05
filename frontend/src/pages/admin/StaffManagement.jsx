@@ -104,7 +104,10 @@ export default function StaffManagement() {
 
   const loadRoles = useCallback(async () => {
     try {
-      const response = await roleService.getRoles();
+      // const response = await roleService.getRoles();
+      const response = await roleService.getRoles({
+        silent: true,
+      });
 
       const data = response.data;
 
