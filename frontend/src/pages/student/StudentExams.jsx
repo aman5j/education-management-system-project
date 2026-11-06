@@ -6,6 +6,7 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import { getAssetUrl } from "../../utils/assetUrl";
 
 import {
   FiAlertCircle,
@@ -1545,8 +1546,23 @@ export default function StudentExams() {
                   className="se-result-row"
                   key={result.id}
                 >
-                  <div className="se-list-icon se-list-icon--purple">
+                  {/* <div className="se-list-icon se-list-icon--purple">
                     <FiAward />
+                  </div> */}
+
+                  <div className="se-list-icon se-list-icon--purple">
+                    {result.courseImage ? (
+                      <img
+                        src={getAssetUrl(result.courseImage)}
+                        alt={result.course}
+                        loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <FiAward />
+                    )}
                   </div>
 
                   <div className="se-row-main">
@@ -1609,7 +1625,18 @@ export default function StudentExams() {
 
     {/* Exam Icon */}
     <div className="se-list-icon">
-      <img src="https://education-management-backend-79g1.onrender.com/uploads/courses/course-1793756912287-450881141.jfif" alt="" />
+      {exam.courseImage ? (
+        <img
+          src={getAssetUrl(exam.courseImage)}
+          alt={exam.course}
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+      ) : (
+        <FiFileText />
+      )}
     </div>
 
     {/* Exam Details */}

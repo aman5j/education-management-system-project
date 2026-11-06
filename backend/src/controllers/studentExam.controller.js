@@ -52,7 +52,7 @@ async function getOwnedTicket(studentId, ticketId) {
     student_id: studentId,
     status: "Active",
   })
-    .populate("course_id", "courseTitle courseType")
+    .populate("course_id", "courseTitle courseType courseImage")
     .populate("exam_id", "course_id totalQuestions totalMarks marksPerQuestion selectedQuestions")
     .lean();
 }
@@ -76,6 +76,7 @@ function serializeTicket(ticket, result) {
     examId: String(exam._id || ""),
     courseId: String(ticket.course_id?._id || ticket.course_id || ""),
     course: ticket.course_id?.courseTitle || "Course unavailable",
+    courseImage: ticket.course_id?.courseImage || "",
     courseType: ticket.course_id?.courseType || "",
     examDate: ticket.examDate,
     startTime: ticket.startTime,
@@ -203,7 +204,7 @@ export const getMyExams = async (req, res, next) => {
       student_id: linked.student._id,
       status: "Active",
     })
-      .populate("course_id", "courseTitle courseType")
+      .populate("course_id", "courseTitle courseType courseImage")
       .populate("exam_id", "course_id totalQuestions totalMarks marksPerQuestion")
       .sort({ examDate: -1 })
       .lean();
@@ -729,7 +730,7 @@ export const getMyExamResults = async (req, res, next) => {
       student_id: linked.student._id,
       attemptStatus: "Submitted",
     })
-      .populate("course_id", "courseTitle")
+      .populate("course_id", "courseTitle courseImage")
       .populate("exam_id", "totalQuestions totalMarks")
       .sort({ submittedAt: -1, updatedAt: -1 })
       .lean();
@@ -740,6 +741,7 @@ export const getMyExamResults = async (req, res, next) => {
         results: results.map((result) => ({
           id: String(result._id),
           course: result.course_id?.courseTitle || "Course unavailable",
+          courseImage: result.course_id?.courseImage || "",
 
           totalQuestions: result.totalQuestions,
           totalMarks: result.totalMarks,

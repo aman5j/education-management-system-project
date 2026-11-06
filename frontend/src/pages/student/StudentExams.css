@@ -1442,3 +1442,26 @@
     width: 100%;
   }
 }
+
+
+
+
+
+
+
+
+
+/* Dynamic course image in exam and result cards */
+.se-exam-card .se-list-icon img,
+.se-result-row .se-list-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.se-result-row .se-list-icon {
+  flex-shrink: 0;
+  overflow: hidden;
+}
