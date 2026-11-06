@@ -12,11 +12,23 @@ import {
   FiShield,
   FiTag,
   FiX,
+  FiHeadphones,
+  FiCalendar,
+  FiAlertCircle,
+  FiMessageSquare
 } from "react-icons/fi";
-
-
+import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdOutlineDateRange } from "react-icons/md";
+import { FaArrowUpWideShort } from "react-icons/fa6";
+import { FaCommentDots } from "react-icons/fa6";
 import supportService from "../../services/supportService";
 import "./StudentHelpdesk.css";
+import custericon from "../../assets/aaa.png";
+import { HiStatusOnline } from "react-icons/hi";
+import { MdOutlineCheckCircle } from "react-icons/md";
+
+
+
 
 const CATEGORIES = [
   "Academic Query",
@@ -236,6 +248,7 @@ export default function StudentHelpdesk() {
 
   return (
     <div className="student-helpdesk">
+      {!selectedTicket && !showForm && (
       <div className="page-header">
         <div>
           <h1>HelpDesk & Support</h1>
@@ -243,8 +256,9 @@ export default function StudentHelpdesk() {
 
          
         </div>
+         
 
-          {!selectedTicket && !showForm && (
+         
           <button
             className="themebtn"
             onClick={() => {
@@ -254,9 +268,10 @@ export default function StudentHelpdesk() {
           >
             <FiPlus /> Raise New Ticket
           </button>
-        )}
+        
 
       </div>
+      )}
 
 
       {error && (
@@ -274,121 +289,280 @@ export default function StudentHelpdesk() {
       )}
 
       {selectedTicket ? (
-        <section className="sh-conversation">
-          <div className="sh-conversation__top">
-            <button className="sh-back" onClick={closeDetails}>
-                <FiArrowLeft /> Back to tickets
-            </button>
+        
+<section className="sh-conversation sh-ticket-detail">
 
-            <div className="sh-conversation__actions">
-                <span className={`sh-status sh-status--${statusClass(selectedTicket.status)}`}>
-                {selectedTicket.status}
-                </span>
+  {/* Page Header */}
 
-                <button
-                type="button"
-                className="sh-refresh-chat"
-                onClick={refreshConversation}
-                disabled={detailLoading}
-                title="Refresh conversation"
-                aria-label="Refresh conversation"
-                >
-                <FiRefreshCw className={detailLoading ? "sh-refresh-chat--spinning" : ""} />
-                </button>
-            </div>
-            </div>
+  <div className="page-header">
+        <div>
+          <h1>Ticket Details</h1>
+               <p>View ticket information and conversation with the support team.</p>
+        </div>
+         
 
-          <div className="sh-ticket-summary">
-            <div>
-              <span className="sh-ticket-number">{selectedTicket.ticketNumber}</span>
+         
+         <button className="themebtn" onClick={closeDetails}>
+      <FiArrowLeft /> Back
+    </button>
+        
+
+      </div>
+
+
+  {/* Main Split Layout */}
+  <div className="sh-detail-layout">
+
+    {/* LEFT: Ticket Information */}
+    <aside className="sh-ticket-info common-card">
+        <div className="cardbody">
+            <div className="sh-ticket-info__banner">
+            
+
+              <span className="sh-ticket-number">
+                {selectedTicket.ticketNumber}
+              </span>
+
               <h2>{selectedTicket.title}</h2>
               <p>{selectedTicket.description}</p>
             </div>
-            <div className="sh-ticket-meta">
-              <span>{selectedTicket.category}</span>
-              <span className={`sh-priority sh-priority--${selectedTicket.priority?.toLowerCase()}`}>
-                {selectedTicket.priority}
+            <div className="sh-ticket-info__details">
+
+      <div className="sh-info-item">
+                <span className="sh-info-icon sh-info-icon--blue">
+                    <HiStatusOnline />
+                </span>
+                <div>
+                  <small>Status</small>
+                <span className={`sh-status sh-status--${statusClass(selectedTicket.status)}`}>
+                {selectedTicket.status}
               </span>
-              <small>Created {formatDate(selectedTicket.createdAt)}</small>
-            </div>
-          </div>
-
-          {detailLoading ? (
-            <div className="sh-empty">Loading conversation…</div>
-          ) : (
-            <div className="sh-chat">
-              <div className="sh-chat__messages">
-                {messages.length === 0 ? (
-                  <div className="sh-empty">
-                    No replies yet. Send a message to the support team.
-                  </div>
-                ) : (
-                  messages.map((message) => {
-                    const isStudent = message.sender_role === "student";
-
-                    return (
-                      <div
-                        key={message._id}
-                        className={`sh-message ${isStudent ? "sh-message--mine" : "sh-message--support"}`}
-                      >
-                        <div className="sh-message__author">
-                          {isStudent ? "You" : "Support Team"}
-                          <time>{formatDate(message.createdAt)}</time>
-                        </div>
-                        <p>{message.message}</p>
-                      </div>
-                    );
-                  })
-                )}
+                </div>
               </div>
 
-              {["Resolved", "Closed"].includes(selectedTicket.status) ? (
-                <div className="sh-reopen-panel">
-                  <span>This ticket is currently {selectedTicket.status.toLowerCase()}.</span>
-                  <button
-                    className="sh-button sh-button--outline"
-                    onClick={handleReopen}
-                    disabled={submitting}
-                  >
-                    <FiRefreshCw /> Reopen Ticket
-                  </button>
+              <div className="sh-info-item">
+                <span className="sh-info-icon sh-info-icon--purple">
+                  <FiTag />
+                </span>
+                <div>
+                  <small>Category</small>
+                  <strong>{selectedTicket.category}</strong>
                 </div>
-              ) : (
-                <form className="sh-reply" onSubmit={handleSendReply}>
-                  <input
-                    value={reply}
-                    onChange={(event) => setReply(event.target.value)}
-                    placeholder="Type your message…"
-                    maxLength={3000}
-                    required
-                  />
-                  <button
-                    type="submit"
-                    aria-label="Send message"
-                    disabled={submitting || !reply.trim()}
+              </div>
+
+              <div className="sh-info-item">
+                <span className="sh-info-icon sh-info-icon--red">
+                  <FiAlertCircle />
+                </span>
+                <div>
+                  <small>Priority</small>
+                  <strong className={`sh-priority sh-priority--${selectedTicket.priority?.toLowerCase()}`}>
+                    {selectedTicket.priority}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="sh-info-item">
+                <span className="sh-info-icon sh-info-icon--blue">
+                  <FiCalendar />
+                </span>
+                <div>
+                  <small>Created On</small>
+                  <strong>{formatDate(selectedTicket.createdAt)}</strong>
+                </div>
+              </div>
+
+              <div className="sh-info-item">
+                <span className="sh-info-icon sh-info-icon--green">
+                  <FiClock />
+                </span>
+                <div>
+                  <small>Last Updated</small>
+                  <strong>
+                    {formatDate(messages[messages.length - 1]?.createdAt || selectedTicket.createdAt)}
+                  </strong>
+                </div>
+              </div>
+
+            </div>
+           
+        </div>
+    </aside>
+
+    {/* RIGHT: Conversation Panel */}
+    <div className="sh-chat-panel common-card">
+
+      {/* Chat Header */}
+      <div className="sh-chat-panel__header">
+
+        <div className="sh-chat-tab active">
+          <FiMessageSquare />
+          Conversation
+          <span>{messages.length}</span>
+        </div>
+
+        <div className="sh-chat-panel__header-right">
+          <span className="sh-chat-online-dot"></span>
+          Support Conversation
+
+          <button
+            type="button"
+            className="sh-chat-refresh"
+            onClick={refreshConversation}
+            disabled={detailLoading}
+            aria-div="Refresh conversation"
+          >
+            <FiRefreshCw className={detailLoading ? "sh-refresh-chat--spinning" : ""} />
+          </button>
+        </div>
+
+      </div>
+
+      {/* Messages */}
+      <div className="sh-chat">
+
+        <div className="sh-chat__messages">
+
+          {detailLoading ? (
+            <div className="sh-empty">
+              Loading conversation…
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="sh-empty">
+              <div className="sh-empty-icon">
+                <FiMessageSquare />
+              </div>
+              <h3>No messages yet</h3>
+              <p>Send a message to start the conversation with our support team.</p>
+            </div>
+          ) : (
+            <>
+              <div className="sh-chat-date">
+                <span>
+                  {formatDate(messages[0]?.createdAt)}
+                </span>
+              </div>
+
+              {messages.map((message) => {
+                const isStudent = message.sender_role === "student";
+
+                return (
+                  <div
+                    key={message._id}
+                    className={`sh-message ${isStudent ? "sh-message--mine" : "sh-message--support"}`}
                   >
-                    <FiSend />
-                  </button>
-                </form>
-              )}
-            </div>
+
+                    {!isStudent && (
+                      <div className="sh-message__avatar">
+                       <img src={custericon} className="suport-profile" alt="profile " />
+
+                      </div>
+                    )}
+
+                    <div className="sh-message__body">
+
+                      <div className="sh-message__author">
+                        <strong>{isStudent ? "You" : "Support Team"}</strong>
+                        <time>{formatDate(message.createdAt)}</time>
+                      </div>
+
+                      <div className="sh-message__bubble">
+                        {message.message}
+                      </div>
+
+                    </div>
+
+                    {isStudent && (
+                      <div className="sh-message__avatar sh-message__avatar--student">
+                                              <img src="http://localhost:5000/uploads/students/1793941567490-portrait-business-woman-with-enthusiastic-face-expression-smiling-looking-confident-standing-s_1258-88087.png" alt="profile " />
+
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })}
+            </>
           )}
-        </section>
-      ) : showForm ? (
-        <section className="sh-form-card">
-          <div className="sh-section-title">
+
+        </div>
+
+        {/* Reply / Reopen Area */}
+        {["Resolved", "Closed"].includes(selectedTicket.status) ? (
+
+          <div className="sh-reopen-panel">
             <div>
-              <h2>Raise New Ticket</h2>
-              <p>Describe your issue. Our administrator will review it.</p>
+              <strong>Ticket {selectedTicket.status}</strong>
+              <span>
+                This ticket is currently {selectedTicket.status.toLowerCase()}.
+              </span>
             </div>
-            <button className="sh-icon-button" onClick={() => setShowForm(false)}>
-              <FiX />
+
+            <button
+              className="sh-button sh-button--outline"
+              onClick={handleReopen}
+              disabled={submitting}
+            >
+              <FiRefreshCw /> Reopen Ticket
             </button>
           </div>
 
-          <form onSubmit={handleCreateTicket} className="sh-form">
-            <label>
-              Issue Title <span>*</span>
+        ) : (
+
+          <form className="sh-reply" onSubmit={handleSendReply}>
+
+            <div className="sh-reply__input-wrap">
+              <input
+                value={reply}
+                onChange={(event) => setReply(event.target.value)}
+                placeholder="Type your message..."
+                maxLength={3000}
+                required
+              />
+              <span className="sh-reply__counter">
+                {reply.length}/3000
+              </span>
+
+
+               <button
+              type="submit"
+              aria-div="Send message"
+              disabled={submitting || !reply.trim()}
+            >
+              <FiSend />
+            </button>
+            
+            </div>
+
+           
+
+          </form>
+
+        )}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+      ) : showForm ? (
+        <section className="sh-form-card">
+          <div class="page-header"><div><h1>Raise New Ticket</h1>
+          <p>Describe your issue. Our administrator will review it.</p></div>
+             <button className="themebtn" onClick={() => setShowForm(false)}>
+              Back
+            </button>
+          </div>
+
+
+          <form onSubmit={handleCreateTicket} className="common-card">
+            <div className="cardbody">
+              <div className="addticket">
+            <div className="input-felid admission-form-full">
+              <label>Issue Title <span className="required">*</span></label>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -396,34 +570,19 @@ export default function StudentHelpdesk() {
                 maxLength={150}
                 required
               />
-            </label>
-
-            <label>
-              Description <span>*</span>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Explain your issue in detail…"
-                rows={5}
-                maxLength={3000}
-                required
-              />
-              <small>{form.description.length}/3000</small>
-            </label>
-
-            <div className="sh-form__grid">
-              <label>
-                Mobile
-                <input
+            </div>
+            <div className="input-felid">
+                 <label>Mobile <span className="required">*</span></label>
+                  <input
                   value={form.mobile}
                   onChange={(e) => setForm({ ...form, mobile: e.target.value })}
                   placeholder="Contact number"
                   maxLength={20}
                 />
-              </label>
+              </div>
 
-              <label>
-                Category <span>*</span>
+              <div className="input-felid">
+                 <label> Category <span className="required">*</span></label>
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -432,11 +591,29 @@ export default function StudentHelpdesk() {
                     <option key={category}>{category}</option>
                   ))}
                 </select>
-              </label>
+              </div>
+
+            <div className="input-felid admission-form-full">
+              <label>Description  <span className="required">*</span>  <small>{form.description.length}/3000</small></label> 
+
+              
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Explain your issue in detail…"
+                rows={4}
+                maxLength={3000}
+                required
+              />
+             
             </div>
 
-            <fieldset className="sh-priority-picker">
-              <legend>Set Priority Level</legend>
+           
+             
+          
+
+            <fieldset className="sh-priority-picker input-felid">
+              <label>Set Priority Level</label>
               <div>
                 {PRIORITIES.map((priority) => (
                   <button
@@ -445,82 +622,85 @@ export default function StudentHelpdesk() {
                     className={`sh-priority-choice ${form.priority === priority ? "is-selected" : ""} sh-priority-choice--${priority.toLowerCase()}`}
                     onClick={() => setForm({ ...form, priority })}
                   >
-                    {priority}
+                   <MdOutlineCheckCircle />
+  {priority}
                   </button>
                 ))}
               </div>
             </fieldset>
 
+</div>
             <div className="sh-form__actions">
               <button
                 type="button"
-                className="sh-button sh-button--outline"
+                className="themebtn themebtnline"
                 onClick={() => setShowForm(false)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="sh-button sh-button--primary"
+                className="themebtn"
                 disabled={submitting}
               >
                 <FiSend /> {submitting ? "Submitting…" : "Submit Ticket"}
               </button>
+            </div>
             </div>
           </form>
         </section>
       ) : (
         <>
           <section className="sh-stats">
-            <article class="dashboard-stat-card card-success">
-              <div class="stat-card-top">
-                <div class="stat-icon stat-icon-success"><FiTag /></div>
+            <article className="dashboard-stat-card card-success">
+              <div className="stat-card-top">
+                <div className="stat-icon stat-icon-success"><FiTag /></div>
                 </div>
-                <div class="stat-card-body">
-                  <span class="stat-card-title">Total Tickets</span>
-                <strong class="stat-card-value">{stats.total || 0}</strong>
+                <div className="stat-card-body">
+                  <span className="stat-card-title">Total Tickets</span>
+                <strong className="stat-card-value">{stats.total || 0}</strong>
                 </div>
                   </article>
 
 
             
-             <article class="dashboard-stat-card card-warning">
-              <div class="stat-card-top">
-                <div class="stat-icon stat-icon-warning"><FiClock /></div>
+             <article className="dashboard-stat-card card-warning">
+              <div className="stat-card-top">
+                <div className="stat-icon stat-icon-warning"><FiClock /></div>
                 </div>
-                <div class="stat-card-body">
-                  <span class="stat-card-title">Open</span>
-                <strong class="stat-card-value">{stats.Open || 0}</strong>
-                </div>
-                  </article>
-
-                     <article class="dashboard-stat-card card-purple">
-              <div class="stat-card-top">
-                <div class="stat-icon stat-icon-purple"><FiRefreshCw /></div>
-                </div>
-                <div class="stat-card-body">
-                  <span class="stat-card-title">In Progress</span>
-                <strong class="stat-card-value">{stats["In Progress"] || 0}</strong>
+                <div className="stat-card-body">
+                  <span className="stat-card-title">Open</span>
+                <strong className="stat-card-value">{stats.Open || 0}</strong>
                 </div>
                   </article>
 
-                     <article class="dashboard-stat-card card-bluewarning">
-              <div class="stat-card-top">
-                <div class="stat-icon stat-icon-bluewarning"><FiCheckCircle /></div>
+                     <article className="dashboard-stat-card card-purple">
+              <div className="stat-card-top">
+                <div className="stat-icon stat-icon-purple"><FiRefreshCw /></div>
                 </div>
-                <div class="stat-card-body">
-                  <span class="stat-card-title">Resolved</span>
-                <strong class="stat-card-value">{stats.Resolved || 0}</strong>
+                <div className="stat-card-body">
+                  <span className="stat-card-title">In Progress</span>
+                <strong className="stat-card-value">{stats["In Progress"] || 0}</strong>
                 </div>
                   </article>
 
-                       <article class="dashboard-stat-card card-danger">
-              <div class="stat-card-top">
-                <div class="stat-icon stat-icon-danger"><FiShield /></div>
+                     <article className="dashboard-stat-card card-bluewarning">
+              <div className="stat-card-top">
+                <div className="stat-icon stat-icon-bluewarning"><FiCheckCircle /></div>
                 </div>
-                <div class="stat-card-body">
-                  <span class="stat-card-title">Closed</span>
-                <strong class="stat-card-value">{stats.Closed || 0}</strong>
+                <div className="stat-card-body">
+                  <span className="stat-card-title">Resolved</span>
+                <strong className="stat-card-value">{stats.Resolved || 0}</strong>
+                </div>
+                  </article>
+
+                       <article className="dashboard-stat-card card-danger">
+              <div className="stat-card-top">
+                <div className="stat-icon stat-icon-danger"><FiShield /></div>
+                </div>
+                <div className="stat-card-body">
+                  <span className="stat-card-title">Closed</span>
+                <strong className="stat-card-value">{stats.Closed || 0}</strong>
                 </div>
                   </article>
 
@@ -577,31 +757,62 @@ export default function StudentHelpdesk() {
             ) : (
               <div className="sh-ticket-grid">
                 {visibleTickets.map((ticket) => (
-                  <button
+                  <div
                     className="sh-ticket-card"
                     key={ticket._id}
                     onClick={() => openTicket(ticket)}
                   >
                     <div className="sh-ticket-card__top">
-                      <span className="sh-ticket-number">{ticket.ticketNumber}</span>
+                      <span className="batchtag">{ticket.ticketNumber}</span>
                       <span className={`sh-status sh-status--${statusClass(ticket.status)}`}>
                         {ticket.status}
                       </span>
                     </div>
                     <h3>{ticket.title}</h3>
                     <p>{ticket.description}</p>
-                    <div className="sh-ticket-card__bottom">
-                      <span className={`sh-priority sh-priority--${ticket.priority?.toLowerCase()}`}>
+                   <div className="footercard">
+                     <div className="sh-ticket-card__bottom">
+                     <FaArrowUpWideShort />
+
+
+                     <div>
+                       <span className={`sh-priority sh-priority--${ticket.priority?.toLowerCase()}`}>
                         {ticket.priority}
                       </span>
-                      <small><FiClock /> {timeAgo(ticket.lastMessageAt || ticket.createdAt)}</small>
+                      <small>Priority</small>
+                     </div>
                     </div>
-                  </button>
+
+                     <div className="sh-ticket-card__bottom">
+                      <MdOutlineDateRange />
+
+                        <div>
+                           <span> {timeAgo(ticket.lastMessageAt || ticket.createdAt)}</span>
+                       <small>Created Date</small>
+                        </div>
+                     
+                    </div>
+
+                     <div className="sh-ticket-card__bottom">
+                      <FaCommentDots />
+
+                      <div>
+                         <span> 03</span>
+                       <small>Replay</small>
+                      </div>
+                    </div>
+
+                   </div>
+                  </div>
                 ))}
               </div>
+
+              
             )}
             </div>
           </section>
+
+          
         </>
       )}
     </div>
