@@ -19,6 +19,7 @@ import {
   FiRefreshCw,
   FiShield,
   FiTarget,
+    FiEye
 } from "react-icons/fi";
 
 import studentPortalService from "../../services/studentPortalService";
@@ -1439,27 +1440,16 @@ export default function StudentExams() {
 
   return (
     <main className="student-exams">
-      <header className="se-page-header">
-        <div>
-          <span className="se-eyebrow">ASSESSMENT CENTRE</span>
-
-          <h1>Exams &amp; Results</h1>
-
-          <p>
+<div className="page-header">
+  <div>
+    <h1>Exams & Results</h1>
+     <p>
             View your exam schedule, start an available exam, and
             review your results.
           </p>
-        </div>
+    </div>
+    </div>
 
-        <button
-          type="button"
-          className="se-button se-button--secondary"
-          onClick={loadList}
-          disabled={loading}
-        >
-          <FiRefreshCw /> Refresh
-        </button>
-      </header>
 
       {notice && (
         <div className="se-success" role="status">
@@ -1473,7 +1463,7 @@ export default function StudentExams() {
         </div>
       )}
 
-      <section className="se-stat-grid">
+      {/* <section className="se-stat-grid">
         <ExamStat
           icon={FiCalendar}
           title="Upcoming Exams"
@@ -1513,13 +1503,12 @@ export default function StudentExams() {
           note="Official results"
           tone="green"
         />
-      </section>
+      </section> */}
 
-      <section className="se-panel se-list-panel">
-        <div className="se-tabs">
+<div className="student-profile__tabs">
           <button
             type="button"
-            className={tab === "upcoming" ? "is-active" : ""}
+            className={tab === "upcoming" ? "active" : ""}
             onClick={() => setTab("upcoming")}
           >
             Upcoming &amp; Available
@@ -1528,7 +1517,7 @@ export default function StudentExams() {
 
           <button
             type="button"
-            className={tab === "previous" ? "is-active" : ""}
+            className={tab === "previous" ? "active" : ""}
             onClick={() => setTab("previous")}
           >
             Past &amp; Submitted
@@ -1537,13 +1526,16 @@ export default function StudentExams() {
 
           <button
             type="button"
-            className={tab === "results" ? "is-active" : ""}
+            className={tab === "results" ? "active" : ""}
             onClick={() => setTab("results")}
           >
             Results
             <span>{results.length}</span>
           </button>
         </div>
+
+      <section className="se-panel se-list-panel">
+        
 
         {tab === "results" ? (
           results.length ? (
@@ -1611,70 +1603,139 @@ export default function StudentExams() {
                     exam.resultStatus !== "Published";
 
                   return (
-                    <article
-                      className="se-exam-row"
-                      key={exam.ticketId}
-                    >
-                      <div className="se-list-icon">
-                        <FiFileText />
-                      </div>
+                   
+<div className="common-card se-exam-card" key={exam.ticketId}>
+  <div className="cardbody se-exam-card__body ">
 
-                      <div className="se-row-main">
-                        <strong>{exam.course}</strong>
+    {/* Exam Icon */}
+    <div className="se-list-icon">
+      <img src="https://education-management-backend-79g1.onrender.com/uploads/courses/course-1793756912287-450881141.jfif" alt="" />
+    </div>
 
-                        <span>
-                          Hall ticket: {exam.hallTicketNo}
-                        </span>
+    {/* Exam Details */}
+    <div className="se-exam-card__content">
 
-                        <span>
-                          {dateText(exam.examDate)} ·{" "}
-                          {timeText(exam.startTime)} –{" "}
-                          {timeText(exam.endTime)}
-                        </span>
+      <div className="se-exam-card__heading">
+        <div className="se-row-main">
+          <strong>{exam.course}</strong>
 
-                        <span>
-                          {exam.totalQuestions} questions ·{" "}
-                          {exam.totalMarks} marks
-                        </span>
-                      </div>
+          <span className="se-hall-ticket">
+            Hall Ticket: {exam.hallTicketNo}
+          </span>
+        </div>
 
-                      <div className="se-row-status">
-                        <span
-                          className={`se-badge se-badge--${String(
-                            exam.scheduleStatus
-                          )
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")}`}
-                        >
-                          {exam.scheduleStatus}
-                        </span>
+        <span
+          className={`se-badge se-badge--${String(exam.scheduleStatus)
+            .toLowerCase()
+            .replace(/\s+/g, "-")}`}
+        >
+          <FiClock />
+          {exam.scheduleStatus}
+        </span>
+      </div>
 
-                        {exam.attemptStatus === "Submitted" && (
-                          <small>
-                            Submitted ·{" "}
-                            {exam.resultStatus === "Published"
-                              ? "Result published"
-                              : "Awaiting verification"}
-                          </small>
-                        )}
-                      </div>
+      {/* Exam Meta */}
+      <div className="se-exam-card__meta">
 
-                      {canOpen ? (
-                        <Link
-                          className="se-button se-button--primary"
-                          to={`/student/exams/${exam.ticketId}/instructions`}
-                        >
-                          {exam.attemptStatus === "InProgress"
-                            ? "Resume Exam"
-                            : "View Instructions"}
-                          <FiArrowRight />
-                        </Link>
-                      ) : (
-                        <span className="se-muted">
-                          Attempt submitted
-                        </span>
-                      )}
-                    </article>
+        <span>
+          <FiCalendar />
+          {dateText(exam.examDate)}
+        </span>
+
+        <span>
+          <FiClock />
+          {timeText(exam.startTime)} – {timeText(exam.endTime)}
+        </span>
+
+        <span>
+          <FiFileText />
+          {exam.totalQuestions} Questions
+        </span>
+
+        <span>
+          <FiAward />
+          {exam.totalMarks} Marks
+        </span>
+
+      </div>
+
+      {/* Bottom Status + Action */}
+      <div className="se-exam-card__footer">
+
+        <div className="se-exam-card__submission">
+
+          {exam.attemptStatus === "Submitted" ? (
+            <>
+              <span className="se-submission-item">
+                <FiCheckCircle />
+                Submitted
+              </span>
+
+              {exam.resultStatus === "Published" && (
+                <>
+                  <span className="se-status-separator">•</span>
+                  <span>Result published</span>
+                </>
+              )}
+
+              {exam.resultStatus !== "Published" && (
+                <>
+                  <span className="se-status-separator">•</span>
+                  <span>Awaiting verification</span>
+                </>
+              )}
+            </>
+          ) : exam.attemptStatus === "InProgress" ? (
+            <span className="se-submission-item se-submission-item--progress">
+              <FiClock />
+              Exam in progress
+            </span>
+          ) : (
+            <span className="se-submission-item">
+              <FiCheckCircle />
+              Attempt submitted
+            </span>
+          )}
+
+        </div>
+
+        <div className="se-exam-card__actions">
+
+          {canOpen ? (
+            <Link
+              className="themebtn"
+              to={`/student/exams/${exam.ticketId}/instructions`}
+            >
+              {exam.attemptStatus === "InProgress"
+                ? "Resume Exam"
+                : "View Instructions"}
+              <FiArrowRight />
+            </Link>
+          ) : (
+            exam.resultStatus === "Published" ? (
+              <Link
+                className="themebtn"
+                to={`/student/exams/${exam.ticketId}/result`}
+              >
+                <FiEye />
+                View Result
+              </Link>
+            ) : (
+              <span className="se-muted">
+                Attempt submitted
+              </span>
+            )
+          )}
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
                   );
                 })}
               </div>

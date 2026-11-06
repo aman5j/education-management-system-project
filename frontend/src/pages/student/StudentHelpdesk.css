@@ -712,11 +712,12 @@
 }
 
 .sh-ticket-info__banner p {
-  color: #687a9e;
-  font-size: 14px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-  margin: 0;
+    color: #687a9e;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+    margin: 0;
+    line-height: 21px;
+    margin-top: 5px;
 }
 
 
