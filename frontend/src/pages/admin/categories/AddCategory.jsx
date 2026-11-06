@@ -5,9 +5,10 @@ import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import CategoryForm from "../../../components/categories/CategoryForm";
 import { useAuth } from "../../../context/AuthContext";
 import { createCategory } from "../../../services/categoryService";
-import { IoChevronBack } from "react-icons/io5";
-
 import { hasPermission } from "../../../utils/permissions";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 const AddCategory = () => {
   const navigate = useNavigate();
@@ -20,8 +21,7 @@ const AddCategory = () => {
 
   const canCreate = hasPermission(user, "courses.create");
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   if (authLoading) {
     return <div className="category-loading">Checking permissions...</div>;
@@ -41,20 +41,19 @@ const AddCategory = () => {
   }
 
   const handleSubmit = async (formData) => {
-    setLoading(true);
-    setError("");
+    setSaving(true);
 
     try {
       await createCategory(formData);
+
+      notification.success("Category created successfully.");
+
       navigate(basePath, { replace: true });
-    } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ||
-          "Failed to create category."
-      );
-      throw requestError;
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -62,23 +61,13 @@ const AddCategory = () => {
     <div className="category-page">
       <div className="page-header">
         <div>
-          {/* <Link to={basePath} className="backbutton">
-           <IoChevronBack/> Back
-        </Link> */}
-        <h1>  Add Category</h1>
+          <h1>Add Category</h1>
         </div>
-        
       </div>
-
-      {error && (
-        <div className="category-list-error" role="alert">
-          {error}
-        </div>
-      )}
 
       <div className="common-card">
         <CategoryForm
-          loading={loading}
+          loading={saving}
           submitLabel="Create Category"
           onSubmit={handleSubmit}
         />

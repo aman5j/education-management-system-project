@@ -1,6 +1,10 @@
 
 import { useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -11,9 +15,13 @@ import {
   deleteSubject,
 } from "../../../services/subjectService";
 
-
 import SubjectFilters from "../../../components/subjects/SubjectFilters";
 import SubjectTable from "../../../components/subjects/SubjectTable";
+import Pagination from "../../../components/common/Pagination";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/SubjectManagement.css";
 
@@ -22,101 +30,94 @@ const INITIAL_FILTERS = {
   status: "",
 };
 
-const PAGE_SIZE = 10;
-
 export default function SubjectManagement() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
     : "/admin";
-  
+
   const { user, loading: authLoading } = useAuth();
 
   const canView = hasPermission(user, "subjects.view");
   const canCreate = hasPermission(user, "subjects.create");
   const canUpdate = hasPermission(user, "subjects.update");
   const canDelete = hasPermission(user, "subjects.delete");
-  const canViewQuestionBank = hasPermission(user, "question_bank.view");
-  const canManageQuestionBank = hasPermission(user, "question_bank.manage");
+  const canViewQuestionBank = hasPermission(
+    user,
+    "question_bank.view"
+  );
+  const canManageQuestionBank = hasPermission(
+    user,
+    "question_bank.manage"
+  );
 
   const [subjects, setSubjects] = useState([]);
-
   const [filters, setFilters] = useState(INITIAL_FILTERS);
 
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
   const [refreshKey, setRefreshKey] = useState(0);
 
-
-  // Load subjects whenever the page or filters change.
   useEffect(() => {
+    if (authLoading) return undefined;
+
+    if (!user || !canView) {
+      setSubjects([]);
+      setPagination({ total: 0, totalPages: 0 });
+      setLoading(false);
+      return undefined;
+    }
+
     const controller = new AbortController();
 
     const loadSubjects = async () => {
-
-      if (authLoading) {
-        return;
-      }
-
-      if (!canView) {
-        setSubjects([]);
-        setPagination({ total: 0, totalPages: 0 });
-        setLoading(false);
-        setError("You do not have permission to view Subjects.");
-        return;
-      }
-
       try {
         setLoading(true);
-        setError("");
 
         const response = await getSubjects(
           {
             page,
-            limit: PAGE_SIZE,
+            limit,
             search: filters.search.trim(),
             status: filters.status,
+            sortBy: "subjectName",
+            sortOrder: "asc",
           },
           {
             signal: controller.signal,
           }
         );
 
-        const payload = response.data;
+        const payload = response?.data;
 
         setSubjects(
-          Array.isArray(payload.data) ? payload.data : []
+          Array.isArray(payload?.data) ? payload.data : []
         );
 
-        setPagination(
-          payload.pagination || {
-            total: 0,
-            totalPages: 0,
-          }
-        );
-      } catch (err) {
+        setPagination({
+          total: Number(payload?.pagination?.total) || 0,
+          totalPages:
+            Number(payload?.pagination?.totalPages) || 0,
+        });
+      } catch (error) {
         if (
-          err.code === "ERR_CANCELED" ||
-          err.name === "CanceledError"
+          error.code === "ERR_CANCELED" ||
+          error.name === "CanceledError"
         ) {
           return;
         }
 
-        setError(
-          err.response?.data?.message ||
-            "Unable to load subjects. Please try again."
-        );
-
         setSubjects([]);
+        notification.error(getApiErrorMessage(error));
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -129,8 +130,15 @@ export default function SubjectManagement() {
     return () => {
       controller.abort();
     };
-
- }, [filters, page, refreshKey, canView, authLoading]);
+  }, [
+    authLoading,
+    user,
+    canView,
+    filters,
+    page,
+    limit,
+    refreshKey,
+  ]);
 
   const handleFilterChange = useCallback((name, value) => {
     setFilters((previous) => ({
@@ -139,65 +147,70 @@ export default function SubjectManagement() {
     }));
 
     setPage(1);
-    setNotice("");
   }, []);
 
   const handleReset = useCallback(() => {
     setFilters({ ...INITIAL_FILTERS });
     setPage(1);
-    setNotice("");
-    setError("");
+  }, []);
+
+  const handleLimitChange = useCallback((nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
   }, []);
 
   const handleDelete = useCallback(
     async (subject) => {
-
       if (!canDelete) {
-        setError("You do not have permission to delete subjects.");
+        notification.error(
+          "You do not have permission to delete subjects."
+        );
         return;
       }
 
       const subjectId = subject?._id || subject?.id;
 
       if (!subjectId) {
-        setError("Subject ID is missing.");
+        notification.error("Subject ID is missing.");
         return;
       }
 
-      const confirmed = window.confirm(
-        `Are you sure you want to delete "${subject.subjectName}"?`
+      const subjectName = subject?.subjectName || "this subject";
+
+      const confirmed = await notification.confirmDelete(
+        `"${subjectName}"`
       );
 
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
 
       try {
-        setError("");
-        setNotice("");
-
         await deleteSubject(subjectId);
 
-        setNotice("Subject deleted successfully.");
+        notification.success("Subject deleted successfully.");
 
-        // If the last row on a page was deleted,
-        // move to the previous page when possible.
         if (subjects.length === 1 && page > 1) {
           setPage((previous) => previous - 1);
         } else {
           setRefreshKey((previous) => previous + 1);
         }
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            "Unable to delete the subject."
-        );
+      } catch (error) {
+        notification.error(getApiErrorMessage(error));
       }
     },
     [subjects.length, page, canDelete]
   );
 
-  const totalPages = pagination.totalPages || 0;
+  if (authLoading) {
+    return (
+      <div className="subject-page">
+        <p>Checking permissions...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!canView) {
     return (
@@ -211,9 +224,11 @@ export default function SubjectManagement() {
 
   return (
     <div className="subject-page">
-    
+      <div className="page-header">
+        <div>
+          <h1>Subject Management</h1>
+        </div>
 
-      <div class="page-header"><div><h1>Subject Management {pagination.total || 0}</h1> </div>
         {canCreate && (
           <button
             type="button"
@@ -226,27 +241,11 @@ export default function SubjectManagement() {
         )}
       </div>
 
-
-      {error && (
-        <div className="subject-alert subject-alert-error" role="alert">
-          {error}
-        </div>
-      )}
-
-      {notice && (
-        <div className="subject-alert subject-alert-success" role="status">
-          {notice}
-        </div>
-      )}
-
-     
-        <SubjectFilters
-          filters={filters}
-          onChange={handleFilterChange}
-          onReset={handleReset}
-        />
-
-    
+      <SubjectFilters
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={handleReset}
+      />
 
       <div className="common-card">
         <SubjectTable
@@ -273,36 +272,18 @@ export default function SubjectManagement() {
           }}
         />
 
-        {!loading && totalPages > 0 && (
-          <div className="subject-table-footer">
-            <span>
-              Page {page} of {totalPages}
-            </span>
-
-            <div className="subject-pagination">
-              <button
-                type="button"
-                className="subject-secondary-btn"
-                disabled={page <= 1}
-                onClick={() =>
-                  setPage((previous) => previous - 1)
-                }
-              >
-                Previous
-              </button>
-
-              <button
-                type="button"
-                className="subject-secondary-btn"
-                disabled={page >= totalPages}
-                onClick={() =>
-                  setPage((previous) => previous + 1)
-                }
-              >
-                Next
-              </button>
-            </div>
-          </div>
+        {!loading && (
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            itemCount={subjects.length}
+            itemLabel="subjects"
+            limit={limit}
+            loading={loading}
+            onPageChange={setPage}
+            onLimitChange={handleLimitChange}
+          />
         )}
       </div>
     </div>

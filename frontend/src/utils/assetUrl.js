@@ -1,23 +1,19 @@
+
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000/api";
 
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
 
 export const getAssetUrl = (filePath) => {
-  if (!filePath) {
-    return "";
-  }
+  if (!filePath) return "";
 
-  // Already an absolute URL
   if (
-    filePath.startsWith("http://") ||
-    filePath.startsWith("https://") ||
-    filePath.startsWith("blob:") ||
-    filePath.startsWith("data:")
+    /^(https?:\/\/|blob:|data:)/i.test(filePath)
   ) {
     return filePath;
   }
 
-  // Convert relative path to backend URL
-  return `${SERVER_BASE_URL}/${filePath.replace(/^\/+/, "")}`;
+  return `${SERVER_BASE_URL}/${String(filePath).replace(/^\/+/, "")}`;
 };

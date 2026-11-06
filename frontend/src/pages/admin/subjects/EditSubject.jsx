@@ -1,6 +1,11 @@
+
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft, FiSave } from "react-icons/fi";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import { FiSave } from "react-icons/fi";
 
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
@@ -9,6 +14,11 @@ import {
   getSubjectById,
   updateSubject,
 } from "../../../services/subjectService";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/SubjectManagement.css";
 
 const EMPTY_FORM = {
@@ -21,27 +31,25 @@ const EMPTY_FORM = {
 export default function EditSubject() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { user } = useAuth();
 
-  const location = useLocation();
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
     : "/admin";
 
+  const canUpdate = hasPermission(user, "subjects.update");
+
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
-
-  const canUpdate = hasPermission(user, "subjects.update");
 
   useEffect(() => {
     if (!canUpdate) {
       setLoading(false);
-      setError("You do not have permission to update subjects.");
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -49,10 +57,14 @@ export default function EditSubject() {
     const loadSubject = async () => {
       try {
         setLoading(true);
-        setError("");
+
+        if (!id) {
+          throw new Error("Subject ID is missing.");
+        }
 
         const response = await getSubjectById(id);
         const payload = response?.data;
+
         const subject =
           payload?.data?.subject ||
           payload?.data ||
@@ -71,25 +83,18 @@ export default function EditSubject() {
             status: subject.status || "Active",
           });
         }
-      } catch (err) {
+      } catch (error) {
         if (!cancelled) {
-          setError(
-            err.response?.data?.message ||
-              err.message ||
-              "Unable to load subject details."
-          );
+          notification.error(getApiErrorMessage(error));
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    if (!id) {
-      setError("Subject ID is missing.");
-      setLoading(false);
-    } else {
-      loadSubject();
-    }
+    loadSubject();
 
     return () => {
       cancelled = true;
@@ -104,24 +109,33 @@ export default function EditSubject() {
       [name]: name === "subjectCode" ? value.toUpperCase() : value,
     }));
 
-    setFieldErrors((previous) => ({ ...previous, [name]: "" }));
-    setError("");
+    setFieldErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError("");
 
     const errors = {};
+
     if (formData.subjectName.trim().length < 2) {
-      errors.subjectName = "Subject name must contain at least 2 characters.";
+      errors.subjectName =
+        "Subject name must contain at least 2 characters.";
     }
+
     if (formData.subjectCode.trim().length < 2) {
-      errors.subjectCode = "Subject code must contain at least 2 characters.";
+      errors.subjectCode =
+        "Subject code must contain at least 2 characters.";
     }
 
     setFieldErrors(errors);
-    if (Object.keys(errors).length) return;
+
+    if (Object.keys(errors).length) {
+      notification.warning("Please correct the highlighted fields.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -133,15 +147,13 @@ export default function EditSubject() {
         status: formData.status,
       });
 
+      notification.success("Subject updated successfully.");
+
       navigate(`${basePath}/subjects`, {
         replace: true,
-        state: { message: "Subject updated successfully." },
       });
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to update subject. Please try again."
-      );
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -167,115 +179,108 @@ export default function EditSubject() {
     );
   }
 
-  if (error && !formData.subjectName) {
-    return (
-      <div className="subject-page">
-         <div className="page-header">
-        <div> 
-          <h1>Edit Subject</h1>
-          
-        </div>
-        </div>
-        <div className="subject-alert subject-alert-error" role="alert">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="subject-page subject-form-page">
-       <div className="page-header">
-        <div> 
+      <div className="page-header">
+        <div>
           <h1>Edit Subject</h1>
-          
         </div>
-        </div>
-
-      {error && (
-        <div className="subject-alert subject-alert-error" role="alert">
-          {error}
-        </div>
-      )}
+      </div>
 
       <div className="common-card">
         <div className="cardbody">
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="subject-form-grid">
-            <div className="input-felid admission-form-full ">
-              <label htmlFor="subjectName">Subject Name  <span className="required">*</span></label>
-              <input
-                id="subjectName"
-                name="subjectName"
-                value={formData.subjectName}
-                onChange={changeField}
-                maxLength={100}
-                required
-              />
-              {fieldErrors.subjectName && (
-                <p className="subject-field-error">{fieldErrors.subjectName}</p>
-              )}
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="subject-form-grid">
+              <div className="input-felid admission-form-full">
+                <label htmlFor="subjectName">
+                  Subject Name <span className="required">*</span>
+                </label>
+
+                <input
+                  id="subjectName"
+                  name="subjectName"
+                  value={formData.subjectName}
+                  onChange={changeField}
+                  maxLength={100}
+                  required
+                />
+
+                {fieldErrors.subjectName && (
+                  <p className="subject-field-error">
+                    {fieldErrors.subjectName}
+                  </p>
+                )}
+              </div>
+
+              <div className="input-felid">
+                <label htmlFor="subjectCode">
+                  Subject Code <span className="required">*</span>
+                </label>
+
+                <input
+                  id="subjectCode"
+                  name="subjectCode"
+                  value={formData.subjectCode}
+                  onChange={changeField}
+                  maxLength={30}
+                  required
+                />
+
+                {fieldErrors.subjectCode && (
+                  <p className="subject-field-error">
+                    {fieldErrors.subjectCode}
+                  </p>
+                )}
+              </div>
+
+              <div className="input-felid">
+                <label htmlFor="status">Status</label>
+
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={changeField}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="input-felid admission-form-full">
+                <label htmlFor="description">Description</label>
+
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={5}
+                  maxLength={1000}
+                  value={formData.description}
+                  onChange={changeField}
+                />
+              </div>
             </div>
 
-            <div className="input-felid">
-              <label htmlFor="subjectCode">Subject Code <span className="required">*</span> </label>
-              <input
-                id="subjectCode"
-                name="subjectCode"
-                value={formData.subjectCode}
-                onChange={changeField}
-                maxLength={30}
-                required
-              />
-              {fieldErrors.subjectCode && (
-                <p className="subject-field-error">{fieldErrors.subjectCode}</p>
-              )}
-            </div>
-
-            <div className="input-felid">
-              <label htmlFor="status">Status</label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={changeField}
+            <div className="subject-form-actions">
+              <button
+                type="button"
+                className="themebtn themebtnline"
+                onClick={() => navigate(`${basePath}/subjects`)}
+                disabled={saving}
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
+                Cancel
+              </button>
 
-            <div className="input-felid admission-form-full">
-              <label htmlFor="description">Description</label>
-              <textarea
-                id="description"
-                name="description"
-                rows={5}
-                maxLength={1000}
-                value={formData.description}
-                onChange={changeField}
-              />
+              <button
+                type="submit"
+                className="themebtn"
+                disabled={saving}
+              >
+                <FiSave />
+                {saving ? "Saving..." : "Update Subject"}
+              </button>
             </div>
-          </div>
-
-          <div className="subject-form-actions">
-            <button
-              type="button"
-              className="themebtn themebtnline"
-              onClick={() => navigate("/admin/subjects")}
-              disabled={saving}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="themebtn"
-              disabled={saving}
-            >
-              <FiSave /> {saving ? "Saving..." : "Update Subject"}
-            </button>
-          </div>
-        </form>
+          </form>
         </div>
       </div>
     </div>

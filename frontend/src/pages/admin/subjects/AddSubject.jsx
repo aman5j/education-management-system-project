@@ -1,11 +1,15 @@
+
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiSave } from "react-icons/fi";
 
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
-
 import { createSubject } from "../../../services/subjectService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/SubjectManagement.css";
 
 const INITIAL_FORM = {
@@ -19,13 +23,13 @@ export default function AddSubject() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
     : "/admin";
-    
+
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
   const changeField = (event) => {
@@ -36,24 +40,33 @@ export default function AddSubject() {
       [name]: name === "subjectCode" ? value.toUpperCase() : value,
     }));
 
-    setFieldErrors((previous) => ({ ...previous, [name]: "" }));
-    setError("");
+    setFieldErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError("");
 
     const errors = {};
+
     if (formData.subjectName.trim().length < 2) {
-      errors.subjectName = "Subject name must contain at least 2 characters.";
+      errors.subjectName =
+        "Subject name must contain at least 2 characters.";
     }
+
     if (formData.subjectCode.trim().length < 2) {
-      errors.subjectCode = "Subject code must contain at least 2 characters.";
+      errors.subjectCode =
+        "Subject code must contain at least 2 characters.";
     }
 
     setFieldErrors(errors);
-    if (Object.keys(errors).length) return;
+
+    if (Object.keys(errors).length) {
+      notification.warning("Please correct the highlighted fields.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -65,52 +78,44 @@ export default function AddSubject() {
         status: formData.status,
       });
 
+      notification.success("Subject created successfully.");
+
       navigate(`${basePath}/subjects`, {
         replace: true,
-        state: { message: "Subject created successfully." },
       });
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to create subject. Please try again."
-      );
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     } finally {
       setSaving(false);
     }
   };
 
   if (!hasPermission(user, "subjects.create")) {
-  return (
-    <div className="subject-page">
-      <div className="subject-alert subject-alert-error" role="alert">
-        You do not have permission to create subjects.
+    return (
+      <div className="subject-page">
+        <div className="subject-alert subject-alert-error" role="alert">
+          You do not have permission to create subjects.
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className="subject-page subject-form-page">
       <div className="page-header">
-        <div> 
+        <div>
           <h1>Add Subject</h1>
-          
         </div>
 
         <button
           type="button"
           className="themebtn"
           onClick={() => navigate(`${basePath}/subjects`)}
+          disabled={saving}
         >
           <FiArrowLeft /> Back to Subjects
         </button>
       </div>
-
-      {error && (
-        <div className="subject-alert subject-alert-error" role="alert">
-          {error}
-        </div>
-      )}
 
       <div className="common-card">
         <form onSubmit={handleSubmit} noValidate className="cardbody">
@@ -126,11 +131,13 @@ export default function AddSubject() {
                 required
               />
               {fieldErrors.subjectName && (
-                <p className="subject-field-error">{fieldErrors.subjectName}</p>
+                <p className="subject-field-error">
+                  {fieldErrors.subjectName}
+                </p>
               )}
             </div>
 
-            <div className="input-felid ">
+            <div className="input-felid">
               <label htmlFor="subjectCode">Subject Code *</label>
               <input
                 id="subjectCode"
@@ -142,11 +149,13 @@ export default function AddSubject() {
                 required
               />
               {fieldErrors.subjectCode && (
-                <p className="subject-field-error">{fieldErrors.subjectCode}</p>
+                <p className="subject-field-error">
+                  {fieldErrors.subjectCode}
+                </p>
               )}
             </div>
 
-            <div className="input-felid ">
+            <div className="input-felid">
               <label htmlFor="status">Status</label>
               <select
                 id="status"
@@ -182,12 +191,14 @@ export default function AddSubject() {
             >
               Cancel
             </button>
+
             <button
               type="submit"
               className="themebtn"
               disabled={saving}
             >
-              <FiSave /> {saving ? "Saving..." : "Save Subject"}
+              <FiSave />
+              {saving ? "Saving..." : "Save Subject"}
             </button>
           </div>
         </form>

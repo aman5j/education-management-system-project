@@ -19,6 +19,7 @@ const getLinkedStudent = async (req) => {
   return Student.findById(studentId);
 };
 
+// Return actual database fields belonging to the logged-in student.
 const serializeStudent = (student) => ({
   id: String(student._id),
   rollNo: student.rollNo || "",
@@ -34,6 +35,7 @@ const serializeStudent = (student) => ({
   address: student.address || "",
   pincode: student.pincode || "",
   profileImage: student.profileImage || "",
+  signature: student.signature || "",
   status: student.status || "",
 });
 
@@ -53,7 +55,6 @@ export const getMyProfile = async (req, res, next) => {
       );
     }
 
-    // Read the current login account directly from the database.
     const user = await User.findById(req.user._id).select(
       "name email role"
     );
@@ -95,8 +96,6 @@ export const updateMyProfile = async (req, res, next) => {
       return fail(res, 404, "Student login account not found.");
     }
 
-    // Students cannot change the email used for login.
-    // Reject attempts to submit a different email through the API.
     if (Object.prototype.hasOwnProperty.call(req.body, "email")) {
       const requestedEmail = String(req.body.email || "")
         .trim()
@@ -115,8 +114,6 @@ export const updateMyProfile = async (req, res, next) => {
       }
     }
 
-    // Only these student fields can be changed by the student.
-    // Email is intentionally excluded.
     const allowedFields = [
       "firstName",
       "surname",
@@ -168,10 +165,8 @@ export const updateMyProfile = async (req, res, next) => {
       return fail(res, 400, "Please enter a valid date of birth.");
     }
 
-    // Save student profile details without modifying either email.
     await student.save();
 
-    // Update only the account display name and phone.
     user.name = [firstName, surname].filter(Boolean).join(" ");
     user.phone = student.mobile || "";
 
@@ -218,6 +213,7 @@ export const uploadMyProfilePhoto = async (req, res, next) => {
     }
 
     student.profileImage = `/uploads/students/${req.file.filename}`;
+
     await student.save();
 
     return res.status(200).json({
