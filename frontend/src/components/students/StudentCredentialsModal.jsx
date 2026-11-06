@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 
 import studentCredentialService from "../../services/studentCredentialService";
+import notification from "../../utils/notification";
 
 const StudentCredentialsModal = ({ student, onClose }) => {
   const [account, setAccount] = useState(null);
@@ -20,28 +21,28 @@ const StudentCredentialsModal = ({ student, onClose }) => {
   const [issuedPassword, setIssuedPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const studentId = student?._id;
 
   const loadStatus = async () => {
-    if (!studentId) return;
+    if (!studentId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-    setError("");
 
     try {
-      const result =
-        await studentCredentialService.getStatus(studentId);
+      const result = await studentCredentialService.getStatus(studentId);
 
       setHasLogin(Boolean(result.data?.hasLogin));
       setAccount(result.data?.account || null);
       setEmail(result.data?.studentEmail || student?.email || "");
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to load student login status."
+    } catch (error) {
+      notification.error(
+        error?.response?.data?.message ||
+        "Unable to load student login status."
       );
     } finally {
       setLoading(false);
@@ -50,33 +51,33 @@ const StudentCredentialsModal = ({ student, onClose }) => {
 
   useEffect(() => {
     loadStatus();
-    // This modal is mounted for one selected student.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
   const validatePassword = () => {
     if (password.length < 12 || password.length > 128) {
-      setError("Password must contain 12–128 characters.");
+      setPasswordError("Password must contain 12–128 characters.");
       return false;
     }
+
+    setPasswordError("");
     return true;
   };
 
   const handleCreate = async (event) => {
     event.preventDefault();
-    setError("");
-    setMessage("");
+    setPasswordError("");
     setIssuedPassword("");
 
     if (!validatePassword()) return;
 
     setSaving(true);
+
     try {
-      const result =
-        await studentCredentialService.createAccount(
-          studentId,
-          password
-        );
+      const result = await studentCredentialService.createAccount(
+        studentId,
+        password
+      );
 
       setHasLogin(true);
       setAccount({
@@ -90,11 +91,11 @@ const StudentCredentialsModal = ({ student, onClose }) => {
 
       setIssuedPassword(result.data?.initialPassword || password);
       setPassword("");
-      setMessage("Student login created successfully.");
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to create student login."
+      notification.success("Student login created successfully.");
+    } catch (error) {
+      notification.error(
+        error?.response?.data?.message ||
+        "Unable to create student login."
       );
     } finally {
       setSaving(false);
@@ -103,27 +104,33 @@ const StudentCredentialsModal = ({ student, onClose }) => {
 
   const handleReset = async (event) => {
     event.preventDefault();
-    setError("");
-    setMessage("");
+    setPasswordError("");
     setIssuedPassword("");
 
     if (!validatePassword()) return;
 
+    const confirmed = await notification.confirm({
+      title: "Reset student password?",
+      text: "The student's existing password will stop working.",
+      confirmText: "Yes, reset password",
+      icon: "warning",
+    });
+
+    if (!confirmed) return;
+
     setSaving(true);
+
     try {
-      await studentCredentialService.resetPassword(
-        studentId,
-        password
-      );
+      await studentCredentialService.resetPassword(studentId, password);
 
       setIssuedPassword(password);
       setPassword("");
-      setMessage("Password reset successfully. Copy it now and share it securely.");
+      notification.success("Student password reset successfully.");
       await loadStatus();
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to reset the student password."
+    } catch (error) {
+      notification.error(
+        error?.response?.data?.message ||
+        "Unable to reset the student password."
       );
     } finally {
       setSaving(false);
@@ -133,9 +140,11 @@ const StudentCredentialsModal = ({ student, onClose }) => {
   const copyPassword = async () => {
     try {
       await navigator.clipboard.writeText(issuedPassword);
-      setMessage("Password copied to clipboard.");
+      notification.success("Password copied to clipboard.");
     } catch {
-      setError("Copy failed. Select and copy the password manually.");
+      notification.error(
+        "Copy failed. Please select and copy the password manually."
+      );
     }
   };
 
@@ -158,6 +167,7 @@ const StudentCredentialsModal = ({ student, onClose }) => {
               {student.rollNo ? ` · ${student.rollNo}` : ""}
             </p>
           </div>
+
           <button
             type="button"
             className="student-credentials-close"
@@ -169,14 +179,6 @@ const StudentCredentialsModal = ({ student, onClose }) => {
         </header>
 
         <div className="student-credentials-body">
-          {error && (
-            <div className="student-credentials-error">{error}</div>
-          )}
-
-          {message && (
-            <div className="student-credentials-success">{message}</div>
-          )}
-
           {loading ? (
             <p>Checking login account...</p>
           ) : (
@@ -185,8 +187,8 @@ const StudentCredentialsModal = ({ student, onClose }) => {
                 <label>Student email</label>
                 <input value={email} readOnly />
                 <small>
-                  This email comes from the existing Student record.
-                  To change it, update the student record first.
+                  This email comes from the Student record.
+                  Update the student record to change it.
                 </small>
               </div>
 
@@ -219,17 +221,22 @@ const StudentCredentialsModal = ({ student, onClose }) => {
                   <label>
                     {hasLogin ? "New password" : "Initial password"}
                   </label>
+
                   <div className="student-credentials-password">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setPasswordError("");
+                      }}
                       minLength={12}
                       maxLength={128}
                       autoComplete="new-password"
                       placeholder="Enter at least 12 characters"
                       required
                     />
+
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
@@ -238,6 +245,13 @@ const StudentCredentialsModal = ({ student, onClose }) => {
                       {showPassword ? <FiEyeOff /> : <FiEye />}
                     </button>
                   </div>
+
+                  {passwordError && (
+                    <small className="student-field-error" role="alert">
+                      {passwordError}
+                    </small>
+                  )}
+
                   <small>
                     The password is hashed before database storage.
                     It cannot be retrieved later.
@@ -249,17 +263,11 @@ const StudentCredentialsModal = ({ student, onClose }) => {
                   className="student-credentials-primary"
                   disabled={saving}
                 >
-                  {saving ? (
-                    "Please wait..."
-                  ) : hasLogin ? (
-                    <>
-                      <FiRefreshCw /> Reset Password
-                    </>
-                  ) : (
-                    <>
-                      <FiKey /> Create Login
-                    </>
-                  )}
+                  {saving
+                    ? "Please wait..."
+                    : hasLogin
+                      ? <><FiRefreshCw /> Reset Password</>
+                      : <><FiKey /> Create Login</>}
                 </button>
               </form>
 
@@ -269,9 +277,9 @@ const StudentCredentialsModal = ({ student, onClose }) => {
                     {hasLogin ? "New password" : "Initial password"}
                   </strong>
                   <p>
-                    Copy this password now. It will not be available
-                    for later retrieval.
+                    Copy this password now. It will not be available later.
                   </p>
+
                   <div className="student-credentials-password">
                     <input value={issuedPassword} readOnly />
                     <button

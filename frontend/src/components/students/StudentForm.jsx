@@ -234,8 +234,8 @@ const StudentForm = ({
       errors.rollNo = "Roll number is required.";
     }
 
-    if (!form.firstName.trim()) {
-      errors.firstName = "First name is required.";
+    if (form.firstName.trim().length < 2) {
+      errors.firstName = "First name must contain at least 2 characters.";
     }
 
     if (!form.mobile.trim()) {
@@ -358,9 +358,15 @@ const StudentForm = ({
                     </span>
                   )}
                 </div>
-                <a class="preview-image tooltip" data-tooltip="View Full Image" href="{profilePreview}" target="_blank" >
-                  <FiEye />
-                </a>
+                <a
+                className="preview-image tooltip"
+                data-tooltip="View Full Image"
+                href={profilePreview}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FiEye />
+              </a>
               </div>
             </div>
 
@@ -399,7 +405,13 @@ const StudentForm = ({
                     </span>
                   )}
                   </div>
-                  <a class="preview-image tooltip" data-tooltip="View Full Image" href="" target="_blank" >
+                  <a
+                    className="preview-image tooltip"
+                    data-tooltip="View Full Image"
+                    href={signaturePreview}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <FiEye />
                   </a>
                 </div>

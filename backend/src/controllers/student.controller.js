@@ -6,6 +6,19 @@ import Student from "../models/Student.js";
 import StudentAdmission from "../models/StudentAdmission.js";
 import Batch from "../models/Batch.js";
 
+import Payment from "../models/Payment.js";
+import Attendance from "../models/Attendance.js";
+import User from "../models/User.js";
+import ExamResult from "../models/ExamResult.js";
+import HallTicket from "../models/HallTicket.js";
+import PracticeAttempt from "../models/PracticeAttempt.js";
+import AssignmentSubmission from "../models/AssignmentSubmission.js";
+import AssignmentEvaluation from "../models/AssignmentEvaluation.js";
+import Certificate from "../models/Certificate.js";
+import LeaveRequest from "../models/LeaveRequest.js";
+import SupportTicket from "../models/SupportTicket.js";
+import ExamAccessRequest from "../models/ExamAccessRequest.js";
+
 
 
 const normalizeStudentEmail = (value) =>
@@ -597,9 +610,19 @@ export const updateStudent = async (req, res, next) => {
   }
 };
 
+
 export const deleteStudent = async (req, res, next) => {
   try {
-    const student = await Student.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student ID.",
+      });
+    }
+
+    const student = await Student.findById(id);
 
     if (!student) {
       return res.status(404).json({
@@ -608,9 +631,36 @@ export const deleteStudent = async (req, res, next) => {
       });
     }
 
+    const studentId = student._id;
+
+    const dependencyChecks = await Promise.all([
+      StudentAdmission.exists({ student_id: studentId }),
+      Payment.exists({ student_id: studentId }),
+      Attendance.exists({ student_id: studentId }),
+      User.exists({ studentRecord: studentId }),
+      ExamResult.exists({ student_id: studentId }),
+      HallTicket.exists({ student_id: studentId }),
+      PracticeAttempt.exists({ student_id: studentId }),
+      AssignmentSubmission.exists({ student_id: studentId }),
+      AssignmentEvaluation.exists({ student_id: studentId }),
+      Certificate.exists({ student_id: studentId }),
+      LeaveRequest.exists({ student_id: studentId }),
+      SupportTicket.exists({ student_id: studentId }),
+      ExamAccessRequest.exists({ student_id: studentId }),
+    ]);
+
+    const hasDependencies = dependencyChecks.some(Boolean);
+
+    if (hasDependencies) {
+      return res.status(409).json({
+        success: false,
+        code: "STUDENT_HAS_LINKED_RECORDS",
+        message:
+          "This student has linked academic, financial, attendance, examination, certificate, support, or login records. Deactivate the student instead of deleting the record.",
+      });
+    }
 
     await student.deleteOne();
-
 
     return res.status(200).json({
       success: true,
@@ -620,6 +670,7 @@ export const deleteStudent = async (req, res, next) => {
     next(error);
   }
 };
+
 
 export const updateStudentStatus = async (req, res, next) => {
   try {
