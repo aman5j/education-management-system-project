@@ -321,12 +321,12 @@ export default function StudentCourses() {
 
 
       <div className="filterheader">
-        <div className="sc-tabs" role="tablist" aria-label="Course status">
+        <div className="student-profile__tabs" role="tablist" aria-label="Course status">
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === "active"}
-            className={activeTab === "active" ? "is-active" : ""}
+            className={activeTab === "active" ? "active" : ""}
             onClick={() => setActiveTab("active")}
           >
             Active Courses <span>{activeCourses.length}</span>
@@ -335,7 +335,7 @@ export default function StudentCourses() {
             type="button"
             role="tab"
             aria-selected={activeTab === "completed"}
-            className={activeTab === "completed" ? "is-active" : ""}
+            className={activeTab === "completed" ? "active" : ""}
             onClick={() => setActiveTab("completed")}
           >
             Completed Courses <span>{completedCourses.length}</span>

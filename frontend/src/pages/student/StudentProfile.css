@@ -57,38 +57,6 @@
   cursor: pointer;
 }
 
-.student-profile__tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 4px;
-  margin-bottom: 16px;
-}
-
-.student-profile__tabs button {
- display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 38px;
-    padding: 9px 20px;
-    border: 1px solid #ddd;
-    border-radius: 39px;
-    background: transparent;
-    color: #51627e;
-    font-size: 13px;
-    font-weight: 600;
-    background: white;
-    box-shadow: 0 0 3px #ddd;
-    cursor: pointer;
-}
-
-.student-profile__tabs button.active {
-  border-color: #1d5ff0;
-    background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);
-    color: #fff;
-}
-
-
 .student-profile__personal-layout {
   display: grid;
   grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);

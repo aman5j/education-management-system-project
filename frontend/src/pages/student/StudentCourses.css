@@ -159,52 +159,6 @@
   width: 100%;
 }
 
-.sc-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.sc-tabs button {
-     display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 38px;
-    padding: 9px 20px;
-    border: 1px solid #ddd;
-    border-radius: 39px;
-    background: transparent;
-    color: #51627e;
-    font-size: 13px;
-    font-weight: 600;
-    background: white;
-    box-shadow: 0 0 3px #ddd;
-    cursor: pointer;
-}
-
-.sc-tabs button.is-active {
- border-color: #1d5ff0;
-    background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);
-    color: #fff;
-}
-
-.sc-tabs button span {
-  display: inline-grid;
-  min-width: 20px;
-  height: 20px;
-  place-items: center;
-  padding: 0 5px;
-  border-radius: 6px;
-  background: #eaf0fb;
-  color: #455c80;
-  font-size: 10px;
-}
-
-.sc-tabs button.is-active span {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
 .sc-toolbar__actions {
   display: flex;
   align-items: center;
@@ -475,9 +429,7 @@ label.course-fee {
   background: linear-gradient(145deg, #eff5ff, #f8faff 75%);
 }
 
-.sc-recommendations__heading {
-  margin-bottom: 17px;
-}
+
 
 .sc-recommendations__heading h2 {
   margin: 0;
@@ -487,14 +439,13 @@ label.course-fee {
 }
 
 .sc-recommendations__count {
-  flex: 0 0 auto;
-  padding: 7px 10px;
-  border: 1px solid #d9e5ff;
-  border-radius: 8px;
-  background: #fff;
-  color: #315fc9;
-  font-size: 10px;
-  font-weight: 800;
+     flex: 0 0 auto;
+    padding: 5px 0px;
+    border-radius: 24px;
+    background: #fff;
+    color: #315fc9;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .sc-recommendation-grid {

@@ -12,7 +12,8 @@ import {
 
 import studentPortalService from "../../services/studentPortalService";
 import "./StudentApplyLeave.css";
-import { IoMdInformationCircle } from "react-icons/io";
+import { IoIosCall, IoMdInformationCircle } from "react-icons/io";
+import { MdDateRange, MdOutgoingMail } from "react-icons/md";
 
 const today = () => {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -84,6 +85,7 @@ export default function StudentApplyLeave() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [activeTab, setActiveTab] = useState("apply");
 
   const loadPage = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -240,13 +242,30 @@ export default function StudentApplyLeave() {
 
   return (
     <main className="student-leave">
-    <div class="page-header"><div><h1>My Leave Request</h1></div></div>
+      <div className="page-header">
+        <div>
+          <h1>My Leave Request</h1>
+         
+        </div>
+
+        <button
+          type="button"
+          className="themebtn sl-refresh"
+          onClick={() => loadPage(true)}
+          disabled={refreshing}
+        >
+          <FiRefreshCw className={refreshing ? "sl-spin" : ""} />
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
 
       {error && (
         <div className="sl-alert sl-alert--error" role="alert">
           <FiAlertCircle />
           <span>{error}</span>
-          <button type="button" onClick={() => setError("")}>×</button>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">
+            ×
+          </button>
         </div>
       )}
 
@@ -254,92 +273,134 @@ export default function StudentApplyLeave() {
         <div className="sl-alert sl-alert--success" role="status">
           <FiCheckCircle />
           <span>{success}</span>
-          <button type="button" onClick={() => setSuccess("")}>×</button>
+          <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss message">
+            ×
+          </button>
         </div>
       )}
 
-      <section className="common-card">
-        
-
-        {loading ? (
-          <div className="sl-state">Loading your active admissions...</div>
-        ) : admissions.length === 0 ? (
-          <div className="sl-state">
+      <div className="sl-tabs-wrapper">
+        <div className="student-profile__tabs" role="tablist" aria-label="Leave request sections">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "apply"}
+            className={`sl-tab ${activeTab === "apply" ? "active" : ""}`}
+            onClick={() => setActiveTab("apply")}
+          >
             <FiFileText />
-            <strong>No active admission found</strong>
-            <span>You need an active course admission to apply for leave.</span>
+            Apply for Leave
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "history"}
+            className={`sl-tab ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            <FiCalendar />
+            Leave History
+            <span>{requests.length}</span>
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "apply" && (
+        <section className="common-card sl-tab-content" role="tabpanel">
+          <div className="panel-header">
+            <div>
+              <h3>Apply for Leave</h3>
+              <p>Fill in the details to submit your leave application.</p>
+            </div>
           </div>
-        ) : (
-          <form className="cardbody" onSubmit={handleSubmit}>
-            <div className="input-felid">
-              <label  >
-                 Course / Batch  <span className="required">*</span> <span className="infoicon tooltip" data-tooltip="Select the admission for which you need leave.
-" classNameinfoicon><IoMdInformationCircle />
-</span>
+
+          {loading ? (
+            <div className="sl-state">Loading your active admissions...</div>
+          ) : admissions.length === 0 ? (
+            <div className="sl-state">
+              <FiFileText />
+              <strong>No active admission found</strong>
+              <span>You need an active course admission to apply for leave.</span>
+            </div>
+          ) : (
+            <form className="cardbody" onSubmit={handleSubmit}>
+              <div className="gird-form-leave">
+                <div className="input-felid">
+                  <label>
+                    Course / Batch <span className="required">*</span>
+                    <span
+                      className="infoicon tooltip"
+                      data-tooltip="Select the admission for which you need leave."
+                    >
+                      <IoMdInformationCircle />
+                    </span>
                   </label>
-              
-              <select
-                name="admission_id"
-                value={form.admission_id}
-                onChange={updateField}
-                required
-              >
-                <option value="">Select your course and batch</option>
-                {admissions.map((item) => (
-                  <option key={item.admissionId} value={item.admissionId}>
-                    {item.course} — {item.batch}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            <div className="input-felid">
-                <label>Leave Type <span className="required">*</span> </label>
-              
-              <select
-                name="leave_type"
-                value={form.leave_type}
-                onChange={updateField}
-                required
-              >
-                <option value="Sick Leave">Sick Leave</option>
-                <option value="Casual Leave">Casual Leave</option>
-                <option value="Emergency Leave">Emergency Leave</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+                  <select
+                    name="admission_id"
+                    value={form.admission_id}
+                    onChange={updateField}
+                    required
+                  >
+                    <option value="">Select your course and batch</option>
+                    {admissions.map((item) => (
+                      <option key={item.admissionId} value={item.admissionId}>
+                        {item.course} — {item.batch}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
- <div className="input-felid">
-           <label>From Date <span className="requried">*</span> </label>
-              
-              <input
-                type="date"
-                name="from_date"
-                min={today()}
-                value={form.from_date}
-                onChange={updateField}
-                required
-              />
-           
-            </div>
+                <div className="input-felid">
+                  <label>
+                    Leave Type <span className="required">*</span>
+                  </label>
+                  <select
+                    name="leave_type"
+                    value={form.leave_type}
+                    onChange={updateField}
+                    required
+                  >
+                    <option value="Sick Leave">Sick Leave</option>
+                    <option value="Casual Leave">Casual Leave</option>
+                    <option value="Emergency Leave">Emergency Leave</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
- <div className="input-felid">
-                            <label>To Date <span className="requried">*</span> </label>
+                <div className="input-felid">
+                  <label>
+                    From Date <span className="required">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="from_date"
+                    min={today()}
+                    value={form.from_date}
+                    onChange={updateField}
+                    required
+                  />
+                </div>
 
-             
-              <input
-                type="date"
-                name="to_date"
-                min={form.from_date || today()}
-                value={form.to_date}
-                onChange={updateField}
-                required
-              />
-           
-            </div>
+                <div className="input-felid">
+                  <label>
+                    To Date <span className="required">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="to_date"
+                    min={form.from_date || today()}
+                    value={form.to_date}
+                    onChange={updateField}
+                    required
+                  />
+                </div>
 
-            <div className="input-felid">
-                <label>   Reason for Leave <span className="requried">*</span> </label>
+                <div className="input-felid student-form-full">
+                  <label>
+                    Reason for Leave <span className="required">*</span>
+                  </label>
                   <textarea
                     name="reason"
                     rows="4"
@@ -349,123 +410,131 @@ export default function StudentApplyLeave() {
                     onChange={updateField}
                     required
                   />
-                  <small>{form.reason.length}/1000 characters</small>
-                
-            </div>
+                  <small className="infotext">
+                    {form.reason.length}/1000 characters
+                  </small>
+                </div>
+              </div>
 
-            <div className="sl-form-note sl-field--full">
-              <FiAlertCircle />
-              <span>
-                Your request will remain Pending until it is reviewed by the
-                institute. Supporting-document upload will be enabled after
-                the secure upload endpoint is added.
-              </span>
-            </div>
+              <div className="sl-form-actions">
+                <button
+                  type="submit"
+                  className="themebtn"
+                  disabled={submitting}
+                >
+                  {submitting ? "Submitting..." : "Submit Leave Request"}
+                </button>
+              </div>
+            </form>
+          )}
+        </section>
+      )}
 
-            <div className="sl-form-actions sl-field--full">
+      {activeTab === "history" && (
+        <section className="common-card sl-tab-content" role="tabpanel">
+          <div className="panel-header">
+            <div>
+              <h3>Leave History</h3>
+              <p>Track all your submitted leave applications.</p>
+            </div>
+            <span className="sc-recommendations__count">
+              {requests.length} Requests
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="sl-state">Loading leave history...</div>
+          ) : requests.length === 0 ? (
+            <div className="sl-state">
+              <FiCalendar />
+              <strong>No leave requests yet</strong>
+              <span>Your submitted leave applications will appear here.</span>
               <button
-                type="submit"
-                className="sl-submit"
-                disabled={submitting}
+                type="button"
+                className="themebtn"
+                onClick={() => setActiveTab("apply")}
               >
-                {submitting ? "Submitting..." : "Submit Leave Request"}
+                Apply for Leave
               </button>
             </div>
-          </form>
-        )}
-      </section>
-
-      <section className="sl-card sl-history">
-        <div className="sl-card-heading sl-history-heading">
-          <div className="sl-heading-icon"><FiClock /></div>
-          <div>
-            <h2>My Leave Requests</h2>
-            <p>Review your leave history and request decisions.</p>
-          </div>
-          <span className="sl-count">{requests.length} Requests</span>
-        </div>
-
-        {loading ? (
-          <div className="sl-state">Loading leave history...</div>
-        ) : requests.length === 0 ? (
-          <div className="sl-state">
-            <FiCalendar />
-            <strong>No leave requests yet</strong>
-            <span>Your submitted leave applications will appear here.</span>
-          </div>
-        ) : (
-          <div className="sl-table-wrap">
-            <table className="sl-table">
-              <thead>
-                <tr>
+          ) : (
+            <div className="common-table-wrapper">
+              <table className="common-table">
+                <thead>
+                  <tr>
                     <th>Applied On</th>
                     <th>Leave Date / Range</th>
-                    <th>Course / Batch</th>
+                    <th>Course</th>
                     <th>Leave Type</th>
-                    <th>Reason</th>
+                    <th>Leave Reason</th>
                     <th>Status</th>
                     <th>Admin Remark</th>
                     <th>Action</th>
-                </tr>
+                  </tr>
                 </thead>
-              <tbody>
-                {requests.map((request) => {
-                  const course =
-                    request.course_id?.courseTitle || "—";
-                  const batch =
-                    request.batch_id?.batch_name || "—";
+                <tbody>
+                  {requests.map((request) => {
+                    const course = request.course_id?.courseTitle || "—";
+                    const batch = request.batch_id?.batch_name || "—";
 
-                  return (
-                    <tr key={request._id}>
-                      <td>
-                        <strong>{formatAppliedDate(request.createdAt)}</strong>
-                      </td>
-
-                      <td>
-                        <strong>{formatDate(request.from_date)}</strong>
-                        <small>to {formatDate(request.to_date)}</small>
-                      </td>
-                      
-                      <td>
-                        <strong>{course}</strong>
-                        <small>{batch}</small>
-                      </td>
-                      <td>{request.leave_type}</td>
-                      <td className="sl-reason">{request.reason}</td>
-                      <td>
-                        <span className={`sl-status sl-status--${statusClass(request.status)}`}>
-                          {request.status}
-                        </span>
-                      </td>
-                      <td className="sl-admin-remark">
-                        {request.status === "Rejected"
-                          ? request.admin_remark || "No remark provided."
-                          : "—"}
-                      </td>
-                      <td>
-                        {request.status === "Pending" ? (
-                          <button
-                            type="button"
-                            className="sl-cancel"
-                            onClick={() => handleCancel(request._id)}
-                            disabled={cancellingId === request._id}
+                    return (
+                      <tr key={request._id}>
+                        <td>
+                            <div className="contact-details">
+                     <div className="contact-li"> <MdDateRange />  <span>  {formatAppliedDate(request.createdAt)}</span></div>
+                    </div>
+                        
+                        </td>
+                        <td>
+                           <div className="contact-details">
+                     <div className="contact-li"> <MdDateRange />  <span> {formatDate(request.from_date)}</span></div> To
+                    <div className="contact-li"> <MdDateRange /> <span>{formatDate(request.to_date)}</span></div>
+                    </div>
+                        
+                        </td>
+                        <td>
+                          {course}
+                         
+                        </td>
+                        <td>{request.leave_type}</td>
+                        <td className="sl-reason">{request.reason}</td>
+                        <td>
+                          <span
+                            className={`status ${statusClass(request.status)}`}
                           >
-                            {cancellingId === request._id
-                              ? "Cancelling..."
-                              : "Cancel"}
-                          </button>
-                        ) : (
-                          <span className="sl-muted">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                            {request.status}
+                          </span>
+                        </td>
+                        <td className="sl-admin-remark">
+                          {request.status === "Rejected"
+                            ? request.admin_remark || "No remark provided."
+                            : "—"}
+                        </td>
+                        <td>
+                          {request.status === "Pending" ? (
+                            <button
+                              type="button"
+                              className="tablebtn cancle"
+                              onClick={() => handleCancel(request._id)}
+                              disabled={cancellingId === request._id}
+                            >
+                              {cancellingId === request._id
+                                ? "Cancelling..."
+                                : "Cancel Request"}
+                            </button>
+                          ) : (
+                            <span className="sl-muted">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </main>
   );
 }

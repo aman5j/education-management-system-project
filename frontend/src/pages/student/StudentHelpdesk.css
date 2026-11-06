@@ -1,113 +1,11 @@
 
-.student-helpdesk {
-  width: 100%;
-  max-width: 1500px;
-  min-width: 0;
-  margin: 0 auto;
-  padding: 24px 28px 16px;
-  color: #172033;
-  box-sizing: border-box;
-}
 
-.student-helpdesk__heading,
-.sh-section-title,
-.sh-conversation__top,
-.sh-ticket-card__top,
-.sh-ticket-card__bottom,
-.sh-form__actions,
-.sh-reopen-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
 
-.student-helpdesk__heading {
-  margin-bottom: 24px;
+.sh-ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
 }
-
-.student-helpdesk__eyebrow {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-}
-
-.student-helpdesk__heading h1 {
-  margin: 6px 0;
-  font-size: clamp(24px, 3vw, 32px);
-}
-
-.student-helpdesk__heading p,
-.sh-section-title p {
-  margin: 0;
-  color: #718096;
-  font-size: 14px;
-}
-
-.sh-button,
-.sh-refresh,
-.sh-back,
-.sh-icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 9px;
-  padding: 11px 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: .2s ease;
-}
-
-.sh-button:disabled,
-.sh-refresh:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-}
-
-.sh-button--primary {
-  background: #2563eb;
-  color: white;
-}
-
-.sh-button--primary:hover {
-  background: #1d4ed8;
-}
-
-.sh-button--outline {
-  background: white;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-}
-
-.sh-alert {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 15px;
-  margin-bottom: 16px;
-  border-radius: 9px;
-  font-size: 14px;
-}
-
-.sh-alert button {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.sh-alert--error {
-  color: #b91c1c;
-  background: #fef2f2;
-}
-
-.sh-alert--success {
-  color: #166534;
-  background: #f0fdf4;
-}
-
 .sh-stats {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -115,122 +13,23 @@
   margin-bottom: 26px;
 }
 
-.sh-stat {
-  min-height: 116px;
-  padding: 17px;
-  border: 1px solid #e7edf5;
-  border-radius: 13px;
-  background: white;
-  box-shadow: 0 3px 12px rgba(15, 23, 42, .04);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
-}
-
-.sh-stat__icon {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.sh-stat strong {
-  font-size: 25px;
-}
-
-.sh-stat small {
-  color: #718096;
-  font-size: 12px;
-}
-
-.sh-stat--open .sh-stat__icon { color: #d97706; background: #fffbeb; }
-.sh-stat--progress .sh-stat__icon { color: #7c3aed; background: #f5f3ff; }
-.sh-stat--resolved .sh-stat__icon { color: #059669; background: #ecfdf5; }
-.sh-stat--closed .sh-stat__icon { color: #64748b; background: #f1f5f9; }
-
-.sh-ticket-section,
-.sh-form-card,
-.sh-conversation {
-  background: white;
-  border: 1px solid #e7edf5;
-  border-radius: 14px;
-  padding: 22px;
-  box-shadow: 0 3px 14px rgba(15, 23, 42, .035);
-}
-
-.sh-section-title {
-  margin-bottom: 18px;
-}
-
-.sh-section-title h2 {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin: 0 0 6px;
-  font-size: 19px;
-}
-
-.sh-refresh,
-.sh-back {
-  background: #f1f5f9;
-  color: #334155;
-}
-
-.sh-filters {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #edf1f6;
-}
-
-.sh-filters button {
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #526078;
-  padding: 9px 13px;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.sh-filters button.is-active {
-  color: white;
-  background: #1e3a8a;
-}
-
-.sh-filters button span {
-  margin-left: 7px;
-  opacity: .8;
-}
-
-.sh-ticket-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 15px;
-  padding-top: 18px;
-}
-
 .sh-ticket-card {
-  min-width: 0;
-  text-align: left;
-  padding: 17px;
-  border: 1px solid #e6ebf2;
-  border-radius: 11px;
-  background: white;
-  cursor: pointer;
-  transition: .2s ease;
+ min-width: 0;
+    text-align: left;
+    padding: 15px;
+    border: none;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: .2s ease;
+    background: #07499103;
+    box-shadow: 0 0 2px #ddd;
 }
 
 .sh-ticket-card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 5px 18px rgba(37, 99, 235, .08);
+ box-shadow: 0 0 2px #d0d0d0;
   transform: translateY(-1px);
+  background-color: white;
 }
 
 .sh-ticket-number {
@@ -669,32 +468,6 @@
 }
 
 
-
-/* =========================================
-   STUDENT HELPDESK - RESPONSIVE PAGE SPACING
-========================================= */
-
-.student-helpdesk,
-.student-helpdesk * {
-  box-sizing: border-box;
-}
-
-.student-helpdesk {
-  width: 100%;
-  min-width: 0;
-  margin-inline: auto;
-  padding: 24px 28px 20px;
-}
-
-/* Keep cards and sections inside the available outlet width */
-.student-helpdesk__heading,
-.sh-stats,
-.sh-ticket-section,
-.sh-form-card,
-.sh-conversation {
-  width: 100%;
-  min-width: 0;
-}
 
 /* Tablet */
 @media (max-width: 1050px) {
