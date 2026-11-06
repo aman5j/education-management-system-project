@@ -249,58 +249,140 @@ export default function StudentExcelImport({
   const validRows = rows.filter((row) => row._errors.length === 0);
   const invalidRows = rows.filter((row) => row._errors.length > 0);
 
-  const downloadTemplate = () => {
-    const workbook = XLSX.utils.book_new();
 
-    const studentSheet = XLSX.utils.aoa_to_sheet([COLUMNS]);
+const downloadTemplate = () => {
+  const workbook = XLSX.utils.book_new();
 
-    studentSheet["!cols"] = COLUMNS.map(() => ({ wch: 20 }));
+  // Main student data worksheet
+  const studentSheet = XLSX.utils.aoa_to_sheet([COLUMNS]);
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      studentSheet,
-      "Students"
-    );
+  studentSheet["!cols"] = [
+    { wch: 18 }, // Roll No
+    { wch: 20 }, // First Name
+    { wch: 18 }, // Surname
+    { wch: 22 }, // Father Name
+    { wch: 22 }, // Mother Name
+    { wch: 18 }, // Relationship
+    { wch: 16 }, // DOB
+    { wch: 14 }, // Gender
+    { wch: 18 }, // Mobile
+    { wch: 20 }, // Alternate Mobile
+    { wch: 30 }, // Email
+    { wch: 36 }, // Address
+    { wch: 14 }, // Pincode
+    { wch: 14 }, // Status
+    { wch: 20 }, // Show Father Name
+    { wch: 18 }, // Show Surname
+  ];
 
-    const instructions = [
-      ["STUDENT BULK IMPORT - INSTRUCTIONS"],
-      [""],
-      ["Required fields"],
-      ["Roll No", "Required and must be unique"],
-      ["First Name", "Required"],
-      ["Mobile", "Required"],
-      ["Email", "Required and must be unique"],
-      [""],
-      ["Allowed values"],
-      ["Gender", "Male, Female, Other or blank"],
-      ["Status", "active or inactive; defaults to active"],
-      ["Date of Birth", "DD/MM/YYYY or YYYY-MM-DD"],
-      ["Show Father Name", "Yes or No; defaults to Yes"],
-      ["Show Surname", "Yes or No; defaults to Yes"],
-      [""],
-      ["Important"],
-      ["Maximum 200 student records per import."],
-      ["Do not change the column headings."],
-      ["Keep Roll No, Mobile and Pincode formatted as Text in Excel."],
-      ["Bulk import creates student profiles only."],
-      ["It does not create login credentials or admissions."],
-    ];
-
-    const instructionSheet = XLSX.utils.aoa_to_sheet(instructions);
-
-    instructionSheet["!cols"] = [
-      { wch: 32 },
-      { wch: 65 },
-    ];
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      instructionSheet,
-      "Instructions"
-    );
-
-    XLSX.writeFile(workbook, "EMS-Student-Import-Template.xlsx");
+  studentSheet["!autofilter"] = {
+    ref: `A1:${XLSX.utils.encode_col(COLUMNS.length - 1)}1`,
   };
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    studentSheet,
+    "Students"
+  );
+
+  // Instructions worksheet
+  const instructions = [
+    ["EMS STUDENT BULK IMPORT - INSTRUCTIONS"],
+    [""],
+    ["REQUIRED FIELDS"],
+    ["Roll No", "Required and must be unique. Maximum 50 characters."],
+    ["First Name", "Required. 2 to 80 characters."],
+    ["Mobile", "Required. Maximum 20 characters."],
+    ["Email", "Required, valid and unique. Maximum 150 characters."],
+    [""],
+    ["OPTIONAL FIELDS"],
+    ["Surname", "Maximum 80 characters."],
+    ["Father Name", "Maximum 100 characters."],
+    ["Mother Name", "Maximum 100 characters."],
+    ["Relationship", "Defaults to Father."],
+    ["Date of Birth", "DD/MM/YYYY or YYYY-MM-DD. Future dates are not allowed."],
+    ["Gender", "Male, Female, Other or blank."],
+    ["Alternate Mobile", "Maximum 20 characters."],
+    ["Address", "Maximum 500 characters."],
+    ["Pincode", "Maximum 10 characters."],
+    ["Status", "active or inactive. Defaults to active."],
+    ["Show Father Name", "Yes or No. Defaults to Yes."],
+    ["Show Surname", "Yes or No. Defaults to Yes."],
+    [""],
+    ["IMPORT RULES"],
+    ["Maximum records", "200 students per import."],
+    ["Maximum file size", "5 MB."],
+    ["Supported files", ".xlsx and .xls."],
+    ["Duplicate Roll No", "Rejected. Roll Number must be unique."],
+    ["Duplicate Email", "Rejected. Email must be unique."],
+    ["Import behavior", "Creates new student profiles only. Does not update existing students."],
+    [""],
+    ["IMPORTANT"],
+    ["Profile Image", "Upload separately."],
+    ["Signature", "Upload separately."],
+    ["Student Documents", "Upload separately through Student Documents."],
+    ["Admissions", "Manage courses and batches through Admissions."],
+    ["Login Credentials", "Create separately through student credentials."],
+    [""],
+    ["DATA ENTRY TIPS"],
+    ["Roll No, Mobile, Alternate Mobile and Pincode", "Format as Text to preserve leading zeroes and + signs."],
+    ["Column headings", "Do not rename or remove the column headings."],
+  ];
+
+  const instructionSheet = XLSX.utils.aoa_to_sheet(instructions);
+
+  instructionSheet["!cols"] = [
+    { wch: 35 },
+    { wch: 85 },
+  ];
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    instructionSheet,
+    "Instructions"
+  );
+
+  // Field reference worksheet
+  const fieldReference = [
+    ["Excel Column", "Student.js Field", "Required"],
+    ["Roll No", "rollNo", "Yes"],
+    ["First Name", "firstName", "Yes"],
+    ["Surname", "surname", "No"],
+    ["Father Name", "fatherName", "No"],
+    ["Mother Name", "motherName", "No"],
+    ["Relationship", "relationship", "No"],
+    ["Date of Birth", "dob", "No"],
+    ["Gender", "gender", "No"],
+    ["Mobile", "mobile", "Yes"],
+    ["Alternate Mobile", "alternateMobile", "No"],
+    ["Email", "email", "Yes"],
+    ["Address", "address", "No"],
+    ["Pincode", "pincode", "No"],
+    ["Status", "status", "No"],
+    ["Show Father Name", "showFatherName", "No"],
+    ["Show Surname", "showSurname", "No"],
+  ];
+
+  const referenceSheet = XLSX.utils.aoa_to_sheet(fieldReference);
+
+  referenceSheet["!cols"] = [
+    { wch: 28 },
+    { wch: 28 },
+    { wch: 18 },
+  ];
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    referenceSheet,
+    "Field Reference"
+  );
+
+  XLSX.writeFile(
+    workbook,
+    "EMS-Student-Import-Template.xlsx"
+  );
+};
+
 
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
