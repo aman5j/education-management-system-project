@@ -1,9 +1,5 @@
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import staffService from "../../services/staffService";
 import roleService from "../../services/roleService";
@@ -14,11 +10,7 @@ import notification, {
 
 import "./StaffManagement.css";
 
-import {
-  FiPlus,
-  FiSearch,
-} from "react-icons/fi";
-
+import { FiPlus, FiSearch } from "react-icons/fi";
 import { IoIosCall } from "react-icons/io";
 import { MdOutgoingMail, MdDateRange } from "react-icons/md";
 import { RiTeamLine } from "react-icons/ri";
@@ -37,10 +29,9 @@ const DEFAULT_PAGINATION = {
   totalPages: 0,
 };
 
-export default function StaffManagement() {
-  const [showPassword, setShowPassword] =
-    useState(false);
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export default function StaffManagement() {
   const [staff, setStaff] = useState([]);
   const [roles, setRoles] = useState([]);
 
@@ -48,27 +39,34 @@ export default function StaffManagement() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
 
-  const [pagination, setPagination] = useState(
-    DEFAULT_PAGINATION
-  );
+  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
 
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState(emptyForm);
-
   const [fieldErrors, setFieldErrors] = useState({});
+
+  const [busyAction, setBusyAction] = useState("");
+
+  // Prevent outdated requests from overwriting newer results.
+  const staffRequestId = useRef(0);
+  const rolesRequestId = useRef(0);
 
   const activeRoles = roles.filter(
     (role) => role.isActive !== false
   );
 
   // ---------------------------------------
-  // Load staff accounts
+  // Load staff
   // ---------------------------------------
 
   const loadStaff = useCallback(async () => {
+    const requestId = ++staffRequestId.current;
+
     setLoading(true);
 
     try {
@@ -79,9 +77,11 @@ export default function StaffManagement() {
         limit: 10,
       });
 
-      const data = response.data || {};
+      if (requestId !== staffRequestId.current) return;
 
-      setStaff(data.staff || []);
+      const data = response?.data || {};
+
+      setStaff(Array.isArray(data.staff) ? data.staff : []);
 
       setPagination(
         data.pagination || {
@@ -90,26 +90,36 @@ export default function StaffManagement() {
         }
       );
     } catch (error) {
+      if (requestId !== staffRequestId.current) return;
+
       notification.error(
-        getApiErrorMessage(error)
+        getApiErrorMessage(error),
+        { id: "staff-list-error" }
       );
     } finally {
-      setLoading(false);
+      if (requestId === staffRequestId.current) {
+        setLoading(false);
+      }
     }
   }, [search, status, page]);
 
   // ---------------------------------------
-  // Load roles
+  // Load staff roles
   // ---------------------------------------
 
   const loadRoles = useCallback(async () => {
+    const requestId = ++rolesRequestId.current;
+
+    setRolesLoading(true);
+
     try {
-      // const response = await roleService.getRoles();
       const response = await roleService.getRoles({
         silent: true,
       });
 
-      const data = response.data;
+      if (requestId !== rolesRequestId.current) return;
+
+      const data = response?.data;
 
       const roleList = Array.isArray(data?.data)
         ? data.data
@@ -119,18 +129,33 @@ export default function StaffManagement() {
 
       setRoles(roleList);
     } catch (error) {
+      if (requestId !== rolesRequestId.current) return;
+
       notification.error(
-        getApiErrorMessage(error)
+        getApiErrorMessage(error),
+        { id: "staff-roles-error" }
       );
+    } finally {
+      if (requestId === rolesRequestId.current) {
+        setRolesLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     loadStaff();
+
+    return () => {
+      staffRequestId.current += 1;
+    };
   }, [loadStaff]);
 
   useEffect(() => {
     loadRoles();
+
+    return () => {
+      rolesRequestId.current += 1;
+    };
   }, [loadRoles]);
 
   // ---------------------------------------
@@ -154,8 +179,8 @@ export default function StaffManagement() {
   const openCreateForm = () => {
     setForm(emptyForm);
     setFieldErrors({});
-    setShowForm(true);
     setShowPassword(false);
+    setShowForm(true);
   };
 
   const closeCreateForm = () => {
@@ -164,6 +189,7 @@ export default function StaffManagement() {
     setShowForm(false);
     setForm(emptyForm);
     setFieldErrors({});
+    setShowPassword(false);
   };
 
   const validateForm = () => {
@@ -175,33 +201,30 @@ export default function StaffManagement() {
 
     if (!name) {
       errors.name = "Please enter the staff name.";
-    } else if (name.length < 2) {
-      errors.name =
-        "Name must contain at least 2 characters.";
-    } else if (name.length > 100) {
-      errors.name =
-        "Name cannot exceed 100 characters.";
+    } else if (name.length < 2 || name.length > 100) {
+      errors.name = "Name must contain 2–100 characters.";
     }
 
     if (!email) {
-      errors.email =
-        "Please enter the email address.";
+      errors.email = "Please enter the email address.";
+    } else if (!EMAIL_REGEX.test(email)) {
+      errors.email = "Please enter a valid email address.";
     }
 
     if (!form.assignedRoleId) {
-      errors.assignedRoleId =
-        "Please select a staff role.";
+      errors.assignedRoleId = "Please select a staff role.";
+    } else if (
+      !activeRoles.some(
+        (role) => String(role.id) === String(form.assignedRoleId)
+      )
+    ) {
+      errors.assignedRoleId = "Please select an active staff role.";
     }
 
     if (!password) {
-      errors.password =
-        "Please enter the initial password.";
-    } else if (password.length < 12) {
-      errors.password =
-        "Password must contain at least 12 characters.";
-    } else if (password.length > 128) {
-      errors.password =
-        "Password cannot exceed 128 characters.";
+      errors.password = "Please enter the initial password.";
+    } else if (password.length < 12 || password.length > 128) {
+      errors.password = "Password must contain 12–128 characters.";
     }
 
     setFieldErrors(errors);
@@ -216,11 +239,7 @@ export default function StaffManagement() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (saving) return;
-
-    if (!validateForm()) {
-      return;
-    }
+    if (saving || !validateForm()) return;
 
     setSaving(true);
 
@@ -233,9 +252,7 @@ export default function StaffManagement() {
         assignedRoleId: form.assignedRoleId,
       });
 
-      notification.success(
-        "Staff account created successfully."
-      );
+      notification.success("Staff account created successfully.");
 
       setShowForm(false);
       setForm(emptyForm);
@@ -246,117 +263,94 @@ export default function StaffManagement() {
       setSearch("");
       setStatus("");
     } catch (error) {
-      notification.error(
-        getApiErrorMessage(error)
-      );
+      notification.error(getApiErrorMessage(error));
     } finally {
       setSaving(false);
     }
   };
 
   // ---------------------------------------
-  // Suspend / Reactivate staff
+  // Suspend / Reactivate
   // ---------------------------------------
 
   const handleStatusChange = async (member) => {
+    if (busyAction) return;
+
     const isActive = member.status === "active";
+    const nextStatus = isActive ? "suspended" : "active";
 
-    const nextStatus = isActive
-      ? "suspended"
-      : "active";
-
-    const confirmed =
-      await notification.confirmStatusChange({
-        itemName: member.name,
-        action: isActive
-          ? "suspend"
-          : "reactivate",
-      });
+    const confirmed = await notification.confirmStatusChange({
+      itemName: member.name,
+      action: isActive ? "suspend" : "reactivate",
+    });
 
     if (!confirmed) return;
 
-    const loadingToast = notification.loading(
-      isActive
-        ? "Suspending staff account..."
-        : "Reactivating staff account..."
-    );
+    setBusyAction(`${member.id}-status`);
 
     try {
-      await staffService.updateStatus(
-        member.id,
-        nextStatus
-      );
-
-      notification.dismiss(loadingToast);
+      await staffService.updateStatus(member.id, nextStatus);
 
       notification.success(
         `${member.name}'s account has been ${
-          nextStatus === "active"
-            ? "reactivated"
-            : "suspended"
+          nextStatus === "active" ? "reactivated" : "suspended"
         } successfully.`
       );
 
       await loadStaff();
     } catch (error) {
-      notification.dismiss(loadingToast);
-
-      notification.error(
-        getApiErrorMessage(error)
-      );
+      notification.error(getApiErrorMessage(error));
+    } finally {
+      setBusyAction("");
     }
   };
 
   // ---------------------------------------
-  // Reset staff password
+  // Reset password
   // ---------------------------------------
 
   const handlePasswordReset = async (member) => {
-    const newPassword =
-      await notification.promptPassword({
-        title: "Reset staff password",
-        text: `Enter a new temporary password for ${member.name}.`,
-        confirmText: "Reset password",
-        minLength: 12,
-        maxLength: 128,
-      });
+    if (busyAction) return;
+
+    // The password prompt already contains its own
+    // confirmation button. Do not ask for confirmation twice.
+    const newPassword = await notification.promptPassword({
+      title: "Reset staff password",
+      text: `Enter a new temporary password for ${member.name}.`,
+      confirmText: "Reset password",
+      minLength: 12,
+      maxLength: 128,
+    });
 
     if (newPassword === null) return;
 
-    const confirmed = await notification.confirm({
-      title: "Confirm password reset?",
-      text: `The current password for ${member.name} will be replaced.`,
-      icon: "warning",
-      confirmText: "Yes, reset password",
-      confirmButtonColor: "#dc2626",
-    });
-
-    if (!confirmed) return;
-
-    const loadingToast = notification.loading(
-      "Resetting staff password..."
-    );
+    setBusyAction(`${member.id}-password`);
 
     try {
-      const response =
-        await staffService.resetPassword(
-          member.id,
-          newPassword
-        );
-
-      notification.dismiss(loadingToast);
+      const response = await staffService.resetPassword(
+        member.id,
+        newPassword
+      );
 
       notification.success(
-        response.message ||
-          `Password reset successfully for ${member.name}.`
+        response?.message ||
+        `Password reset successfully for ${member.name}.`
       );
     } catch (error) {
-      notification.dismiss(loadingToast);
-
-      notification.error(
-        getApiErrorMessage(error)
-      );
+      notification.error(getApiErrorMessage(error));
+    } finally {
+      setBusyAction("");
     }
+  };
+
+  // ---------------------------------------
+  // Reset filters
+  // ---------------------------------------
+
+  const resetFilters = () => {
+    setSearch("");
+    setStatus("");
+    setPage(1);
   };
 
   // ---------------------------------------
@@ -365,7 +359,6 @@ export default function StaffManagement() {
 
   return (
     <main className="staff-management">
-
       <div className="page-header">
         <div>
           <h1>Staff Management</h1>
@@ -384,19 +377,13 @@ export default function StaffManagement() {
 
       {showForm ? (
         <section className="staff-management__panel">
-
           <div className="common-card">
             <form onSubmit={handleSubmit}>
               <div className="cardbody">
-
                 <div className="StaffManagement-form-grid">
-
-                  {/* Full name */}
-
                   <div className="input-felid">
                     <label>
-                      Full name{" "}
-                      <span className="required">*</span>
+                      Full name <span className="required">*</span>
                     </label>
 
                     <input
@@ -418,12 +405,9 @@ export default function StaffManagement() {
                     )}
                   </div>
 
-                  {/* Email */}
-
                   <div className="input-felid">
                     <label>
-                      Email address{" "}
-                      <span className="required">*</span>
+                      Email address <span className="required">*</span>
                     </label>
 
                     <input
@@ -444,8 +428,6 @@ export default function StaffManagement() {
                     )}
                   </div>
 
-                  {/* Phone */}
-
                   <div className="input-felid">
                     <label>Phone number</label>
 
@@ -460,12 +442,9 @@ export default function StaffManagement() {
                     />
                   </div>
 
-                  {/* Role */}
-
                   <div className="input-felid">
                     <label>
-                      Staff role{" "}
-                      <span className="required">*</span>
+                      Staff role <span className="required">*</span>
                     </label>
 
                     <select
@@ -473,19 +452,17 @@ export default function StaffManagement() {
                       value={form.assignedRoleId}
                       onChange={updateField}
                       required
-                      aria-invalid={
-                        !!fieldErrors.assignedRoleId
-                      }
+                      disabled={rolesLoading}
+                      aria-invalid={!!fieldErrors.assignedRoleId}
                     >
                       <option value="">
-                        Select a staff role
+                        {rolesLoading
+                          ? "Loading roles..."
+                          : "Select a staff role"}
                       </option>
 
                       {activeRoles.map((role) => (
-                        <option
-                          key={role.id}
-                          value={role.id}
-                        >
+                        <option key={role.id} value={role.id}>
                           {role.label || role.name}
                         </option>
                       ))}
@@ -497,31 +474,23 @@ export default function StaffManagement() {
                       </small>
                     )}
 
-                    {activeRoles.length === 0 && (
+                    {!rolesLoading && activeRoles.length === 0 && (
                       <small>
-                        No active staff roles found.
-                        Create a role under Settings
-                        → Roles first.
+                        No active staff roles found. Create a role under
+                        Settings → Roles first.
                       </small>
                     )}
                   </div>
 
-                  {/* Initial password */}
-
                   <div className="input-felid">
                     <label>
-                      Initial password{" "}
-                      <span className="required">*</span>
+                      Initial password <span className="required">*</span>
                     </label>
 
                     <div className="staff-management__password-field">
                       <input
                         name="password"
-                        type={
-                          showPassword
-                            ? "text"
-                            : "password"
-                        }
+                        type={showPassword ? "text" : "password"}
                         value={form.password}
                         onChange={updateField}
                         minLength={12}
@@ -529,28 +498,20 @@ export default function StaffManagement() {
                         required
                         autoComplete="new-password"
                         placeholder="At least 12 characters"
-                        aria-invalid={
-                          !!fieldErrors.password
-                        }
+                        aria-invalid={!!fieldErrors.password}
                       />
 
                       <button
                         type="button"
                         className="staff-management__password-toggle"
                         onClick={() =>
-                          setShowPassword(
-                            (visible) => !visible
-                          )
+                          setShowPassword((visible) => !visible)
                         }
                         aria-label={
-                          showPassword
-                            ? "Hide password"
-                            : "Show password"
+                          showPassword ? "Hide password" : "Show password"
                         }
                       >
-                        {showPassword
-                          ? "Hide"
-                          : "Show"}
+                        {showPassword ? "Hide" : "Show"}
                       </button>
                     </div>
 
@@ -561,18 +522,13 @@ export default function StaffManagement() {
                     )}
 
                     <small>
-                      Use at least 12 characters.
-                      Share the initial password
-                      securely with the staff member.
+                      Use at least 12 characters. Share the initial
+                      password securely with the staff member.
                     </small>
                   </div>
-
                 </div>
 
-                {/* Form actions */}
-
                 <footer className="subject-form-actions">
-
                   <button
                     type="button"
                     className="themebtn themebtnline"
@@ -587,29 +543,21 @@ export default function StaffManagement() {
                     className="themebtn"
                     disabled={
                       saving ||
+                      rolesLoading ||
                       activeRoles.length === 0
                     }
                   >
-                    {saving
-                      ? "Creating..."
-                      : "Create Staff"}
+                    {saving ? "Creating..." : "Create Staff"}
                   </button>
-
                 </footer>
-
               </div>
             </form>
           </div>
         </section>
       ) : (
         <section className="staff-management__panel">
-
-          {/* Filters */}
-
           <div className="staff-management__toolbar">
-
             <div className="common-card-filters">
-
               <div className="input-search">
                 <FiSearch />
 
@@ -636,16 +584,20 @@ export default function StaffManagement() {
                 >
                   <option value="">All statuses</option>
                   <option value="active">Active</option>
-                  <option value="suspended">
-                    Suspended
-                  </option>
+                  <option value="suspended">Suspended</option>
                 </select>
               </div>
 
+              <button
+                type="button"
+                className="themebtn themebtnline"
+                onClick={resetFilters}
+                disabled={!search && !status && page === 1}
+              >
+                Reset
+              </button>
             </div>
           </div>
-
-          {/* Staff table */}
 
           {loading ? (
             <p className="staff-management__state">
@@ -654,16 +606,11 @@ export default function StaffManagement() {
           ) : staff.length === 0 ? (
             <div className="staff-management__state">
               <strong>No staff accounts found</strong>
-              <p>
-                Create a staff account or adjust
-                your search.
-              </p>
+              <p>Create a staff account or adjust your search.</p>
             </div>
           ) : (
             <div className="common-card">
-
               <div className="common-table-wrapper">
-
                 <table className="common-table">
                   <thead>
                     <tr>
@@ -676,144 +623,122 @@ export default function StaffManagement() {
                   </thead>
 
                   <tbody>
-                    {staff.map((member) => (
-                      <tr key={member.id}>
+                    {staff.map((member) => {
+                      const statusBusy =
+                        busyAction === `${member.id}-status`;
 
-                        {/* Staff details */}
+                      const passwordBusy =
+                        busyAction === `${member.id}-password`;
 
-                        <td>
-                          <div className="student-name-cell">
+                      return (
+                        <tr key={member.id}>
+                          <td>
+                            <div className="student-name-cell">
+                              <div className="student-avatar-wrapper">
+                                <div className="student-avatar staff-avatar-fallback">
+                                  {member.name
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || "S"}
+                                </div>
+                              </div>
 
-                            <div className="student-avatar-wrapper">
-                              <div className="student-avatar staff-avatar-fallback">
-                                {member.name
-                                  ?.charAt(0)
-                                  ?.toUpperCase() || "S"}
+                              <div>
+                                <strong>{member.name}</strong>
+
+                                <label className="roleassign">
+                                  <RiTeamLine />
+
+                                  {member.assignedRole?.label ||
+                                    member.assignedRole?.name ||
+                                    "No role assigned"}
+                                </label>
                               </div>
                             </div>
+                          </td>
 
-                            <div>
-                              <strong>
-                                {member.name}
-                              </strong>
+                          <td>
+                            <div className="contact-details">
+                              <div className="contact-li">
+                                <IoIosCall />
+                                <span>{member.phone || "—"}</span>
+                              </div>
 
-                              <label className="roleassign">
-                                <RiTeamLine />
-
-                                {member.assignedRole?.label ||
-                                  member.assignedRole?.name ||
-                                  "No role assigned"}
-                              </label>
+                              <div className="contact-li">
+                                <MdOutgoingMail />
+                                <span>{member.email}</span>
+                              </div>
                             </div>
+                          </td>
 
-                          </div>
-                        </td>
-
-                        {/* Contact details */}
-
-                        <td>
-                          <div className="contact-details">
-
-                            <div className="contact-li">
-                              <IoIosCall />
-                              <span>
-                                {member.phone || "—"}
-                              </span>
-                            </div>
-
-                            <div className="contact-li">
-                              <MdOutgoingMail />
-                              <span>
-                                {member.email}
-                              </span>
-                            </div>
-
-                          </div>
-                        </td>
-
-                        {/* Status */}
-
-                        <td>
-                          <span
-                            className={`staff-management__status ${
-                              member.status === "active"
-                                ? "tag-success"
-                                : "tag-danger"
-                            }`}
-                          >
-                            {member.status}
-                          </span>
-                        </td>
-
-                        {/* Created date */}
-
-                        <td>
-                          <div className="contact-details">
-
-                            <div className="contact-li">
-                              <MdDateRange />
-
-                              <span>
-                                {member.createdAt
-                                  ? new Date(
-                                      member.createdAt
-                                    ).toLocaleDateString()
-                                  : "—"}
-                              </span>
-                            </div>
-
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-
-                        <td>
-                          <div className="staff-management__row-actions">
-
-                            <button
-                              type="button"
-                              className="themebtn smallbtn"
-                              onClick={() =>
-                                handleStatusChange(member)
-                              }
+                          <td>
+                            <span
+                              className={`staff-management__status ${
+                                member.status === "active"
+                                  ? "tag-success"
+                                  : "tag-danger"
+                              }`}
                             >
-                              {member.status === "active"
-                                ? "Suspend"
-                                : "Activate"}
-                            </button>
+                              {member.status}
+                            </span>
+                          </td>
 
-                            <button
-                              type="button"
-                              className="themebtn smallbtn"
-                              onClick={() =>
-                                handlePasswordReset(member)
-                              }
-                            >
-                              Reset Password
-                            </button>
+                          <td>
+                            <div className="contact-details">
+                              <div className="contact-li">
+                                <MdDateRange />
+                                <span>
+                                  {member.createdAt
+                                    ? new Date(
+                                        member.createdAt
+                                      ).toLocaleDateString("en-IN")
+                                    : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
 
-                          </div>
-                        </td>
+                          <td>
+                            <div className="staff-management__row-actions">
+                              <button
+                                type="button"
+                                className="themebtn smallbtn"
+                                disabled={Boolean(busyAction)}
+                                onClick={() => handleStatusChange(member)}
+                              >
+                                {statusBusy
+                                  ? "Please wait..."
+                                  : member.status === "active"
+                                    ? "Suspend"
+                                    : "Activate"}
+                              </button>
 
-                      </tr>
-                    ))}
+                              <button
+                                type="button"
+                                className="themebtn smallbtn"
+                                disabled={Boolean(busyAction)}
+                                onClick={() => handlePasswordReset(member)}
+                              >
+                                {passwordBusy
+                                  ? "Resetting..."
+                                  : "Reset Password"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-
               </div>
             </div>
           )}
 
-          {/* Pagination */}
-
           <footer className="staff-management__pagination">
-
             <span>
               Page {pagination.page || page} of{" "}
-              {Math.max(
-                pagination.totalPages || 0,
-                1
-              )}
+              {Math.max(pagination.totalPages || 0, 1)}
+              {" · "}
+              {pagination.total || 0} staff accounts
             </span>
 
             <div>
@@ -821,9 +746,7 @@ export default function StaffManagement() {
                 type="button"
                 className="staff-management__secondary"
                 onClick={() =>
-                  setPage((current) =>
-                    Math.max(1, current - 1)
-                  )
+                  setPage((current) => Math.max(1, current - 1))
                 }
                 disabled={loading || page <= 1}
               >
@@ -833,24 +756,18 @@ export default function StaffManagement() {
               <button
                 type="button"
                 className="staff-management__secondary"
-                onClick={() =>
-                  setPage((current) => current + 1)
-                }
+                onClick={() => setPage((current) => current + 1)}
                 disabled={
                   loading ||
-                  page >=
-                    (pagination.totalPages || 1)
+                  page >= (pagination.totalPages || 1)
                 }
               >
                 Next
               </button>
             </div>
-
           </footer>
-
         </section>
       )}
-
     </main>
   );
 }
