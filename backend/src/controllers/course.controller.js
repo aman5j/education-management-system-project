@@ -3,6 +3,16 @@ import Course from "../models/Course.js";
 import Subject from "../models/Subject.js";
 import Category from "../models/Category.js";
 
+import StudentAdmission from "../models/StudentAdmission.js";
+import Batch from "../models/Batch.js";
+import Attendance from "../models/Attendance.js";
+import Exam from "../models/Exam.js";
+import Certificate from "../models/Certificate.js";
+import PracticeTest from "../models/PracticeTest.js";
+import Assignment from "../models/Assignment.js";
+import HallTicket from "../models/HallTicket.js";
+
+
 
 const sendError = (res, status, message, errorCode) =>
   res.status(status).json({
@@ -726,6 +736,7 @@ export const updateCourse = async (req, res, next) => {
 // DELETE COURSE
 // DELETE /api/courses/:id
 // =====================================================
+
 export const deleteCourse = async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
@@ -748,6 +759,89 @@ export const deleteCourse = async (req, res, next) => {
       );
     }
 
+    // Check every collection that directly references this course.
+    const [
+      admissionCount,
+      batchCount,
+      attendanceCount,
+      examCount,
+      certificateCount,
+      practiceTestCount,
+      assignmentCount,
+      hallTicketCount,
+    ] = await Promise.all([
+      StudentAdmission.countDocuments({
+        course_id: course._id,
+      }),
+      Batch.countDocuments({
+        course_id: course._id,
+      }),
+      Attendance.countDocuments({
+        course_id: course._id,
+      }),
+      Exam.countDocuments({
+        course_id: course._id,
+      }),
+      Certificate.countDocuments({
+        course_id: course._id,
+      }),
+      PracticeTest.countDocuments({
+        course_id: course._id,
+      }),
+      Assignment.countDocuments({
+        course_id: course._id,
+      }),
+      HallTicket.countDocuments({
+        course_id: course._id,
+      }),
+    ]);
+
+    const dependencies = [];
+
+    if (admissionCount > 0) {
+      dependencies.push(`${admissionCount} student admission(s)`);
+    }
+
+    if (batchCount > 0) {
+      dependencies.push(`${batchCount} batch(es)`);
+    }
+
+    if (attendanceCount > 0) {
+      dependencies.push(`${attendanceCount} attendance record(s)`);
+    }
+
+    if (examCount > 0) {
+      dependencies.push(`${examCount} exam(s)`);
+    }
+
+    if (certificateCount > 0) {
+      dependencies.push(`${certificateCount} certificate(s)`);
+    }
+
+    if (practiceTestCount > 0) {
+      dependencies.push(`${practiceTestCount} practice test(s)`);
+    }
+
+    if (assignmentCount > 0) {
+      dependencies.push(`${assignmentCount} assignment(s)`);
+    }
+
+    if (hallTicketCount > 0) {
+      dependencies.push(`${hallTicketCount} hall ticket(s)`);
+    }
+
+    // Never delete a course that is referenced by other records.
+    if (dependencies.length > 0) {
+      return res.status(409).json({
+        success: false,
+        errorCode: "COURSE_IN_USE",
+        message:
+          "This course cannot be deleted because it is already in use. " +
+          "Please review its related records before attempting deletion.",
+        dependencies,
+      });
+    }
+
     await course.deleteOne();
 
     return res.status(200).json({
@@ -758,6 +852,7 @@ export const deleteCourse = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // =====================================================
 // UPDATE COURSE STATUS
