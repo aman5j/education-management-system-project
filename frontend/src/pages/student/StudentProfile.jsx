@@ -258,6 +258,10 @@ export default function StudentProfile() {
     ? getAssetUrl(student.profileImage)
     : "";
 
+  const signatureUrl = student?.signature
+    ? getAssetUrl(student.signature)
+    : "";
+
   const displayName =
     [student?.firstName, student?.surname]
       .filter(Boolean)
@@ -303,12 +307,19 @@ export default function StudentProfile() {
   <div className="profile-header__content">
     <div className="profile-header__image">
      {imageUrl ? (
-                  <img src={imageUrl} alt={displayName} />
-                ) : (
-                  <span>
-                    {displayName.charAt(0).toUpperCase()}
-                  </span>
-                )}
+        <img
+          src={imageUrl}
+          alt={displayName}
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+            event.currentTarget.parentElement.dataset.imageError = "true";
+          }}
+        />
+      ) : (
+        <span>
+          {displayName.charAt(0).toUpperCase()}
+        </span>
+      )}
 
                 <div className="uploadicon"> <input
                 ref={fileInputRef}
@@ -336,7 +347,18 @@ export default function StudentProfile() {
 
     <div className="profile-header__details">
              <h1>{displayName}</h1>
-                <img className="student-sign" src="https://education-management-backend-79g1.onrender.com/uploads/students/1792320172416-images.png" alt={displayName} />
+
+        {signatureUrl && (
+          <img
+            key={signatureUrl}
+            className="student-sign"
+            src={signatureUrl}
+            alt={`${displayName} signature`}
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        )}
               
 
       <div className="profile-header__meta">
