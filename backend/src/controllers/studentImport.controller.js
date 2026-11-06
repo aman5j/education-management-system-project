@@ -2,7 +2,7 @@
 import mongoose from "mongoose";
 import Student from "../models/Student.js";
 
-const MAX_STUDENTS_PER_IMPORT = 200;
+const MAX_STUDENTS_PER_IMPORT = 500;
 
 const normalizeText = (value) =>
   value === undefined || value === null
