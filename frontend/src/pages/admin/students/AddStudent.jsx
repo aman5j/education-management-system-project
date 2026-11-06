@@ -1,10 +1,15 @@
 
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import api from "../../../services/api";
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
+import notification from "../../../utils/notification";
 import StudentForm from "../../../components/students/StudentForm";
 import { uploadStudentDocuments } from "../../../services/studentDocumentService";
 import "./StudentManagement.css";
@@ -24,7 +29,8 @@ const AddStudent = () => {
 
   const handleSubmit = async (formData) => {
     if (!canCreate) {
-      throw new Error("You do not have permission to create students.");
+      notification.error("You do not have permission to create students.");
+      return;
     }
 
     if (submitting) return;
@@ -42,7 +48,9 @@ const AddStudent = () => {
       }
 
       const response = await api.post("/students", studentFormData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
         silent: true,
       });
 
@@ -57,8 +65,10 @@ const AddStudent = () => {
       if (documents.length > 0) {
         try {
           await uploadStudentDocuments(student._id, documents);
-        } catch {
-          navigate(`${studentsPath}/${student._id}/edit`);
+        } catch (error) {
+          navigate(`${studentsPath}/${student._id}/edit`, {
+            replace: true,
+          });
 
           throw new Error(
             "Student was created, but document upload failed. You have been redirected to Edit Student to retry."
@@ -66,9 +76,11 @@ const AddStudent = () => {
         }
       }
 
-      navigate(studentsPath, {
-        state: { notification: "Student created successfully." },
-      });
+      // Show success once from the submit event.
+      notification.success("Student created successfully.");
+
+      // Do not send a notification through navigation state.
+      navigate(studentsPath, { replace: true });
     } catch (requestError) {
       throw new Error(
         requestError?.response?.data?.message ||
@@ -81,7 +93,11 @@ const AddStudent = () => {
   };
 
   if (authLoading) {
-    return <div className="student-loading-page">Checking permissions...</div>;
+    return (
+      <div className="student-loading-page">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (!user) return <Navigate to="/login" replace />;
@@ -90,7 +106,9 @@ const AddStudent = () => {
   return (
     <div className="student-management-page">
       <div className="page-header">
-        <div><h1>Add New Student</h1></div>
+        <div>
+          <h1>Add New Student</h1>
+        </div>
       </div>
 
       <StudentForm

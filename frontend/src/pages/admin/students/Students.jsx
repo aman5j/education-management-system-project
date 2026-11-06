@@ -71,17 +71,17 @@ const Students = () => {
   const [credentialsStudent, setCredentialsStudent] = useState(null);
 
   // Show the success message sent by Add Student / Edit Student.
-  useEffect(() => {
-    const message = location.state?.notification;
+  // useEffect(() => {
+  //   const message = location.state?.notification;
 
-    if (message) {
-      notification.success(message);
-      navigate(location.pathname, {
-        replace: true,
-        state: null,
-      });
-    }
-  }, [location.state, location.pathname, navigate]);
+  //   if (message) {
+  //     notification.success(message);
+  //     navigate(location.pathname, {
+  //       replace: true,
+  //       state: null,
+  //     });
+  //   }
+  // }, [location.state, location.pathname, navigate]);
 
   // Load course and batch filter options.
   useEffect(() => {
