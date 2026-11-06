@@ -8,6 +8,7 @@ import notification, {
   getApiErrorMessage,
 } from "../../utils/notification";
 
+import Pagination from "../../components/common/Pagination";
 import "./StaffManagement.css";
 
 import { FiPlus, FiSearch } from "react-icons/fi";
@@ -38,6 +39,7 @@ export default function StaffManagement() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
 
@@ -74,7 +76,7 @@ export default function StaffManagement() {
         search: search.trim(),
         status,
         page,
-        limit: 10,
+        limit,
       });
 
       if (requestId !== staffRequestId.current) return;
@@ -101,7 +103,7 @@ export default function StaffManagement() {
         setLoading(false);
       }
     }
-  }, [search, status, page]);
+  }, [search, status, page, limit]);
 
   // ---------------------------------------
   // Load staff roles
@@ -733,7 +735,7 @@ export default function StaffManagement() {
             </div>
           )}
 
-          <footer className="staff-management__pagination">
+          {/* <footer className="staff-management__pagination">
             <span>
               Page {pagination.page || page} of{" "}
               {Math.max(pagination.totalPages || 0, 1)}
@@ -765,7 +767,23 @@ export default function StaffManagement() {
                 Next
               </button>
             </div>
-          </footer>
+          </footer> */}
+
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            itemCount={staff.length}
+            itemLabel="staff accounts"
+            limit={limit}
+            loading={loading}
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
+          
         </section>
       )}
     </main>
