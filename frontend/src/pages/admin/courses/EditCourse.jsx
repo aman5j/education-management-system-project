@@ -7,10 +7,17 @@ import {
   useParams,
   Navigate,
 } from "react-router-dom";
+
 import { useAuth } from "../../../context/AuthContext";
 import CourseForm from "../../../components/courses/CourseForm";
-import { getCourse, updateCourse } from "../../../services/courseService";
+import {
+  getCourse,
+  updateCourse,
+} from "../../../services/courseService";
 import { hasPermission } from "../../../utils/permissions";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 const EditCourse = () => {
   const { id } = useParams();
@@ -28,35 +35,45 @@ const EditCourse = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    if (authLoading || !canView || !canUpdate) {
-      setLoading(false);
+    if (authLoading || !canView || !canUpdate || !id) {
       return;
     }
 
     let cancelled = false;
 
     const loadCourse = async () => {
+      setLoading(true);
+      setLoadError("");
+
       try {
         const response = await getCourse(id);
+
         if (!cancelled) {
-          setCourse(response.data?.data ?? null);
+          const courseData = response?.data?.data ?? null;
+          setCourse(courseData);
+
+          if (!courseData) {
+            setLoadError("Course not found.");
+          }
         }
-      } catch (requestError) {
+      } catch (error) {
         if (!cancelled) {
-          setError(
-            requestError.response?.data?.message ||
-              "Unable to load course."
-          );
+          const message = getApiErrorMessage(error);
+          setLoadError(message);
+          notification.error(message);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadCourse();
+
     return () => {
       cancelled = true;
     };
@@ -81,31 +98,40 @@ const EditCourse = () => {
   }
 
   const handleSubmit = async (formData) => {
+    if (saving) return;
+
     setSaving(true);
-    setError("");
 
     try {
-      await updateCourse(id, formData);
-      navigate(basePath, { replace: true });
-    } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ||
-          "Unable to update course."
+      const response = await updateCourse(id, formData);
+
+      notification.success(
+        response?.data?.message || "Course updated successfully."
       );
-      throw requestError;
+
+      navigate(basePath, { replace: true });
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="course-page"><p>Loading course...</p></div>;
+    return (
+      <div className="course-page">
+        <p>Loading course...</p>
+      </div>
+    );
   }
 
   if (!course) {
     return (
       <div className="course-page">
-        <p>{error || "Course not found."}</p>
+        <div className="course-list-error" role="alert">
+          {loadError || "Course not found."}
+        </div>
         <Link to={basePath}>Back to Courses</Link>
       </div>
     );
@@ -113,22 +139,18 @@ const EditCourse = () => {
 
   return (
     <div className="course-page">
-     
-       <div class="page-header"><div><h1>Edit Course</h1></div>
-               
-              </div>
-
-
-      {error && <div className="course-list-error" role="alert">{error}</div>}
-
-      <div className="">
-        <CourseForm
-          initialData={course}
-          loading={saving}
-          submitLabel="Update Course"
-          onSubmit={handleSubmit}
-        />
+      <div className="page-header">
+        <div>
+          <h1>Edit Course</h1>
+        </div>
       </div>
+
+      <CourseForm
+        initialData={course}
+        loading={saving}
+        submitLabel="Update Course"
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };
