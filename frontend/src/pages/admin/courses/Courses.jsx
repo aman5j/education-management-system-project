@@ -5,7 +5,12 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import CourseFilters from "../../../components/courses/CourseFilters";
 import CourseTable from "../../../components/courses/CourseTable";
+import Pagination from "../../../components/common/Pagination";
+
 import { hasPermission } from "../../../utils/permissions";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import {
   deleteCourse,
@@ -40,6 +45,7 @@ const Courses = () => {
   const [error, setError] = useState("");
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [searchInput, setSearchInput] = useState("");
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -50,8 +56,29 @@ const Courses = () => {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Load the list in one place so older requests cannot overwrite
-  // results belonging to newer filters or pages.
+  // Debounce search input to avoid an API request on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((previous) => {
+        if (previous.search === searchInput.trim()) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          search: searchInput.trim(),
+        };
+      });
+
+      setPagination((previous) => ({
+        ...previous,
+        page: 1,
+      }));
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     if (authLoading) return undefined;
 
@@ -77,29 +104,34 @@ const Courses = () => {
         if (cancelled) return;
 
         const responseBody = response?.data;
-        const payload = responseBody?.data;
+        const courseList = Array.isArray(responseBody?.data)
+          ? responseBody.data
+          : [];
 
-        // The backend currently returns data as an array and
-        // pagination as a separate top-level property.
-        const courseList = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.courses)
-            ? payload.courses
-            : [];
-
-        const paginationData =
-          responseBody?.pagination ?? payload?.pagination;
+        const paginationData = responseBody?.pagination;
 
         setCourses(courseList);
 
         if (paginationData) {
+          const total = Number(paginationData.total) || 0;
+          const limit = Number(paginationData.limit) || pagination.limit;
+          const totalPages = Math.max(
+            Number(paginationData.totalPages) || 0,
+            1
+          );
+
+          // If a filter reduces the result count, keep the page valid.
+          const currentPage = Math.min(
+            Number(paginationData.page) || pagination.page,
+            totalPages
+          );
+
           setPagination((previous) => ({
             ...previous,
-            ...paginationData,
-            totalPages: Math.max(
-              Number(paginationData.totalPages) || 0,
-              1
-            ),
+            page: currentPage,
+            limit,
+            total,
+            totalPages,
           }));
         } else {
           setPagination((previous) => ({
@@ -110,11 +142,9 @@ const Courses = () => {
         }
       } catch (requestError) {
         if (!cancelled) {
-          setError(
-            requestError?.response?.data?.message ||
-              "Unable to load courses."
-          );
           setCourses([]);
+          setError(getApiErrorMessage(requestError));
+          notification.error(getApiErrorMessage(requestError));
         }
       } finally {
         if (!cancelled) {
@@ -141,6 +171,11 @@ const Courses = () => {
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
 
+    if (name === "search") {
+      setSearchInput(value);
+      return;
+    }
+
     setFilters((previous) => ({
       ...previous,
       [name]: value,
@@ -153,6 +188,7 @@ const Courses = () => {
   };
 
   const handleReset = () => {
+    setSearchInput("");
     setFilters({ ...DEFAULT_FILTERS });
 
     setPagination((previous) => ({
@@ -161,21 +197,36 @@ const Courses = () => {
     }));
   };
 
+  const handlePageChange = (nextPage) => {
+    setPagination((previous) => ({
+      ...previous,
+      page: nextPage,
+    }));
+  };
+
+  const handleLimitChange = (nextLimit) => {
+    setPagination((previous) => ({
+      ...previous,
+      page: 1,
+      limit: nextLimit,
+    }));
+  };
+
   const handleDelete = async (id) => {
     if (!canDelete) {
-      setError("You do not have permission to delete courses.");
+      notification.error("You do not have permission to delete courses.");
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this course?")) {
-      return;
-    }
+    const confirmed = await notification.confirmDelete("this course");
+
+    if (!confirmed) return;
 
     try {
-      setError("");
       await deleteCourse(id);
 
-      // If this was the only row on a later page, go back one page.
+      notification.success("Course deleted successfully.");
+
       if (courses.length === 1 && pagination.page > 1) {
         setPagination((previous) => ({
           ...previous,
@@ -185,28 +236,44 @@ const Courses = () => {
         setRefreshKey((previous) => previous + 1);
       }
     } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ||
-          "Unable to delete course."
-      );
+      notification.error(getApiErrorMessage(requestError));
     }
   };
 
-  const handleStatusChange = async (id, status) => {
+  const handleStatusChange = async (id, nextStatus) => {
     if (!canUpdate) {
-      setError("You do not have permission to update courses.");
+      notification.error("You do not have permission to update courses.");
       return;
     }
 
+    const course = courses.find((item) => item._id === id);
+    const previousStatus = course?.status || "Draft";
+
+    if (previousStatus === nextStatus) return;
+
+    let confirmed = false;
+
+    if (nextStatus === "Published") {
+      confirmed = await notification.confirmPublish("This course");
+    } else if (nextStatus === "Archived") {
+      confirmed = await notification.confirmArchive("This course");
+    } else {
+      confirmed = await notification.confirm({
+        title: "Move course to Draft?",
+        text: "This course will no longer be published.",
+        confirmText: "Yes, move to Draft",
+        icon: "question",
+      });
+    }
+
+    if (!confirmed) return;
+
     try {
-      setError("");
-      await updateCourseStatus(id, status);
+      await updateCourseStatus(id, nextStatus);
+      notification.success(`Course status changed to ${nextStatus}.`);
       setRefreshKey((previous) => previous + 1);
     } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ||
-          "Unable to update course status."
-      );
+      notification.error(getApiErrorMessage(requestError));
     }
   };
 
@@ -230,17 +297,17 @@ const Courses = () => {
 
   return (
     <div className="course-page">
-      
-        <div class="page-header"><div><h1>Courses</h1></div>
-         {canCreate && (
+      <div className="page-header">
+        <div>
+          <h1>Courses</h1>
+        </div>
+
+        {canCreate && (
           <Link to={`${basePath}/add`} className="themebtn">
             + Add Course
           </Link>
         )}
-        </div>
-       
-    
-
+      </div>
 
       {error && (
         <div className="course-list-error" role="alert">
@@ -250,7 +317,10 @@ const Courses = () => {
 
       <div className="common-card-filters">
         <CourseFilters
-          filters={filters}
+          filters={{
+            ...filters,
+            search: searchInput,
+          }}
           onChange={handleFilterChange}
           onReset={handleReset}
         />
@@ -270,41 +340,17 @@ const Courses = () => {
               onStatusChange={handleStatusChange}
             />
 
-            <div className="course-pagination">
-              <button
-                type="button"
-                disabled={pagination.page <= 1}
-                onClick={() =>
-                  setPagination((previous) => ({
-                    ...previous,
-                    page: previous.page - 1,
-                  }))
-                }
-              >
-                Previous
-              </button>
-
-              <span>
-                Page {pagination.page} of {pagination.totalPages || 1}
-                {" · "}
-                {pagination.total} courses
-              </span>
-
-              <button
-                type="button"
-                disabled={
-                  pagination.page >= (pagination.totalPages || 1)
-                }
-                onClick={() =>
-                  setPagination((previous) => ({
-                    ...previous,
-                    page: previous.page + 1,
-                  }))
-                }
-              >
-                Next
-              </button>
-            </div>
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              itemCount={courses.length}
+              itemLabel="courses"
+              limit={pagination.limit}
+              loading={loading}
+              onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+            />
           </>
         )}
       </div>

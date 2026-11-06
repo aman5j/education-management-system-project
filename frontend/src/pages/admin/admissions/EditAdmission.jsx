@@ -1,162 +1,105 @@
-import {
-  useEffect,
-  useState,
-} from "react";
 
+import { useEffect, useState } from "react";
 import {
+  Navigate,
   useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
 
-import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
-
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
-
 import {
   getAdmission,
   updateAdmission,
 } from "../../../services/admissionService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 const EditAdmission = () => {
-  const { id } =
-    useParams();
-
-  const navigate =
-    useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { user, loading: authLoading } = useAuth();
-
-  const canUpdateAdmission = hasPermission(
-    user,
-    "admissions.update"
-  );
-  
-  const location = useLocation();
+  const canUpdateAdmission = hasPermission(user, "admissions.update");
 
   const admissionsPath = location.pathname.startsWith("/staff")
     ? "/staff/admissions"
     : "/admin/admissions";
 
-  const [admission, setAdmission] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [admission, setAdmission] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const loadAdmission =
-      async () => {
+    if (authLoading || !user || !canUpdateAdmission) {
+      setLoading(false);
+      return;
+    }
 
-        if (authLoading || !user || !canUpdateAdmission) {
-          setLoading(false);
-          return;
-        }
+    let cancelled = false;
 
-        try {
-          setLoading(true);
+    const loadAdmission = async () => {
+      setLoading(true);
 
-          const response =
-            await getAdmission(id);
-
-          setAdmission(
-            response?.data?.data
-          );
-        } catch (loadError) {
-          console.error(
-            "Load admission error:",
-            loadError
-          );
-
-          setError(
-            loadError?.response
-              ?.data?.message ||
-              "Unable to load admission."
-          );
-        } finally {
-          setLoading(false);
-        }
-      };
-
-    loadAdmission();
-  }, [id, authLoading, user, canUpdateAdmission]);
-
-  const handleSubmit =
-    async (formData) => {
       try {
+        const response = await getAdmission(id);
 
-        if (!canUpdateAdmission || saving) {
-          throw new Error(
-            "You do not have permission to update admissions."
-          );
+        if (!cancelled) {
+          setAdmission(response?.data?.data || null);
         }
-
-        setSaving(true);
-
-        await updateAdmission(
-          id,
-          formData
-        );
-
-        navigate(`${admissionsPath}/${id}`);
-
-      } catch (submitError) {
-        throw new Error(
-          submitError?.response
-            ?.data?.message ||
-            "Unable to update admission."
-        );
+      } catch (error) {
+        if (!cancelled) {
+          notification.error(getApiErrorMessage(error));
+          setAdmission(null);
+        }
       } finally {
-        setSaving(false);
+        if (!cancelled) setLoading(false);
       }
     };
-  
+
+    loadAdmission();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, authLoading, user, canUpdateAdmission]);
+
+  const handleSubmit = async (formData) => {
+    if (!canUpdateAdmission || saving) {
+      throw new Error("You do not have permission to update admissions.");
+    }
+
+    setSaving(true);
+
+    try {
+      await updateAdmission(id, formData);
+      notification.success("Admission updated successfully.");
+      navigate(`${admissionsPath}/${id}`);
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (authLoading) {
-    return (
-      <div className="admission-state">
-        Checking permissions...
-      </div>
-    );
+    return <div className="admission-state">Checking permissions...</div>;
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!canUpdateAdmission) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canUpdateAdmission) return <Navigate to="/unauthorized" replace />;
 
   if (loading) {
-    return (
-      <div className="admission-state">
-        Loading admission...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="admission-error">
-        {error}
-      </div>
-    );
+    return <div className="admission-state">Loading admission...</div>;
   }
 
   if (!admission) {
-    return (
-      <div className="admission-empty">
-        Admission not found.
-      </div>
-    );
+    return <div className="admission-empty">Admission not found.</div>;
   }
 
   return (
@@ -168,14 +111,10 @@ const EditAdmission = () => {
       </div>
 
       <AdmissionForm
-        initialData={
-          admission
-        }
+        initialData={admission}
         submitting={saving}
         submitLabel="Update Admission"
-        onSubmit={
-          handleSubmit
-        }
+        onSubmit={handleSubmit}
       />
     </div>
   );

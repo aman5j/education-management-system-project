@@ -1,10 +1,19 @@
 
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
+
 import { useAuth } from "../../../context/AuthContext";
 import CourseForm from "../../../components/courses/CourseForm";
 import { createCourse } from "../../../services/courseService";
 import { hasPermission } from "../../../utils/permissions";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 const AddCourse = () => {
   const navigate = useNavigate();
@@ -16,9 +25,7 @@ const AddCourse = () => {
     : "/admin/courses";
 
   const canCreate = hasPermission(user, "courses.create");
-
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   if (authLoading) {
     return <div className="course-page">Checking permissions...</div>;
@@ -39,18 +46,21 @@ const AddCourse = () => {
   }
 
   const handleSubmit = async (formData) => {
+    if (loading) return;
+
     setLoading(true);
-    setError("");
 
     try {
-      await createCourse(formData);
-      navigate(basePath, { replace: true });
-    } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ||
-          "Unable to create course."
+      const response = await createCourse(formData);
+
+      notification.success(
+        response?.data?.message || "Course created successfully."
       );
-      throw requestError;
+
+      navigate(basePath, { replace: true });
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -58,17 +68,17 @@ const AddCourse = () => {
 
   return (
     <div className="course-page">
-      
-<div class="page-header"><div><h1>Add New Courses</h1></div></div>
-      {error && <div className="course-list-error" role="alert">{error}</div>}
-
-      <div className="">
-        <CourseForm
-          loading={loading}
-          submitLabel="Create Course"
-          onSubmit={handleSubmit}
-        />
+      <div className="page-header">
+        <div>
+          <h1>Add New Course</h1>
+        </div>
       </div>
+
+      <CourseForm
+        loading={loading}
+        submitLabel="Create Course"
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };

@@ -13,7 +13,11 @@ const CourseTable = ({
   onStatusChange,
 }) => {
   if (!courses.length) {
-    return <div className="course-empty">No courses found.</div>;
+    return (
+      <div className="course-empty">
+        No courses found.
+      </div>
+    );
   }
 
   return (
@@ -21,7 +25,6 @@ const CourseTable = ({
       <table className="common-table">
         <thead>
           <tr>
-            {/* <th>#</th> */}
             <th>Image</th>
             <th>Course</th>
             <th>Category</th>
@@ -35,16 +38,17 @@ const CourseTable = ({
         </thead>
 
         <tbody>
-          {courses.map((course, index) => (
+          {courses.map((course) => (
             <tr key={course._id}>
-              {/* <td>{index + 1}</td> */}
-
               <td>
                 {course.courseImage ? (
                   <img
                     src={getAssetUrl(course.courseImage)}
-                    alt={course.courseTitle}
+                    alt={course.courseTitle || "Course"}
                     className="student-avatar"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
                   />
                 ) : (
                   <div className="student-avatar student-avatar-placeholder">
@@ -53,46 +57,51 @@ const CourseTable = ({
                 )}
               </td>
 
-              <td >
+              <td>
                 <div className="student-name-cell">
-                <strong>{course.courseTitle}</strong>
-                 {course.popular && (
-                  <label className="course-mini-badge">Popular</label>
-                )}
-                </div>
-                <span className={`online ${course.courseType || ""}`}>
-                      {course.courseType || "-"}
-                </span>
-               
-              </td>
+                  <strong>{course.courseTitle || "-"}</strong>
 
-            
+                  {course.popular && (
+                    <span className="course-mini-badge">
+                      Popular
+                    </span>
+                  )}
+                </div>
+
+                <span className={`online ${course.courseType || ""}`}>
+                  {course.courseType || "-"}
+                </span>
+              </td>
 
               <td>{course.courseCategory || "-"}</td>
 
               <td>
-                <span className="tag-purple">₹{Number(course.mrp || 0).toLocaleString("en-IN")}</span>
+                <span className="tag-purple">
+                  ₹{Number(course.mrp || 0).toLocaleString("en-IN")}
+                </span>
               </td>
 
               <td>
-                <span className="tag-success">₹{Number(course.price || 0).toLocaleString("en-IN")}</span>
+                <span className="tag-success">
+                  ₹{Number(course.price || 0).toLocaleString("en-IN")}
+                </span>
               </td>
 
               <td>
-                {course.duration} {course.durationUnit}
+                {course.duration || 0} {course.durationUnit || ""}
               </td>
 
-              <td>{course.totalLectures}</td>
+              <td>{course.totalLectures ?? 0}</td>
 
               <td>
                 {canUpdate ? (
                   <select
                     className={`course-status-select status-${(
-                      course.status || "draft"
+                      course.status || "Draft"
                     ).toLowerCase()}`}
-                    value={course.status}
+                    value={course.status || "Draft"}
                     onChange={(event) =>
-                      onStatusChange(course._id, event.target.value)
+                      onStatusChange?.(course._id, event.target.value)
                     }
                     aria-label={`Change status for ${course.courseTitle}`}
                   >
@@ -109,7 +118,9 @@ const CourseTable = ({
                 <div className="admission-actions">
                   <Link
                     to={`${basePath}/${course._id}`}
-                    data-tooltip="View" className="tooltip"
+                    data-tooltip="View"
+                    className="tooltip"
+                    aria-label={`View ${course.courseTitle}`}
                   >
                     <FiEye />
                   </Link>
@@ -117,19 +128,23 @@ const CourseTable = ({
                   {canUpdate && (
                     <Link
                       to={`${basePath}/${course._id}/edit`}
-                      data-tooltip="Edit" className="tooltip"
+                      data-tooltip="Edit"
+                      className="tooltip"
+                      aria-label={`Edit ${course.courseTitle}`}
                     >
-                        <FiEdit2 />
+                      <FiEdit2 />
                     </Link>
                   )}
 
                   {canDelete && (
                     <button
                       type="button"
-                     data-tooltip="Delete" className="tooltip"
-                      onClick={() => onDelete(course._id)}
+                      data-tooltip="Delete"
+                      className="tooltip"
+                      aria-label={`Delete ${course.courseTitle}`}
+                      onClick={() => onDelete?.(course._id)}
                     >
-                       <FiTrash2 />
+                      <FiTrash2 />
                     </button>
                   )}
                 </div>

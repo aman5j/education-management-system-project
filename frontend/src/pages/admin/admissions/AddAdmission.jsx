@@ -1,109 +1,66 @@
-import {
-  useState,
-} from "react";
 
-import {
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
-import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
-
 import AdmissionForm from "../../../components/admissions/AdmissionForm";
-
-import {
-  createAdmission,
-} from "../../../services/admissionService";
+import { createAdmission } from "../../../services/admissionService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 const AddAdmission = () => {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { user, loading: authLoading } = useAuth();
-
-  const canCreateAdmission = hasPermission(
-    user,
-    "admissions.create"
-  );
-  
-  const location = useLocation();
+  const canCreateAdmission = hasPermission(user, "admissions.create");
 
   const admissionsPath = location.pathname.startsWith("/staff")
     ? "/staff/admissions"
     : "/admin/admissions";
 
-  const [saving, setSaving] =
-    useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit =
-    async (formData) => {
+  const handleSubmit = async (formData) => {
+    if (!canCreateAdmission || saving) {
+      throw new Error("You do not have permission to create admissions.");
+    }
 
-      if (!canCreateAdmission || saving) {
-        throw new Error(
-          "You do not have permission to create admissions."
-        );
-      }
+    setSaving(true);
 
-      try {
-        setSaving(true);
-
-        await createAdmission(
-          formData
-        );
-
-        navigate(admissionsPath);
-
-      } catch (error) {
-        console.error(
-          "Create admission error:",
-          error
-        );
-
-        throw new Error(
-          error?.response?.data
-            ?.message ||
-            "Unable to create admission."
-        );
-      } finally {
-        setSaving(false);
-      }
-    };
+    try {
+      await createAdmission(formData);
+      notification.success("Admission created successfully.");
+      navigate(admissionsPath);
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (authLoading) {
     return <div className="admission-state">Checking permissions...</div>;
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!canCreateAdmission) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canCreateAdmission) return <Navigate to="/unauthorized" replace />;
 
   return (
     <div className="admission-page">
       <div className="page-header">
         <div>
-          <h1>
-            Add Admission
-          </h1>
-
-          {/* <p>
-            Create a new student
-            admission.
-          </p> */}
+          <h1>Add Admission</h1>
         </div>
       </div>
 
       <AdmissionForm
         submitting={saving}
         submitLabel="Create Admission"
-        onSubmit={
-          handleSubmit
-        }
+        onSubmit={handleSubmit}
       />
     </div>
   );

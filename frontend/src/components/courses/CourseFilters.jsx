@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { getCategories } from "../../services/categoryService";
 import { IoSearchOutline } from "react-icons/io5";
@@ -20,12 +21,22 @@ const CourseFilters = ({
       setCategoriesError("");
 
       try {
-        const response = await getCategories({
+        // const response = await getCategories({
+        //   status: "Active",
+        //   limit: 100,
+        //   sortBy: "categoryName",
+        //   sortOrder: "asc",
+        // });
+
+        const response = await getCategories(
+        {
           status: "Active",
           limit: 100,
           sortBy: "categoryName",
           sortOrder: "asc",
-        });
+        },
+        { silent: true }
+      );
 
         const payload = response?.data;
 
@@ -61,9 +72,10 @@ const CourseFilters = ({
 
   return (
     <div className="course-filters">
-      {/* Search */}
       <div className="input-search">
-        <label htmlFor="course-filter-search">Search Course</label>
+        <label htmlFor="course-filter-search">
+          Search Course
+        </label>
 
         <input
           id="course-filter-search"
@@ -73,14 +85,14 @@ const CourseFilters = ({
           onChange={onChange}
           placeholder="Search course..."
         />
+
         <IoSearchOutline />
-
-
       </div>
 
-      {/* Status */}
       <div className="input-search">
-        <label htmlFor="course-filter-status">Status</label>
+        <label htmlFor="course-filter-status">
+          Status
+        </label>
 
         <select
           id="course-filter-status"
@@ -95,9 +107,10 @@ const CourseFilters = ({
         </select>
       </div>
 
-      {/* Course Type */}
       <div className="input-search">
-        <label htmlFor="course-filter-type">Course Type</label>
+        <label htmlFor="course-filter-type">
+          Course Type
+        </label>
 
         <select
           id="course-filter-type"
@@ -111,7 +124,6 @@ const CourseFilters = ({
         </select>
       </div>
 
-      {/* Database-driven Course Category */}
       <div className="input-search">
         <label htmlFor="course-filter-category">
           Course Category
@@ -147,13 +159,12 @@ const CourseFilters = ({
         )}
       </div>
 
-      {/* Reset */}
       <button
         type="button"
         className="themebtn themebtnline"
         onClick={onReset}
       >
-      <FiRefreshCw />  Reset
+        <FiRefreshCw /> Reset
       </button>
     </div>
   );

@@ -438,3 +438,128 @@
     animation: none;
   }
 }
+
+
+
+
+
+/* Rich text content */
+.student-course-details__rich-content {
+  color: #56647b;
+  font-size: 13px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.student-course-details__rich-content p {
+  margin: 0 0 12px;
+}
+
+.student-course-details__rich-content p:last-child {
+  margin-bottom: 0;
+}
+
+.student-course-details__rich-content h1,
+.student-course-details__rich-content h2,
+.student-course-details__rich-content h3 {
+  margin: 16px 0 9px;
+  color: #253149;
+  line-height: 1.4;
+}
+
+.student-course-details__rich-content h1 {
+  font-size: 21px;
+}
+
+.student-course-details__rich-content h2 {
+  font-size: 18px;
+}
+
+.student-course-details__rich-content h3 {
+  font-size: 15px;
+}
+
+.student-course-details__rich-content strong,
+.student-course-details__rich-content b {
+  color: #253149;
+  font-weight: 750;
+}
+
+.student-course-details__rich-content ul,
+.student-course-details__rich-content ol {
+  margin: 10px 0;
+  padding-left: 25px;
+}
+
+.student-course-details__rich-content li {
+  margin-bottom: 6px;
+  padding-left: 3px;
+}
+
+.student-course-details__rich-content a {
+  color: #2563eb;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.student-course-details__rich-content u {
+  text-decoration: underline;
+}
+
+/* Course preview video */
+.student-course-details__video-panel {
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid #e3eaf3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.student-course-details__video-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #3269df;
+}
+
+.student-course-details__video-heading span {
+  color: #3269df;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.student-course-details__video-heading h2 {
+  margin: 5px 0 0;
+  color: #253149;
+  font-size: 17px;
+}
+
+.student-course-details__video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #101828;
+}
+
+.student-course-details__video iframe,
+.student-course-details__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .student-course-details__video-panel {
+    padding: 13px;
+  }
+
+  .student-course-details__rich-content {
+    font-size: 12px;
+  }
+}

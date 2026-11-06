@@ -534,7 +534,7 @@ export const getMyCourses = async (req, res, next) => {
       .populate({
         path: "course_id",
         select:
-          "courseTitle courseType courseCategory courseImage description syllabus eligibility duration durationUnit totalLectures subjects status",
+          "courseTitle courseType courseCategory courseImage previewVideo description syllabus eligibility duration durationUnit totalLectures subjects status",
         populate: {
           path: "subjects",
           select: "subjectName subjectCode description status",
@@ -571,6 +571,7 @@ export const getMyCourses = async (req, res, next) => {
               type: course.courseType || "",
               category: course.courseCategory || "",
               image: course.courseImage || "",
+              previewVideo: course.previewVideo || "",
               description: course.description || "",
               syllabus: course.syllabus || "",
               eligibility: course.eligibility || "",
