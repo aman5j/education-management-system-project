@@ -6,6 +6,7 @@ import { FiPlus } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import CategoryFilters from "../../../components/categories/CategoryFilters";
 import CategoryTable from "../../../components/categories/CategoryTable";
+import Pagination from "../../../components/common/Pagination";
 import { hasPermission } from "../../../utils/permissions";
 
 import {
@@ -13,14 +14,16 @@ import {
   deleteCategory,
 } from "../../../services/categoryService";
 
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/CategoryManagement.css";
 
 const DEFAULT_FILTERS = {
   search: "",
   status: "",
 };
-
-const PAGE_SIZE = 10;
 
 const Categories = () => {
   const location = useLocation();
@@ -37,15 +40,15 @@ const Categories = () => {
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: PAGE_SIZE,
+    limit: 10,
     total: 0,
     totalPages: 0,
   });
@@ -63,13 +66,12 @@ const Categories = () => {
 
     const loadCategories = async () => {
       setLoading(true);
-      setError("");
 
       try {
         const response = await getCategories({
           ...filters,
           page,
-          limit: PAGE_SIZE,
+          limit,
           sortBy: "displayOrder",
           sortOrder: "asc",
         });
@@ -77,40 +79,26 @@ const Categories = () => {
         if (cancelled) return;
 
         const payload = response?.data?.data;
-
         const categoryList = Array.isArray(payload?.categories)
           ? payload.categories
           : [];
 
-        const paginationData = payload?.pagination;
+        const paginationData = payload?.pagination || {};
 
         setCategories(categoryList);
-
-        if (paginationData) {
-          setPagination({
-            page: Number(paginationData.page) || page,
-            limit: Number(paginationData.limit) || PAGE_SIZE,
-            total: Number(paginationData.total) || 0,
-            totalPages: Math.max(
-              Number(paginationData.totalPages) || 0,
-              0
-            ),
-          });
-        } else {
-          setPagination({
-            page,
-            limit: PAGE_SIZE,
-            total: categoryList.length,
-            totalPages: categoryList.length ? 1 : 0,
-          });
-        }
-      } catch (requestError) {
+        setPagination({
+          page: Number(paginationData.page) || page,
+          limit: Number(paginationData.limit) || limit,
+          total: Number(paginationData.total) || 0,
+          totalPages: Math.max(
+            Number(paginationData.totalPages) || 0,
+            0
+          ),
+        });
+      } catch (error) {
         if (!cancelled) {
           setCategories([]);
-          setError(
-            requestError?.response?.data?.message ||
-              "Failed to load categories."
-          );
+          notification.error(getApiErrorMessage(error));
         }
       } finally {
         if (!cancelled) {
@@ -130,6 +118,7 @@ const Categories = () => {
     canView,
     filters,
     page,
+    limit,
     refreshKey,
   ]);
 
@@ -149,34 +138,43 @@ const Categories = () => {
     setPage(1);
   };
 
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+  };
+
   const handleDelete = async (id) => {
     if (!canDelete) {
-      setError("You do not have permission to delete categories.");
+      notification.error(
+        "You do not have permission to delete categories."
+      );
       return;
     }
 
-    const confirmed = window.confirm(
-      "Delete this category? Categories used by existing courses must be reassigned first."
+    const category = categories.find(
+      (item) => String(item._id) === String(id)
+    );
+
+    const categoryName = category?.categoryName || "this category";
+
+    const confirmed = await notification.confirmDelete(
+      `"${categoryName}"`
     );
 
     if (!confirmed) return;
 
     try {
-      setError("");
       await deleteCategory(id);
 
-      // If the deleted category was the only row on a later page,
-      // navigate back; otherwise reload the current page.
+      notification.success("Category deleted successfully.");
+
       if (categories.length === 1 && page > 1) {
         setPage((previous) => previous - 1);
       } else {
         setRefreshKey((previous) => previous + 1);
       }
-    } catch (deleteError) {
-      setError(
-        deleteError?.response?.data?.message ||
-          "Failed to delete category."
-      );
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     }
   };
 
@@ -205,7 +203,6 @@ const Categories = () => {
       <div className="page-header">
         <div>
           <h1>Course Categories</h1>
-          
         </div>
 
         {canCreate && (
@@ -222,12 +219,6 @@ const Categories = () => {
       />
 
       <div className="common-card">
-        {error && (
-          <div className="category-list-error" role="alert">
-            {error}
-          </div>
-        )}
-
         {loading ? (
           <div className="category-loading">
             Loading categories...
@@ -243,35 +234,17 @@ const Categories = () => {
               onDelete={handleDelete}
             />
 
-            {pagination.totalPages > 0 && (
-              <div className="category-pagination">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() =>
-                    setPage((previous) => previous - 1)
-                  }
-                >
-                  Previous
-                </button>
-
-                <span>
-                  Page {page} of {pagination.totalPages}
-                  {" · "}
-                  {pagination.total} categories
-                </span>
-
-                <button
-                  type="button"
-                  disabled={page >= pagination.totalPages}
-                  onClick={() =>
-                    setPage((previous) => previous + 1)
-                  }
-                >
-                  Next
-                </button>
-              </div>
-            )}
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              itemCount={categories.length}
+              itemLabel="categories"
+              limit={limit}
+              loading={loading}
+              onPageChange={setPage}
+              onLimitChange={handleLimitChange}
+            />
           </>
         )}
       </div>
