@@ -176,7 +176,8 @@ const apiLimiter = rateLimit({
 
 app.use(apiLimiter);
 
-app.use(express.json({ limit: "1mb" }));
+// app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true }));
 // ==========================================
 // FIX: Serve Uploaded Files Correctly

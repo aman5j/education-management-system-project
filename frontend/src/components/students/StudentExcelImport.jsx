@@ -359,7 +359,7 @@ const downloadTemplate = () => {
     [""],
     ["IMPORT RULES"],
     ["Maximum records", "500 students per import."],
-    ["Maximum file size", "5 MB."],
+    ["Maximum file size", "12 MB."],
     ["Supported files", ".xlsx and .xls."],
     ["Duplicate Roll No", "Rejected. Roll Number must be unique."],
     ["Duplicate Email", "Rejected. Email must be unique."],
@@ -450,8 +450,8 @@ const downloadTemplate = () => {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("Excel file must be 5 MB or smaller.");
-      return;
+        setError("Excel file must be 12 MB or smaller.");
+        return;
     }
 
     try {
@@ -644,7 +644,7 @@ const downloadTemplate = () => {
             )}
 
             <small>
-                Excel .xlsx or .xls · Maximum 5 MB · Maximum 500 records
+                Excel .xlsx or .xls · Maximum 12 MB · Maximum 500 records
             </small>
           </div>
 
