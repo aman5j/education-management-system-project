@@ -13,11 +13,16 @@ import {
   FiEye,
   FiEyeOff,
 } from "react-icons/fi";
+import { FaIdCard } from "react-icons/fa";
+import { IoMdInformationCircle } from "react-icons/io";
+
 
 import { useAuth } from "../../context/AuthContext";
 import studentPortalService from "../../services/studentPortalService";
 import { getAssetUrl } from "../../utils/assetUrl";
 import "./StudentProfile.css";
+import { MdOutgoingMail } from "react-icons/md";
+import { IoIosCall } from "react-icons/io";
 
 const initialForm = {
   firstName: "",
@@ -271,29 +276,6 @@ export default function StudentProfile() {
 
   return (
     <div className="student-profile">
-      <header className="student-profile__header">
-        <div className="student-profile__title-icon">
-          <FiUser />
-        </div>
-
-        <div>
-          <span className="student-profile__eyebrow">
-            STUDENT PORTAL
-          </span>
-          <h1>My Profile</h1>
-          <p>View and manage your personal account information.</p>
-        </div>
-
-        <button
-          type="button"
-          className="student-profile__refresh"
-          onClick={loadProfile}
-          disabled={saving || photoUploading}
-        >
-          <FiRefreshCw /> Refresh
-        </button>
-      </header>
-
       {error && (
         <div className="student-profile__alert student-profile__alert--error">
           <FiAlertCircle />
@@ -313,6 +295,74 @@ export default function StudentProfile() {
           </button>
         </div>
       )}
+
+
+<section className="common-card">
+  <div className="profile-header__banner"></div>
+
+  <div className="profile-header__content">
+    <div className="profile-header__image">
+     {imageUrl ? (
+                  <img src={imageUrl} alt={displayName} />
+                ) : (
+                  <span>
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                )}
+
+                <div className="uploadicon"> <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                onChange={handlePhotoChange}
+              />
+
+              <button
+                type="button"
+                className="student-profile__photo-button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={photoUploading}
+              >
+                {photoUploading ? (
+                  <FiRefreshCw className="student-profile__spin" />
+                ) : (
+                  <FiCamera />
+                )}
+                {photoUploading ? "Uploading..." : "Edit"}
+              </button></div>
+
+    </div>
+
+    <div className="profile-header__details">
+             <h1>{displayName}</h1>
+                <img className="student-sign" src="https://education-management-backend-79g1.onrender.com/uploads/students/1792320172416-images.png" alt={displayName} />
+              
+
+      <div className="profile-header__meta">
+        <div className="profile-header__item">
+          <FaIdCard />
+
+          <span>Roll No: {student?.rollNo || "—"}</span>
+        </div>
+
+     
+
+        <div className="profile-header__item">
+         <MdOutgoingMail />
+          <span>{student?.email || "—"}</span>
+        </div>
+
+         <div className="profile-header__item">
+          <IoIosCall />
+          <span> {student?.mobile || "—"}</span>
+        </div>
+       
+      </div>
+    </div>
+  </div>
+</section>
+
 
       <div className="student-profile__tabs" role="tablist">
         <button
@@ -348,58 +398,22 @@ export default function StudentProfile() {
 
       {activeTab === "personal" && (
         <form
-          className="student-profile__panel"
+          className="common-card"
           onSubmit={handleSaveProfile}
         >
-          <div className="student-profile__personal-layout">
-            <aside className="student-profile__photo-panel">
-              <div className="student-profile__photo">
-                {imageUrl ? (
-                  <img src={imageUrl} alt={displayName} />
-                ) : (
-                  <span>
-                    {displayName.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-
-              <h2>{displayName}</h2>
-              <p>Roll No: {student?.rollNo || "—"}</p>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                hidden
-                onChange={handlePhotoChange}
-              />
-
-              <button
-                type="button"
-                className="student-profile__photo-button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={photoUploading}
-              >
-                {photoUploading ? (
-                  <FiRefreshCw className="student-profile__spin" />
-                ) : (
-                  <FiCamera />
-                )}
-                {photoUploading ? "Uploading..." : "Change Photo"}
-              </button>
-
-              <small>JPG, PNG or WEBP · Maximum 5 MB</small>
-            </aside>
-
-            <div className="student-profile__form-area">
-              <div className="student-profile__section-heading">
-                <h2>Personal Information</h2>
-                <p>Update your personal and contact details.</p>
-              </div>
-
-              <div className="student-profile__fields">
+          <div class="panel-header"><div><h3>Personal Information
+</h3> 
+<p>Update your personal and contact details.</p>
+</div></div>
+         
+            
+           
+              <div className="cardbody">
+                <div className="student-profile__fields">
+                <div className="input-felid">
                 <label>
-                  First Name *
+                  First Name <span className="required">*</span>
+                  </label>
                   <input
                     name="firstName"
                     value={form.firstName}
@@ -407,20 +421,25 @@ export default function StudentProfile() {
                     required
                     maxLength={80}
                   />
-                </label>
-
+                
+                </div>
+<div className="input-felid">
                 <label>
                   Surname
+                  </label>
                   <input
                     name="surname"
                     value={form.surname}
                     onChange={handleChange}
                     maxLength={80}
                   />
-                </label>
+                
+                </div>
 
+<div className="input-felid">
                 <label>
-                  Mobile Number *
+                  Mobile Number <span className="required">*</span>
+                  </label>
                   <input
                     name="mobile"
                     value={form.mobile}
@@ -428,45 +447,55 @@ export default function StudentProfile() {
                     required
                     maxLength={20}
                   />
-                </label>
+            
 
+                </div>
+<div className="input-felid">
                 <label>
                   Alternate Mobile
+                  </label>
                   <input
                     name="alternateMobile"
                     value={form.alternateMobile}
                     onChange={handleChange}
                     maxLength={20}
                   />
-                </label>
+             
+               </div>
 
-                <label className="student-profile__field-full">
-                  Login Email Address
-                  <input
+<div className="input-felid">
+                <label  >
+                  Login Email Address  <span className="infoicon tooltip" data-tooltip=" This email is your student login ID. Contact your
+                    institute administrator if it needs to be changed." classNameinfoicon><IoMdInformationCircle />
+</span>
+                  </label>
+                  <input 
                     type="email"
                     value={loginEmail}
                     readOnly
                     aria-readonly="true"
                     title="Your login email can only be managed by the institute administrator."
                   />
-                  <small>
-                    This email is your student login ID. Contact your
-                    institute administrator if it needs to be changed.
-                  </small>
-                </label>
+                 
+              
+              </div>
 
+<div className="input-felid">
                 <label>
                   Date of Birth
+                  </label>
                   <input
                     type="date"
                     name="dob"
                     value={form.dob}
                     onChange={handleChange}
                   />
-                </label>
+                </div>
 
+<div className="input-felid">
                 <label>
                   Gender
+                </label>
                   <select
                     name="gender"
                     value={form.gender}
@@ -477,32 +506,41 @@ export default function StudentProfile() {
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
-                </label>
+                  </div>
+            
 
-                <label className="student-profile__field-full">
-                  Address
-                  <textarea
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    rows={3}
-                    maxLength={500}
-                  />
-                </label>
-
+<div className="input-felid">
                 <label>
                   Pincode
+                      </label>
                   <input
                     name="pincode"
                     value={form.pincode}
                     onChange={handleChange}
                     maxLength={10}
                   />
-                </label>
+            
+
+                </div>
+                  <div className="input-felid student-form-full">
+
+                <label>
+                  Address
+                  </label>
+                  <textarea
+
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    rows={3}
+                    maxLength={500}
+                  />
+               
+               </div>
               </div>
 
               <div className="student-profile__actions">
-                <button type="submit" disabled={saving}>
+                <button className="themebtn" type="submit" disabled={saving}>
                   {saving ? (
                     <FiRefreshCw className="student-profile__spin" />
                   ) : (
@@ -511,48 +549,55 @@ export default function StudentProfile() {
                   {saving ? "Saving..." : "Update Profile"}
                 </button>
               </div>
-            </div>
-          </div>
+              </div>
+           
+         
         </form>
       )}
 
       {activeTab === "guardian" && (
         <form
-          className="student-profile__panel"
+          className="common-card"
           onSubmit={handleSaveProfile}
         >
-          <div className="student-profile__section-heading">
-            <h2>Guardian Information</h2>
-            <p>
-              Manage the parent or guardian details associated with
-              your student record.
-            </p>
-          </div>
 
-          <div className="student-profile__fields student-profile__guardian-fields">
+           <div class="panel-header"><div><h3>Guardian Information
+</h3> 
+<p>Manage the parent or guardian details associated with
+              your student record.</p>
+</div></div>
+
+
+          <div className="cardbody">
+             <div className="student-profile__fields student-profile__guardian-fields">
+           <div className="input-felid">
             <label>
               Father's Name
+             </label>
               <input
                 name="fatherName"
                 value={form.fatherName}
                 onChange={handleChange}
                 maxLength={100}
               />
-            </label>
+       </div>
 
+<div className="input-felid">
             <label>
               Mother's Name
+              </label>
               <input
                 name="motherName"
                 value={form.motherName}
                 onChange={handleChange}
                 maxLength={100}
               />
-            </label>
+              </div>
+            
           </div>
 
           <div className="student-profile__actions">
-            <button type="submit" disabled={saving}>
+            <button className="themebtn" type="submit" disabled={saving}>
               {saving ? (
                 <FiRefreshCw className="student-profile__spin" />
               ) : (
@@ -561,22 +606,18 @@ export default function StudentProfile() {
               {saving ? "Saving..." : "Update Guardian Details"}
             </button>
           </div>
+          </div>
         </form>
       )}
 
       {activeTab === "password" && (
         <form
-          className="student-profile__panel student-profile__password-panel"
+          className="common-card"
           onSubmit={handlePasswordChange}
         >
-          <div className="student-profile__section-heading">
-            <h2>Change Password</h2>
-            <p>
-              Use a strong password that you do not use on other websites.
-            </p>
-          </div>
+         
 
-          <div className="student-profile__password-fields">
+          <div className="student-profile__password-fields cardbody">
             {[
               {
                 name: "currentPassword",
@@ -594,10 +635,9 @@ export default function StudentProfile() {
                 autoComplete: "new-password",
               },
             ].map((field) => (
-              <label key={field.name}>
-                {field.label}
-
-                <div className="student-profile__password-input-wrap">
+             
+                <div className="student-profile__password-input-wrap input-felid"  key={field.name}>
+                  <label>{field.label}</label>  
                   <input
                     type={
                       passwordVisibility[field.name] ? "text" : "password"
@@ -643,20 +683,23 @@ export default function StudentProfile() {
                     )}
                   </button>
                 </div>
-              </label>
+            
             ))}
           </div>
 
-          <div className="student-profile__password-note">
+            <div className="cardbody">
+              <div className="student-profile__password-note">
             Your account will be signed out after the password is changed.
             Sign in again using your new password.
           </div>
 
           <div className="student-profile__actions">
-            <button type="submit">
+            <button type="submit" className="themebtn">
               <FiLock /> Change Password
             </button>
           </div>
+            </div>
+
         </form>
       )}
     </div>

@@ -948,3 +948,10 @@ color: #172b4d;
     display: block;
     text-transform: capitalize;
 }
+
+
+.infoicon svg{
+  font-size: 17px;
+    vertical-align: bottom;
+    color: #FF9800;
+}
