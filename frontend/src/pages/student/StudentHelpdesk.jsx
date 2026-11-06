@@ -236,16 +236,17 @@ export default function StudentHelpdesk() {
 
   return (
     <div className="student-helpdesk">
-      <div className="student-helpdesk__heading">
+      <div className="page-header">
         <div>
-          <span className="student-helpdesk__eyebrow">STUDENT SERVICES</span>
           <h1>HelpDesk & Support</h1>
           <p>Raise an issue and stay updated until it is resolved.</p>
+
+         
         </div>
 
-        {!selectedTicket && !showForm && (
+          {!selectedTicket && !showForm && (
           <button
-            className="sh-button sh-button--primary"
+            className="themebtn"
             onClick={() => {
               setShowForm(true);
               setSuccess("");
@@ -254,7 +255,9 @@ export default function StudentHelpdesk() {
             <FiPlus /> Raise New Ticket
           </button>
         )}
+
       </div>
+
 
       {error && (
         <div className="sh-alert sh-alert--error">
@@ -469,49 +472,68 @@ export default function StudentHelpdesk() {
       ) : (
         <>
           <section className="sh-stats">
-            <div className="sh-stat sh-stat--total">
-              <span className="sh-stat__icon"><FiTag /></span>
-              <strong>{stats.total || 0}</strong>
-              <small>Total Tickets</small>
-            </div>
-            <div className="sh-stat sh-stat--open">
-              <span className="sh-stat__icon"><FiClock /></span>
-              <strong>{stats.Open || 0}</strong>
-              <small>Open</small>
-            </div>
-            <div className="sh-stat sh-stat--progress">
-              <span className="sh-stat__icon"><FiRefreshCw /></span>
-              <strong>{stats["In Progress"] || 0}</strong>
-              <small>In Progress</small>
-            </div>
-            <div className="sh-stat sh-stat--resolved">
-              <span className="sh-stat__icon"><FiCheckCircle /></span>
-              <strong>{stats.Resolved || 0}</strong>
-              <small>Resolved</small>
-            </div>
-            <div className="sh-stat sh-stat--closed">
-              <span className="sh-stat__icon"><FiShield /></span>
-              <strong>{stats.Closed || 0}</strong>
-              <small>Closed</small>
-            </div>
+            <article class="dashboard-stat-card card-success">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-success"><FiTag /></div>
+                </div>
+                <div class="stat-card-body">
+                  <span class="stat-card-title">Total Tickets</span>
+                <strong class="stat-card-value">{stats.total || 0}</strong>
+                </div>
+                  </article>
+
+
+            
+             <article class="dashboard-stat-card card-warning">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-warning"><FiClock /></div>
+                </div>
+                <div class="stat-card-body">
+                  <span class="stat-card-title">Open</span>
+                <strong class="stat-card-value">{stats.Open || 0}</strong>
+                </div>
+                  </article>
+
+                     <article class="dashboard-stat-card card-purple">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-purple"><FiRefreshCw /></div>
+                </div>
+                <div class="stat-card-body">
+                  <span class="stat-card-title">In Progress</span>
+                <strong class="stat-card-value">{stats["In Progress"] || 0}</strong>
+                </div>
+                  </article>
+
+                     <article class="dashboard-stat-card card-bluewarning">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-bluewarning"><FiCheckCircle /></div>
+                </div>
+                <div class="stat-card-body">
+                  <span class="stat-card-title">Resolved</span>
+                <strong class="stat-card-value">{stats.Resolved || 0}</strong>
+                </div>
+                  </article>
+
+                       <article class="dashboard-stat-card card-danger">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-danger"><FiShield /></div>
+                </div>
+                <div class="stat-card-body">
+                  <span class="stat-card-title">Closed</span>
+                <strong class="stat-card-value">{stats.Closed || 0}</strong>
+                </div>
+                  </article>
+
+
+           
+
           </section>
 
-          <section className="sh-ticket-section">
-            <div className="sh-section-title">
-              <div>
-                <h2><FiMessageCircle /> My Support Tickets</h2>
-                <p>Track your submitted issues and support replies.</p>
-              </div>
-              <button className="sh-refresh" onClick={loadDashboard} disabled={loading}>
-                <FiRefreshCw /> Refresh
-              </button>
-            </div>
-
-            <div className="sh-filters">
+ <div className="student-profile__tabs">
               {FILTERS.map((item) => (
                 <button
                   key={item}
-                  className={filter === item ? "is-active" : ""}
+                  className={filter === item ? "active" : ""}
                   onClick={() => setFilter(item)}
                 >
                   {item}
@@ -519,6 +541,18 @@ export default function StudentHelpdesk() {
                 </button>
               ))}
             </div>
+
+          <section className="common-card">
+             <div class="panel-header"><div><h3>My Support Tickets</h3>  <p>Track your submitted issues and support replies.</p></div>
+               <button className="themebtn themebtnline" onClick={loadDashboard} disabled={loading}>
+                <FiRefreshCw /> Refresh
+              </button>
+            </div>
+            <div className="cardbody">
+           
+
+
+           
 
             {loading ? (
               <div className="sh-empty">Loading your tickets…</div>
@@ -566,6 +600,7 @@ export default function StudentHelpdesk() {
                 ))}
               </div>
             )}
+            </div>
           </section>
         </>
       )}

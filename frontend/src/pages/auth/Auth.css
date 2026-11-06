@@ -955,3 +955,120 @@ color: #172b4d;
     vertical-align: bottom;
     color: #FF9800;
 }
+
+.student-profile__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.student-profile__tabs button {
+     display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 38px;
+    padding: 9px 20px;
+    border: 1px solid #ddd;
+    border-radius: 39px;
+    background: transparent;
+    color: #51627e;
+    font-size: 13px;
+    font-weight: 600;
+    background: white;
+    box-shadow: 0 0 3px #ddd;
+    cursor: pointer;
+}
+
+.student-profile__tabs button.active {
+ border-color: #1d5ff0;
+    background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);
+    color: #fff;
+}
+
+.student-profile__tabs button span {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #eaf0fb;
+  color: #455c80;
+  font-size: 10px;
+}
+
+.student-profile__tabs button.active span {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* status tag  */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status svg {
+  width: 14px;
+  height: 14px;
+}
+
+.status.pending {
+  color: #9A6700;
+  background: #FFF5DF;
+  border: 1px solid #F5DFB2;
+}
+
+.status.approved, 
+.status.active,
+.status.accepted {
+  color: #16834A;
+  background: #E8F7EE;
+  border: 1px solid #C5EBD3;
+}
+
+.status.rejected, .status.cancel {
+  color: #C53030;
+  background: #FDECEC;
+  border: 1px solid #F5CACA;
+}
+
+/* table button  */
+.tablebtn{
+    cursor: pointer;
+    border: 1px solid #0000;
+    border-radius: 4px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background .15s, border-color .15s;
+    display: inline-flex;
+}
+.tablebtn.cancle{
+color: #C53030;
+  background: #fdececd9;
+  border: 1px solid #F5CACA;
+}
+.tablebtn.cancle:hover {
+    background: #fef2f2;
+}
+
+.tablebtn.accept{
+color: #16834A;
+  background: #E8F7EE;
+  border: 1px solid #C5EBD3;
+}
+.tablebtn.accept:hover {
+    background: #daf5e5;
+}
