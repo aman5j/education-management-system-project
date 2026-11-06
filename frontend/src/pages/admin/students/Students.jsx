@@ -32,11 +32,9 @@ import {
 
 import { useAuth } from "../../../context/AuthContext";
 
-import { getAssetUrl } from "../../../utils/assetUrl";
 
 import api from "../../../services/api";
 
-import Breadcrumb from "../../../common/Breadcrumb";
 
 import StudentFilters from "../../../components/students/StudentFilters";
 import StudentTable from "../../../components/students/StudentTable";
@@ -180,8 +178,8 @@ const Students = () => {
   const [loading, setLoading] =
     useState(true);
 
-  const [error, setError] =
-    useState("");
+  // const [error, setError] =
+  //   useState("");
 
   const [
     selectedStudent,
@@ -220,7 +218,7 @@ const Students = () => {
         }
 
         setLoading(true);
-        setError("");
+        // setError("");
 
         try {
           const params =
@@ -293,10 +291,9 @@ const Students = () => {
               .pagination
           );
         } catch (requestError) {
-          setError(
-            requestError.response
-              ?.data?.message ||
-              "Unable to load students."
+          notification.error(
+            requestError?.response?.data?.message ||
+            "Unable to load students."
           );
         } finally {
           setLoading(false);
@@ -441,13 +438,29 @@ const Students = () => {
   }
 };
 
-  const handleStatusChange = async (student, status) => {
+const handleStatusChange = async (student, status) => {
   if (!canUpdateStudent) {
     notification.error(
       "You do not have permission to update student status."
     );
     return;
   }
+
+  if (student.status === status) return;
+
+  const studentName = [
+    student.firstName,
+    student.surname,
+  ].filter(Boolean).join(" ");
+
+  const action = status === "inactive" ? "suspend" : "reactivate";
+
+  const confirmed = await notification.confirmStatusChange({
+    itemName: studentName || "this student",
+    action,
+  });
+
+  if (!confirmed) return;
 
   try {
     await api.patch(
@@ -457,11 +470,10 @@ const Students = () => {
     );
 
     notification.success("Student status updated successfully.");
-
     await fetchStudents(pagination.page);
   } catch (requestError) {
     notification.error(
-      requestError.response?.data?.message ||
+      requestError?.response?.data?.message ||
       "Unable to update student status."
     );
   }
@@ -719,11 +731,11 @@ const Students = () => {
       <section className="common-card">
        
 
-        {error && (
+        {/* {error && (
           <div className="student-page-error">
             {error}
           </div>
-        )}
+        )} */}
 
         {loading ? (
           <div className="student-loading">
