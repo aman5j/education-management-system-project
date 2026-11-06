@@ -12,7 +12,7 @@ import {
 import api from "../../services/api";
 import "./StudentExcelImport.css";
 
-const MAX_ROWS = 200;
+const MAX_ROWS = 500;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const COLUMNS = [
@@ -358,7 +358,7 @@ const downloadTemplate = () => {
     ["Show Surname", "Yes or No. Defaults to Yes."],
     [""],
     ["IMPORT RULES"],
-    ["Maximum records", "200 students per import."],
+    ["Maximum records", "500 students per import."],
     ["Maximum file size", "5 MB."],
     ["Supported files", ".xlsx and .xls."],
     ["Duplicate Roll No", "Rejected. Roll Number must be unique."],
@@ -644,7 +644,7 @@ const downloadTemplate = () => {
             )}
 
             <small>
-              Excel .xlsx or .xls · Maximum 5 MB · Maximum 200 records
+                Excel .xlsx or .xls · Maximum 5 MB · Maximum 500 records
             </small>
           </div>
 
