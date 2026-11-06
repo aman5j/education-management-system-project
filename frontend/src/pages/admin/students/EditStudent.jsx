@@ -52,6 +52,7 @@ const EditStudent = () => {
     } catch (error) {
       setStudent(null);
       setLoadFailed(true);
+
       notification.error(
         error?.response?.data?.message ||
         error?.message ||
@@ -70,7 +71,8 @@ const EditStudent = () => {
 
   const handleSubmit = async (formData) => {
     if (!canUpdate) {
-      throw new Error("You do not have permission to update students.");
+      notification.error("You do not have permission to update students.");
+      return;
     }
 
     if (submitting) return;
@@ -79,13 +81,17 @@ const EditStudent = () => {
 
     try {
       await api.put(`/students/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
         silent: true,
       });
 
-      navigate(studentsPath, {
-        state: { notification: "Student updated successfully." },
-      });
+      // Show success once from the submit event.
+      notification.success("Student updated successfully.");
+
+      // No notification state: prevents StrictMode effect duplication.
+      navigate(studentsPath, { replace: true });
     } catch (requestError) {
       throw new Error(
         requestError?.response?.data?.message ||
@@ -98,7 +104,11 @@ const EditStudent = () => {
   };
 
   if (authLoading) {
-    return <div className="student-loading-page">Checking permissions...</div>;
+    return (
+      <div className="student-loading-page">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (!user) return <Navigate to="/login" replace />;
@@ -129,7 +139,9 @@ const EditStudent = () => {
   if (!student) {
     return (
       <div className="student-management-page">
-        <div className="student-page-error">Student not found.</div>
+        <div className="student-page-error">
+          Student not found.
+        </div>
       </div>
     );
   }
@@ -137,7 +149,9 @@ const EditStudent = () => {
   return (
     <div className="student-management-page">
       <div className="page-header">
-        <div><h1>Edit Student</h1></div>
+        <div>
+          <h1>Edit Student</h1>
+        </div>
       </div>
 
       <StudentForm
