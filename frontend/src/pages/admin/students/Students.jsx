@@ -20,6 +20,7 @@ import StudentFilters from "../../../components/students/StudentFilters";
 import StudentTable from "../../../components/students/StudentTable";
 import StudentView from "../../../components/students/StudentView";
 import StudentCredentialsModal from "../../../components/students/StudentCredentialsModal";
+import StudentExcelImport from "../../../components/students/StudentExcelImport";
 
 import "../../../layout/AdminLayout.css";
 import "./StudentManagement.css";
@@ -48,6 +49,7 @@ const Students = () => {
   // Preserve the existing Admin-only payment access policy.
   const canViewPayments = user?.role === "admin";
 
+  const [showStudentImport, setShowStudentImport] = useState(false);
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -403,7 +405,7 @@ const Students = () => {
         </div>
 
         <div className="student-page-actions">
-          <button
+          {/* <button
             type="button"
             className="themebtn excelimport"
             onClick={() =>
@@ -412,7 +414,18 @@ const Students = () => {
           >
             <FaFileImport />
             Import
-          </button>
+          </button> */}
+
+          {canCreateStudent && (
+            <button
+              type="button"
+              className="themebtn excelimport"
+              onClick={() => setShowStudentImport(true)}
+            >
+              <FaFileImport />
+              Import
+            </button>
+          )}
 
           <button
             type="button"
@@ -551,6 +564,30 @@ const Students = () => {
         <StudentCredentialsModal
           student={credentialsStudent}
           onClose={() => setCredentialsStudent(null)}
+        />
+      )}
+
+      {/* {showStudentImport && (
+        <StudentExcelImport
+          onClose={() => setShowStudentImport(false)}
+          onImported={async () => {
+            setPage(1);
+            await fetchStudents(1);
+          }}
+        />
+      )} */}
+
+      {showStudentImport && (
+        <StudentExcelImport
+          onClose={() => setShowStudentImport(false)}
+          onImported={async () => {
+            setPagination((previous) => ({
+              ...previous,
+              page: 1,
+            }));
+
+            await fetchStudents(1);
+          }}
         />
       )}
 

@@ -11,6 +11,8 @@ import {
   updateStudentStatus,
 } from "../controllers/student.controller.js";
 
+import { importStudents } from "../controllers/studentImport.controller.js";
+
 import { authenticate } from "../middleware/auth.middleware.js";
 import { requirePermission } from "../middleware/permission.middleware.js";
 import studentUpload from "../middleware/studentUpload.middleware.js";
@@ -46,6 +48,14 @@ router.patch(
   requirePermission("students.update"),
   updateStudentStatus
 );
+
+// Bulk student import from Excel data.
+router.post(
+  "/import",
+  requirePermission("students.create"),
+  importStudents
+);
+
 
 // Individual student: read, update, delete.
 router
