@@ -1,6 +1,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
+import DOMPurify from "dompurify";
+import { getAssetUrl } from "../../utils/assetUrl";
+import { FiPlay } from "react-icons/fi";
+
 import {
   FiArrowLeft,
   FiBookOpen,
@@ -37,54 +42,127 @@ const formatDate = (value) => {
  * Convert stored rich-text HTML to readable text.
  * This extracts text only; it never injects stored HTML into the page.
  */
-function readableText(value) {
-  if (!value) return "";
+function RichContent({ value }) {
+  if (!value) return null;
 
-  const source = String(value);
+  const safeHTML = DOMPurify.sanitize(String(value), {
+    USE_PROFILES: { html: true },
+  });
 
-  if (typeof window === "undefined") {
-    return source.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  }
-
-  const documentNode = new DOMParser().parseFromString(
-    source,
-    "text/html"
+  return (
+    <div
+      className="student-course-details__rich-content"
+      dangerouslySetInnerHTML={{ __html: safeHTML }}
+    />
   );
-
-  documentNode.querySelectorAll("script, style, noscript").forEach((node) =>
-    node.remove()
-  );
-
-  documentNode.querySelectorAll("br").forEach((node) =>
-    node.replaceWith("\n")
-  );
-
-  documentNode.querySelectorAll("p, div, li, h1, h2, h3, h4, tr").forEach(
-    (node) => node.append("\n")
-  );
-
-  return (documentNode.body.textContent || "")
-    .replace(/\u00a0/g, " ")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n[ \t]+/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }
 
 function ContentSection({ title, value, emptyText }) {
-  const text = readableText(value);
-
   return (
     <section className="student-course-details__content-section">
       <h3>{title}</h3>
-      {text ? (
-        <div className="student-course-details__readable-text">{text}</div>
+
+      {value && String(value).trim() ? (
+        <RichContent value={value} />
       ) : (
-        <p className="student-course-details__muted">{emptyText}</p>
+        <p className="student-course-details__muted">
+          {emptyText}
+        </p>
       )}
     </section>
   );
 }
+
+
+function CoursePreviewVideo({ url }) {
+  if (!url?.trim()) return null;
+
+  const value = url.trim();
+  let embedUrl = "";
+  let videoUrl = "";
+
+  try {
+    const parsed = new URL(
+      value.startsWith("/")
+        ? getAssetUrl(value)
+        : value
+    );
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return null;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+
+    if (
+      host === "youtu.be" ||
+      host.endsWith("youtube.com")
+    ) {
+      let videoId = "";
+
+      if (host === "youtu.be") {
+        videoId = parsed.pathname.slice(1);
+      } else if (parsed.pathname === "/watch") {
+        videoId = parsed.searchParams.get("v") || "";
+      } else {
+        videoId = parsed.pathname.split("/").filter(Boolean).pop() || "";
+      }
+
+      if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}`;
+      }
+    } else if (
+      host === "vimeo.com" ||
+      host === "www.vimeo.com"
+    ) {
+      const videoId = parsed.pathname
+        .split("/")
+        .filter(Boolean)
+        .pop();
+
+      if (/^\d+$/.test(videoId || "")) {
+        embedUrl = `https://player.vimeo.com/video/${videoId}`;
+      }
+    } else if (/\.(mp4|webm|ogg)$/i.test(parsed.pathname)) {
+      videoUrl = parsed.href;
+    }
+  } catch {
+    return null;
+  }
+
+  if (!embedUrl && !videoUrl) return null;
+
+  return (
+    <section className="student-course-details__video-panel">
+      <div className="student-course-details__video-heading">
+        <div>
+          <span>COURSE INTRODUCTION</span>
+          <h2>Preview this course</h2>
+        </div>
+        <FiPlay />
+      </div>
+
+      <div className="student-course-details__video">
+        {embedUrl ? (
+          <iframe
+            src={embedUrl}
+            title="Course preview video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        ) : (
+          <video controls preload="metadata">
+            <source src={videoUrl} />
+            Your browser does not support video playback.
+          </video>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
 
 export default function StudentCourseDetails() {
   const { admissionId } = useParams();
@@ -213,6 +291,10 @@ export default function StudentCourseDetails() {
           </div>
         </div>
       </section>
+
+
+      <CoursePreviewVideo url={course.previewVideo} />
+
 
       <nav className="student-course-details__tabs" aria-label="Course information">
         <button
@@ -343,7 +425,7 @@ export default function StudentCourseDetails() {
                     <h3>{subject.name}</h3>
                     {subject.code && <span>{subject.code}</span>}
                     {subject.description && (
-                      <p>{readableText(subject.description)}</p>
+                      <RichContent value={subject.description} />
                     )}
                   </div>
                 </article>
