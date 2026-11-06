@@ -307,3 +307,45 @@
 .text-alert{
   color: rgb(231, 85, 85);
 }
+
+
+
+
+.role-management__field-error {
+  display: block;
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.role-management__field-hint {
+  display: block;
+  margin-top: 6px;
+  color: #8290a5;
+  font-size: 11px;
+}
+
+.role-management__permission-error {
+  margin: 12px 16px;
+}
+
+.role-management__role-name {
+  margin-top: 4px;
+  color: #8290a5;
+  font-size: 11px;
+}
+
+.role-management input[aria-invalid="true"],
+.role-management textarea[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.role-management__form-page textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  resize: vertical;
+  font: inherit;
+}
