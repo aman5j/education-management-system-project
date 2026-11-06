@@ -59,15 +59,23 @@ const text = (value) =>
     ? ""
     : String(value).trim();
 
+
 const normalizeDate = (value) => {
   if (value === "" || value === null || value === undefined) {
     return "";
   }
 
+  // Excel date cells parsed as JavaScript Date objects.
+  // Use local calendar components instead of toISOString().
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   }
 
+  // Excel serial date values.
   if (typeof value === "number") {
     const parsed = XLSX.SSF.parse_date_code(value);
 
@@ -82,12 +90,18 @@ const normalizeDate = (value) => {
 
   const valueText = String(value).trim();
 
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(valueText)) {
-    const [year, month, day] = valueText.split("-");
+  // YYYY-MM-DD
+  const isoDate = valueText.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})$/
+  );
+
+  if (isoDate) {
+    const [, year, month, day] = isoDate;
 
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
 
+  // DD/MM/YYYY or DD-MM-YYYY
   const localDate = valueText.match(
     /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/
   );
@@ -100,6 +114,7 @@ const normalizeDate = (value) => {
 
   return valueText;
 };
+
 
 const normalizeRow = (row) => {
   const result = {};
@@ -164,18 +179,51 @@ const validateRows = (rows) => {
       errors.push("Status must be Active or Inactive.");
     }
 
-    if (student.dob) {
-      const date = new Date(`${student.dob}T00:00:00`);
 
-      if (
-        Number.isNaN(date.getTime()) ||
-        date.toISOString().slice(0, 10) !== student.dob
-      ) {
-        errors.push("Invalid Date of Birth. Use DD/MM/YYYY or YYYY-MM-DD.");
-      } else if (date > new Date()) {
-        errors.push("Date of Birth cannot be in the future.");
-      }
+    if (student.dob) {
+    const dateMatch = student.dob.match(
+        /^(\d{4})-(\d{2})-(\d{2})$/
+    );
+
+    if (!dateMatch) {
+        errors.push(
+        "Invalid Date of Birth. Use DD/MM/YYYY or YYYY-MM-DD."
+        );
+    } else {
+        const year = Number(dateMatch[1]);
+        const month = Number(dateMatch[2]);
+        const day = Number(dateMatch[3]);
+
+        // Validate the actual calendar date using UTC components.
+        // This avoids the browser's local timezone shifting the date.
+        const checkDate = new Date(
+        Date.UTC(year, month - 1, day)
+        );
+
+        const validDate =
+        checkDate.getUTCFullYear() === year &&
+        checkDate.getUTCMonth() === month - 1 &&
+        checkDate.getUTCDate() === day;
+
+        if (!validDate) {
+        errors.push("Invalid Date of Birth.");
+        } else {
+        // Compare date-only strings using the local calendar date.
+        const today = new Date();
+
+        const todayString = [
+            today.getFullYear(),
+            String(today.getMonth() + 1).padStart(2, "0"),
+            String(today.getDate()).padStart(2, "0"),
+        ].join("-");
+
+        if (student.dob > todayString) {
+            errors.push("Date of Birth cannot be in the future.");
+        }
+        }
     }
+    }
+
 
     if (student.rollNo) {
       const key = student.rollNo.toLowerCase();
