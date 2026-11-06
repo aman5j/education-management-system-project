@@ -1,107 +1,14 @@
 
-.student-leave {
-  width: 100%;
-  padding: 26px;
-  color: #172033;
-}
 
-.sl-header,
-.sl-card-heading,
-.sl-history-heading,
-.sl-form-actions {
-  display: flex;
-  align-items: center;
-}
 
-.sl-header {
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 24px;
-}
-
-.sl-eyebrow {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-}
-
-.sl-header h1 {
-  margin: 7px 0;
-  font-size: 28px;
-  font-weight: 750;
-}
-
-.sl-header p,
-.sl-card-heading p {
-  margin: 0;
-  color: #718096;
-  font-size: 14px;
-}
-
-.sl-refresh,
-.sl-submit,
-.sl-cancel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
-  font-weight: 650;
-}
-
-.sl-refresh {
-  padding: 11px 15px;
-  background: #fff;
-  color: #344256;
-  border: 1px solid #dce3ed;
-}
-
-.sl-refresh:disabled,
-.sl-submit:disabled,
-.sl-cancel:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.sl-card {
-  margin-bottom: 22px;
-  padding: 24px;
-  background: #fff;
-  border: 1px solid #e8edf4;
-  border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(25, 42, 70, 0.035);
-}
-
-.sl-card-heading {
-  gap: 13px;
-  margin-bottom: 24px;
-}
-
-.sl-heading-icon {
-  width: 43px;
-  height: 43px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 43px;
-  border-radius: 12px;
-  background: #edf4ff;
-  color: #2864c5;
-  font-size: 19px;
-}
-
-.sl-card-heading h2 {
-  margin: 0 0 5px;
-  font-size: 18px;
-  font-weight: 750;
-}
 
 .sl-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 19px;
+}
+.student-leave .common-card{
+  overflow: visible;
 }
 
 .sl-field {

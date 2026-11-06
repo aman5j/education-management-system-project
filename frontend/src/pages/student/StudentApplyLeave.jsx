@@ -12,6 +12,7 @@ import {
 
 import studentPortalService from "../../services/studentPortalService";
 import "./StudentApplyLeave.css";
+import { IoMdInformationCircle } from "react-icons/io";
 
 const today = () => {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -239,23 +240,7 @@ export default function StudentApplyLeave() {
 
   return (
     <main className="student-leave">
-      <header className="sl-header">
-        <div>
-          <span className="sl-eyebrow">STUDENT PORTAL</span>
-          <h1>Apply for Leave</h1>
-          <p>Submit a leave request and track its approval status.</p>
-        </div>
-
-        <button
-          type="button"
-          className="sl-refresh"
-          onClick={() => loadPage(true)}
-          disabled={loading || refreshing}
-        >
-          <FiRefreshCw className={refreshing ? "sl-spin" : ""} />
-          Refresh
-        </button>
-      </header>
+    <div class="page-header"><div><h1>My Leave Request</h1></div></div>
 
       {error && (
         <div className="sl-alert sl-alert--error" role="alert">
@@ -273,14 +258,8 @@ export default function StudentApplyLeave() {
         </div>
       )}
 
-      <section className="sl-card">
-        <div className="sl-card-heading">
-          <div className="sl-heading-icon"><FiCalendar /></div>
-          <div>
-            <h2>Leave Application</h2>
-            <p>Fill in the details below to submit your request.</p>
-          </div>
-        </div>
+      <section className="common-card">
+        
 
         {loading ? (
           <div className="sl-state">Loading your active admissions...</div>
@@ -291,9 +270,14 @@ export default function StudentApplyLeave() {
             <span>You need an active course admission to apply for leave.</span>
           </div>
         ) : (
-          <form className="sl-form" onSubmit={handleSubmit}>
-            <label className="sl-field sl-field--full">
-              <span>Course / Batch <b>*</b></span>
+          <form className="cardbody" onSubmit={handleSubmit}>
+            <div className="input-felid">
+              <label  >
+                 Course / Batch  <span className="required">*</span> <span className="infoicon tooltip" data-tooltip="Select the admission for which you need leave.
+" classNameinfoicon><IoMdInformationCircle />
+</span>
+                  </label>
+              
               <select
                 name="admission_id"
                 value={form.admission_id}
@@ -307,11 +291,11 @@ export default function StudentApplyLeave() {
                   </option>
                 ))}
               </select>
-              <small>Select the admission for which you need leave.</small>
-            </label>
+            </div>
 
-            <label className="sl-field">
-              <span>Leave Type <b>*</b></span>
+            <div className="input-felid">
+                <label>Leave Type <span className="required">*</span> </label>
+              
               <select
                 name="leave_type"
                 value={form.leave_type}
@@ -323,10 +307,11 @@ export default function StudentApplyLeave() {
                 <option value="Emergency Leave">Emergency Leave</option>
                 <option value="Other">Other</option>
               </select>
-            </label>
+            </div>
 
-            <label className="sl-field">
-              <span>From Date <b>*</b></span>
+ <div className="input-felid">
+           <label>From Date <span className="requried">*</span> </label>
+              
               <input
                 type="date"
                 name="from_date"
@@ -335,10 +320,13 @@ export default function StudentApplyLeave() {
                 onChange={updateField}
                 required
               />
-            </label>
+           
+            </div>
 
-            <label className="sl-field">
-              <span>To Date <b>*</b></span>
+ <div className="input-felid">
+                            <label>To Date <span className="requried">*</span> </label>
+
+             
               <input
                 type="date"
                 name="to_date"
@@ -347,21 +335,23 @@ export default function StudentApplyLeave() {
                 onChange={updateField}
                 required
               />
-            </label>
+           
+            </div>
 
-            <label className="sl-field sl-field--full">
-              <span>Reason for Leave <b>*</b></span>
-              <textarea
-                name="reason"
-                rows="4"
-                maxLength="1000"
-                placeholder="Explain why you need leave..."
-                value={form.reason}
-                onChange={updateField}
-                required
-              />
-              <small>{form.reason.length}/1000 characters</small>
-            </label>
+            <div className="input-felid">
+                <label>   Reason for Leave <span className="requried">*</span> </label>
+                  <textarea
+                    name="reason"
+                    rows="4"
+                    maxLength="1000"
+                    placeholder="Explain why you need leave..."
+                    value={form.reason}
+                    onChange={updateField}
+                    required
+                  />
+                  <small>{form.reason.length}/1000 characters</small>
+                
+            </div>
 
             <div className="sl-form-note sl-field--full">
               <FiAlertCircle />

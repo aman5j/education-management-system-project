@@ -122,14 +122,7 @@ export default function StudentCertificates() {
         </div>
       )}
 
-      {/* Summary and filter */}
-        {/* <section className="certificates-toolbars">
-        
-          <article class="dashboard-stat-card card-success"><div class="stat-card-top"><div class="stat-icon stat-icon-success">   <FiFileText /></div></div><div class="stat-card-body"><span class="stat-card-title">Total Certificates</span><strong class="stat-card-value">{certificates.length}</strong></div></article>
-
-  <article class="dashboard-stat-card card-success"><div class="stat-card-top"><div class="stat-icon stat-icon-success"> <FiCheckCircle /></div></div><div class="stat-card-body"><span class="stat-card-title">Verified Certificates</span><strong class="stat-card-value">{verifiedCount}</strong></div></article>
-        
-        </section> */}
+     
 
       {/* Loading */}
       {loading ? (
