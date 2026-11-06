@@ -15,9 +15,14 @@ const api = axios.create({
 });
 
 let accessToken = null;
+let authExpiryHandled = false;
 
 export const setAccessToken = (token) => {
   accessToken = token || null;
+
+  if (token) {
+    authExpiryHandled = false;
+  }
 };
 
 export const clearAccessToken = () => {
@@ -28,8 +33,7 @@ api.interceptors.request.use(
   (config) => {
     if (accessToken) {
       config.headers = config.headers || {};
-      config.headers.Authorization =
-        `Bearer ${accessToken}`;
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;
@@ -42,20 +46,40 @@ api.interceptors.response.use(
 
   (error) => {
     const config = error.config || {};
+    const responseData = error.response?.data;
+
+    const isAccessTokenExpired =
+      error.response?.status === 401 &&
+      responseData?.code === "ACCESS_TOKEN_EXPIRED";
+
+    if (isAccessTokenExpired && !authExpiryHandled) {
+      authExpiryHandled = true;
+      clearAccessToken();
+
+      window.dispatchEvent(
+        new CustomEvent("ems:session-expired", {
+          detail: {
+            message:
+              "Your login session has expired after 24 hours.",
+          },
+        })
+      );
+
+      return Promise.reject(error);
+    }
 
     const shouldShowGlobalError =
       !config.skipGlobalErrorToast &&
       !config.silent &&
+      !isAccessTokenExpired &&
       error.code !== "ERR_CANCELED" &&
       !axios.isCancel(error);
 
     if (shouldShowGlobalError) {
-      // Lazy import avoids unnecessary notification
-      // utility initialization during API module setup.
       import("react-hot-toast").then(({ default: toast }) => {
         toast.error(getApiErrorMessage(error), {
           duration: 5000,
-          id: `api-error-${error.config?.url || "request"}-${error.response?.status || error.code || "network"}`,
+          id: `api-error-${config.url || "request"}-${error.response?.status || error.code || "network"}`,
         });
       });
     }

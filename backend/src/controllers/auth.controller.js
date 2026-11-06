@@ -19,7 +19,7 @@ const getCookieOptions = () => {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000,
     path: "/api/auth",
   };
 };
@@ -273,8 +273,33 @@ export const refresh = async (req, res, next) => {
       });
     }
 
-    const newAccessToken = createAccessToken(user);
-    const newRefreshToken = createRefreshToken(user);
+    // const newAccessToken = createAccessToken(user);
+    // const newRefreshToken = createRefreshToken(user);
+
+    // Preserve the original login session's 24-hour expiry.
+    const remainingSeconds = decoded.exp - Math.floor(Date.now() / 1000);
+
+    if (remainingSeconds <= 0) {
+      clearRefreshCookie(res);
+
+      return res.status(401).json({
+        success: false,
+        message: "Your session has expired. Please log in again.",
+        code: "SESSION_EXPIRED",
+      });
+    }
+
+    const remainingLifetime = `${remainingSeconds}s`;
+
+    const newAccessToken = createAccessToken(
+      user,
+      remainingLifetime
+    );
+
+    const newRefreshToken = createRefreshToken(
+      user,
+      remainingLifetime
+    );
 
     user.refreshTokenHash = hashToken(newRefreshToken);
 

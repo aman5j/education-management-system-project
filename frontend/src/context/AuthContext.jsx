@@ -1,3 +1,4 @@
+
 import {
   createContext,
   useCallback,
@@ -11,6 +12,8 @@ import api, {
   clearAccessToken,
   setAccessToken,
 } from "../services/api";
+
+import notification from "../utils/notification";
 
 const AuthContext = createContext(null);
 
@@ -38,11 +41,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-
-  // const updateUser = useCallback((updatedUser) => {
-  //   setUser(updatedUser);
-  // }, []);
-
   const updateUser = useCallback((updatedUser) => {
     setUser((currentUser) => {
       if (!currentUser || !updatedUser) {
@@ -52,9 +50,6 @@ export const AuthProvider = ({ children }) => {
       return {
         ...currentUser,
         ...updatedUser,
-
-        // Keep the populated role if the profile API returns
-        // only the assigned role ID.
         assignedRole:
           updatedUser.assignedRole?.isActive !== undefined
             ? updatedUser.assignedRole
@@ -71,6 +66,44 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuthentication();
   }, [refreshSession]);
+
+  // Handle expired access tokens from every protected API request.
+  useEffect(() => {
+    let handlingExpiration = false;
+
+    const handleSessionExpired = async (event) => {
+      if (handlingExpiration) return;
+
+      handlingExpiration = true;
+
+      await notification.alert({
+        title: "Session Expired",
+        text:
+          event.detail?.message ||
+          "Your login session has expired. Please sign in again to continue.",
+        icon: "warning",
+        confirmText: "Login Again",
+      });
+
+      clearAccessToken();
+      setUser(null);
+      setAuthError("");
+
+      window.location.replace("/login");
+    };
+
+    window.addEventListener(
+      "ems:session-expired",
+      handleSessionExpired
+    );
+
+    return () => {
+      window.removeEventListener(
+        "ems:session-expired",
+        handleSessionExpired
+      );
+    };
+  }, []);
 
   const login = useCallback(async (email, password, role) => {
     setAuthError("");
@@ -112,52 +145,38 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const register = useCallback(
-    async (payload) => {
-      const response = await api.post(
-        "/auth/register",
-        payload
-      );
-
-      return response.data;
-    },
-    []
-  );
-
-  const forgotPassword = useCallback(async (email) => {
+  const register = useCallback(async (payload) => {
     const response = await api.post(
-      "/auth/forgot-password",
-      {
-        email,
-      }
+      "/auth/register",
+      payload
     );
 
     return response.data;
   }, []);
 
-  const resetPassword = useCallback(
-    async (token, newPassword) => {
-      const response = await api.post(
-        "/auth/reset-password",
-        {
-          token,
-          newPassword,
-        }
-      );
+  const forgotPassword = useCallback(async (email) => {
+    const response = await api.post(
+      "/auth/forgot-password",
+      { email }
+    );
 
-      return response.data;
-    },
-    []
-  );
+    return response.data;
+  }, []);
+
+  const resetPassword = useCallback(async (token, newPassword) => {
+    const response = await api.post(
+      "/auth/reset-password",
+      { token, newPassword }
+    );
+
+    return response.data;
+  }, []);
 
   const changePassword = useCallback(
     async (currentPassword, newPassword) => {
       const response = await api.put(
         "/auth/change-password",
-        {
-          currentPassword,
-          newPassword,
-        }
+        { currentPassword, newPassword }
       );
 
       clearAccessToken();
@@ -194,6 +213,7 @@ export const AuthProvider = ({ children }) => {
       resetPassword,
       changePassword,
       refreshSession,
+      updateUser,
     ]
   );
 

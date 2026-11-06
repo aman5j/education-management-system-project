@@ -17,7 +17,11 @@ export const ACCOUNT_STATUS = Object.freeze({
   SUSPENDED: "suspended",
 });
 
-export const createAccessToken = (user) => {
+
+export const createAccessToken = (
+  user,
+  expiresIn = process.env.JWT_ACCESS_EXPIRES_IN || "24h"
+) => {
   return jwt.sign(
     {
       sub: user._id.toString(),
@@ -26,24 +30,24 @@ export const createAccessToken = (user) => {
       type: "access",
     },
     process.env.JWT_ACCESS_SECRET,
-    {
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
-    }
+    { expiresIn }
   );
 };
 
-export const createRefreshToken = (user) => {
+export const createRefreshToken = (
+  user,
+  expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "24h"
+) => {
   return jwt.sign(
     {
       sub: user._id.toString(),
       type: "refresh",
     },
     process.env.JWT_REFRESH_SECRET,
-    {
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
-    }
+    { expiresIn }
   );
 };
+
 
 export const hashToken = (token) => {
   return crypto.createHash("sha256").update(token).digest("hex");
