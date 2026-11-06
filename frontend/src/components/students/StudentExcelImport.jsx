@@ -332,24 +332,31 @@ export default function StudentExcelImport({
         cellDates: true,
       });
 
-      const sheet = workbook.Sheets["Students"];
+      
+        const sheetName =
+        workbook.SheetNames.find(
+            (name) => name.trim().toLowerCase() === "students"
+        ) || workbook.SheetNames[0];
 
-      if (!sheet) {
+        if (!sheetName || !workbook.Sheets[sheetName]) {
         setError(
-          'The workbook must contain a worksheet named "Students".'
+            "No valid worksheet found. Please upload an Excel file containing student records."
         );
         return;
-      }
+        }
 
-      const excelRows = XLSX.utils.sheet_to_json(sheet, {
+        const sheet = workbook.Sheets[sheetName];
+
+        const excelRows = XLSX.utils.sheet_to_json(sheet, {
         defval: "",
         raw: true,
-      });
+        });
 
-      if (!excelRows.length) {
-        setError("The Students worksheet does not contain any records.");
+        if (!excelRows.length) {
+        setError("The selected worksheet does not contain any student records.");
         return;
-      }
+        }
+
 
       if (excelRows.length > MAX_ROWS) {
         setError(`A maximum of ${MAX_ROWS} students can be imported at a time.`);
