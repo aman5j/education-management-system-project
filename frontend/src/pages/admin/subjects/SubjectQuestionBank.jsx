@@ -1,3 +1,4 @@
+
 import {
   useCallback,
   useEffect,
@@ -12,8 +13,14 @@ import notification, {
   getApiErrorMessage,
 } from "../../../utils/notification";
 
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
 import * as XLSX from "xlsx";
+
 import {
   FiArrowLeft,
   FiDownload,
@@ -26,6 +33,7 @@ import {
 } from "react-icons/fi";
 
 import { getSubjectById } from "../../../services/subjectService";
+
 import {
   getSubjectQuestionBank,
   addSubjectQuestion,
@@ -54,9 +62,6 @@ const REQUIRED_COLUMNS = [
   "correctAnswer",
 ];
 
-const messageFrom = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
-
 const getPayload = (response) =>
   response?.data?.data ?? response?.data;
 
@@ -79,11 +84,41 @@ const normalizeExcelRow = (row = {}) => {
   };
 };
 
+const validateQuestion = (form) => {
+  const errors = {};
+
+  if (!form.questionText.trim()) {
+    errors.questionText = "Question is required.";
+  } else if (form.questionText.trim().length < 3) {
+    errors.questionText =
+      "Question must contain at least 3 characters.";
+  }
+
+  ["A", "B", "C", "D"].forEach((key) => {
+    const value = form[`option${key}`].trim();
+
+    if (!value) {
+      errors[`option${key}`] = `Option ${key} is required.`;
+    }
+  });
+
+  if (!["A", "B", "C", "D"].includes(form.correctAnswer)) {
+    errors.correctAnswer = "Please select the correct answer.";
+  }
+
+  return errors;
+};
 
 export default function SubjectQuestionBank() {
   const { id: subjectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, loading: authLoading } = useAuth();
+
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
 
   const canViewQuestionBank = hasPermission(
     user,
@@ -95,31 +130,46 @@ export default function SubjectQuestionBank() {
     "question_bank.manage"
   );
 
-
-  const location = useLocation();
-  const basePath = location.pathname.startsWith("/staff")
-    ? "/staff"
-    : "/admin";
-
   const [subject, setSubject] = useState(null);
   const [questions, setQuestions] = useState([]);
+
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const [editingId, setEditingId] = useState("");
   const [search, setSearch] = useState("");
+
   const [showForm, setShowForm] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [excelRows, setExcelRows] = useState([]);
   const [excelFileName, setExcelFileName] = useState("");
   const [importing, setImporting] = useState(false);
-  const [error, setError] = useState("");
-  // const [notice, setNotice] = useState("");
   const [importReport, setImportReport] = useState(null);
+
+  const [error, setError] = useState("");
 
   const formSectionRef = useRef(null);
   const questionInputRef = useRef(null);
 
-  const loadData = useCallback(async () => {
+  // --------------------------------------------------
+  // LOAD SUBJECT AND QUESTION BANK
+  // --------------------------------------------------
+
+  const loadData = useCallback(async ({ showToast = true } = {}) => {
+    if (!subjectId) {
+      const message = "Subject ID is missing.";
+      setError(message);
+
+      if (showToast) {
+        notification.error(message);
+      }
+
+      return false;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -130,39 +180,47 @@ export default function SubjectQuestionBank() {
       ]);
 
       const subjectPayload = getPayload(subjectResponse);
-      const subjectData = subjectPayload?.subject || subjectPayload;
+
+      const subjectData =
+        subjectPayload?.subject || subjectPayload?.data?.subject || subjectPayload;
+
       const questionPayload = getPayload(questionResponse);
 
       const questionData = Array.isArray(questionPayload)
         ? questionPayload
-        : questionPayload?.questions || questionPayload?.data || [];
+        : Array.isArray(questionPayload?.questions)
+          ? questionPayload.questions
+          : Array.isArray(questionPayload?.data)
+            ? questionPayload.data
+            : [];
+
+      if (!subjectData || !subjectData._id) {
+        throw new Error("Subject details could not be found.");
+      }
 
       setSubject(subjectData);
-      setQuestions(Array.isArray(questionData) ? questionData : []);
-    } catch (err) {
-      setError(messageFrom(err, "Unable to load the subject MCQs."));
+      setQuestions(questionData);
+
+      return true;
+    } catch (requestError) {
+      const message = getApiErrorMessage(requestError);
+
+      setError(message);
+
+      if (showToast) {
+        notification.error(message);
+      }
+
+      return false;
     } finally {
       setLoading(false);
     }
   }, [subjectId]);
 
   useEffect(() => {
-      if (!showForm) return;
+    if (authLoading) return;
 
-      const frameId = requestAnimationFrame(() => {
-          formSectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-          });
-
-          questionInputRef.current?.focus({ preventScroll: true });
-      });
-
-      return () => cancelAnimationFrame(frameId);
-      }, [showForm, editingId]);
-
-  useEffect(() => {
-    if (authLoading || !canViewQuestionBank) {
+    if (!canViewQuestionBank) {
       setLoading(false);
       return;
     }
@@ -170,19 +228,50 @@ export default function SubjectQuestionBank() {
     loadData();
   }, [authLoading, canViewQuestionBank, loadData]);
 
+  // --------------------------------------------------
+  // FORM SCROLL AND FOCUS
+  // --------------------------------------------------
+
+  useEffect(() => {
+    if (!showForm) return undefined;
+
+    const frameId = requestAnimationFrame(() => {
+      formSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      questionInputRef.current?.focus({
+        preventScroll: true,
+      });
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [showForm, editingId]);
+
+  // --------------------------------------------------
+  // SEARCH
+  // --------------------------------------------------
+
   const visibleQuestions = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return questions.filter(
-      (question) =>
-        !query ||
+    return questions.filter((question) => {
+      if (!query) return true;
+
+      return (
         question.questionText?.toLowerCase().includes(query) ||
         question.optionA?.toLowerCase().includes(query) ||
         question.optionB?.toLowerCase().includes(query) ||
         question.optionC?.toLowerCase().includes(query) ||
         question.optionD?.toLowerCase().includes(query)
-    );
+      );
+    });
   }, [questions, search]);
+
+  // --------------------------------------------------
+  // FORM HANDLERS
+  // --------------------------------------------------
 
   const changeField = (event) => {
     const { name, value } = event.target;
@@ -192,24 +281,43 @@ export default function SubjectQuestionBank() {
       [name]: value,
     }));
 
+    setFieldErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
+
     setError("");
-    // setNotice("");
+  };
+
+  const resetForm = () => {
+    setForm({ ...EMPTY_FORM });
+    setFieldErrors({});
+    setEditingId("");
+    setShowForm(false);
   };
 
   const startNewQuestion = () => {
-
-    if (!canManageQuestionBank) return;
+    if (!canManageQuestionBank) {
+      notification.error(
+        "You do not have permission to manage MCQs."
+      );
+      return;
+    }
 
     setForm({ ...EMPTY_FORM });
+    setFieldErrors({});
     setEditingId("");
     setShowForm(true);
     setError("");
-    // setNotice("");
   };
 
   const startEdit = (question) => {
-
-    if (!canManageQuestionBank) return;
+    if (!canManageQuestionBank) {
+      notification.error(
+        "You do not have permission to manage MCQs."
+      );
+      return;
+    }
 
     setForm({
       questionText: question.questionText || "",
@@ -220,17 +328,23 @@ export default function SubjectQuestionBank() {
       correctAnswer: question.correctAnswer || "A",
     });
 
+    setFieldErrors({});
     setEditingId(question._id);
     setShowForm(true);
     setError("");
-    // setNotice("");
   };
+
+  // --------------------------------------------------
+  // ADD / UPDATE MCQ
+  // --------------------------------------------------
 
   const handleSave = async (event) => {
     event.preventDefault();
 
     if (!canManageQuestionBank) {
-      notification.error("You do not have permission to manage MCQs.");
+      notification.error(
+        "You do not have permission to manage MCQs."
+      );
       return;
     }
 
@@ -243,21 +357,14 @@ export default function SubjectQuestionBank() {
       correctAnswer: form.correctAnswer,
     };
 
-    if (
-      !payload.questionText ||
-      !payload.optionA ||
-      !payload.optionB ||
-      !payload.optionC ||
-      !payload.optionD
-    ) {
-      notification.warning(
-        "Please fill in the question and all four options."
-      );
-      return;
-    }
+    const validationErrors = validateQuestion(form);
 
-    if (!["A", "B", "C", "D"].includes(payload.correctAnswer)) {
-      notification.warning("Please select the correct answer.");
+    setFieldErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      notification.warning(
+        "Please correct the highlighted fields before saving."
+      );
       return;
     }
 
@@ -266,28 +373,43 @@ export default function SubjectQuestionBank() {
       setError("");
 
       if (editingId) {
-        await updateSubjectQuestion(subjectId, editingId, payload);
+        await updateSubjectQuestion(
+          subjectId,
+          editingId,
+          payload
+        );
+
         notification.success("MCQ updated successfully.");
       } else {
         await addSubjectQuestion(subjectId, payload);
+
         notification.success("MCQ added successfully.");
       }
 
-      setShowForm(false);
-      setEditingId("");
-      setForm({ ...EMPTY_FORM });
+      resetForm();
 
-      await loadData();
-    } catch (error) {
-      notification.error(getApiErrorMessage(error));
+      await loadData({ showToast: true });
+    } catch (requestError) {
+      notification.error(getApiErrorMessage(requestError));
     } finally {
       setSaving(false);
     }
   };
 
+  // --------------------------------------------------
+  // DELETE MCQ
+  // --------------------------------------------------
+
   const handleDelete = async (question) => {
     if (!canManageQuestionBank) {
-      notification.error("You do not have permission to manage MCQs.");
+      notification.error(
+        "You do not have permission to manage MCQs."
+      );
+      return;
+    }
+
+    if (!question?._id) {
+      notification.error("Question ID is missing.");
       return;
     }
 
@@ -299,66 +421,107 @@ export default function SubjectQuestionBank() {
       await deleteSubjectQuestion(subjectId, question._id);
 
       setQuestions((previous) =>
-        previous.filter((item) => item._id !== question._id)
+        previous.filter(
+          (item) => String(item._id) !== String(question._id)
+        )
       );
 
       notification.success("MCQ deleted successfully.");
-    } catch (error) {
-      notification.error(getApiErrorMessage(error));
+    } catch (requestError) {
+      notification.error(getApiErrorMessage(requestError));
     }
   };
 
+  // --------------------------------------------------
+  // DOWNLOAD EXCEL TEMPLATE
+  // --------------------------------------------------
+
   const downloadTemplate = () => {
-    const template = [
-      {
-        questionText: "What does HTML stand for?",
-        optionA: "Hyper Text Markup Language",
-        optionB: "High Text Machine Language",
-        optionC: "Hyper Tool Multi Language",
-        optionD: "Home Text Markup Language",
-        correctAnswer: "A",
-      },
-    ];
+    try {
+      const template = [
+        {
+          questionText: "What does HTML stand for?",
+          optionA: "Hyper Text Markup Language",
+          optionB: "High Text Machine Language",
+          optionC: "Hyper Tool Multi Language",
+          optionD: "Home Text Markup Language",
+          correctAnswer: "A",
+        },
+      ];
 
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(template, {
-      header: REQUIRED_COLUMNS,
-    });
+      const workbook = XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "MCQs");
-    XLSX.writeFile(workbook, "subject-mcq-template.xlsx");
+      const worksheet = XLSX.utils.json_to_sheet(template, {
+        header: REQUIRED_COLUMNS,
+      });
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "MCQs"
+      );
+
+      XLSX.writeFile(
+        workbook,
+        "subject-mcq-template.xlsx"
+      );
+
+      notification.success("Excel template downloaded.");
+    } catch (requestError) {
+      notification.error(
+        getApiErrorMessage(requestError)
+      );
+    }
   };
+
+  // --------------------------------------------------
+  // READ AND VALIDATE EXCEL FILE
+  // --------------------------------------------------
 
   const handleExcelFile = async (event) => {
     const file = event.target.files?.[0];
+
+    // Allow selecting the same file again.
     event.target.value = "";
 
     if (!file) return;
 
+    setError("");
+    setImportReport(null);
+    setExcelRows([]);
+    setExcelFileName("");
+
     if (!/\.(xlsx|xls)$/i.test(file.name)) {
-      setError("Please upload an Excel .xlsx or .xls file.");
+      const message = "Please upload an Excel .xlsx or .xls file.";
+      setError(message);
+      notification.warning(message);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("Excel file must be 5 MB or smaller.");
+      const message = "Excel file must be 5 MB or smaller.";
+      setError(message);
+      notification.warning(message);
       return;
     }
 
     try {
-      setError("");
-      // setNotice("");
-      setImportReport(null);
-
       const workbook = XLSX.read(await file.arrayBuffer(), {
         type: "array",
       });
 
+      if (!workbook.SheetNames?.length) {
+        throw new Error(
+          "The Excel file does not contain a worksheet."
+        );
+      }
+
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
 
       if (!firstSheet) {
-        setError("The Excel file does not contain a worksheet.");
-        return;
+        throw new Error(
+          "The Excel file does not contain a valid worksheet."
+        );
       }
 
       const rows = XLSX.utils.sheet_to_json(firstSheet, {
@@ -367,8 +530,9 @@ export default function SubjectQuestionBank() {
       });
 
       if (!rows.length) {
-        setError("The selected Excel sheet has no MCQ rows.");
-        return;
+        throw new Error(
+          "The selected Excel sheet has no MCQ rows."
+        );
       }
 
       const actualColumns = Object.keys(rows[0]).map((key) =>
@@ -376,31 +540,50 @@ export default function SubjectQuestionBank() {
       );
 
       const missingColumns = REQUIRED_COLUMNS.filter(
-        (column) => !actualColumns.includes(column.toLowerCase())
+        (column) =>
+          !actualColumns.includes(column.toLowerCase())
       );
 
-      if (missingColumns.length) {
-        setError(
+      if (missingColumns.length > 0) {
+        throw new Error(
           `Missing Excel column(s): ${missingColumns.join(", ")}. Download the template and use its exact column names.`
         );
-        return;
       }
 
-      setExcelRows(rows.map(normalizeExcelRow));
+      const normalizedRows = rows.map(normalizeExcelRow);
+
+      setExcelRows(normalizedRows);
       setExcelFileName(file.name);
-    } catch {
-      setError("Unable to read the Excel file. Please check its format.");
+
+      notification.success(
+        `${normalizedRows.length} MCQ row(s) loaded from Excel.`
+      );
+    } catch (requestError) {
+      const message =
+        requestError?.message ||
+        "Unable to read the Excel file. Please check its format.";
+
+      setError(message);
+      notification.error(message);
     }
   };
 
+  // --------------------------------------------------
+  // IMPORT EXCEL MCQS
+  // --------------------------------------------------
+
   const handleImport = async () => {
     if (!canManageQuestionBank) {
-      notification.error("You do not have permission to import MCQs.");
+      notification.error(
+        "You do not have permission to import MCQs."
+      );
       return;
     }
 
     if (!excelRows.length) {
-      notification.warning("Please select a valid Excel file first.");
+      notification.warning(
+        "Please select a valid Excel file first."
+      );
       return;
     }
 
@@ -416,49 +599,74 @@ export default function SubjectQuestionBank() {
 
       const result = response?.data || {};
 
+      const importedCount = Number(result.importedCount) || 0;
+      const rejected = Array.isArray(result.rejected)
+        ? result.rejected
+        : [];
+
       setImportReport(result);
 
-      if (result.importedCount > 0) {
-        notification.success(
-          `Successfully imported ${result.importedCount} MCQ(s).`
-        );
+      if (importedCount > 0) {
+        const refreshed = await loadData({
+          showToast: false,
+        });
 
-        await loadData();
+        if (!refreshed) {
+          notification.warning(
+            "MCQs were imported, but the list could not be refreshed. Please reload the page."
+          );
+        }
       }
 
-      if (result.rejected?.length > 0) {
-        notification.warning(
-          `${result.rejected.length} row(s) were rejected. Review the rejected rows below.`
-        );
-
+      if (rejected.length > 0) {
         const rejectedRows = new Set(
-          result.rejected.map((item) => item.row)
+          rejected.map((item) => Number(item.row))
         );
 
         setExcelRows((previous) =>
-          previous.filter((_, index) => rejectedRows.has(index + 2))
+          previous.filter((_, index) =>
+            rejectedRows.has(index + 2)
+          )
         );
 
-        setExcelFileName("Rejected rows — correct them and retry");
+        setExcelFileName(
+          "Rejected rows — correct them and retry"
+        );
+
+        notification.warning(
+          `Imported ${importedCount} MCQ(s). ${rejected.length} row(s) were rejected. Review the rejected rows below.`
+        );
       } else {
         setExcelRows([]);
         setExcelFileName("");
 
-        if (!result.importedCount) {
+        if (importedCount > 0) {
+          notification.success(
+            `Successfully imported ${importedCount} MCQ(s).`
+          );
+        } else {
           notification.info("No MCQs were imported.");
         }
       }
-    } catch (error) {
-      notification.error(getApiErrorMessage(error));
+    } catch (requestError) {
+      notification.error(
+        getApiErrorMessage(requestError)
+      );
     } finally {
       setImporting(false);
     }
   };
 
+  // --------------------------------------------------
+  // PERMISSION / LOADING STATES
+  // --------------------------------------------------
+
   if (authLoading) {
     return (
       <div className="sqb-page">
-        <div className="sqb-card">Checking permissions...</div>
+        <div className="sqb-card">
+          Checking permissions...
+        </div>
       </div>
     );
   }
@@ -468,13 +676,18 @@ export default function SubjectQuestionBank() {
       <div className="sqb-page">
         <div className="sqb-card" role="alert">
           <h2>Access Denied</h2>
-          <p>You do not have permission to view the Question Bank.</p>
+
+          <p>
+            You do not have permission to view the Question Bank.
+          </p>
+
           <button
             type="button"
             className="sqb-secondary"
             onClick={() => navigate(`${basePath}/subjects`)}
           >
-            <FiArrowLeft /> Back to Subjects
+            <FiArrowLeft />
+            Back to Subjects
           </button>
         </div>
       </div>
@@ -484,10 +697,16 @@ export default function SubjectQuestionBank() {
   if (loading) {
     return (
       <div className="sqb-page">
-        <div className="sqb-card">Loading Question Bank...</div>
+        <div className="sqb-card">
+          Loading Question Bank...
+        </div>
       </div>
     );
   }
+
+  // --------------------------------------------------
+  // PAGE UI
+  // --------------------------------------------------
 
   return (
     <div className="sqb-page">
@@ -497,13 +716,18 @@ export default function SubjectQuestionBank() {
           className="sqb-secondary"
           onClick={() => navigate(`${basePath}/subjects`)}
         >
-          <FiArrowLeft /> Back to Subjects
+          <FiArrowLeft />
+          Back to Subjects
         </button>
 
         <div>
           <h1>Subject MCQ Question Bank</h1>
+
           <p>
-            Subject: <strong>{subject?.subjectName || "Subject"}</strong>
+            Subject:{" "}
+            <strong>
+              {subject?.subjectName || "Subject"}
+            </strong>
           </p>
         </div>
 
@@ -513,10 +737,10 @@ export default function SubjectQuestionBank() {
             className="sqb-primary"
             onClick={startNewQuestion}
           >
-            <FiPlus /> Add MCQ
+            <FiPlus />
+            Add MCQ
           </button>
         )}
-
       </div>
 
       {error && (
@@ -525,120 +749,132 @@ export default function SubjectQuestionBank() {
         </div>
       )}
 
-      {notice && (
-        <div className="sqb-alert sqb-alert-success" role="status">
-          {notice}
-        </div>
-      )}
+      {/* EXCEL IMPORT */}
 
       {canManageQuestionBank && (
-      <section className="sqb-card">
-        <div className="sqb-section-heading">
-          <div>
-            <h2>Excel MCQ Import</h2>
-            <p>
-              Use the six required columns. No marks column is needed.
-            </p>
+        <section className="sqb-card">
+          <div className="sqb-section-heading">
+            <div>
+              <h2>Excel MCQ Import</h2>
+
+              <p>
+                Use the six required columns. No marks column is needed.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="sqb-secondary"
+              onClick={downloadTemplate}
+            >
+              <FiDownload />
+              Download Excel Template
+            </button>
           </div>
 
-          <button
-            type="button"
-            className="sqb-secondary"
-            onClick={downloadTemplate}
-          >
-            <FiDownload /> Download Excel Template
-          </button>
-        </div>
+          <div className="sqb-import-controls">
+            <label className="sqb-secondary">
+              <FiUpload />
+              Select Excel File
 
-        <div className="sqb-import-controls">
-          <label className="sqb-secondary">
-            <FiUpload /> Select Excel File
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelFile}
-              hidden
-            />
-          </label>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleExcelFile}
+                hidden
+              />
+            </label>
 
-          {excelFileName && <span>{excelFileName}</span>}
+            {excelFileName && (
+              <span>{excelFileName}</span>
+            )}
 
-          <button
-            type="button"
-            className="sqb-primary"
-            disabled={!excelRows.length || importing}
-            onClick={handleImport}
-          >
-            {importing
-              ? "Importing..."
-              : `Import ${excelRows.length} MCQ(s)`}
-          </button>
-        </div>
+            <button
+              type="button"
+              className="sqb-primary"
+              disabled={!excelRows.length || importing}
+              onClick={handleImport}
+            >
+              {importing
+                ? "Importing..."
+                : `Import ${excelRows.length} MCQ(s)`}
+            </button>
+          </div>
 
-        {excelRows.length > 0 && (
-          <div className="sqb-table-wrap">
-            <table className="sqb-table">
-              <thead>
-                <tr>
-                  <th>Question</th>
-                  <th>Option A</th>
-                  <th>Option B</th>
-                  <th>Option C</th>
-                  <th>Option D</th>
-                  <th>Correct Answer</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {excelRows.map((row, index) => (
-                  <tr key={`${index}-${row.questionText}`}>
-                    <td>{row.questionText}</td>
-                    <td>{row.optionA}</td>
-                    <td>{row.optionB}</td>
-                    <td>{row.optionC}</td>
-                    <td>{row.optionD}</td>
-                    <td>{row.correctAnswer}</td>
+          {excelRows.length > 0 && (
+            <div className="sqb-table-wrap">
+              <table className="sqb-table">
+                <thead>
+                  <tr>
+                    <th>Question</th>
+                    <th>Option A</th>
+                    <th>Option B</th>
+                    <th>Option C</th>
+                    <th>Option D</th>
+                    <th>Correct Answer</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
 
-        {importReport?.rejected?.length > 0 && (
-          <div className="sqb-rejected">
-            <strong>Rows needing correction</strong>
-            <ul>
-              {importReport.rejected.map((item) => (
-                <li key={`${item.row}-${item.message}`}>
-                  Excel row {item.row}: {item.message}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
+                <tbody>
+                  {excelRows.map((row, index) => (
+                    <tr key={`${index}-${row.questionText}`}>
+                      <td>{row.questionText}</td>
+                      <td>{row.optionA}</td>
+                      <td>{row.optionB}</td>
+                      <td>{row.optionC}</td>
+                      <td>{row.optionD}</td>
+                      <td>{row.correctAnswer}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {importReport?.rejected?.length > 0 && (
+            <div className="sqb-rejected">
+              <strong>Rows needing correction</strong>
+
+              <ul>
+                {importReport.rejected.map((item) => (
+                  <li key={`${item.row}-${item.message}`}>
+                    Excel row {item.row}: {item.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
       )}
 
+      {/* ADD / EDIT FORM */}
+
       {canManageQuestionBank && showForm && (
-        <section ref={formSectionRef} className="sqb-card">
+        <section
+          ref={formSectionRef}
+          className="sqb-card"
+        >
           <div className="sqb-section-heading">
-            <h2>{editingId ? "Edit MCQ" : "Add MCQ Manually"}</h2>
+            <h2>
+              {editingId ? "Edit MCQ" : "Add MCQ Manually"}
+            </h2>
 
             <button
               type="button"
               className="sqb-icon-button"
-              onClick={() => setShowForm(false)}
+              onClick={resetForm}
               aria-label="Close form"
+              disabled={saving}
             >
               <FiX />
             </button>
           </div>
 
-          <form onSubmit={handleSave}>
+          <form onSubmit={handleSave} noValidate>
             <div className="sqb-form-grid">
               <label className="sqb-field sqb-full">
                 Question *
+
                 <textarea
                   ref={questionInputRef}
                   name="questionText"
@@ -647,19 +883,34 @@ export default function SubjectQuestionBank() {
                   rows={3}
                   maxLength={5000}
                   required
+                  aria-invalid={Boolean(fieldErrors.questionText)}
                 />
+
+                {fieldErrors.questionText && (
+                  <span className="sqb-field-error">
+                    {fieldErrors.questionText}
+                  </span>
+                )}
               </label>
 
               {["A", "B", "C", "D"].map((key) => (
                 <label className="sqb-field" key={key}>
                   Option {key} *
+
                   <input
                     name={`option${key}`}
                     value={form[`option${key}`]}
                     onChange={changeField}
                     maxLength={1000}
                     required
+                    aria-invalid={Boolean(fieldErrors[`option${key}`])}
                   />
+
+                  {fieldErrors[`option${key}`] && (
+                    <span className="sqb-field-error">
+                      {fieldErrors[`option${key}`]}
+                    </span>
+                  )}
                 </label>
               ))}
 
@@ -679,10 +930,17 @@ export default function SubjectQuestionBank() {
                         checked={form.correctAnswer === key}
                         onChange={changeField}
                       />
+
                       Option {key}
                     </label>
                   ))}
                 </div>
+
+                {fieldErrors.correctAnswer && (
+                  <span className="sqb-field-error">
+                    {fieldErrors.correctAnswer}
+                  </span>
+                )}
               </fieldset>
             </div>
 
@@ -690,7 +948,8 @@ export default function SubjectQuestionBank() {
               <button
                 type="button"
                 className="sqb-secondary"
-                onClick={() => setShowForm(false)}
+                onClick={resetForm}
+                disabled={saving}
               >
                 Cancel
               </button>
@@ -701,6 +960,7 @@ export default function SubjectQuestionBank() {
                 disabled={saving}
               >
                 <FiSave />
+
                 {saving
                   ? "Saving..."
                   : editingId
@@ -712,11 +972,16 @@ export default function SubjectQuestionBank() {
         </section>
       )}
 
+      {/* QUESTION LIST */}
+
       <section className="sqb-card">
         <div className="sqb-section-heading">
           <div>
             <h2>MCQs in this Subject</h2>
-            <p>{questions.length} question(s)</p>
+
+            <p>
+              {questions.length} question(s)
+            </p>
           </div>
         </div>
 
@@ -732,7 +997,10 @@ export default function SubjectQuestionBank() {
         {visibleQuestions.length === 0 ? (
           <div className="sqb-empty">
             <h3>No MCQs found</h3>
-            <p>Add an MCQ manually or import one from Excel.</p>
+
+            <p>
+              Add an MCQ manually or import one from Excel.
+            </p>
           </div>
         ) : (
           <div className="sqb-table-wrap">
@@ -754,12 +1022,19 @@ export default function SubjectQuestionBank() {
                 {visibleQuestions.map((question, index) => (
                   <tr key={question._id}>
                     <td>{index + 1}</td>
+
                     <td>{question.questionText}</td>
+
                     <td>{question.optionA}</td>
+
                     <td>{question.optionB}</td>
+
                     <td>{question.optionC}</td>
+
                     <td>{question.optionD}</td>
+
                     <td>{question.correctAnswer}</td>
+
                     <td>
                       <div className="sqb-inline-actions">
                         {canManageQuestionBank && (
