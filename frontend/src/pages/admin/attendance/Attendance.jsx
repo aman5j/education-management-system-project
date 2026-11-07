@@ -1,7 +1,8 @@
+
 import { useCallback, useEffect, useState } from "react";
+
 import { getCourses } from "../../../services/courseService";
 import { getBatches } from "../../../services/batchService";
-// import { getStudents } from "../../../services/studentService";
 import { getAttendanceRoster } from "../../../services/studentService";
 
 import { useAuth } from "../../../context/AuthContext";
@@ -12,13 +13,22 @@ import {
   createAttendance,
   updateAttendance,
 } from "../../../services/attendanceService";
+
+import Pagination from "../../../components/common/Pagination";
+import AttendanceQRScanner from "../../../components/attendance/AttendanceQRScanner";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/AttendanceManagement.css";
 
-import AttendanceQRScanner from "../../../components/attendance/AttendanceQRScanner";
+const PAGE_SIZE = 10;
 
 const today = () => {
   const date = new Date();
   const offset = date.getTimezoneOffset();
+
   return new Date(date.getTime() - offset * 60000)
     .toISOString()
     .slice(0, 10);
@@ -40,89 +50,86 @@ const getList = (response, keys = []) => {
 const getId = (value) =>
   typeof value === "object" ? value?._id : value;
 
-
-const getAllAttendanceRecords = async (params) => {
-  const allRecords = [];
-  let page = 1;
-  let totalPages = 1;
-
-  do {
-    const response = await getAttendance({
-      ...params,
-      page,
-      limit: 100,
-    });
-
-    const payload =
-      response?.data?.data ?? response?.data ?? {};
-
-    const records = Array.isArray(payload.records)
-      ? payload.records
-      : [];
-
-    allRecords.push(...records);
-    totalPages = Math.max(
-      Number(payload.pagination?.totalPages) || 1,
-      1
-    );
-
-    page += 1;
-  } while (page <= totalPages);
-
-  return allRecords;
-};
-
 const Attendance = () => {
-  const [courses, setCourses] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [records, setRecords] = useState([]);
-  const [courseId, setCourseId] = useState("");
-  const [batchId, setBatchId] = useState("");
-  const [date, setDate] = useState(today());
-  const [statuses, setStatuses] = useState({});
-  const [remarks, setRemarks] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-
-  const [historyStudentId, setHistoryStudentId] = useState("");
-  const [historyFrom, setHistoryFrom] = useState("");
-  const [historyTo, setHistoryTo] = useState("");
-  const [historyRecords, setHistoryRecords] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState("");
-
-
   const { user } = useAuth();
+
   const canManageAttendance = hasPermission(
     user,
     "attendance.manage"
   );
 
+  const [courses, setCourses] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [records, setRecords] = useState([]);
 
+  const [courseId, setCourseId] = useState("");
+  const [batchId, setBatchId] = useState("");
+  const [date, setDate] = useState(today());
+
+  const [statuses, setStatuses] = useState({});
+  const [remarks, setRemarks] = useState({});
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+
+  const [historyStudentId, setHistoryStudentId] = useState("");
+  const [historyFrom, setHistoryFrom] = useState("");
+  const [historyTo, setHistoryTo] = useState("");
+  const [historyRequested, setHistoryRequested] = useState(false);
+
+  const [historyRecords, setHistoryRecords] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit, setHistoryLimit] = useState(PAGE_SIZE);
+
+  const [historyPagination, setHistoryPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [attendanceRefreshKey, setAttendanceRefreshKey] = useState(0);
+
+  // Load course and batch options.
   useEffect(() => {
+    let cancelled = false;
+
     const loadOptions = async () => {
+      setOptionsLoading(true);
+
       try {
         const [courseResponse, batchResponse] = await Promise.all([
           getCourses({ page: 1, limit: 100 }),
           getBatches({ page: 1, limit: 100 }),
         ]);
 
+        if (cancelled) return;
+
         setCourses(getList(courseResponse, ["courses"]));
         setBatches(getList(batchResponse, ["batches"]));
-      } catch (err) {
-        setError(
-          err?.response?.data?.message ||
-            "Unable to load courses and batches."
-        );
+      } catch (error) {
+        if (!cancelled) {
+          notification.error(getApiErrorMessage(error));
+        }
+      } finally {
+        if (!cancelled) setOptionsLoading(false);
       }
     };
 
     loadOptions();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Load the complete roster and all attendance records for the selected
+  // date. Do not paginate this roster: every student must be available
+  // when saving attendance.
   const loadAttendance = useCallback(async () => {
     if (!courseId || !batchId || !date) {
       setStudents([]);
@@ -133,45 +140,35 @@ const Attendance = () => {
     }
 
     setLoading(true);
-    setError("");
-    setMessage("");
 
     try {
-      // const [studentResponse, attendanceResponse] = await Promise.all([
-      //   getStudents({
-      //     course_id: courseId,
-      //     batch_id: batchId,
-      //     page: 1,
-      //     limit: 500,
-      //   }),
-      //   getAttendance({
-      //     course_id: courseId,
-      //     batch_id: batchId,
-      //     date,
-      //     page: 1,
-      //     limit: 500,
-      //   }),
-      // ]);
-
-      const [studentResponse, attendanceList] = await Promise.all([
+      const [studentResponse, attendanceResponse] = await Promise.all([
         getAttendanceRoster({
           course_id: courseId,
           batch_id: batchId,
         }),
-        getAllAttendanceRecords({
+        getAttendance({
           course_id: courseId,
           batch_id: batchId,
           date,
+          page: 1,
+          limit: 100,
         }),
       ]);
 
       const studentList = getList(studentResponse, ["students"]);
 
+      const attendancePayload =
+        attendanceResponse?.data?.data ??
+        attendanceResponse?.data ??
+        {};
+
+      const attendanceList = Array.isArray(attendancePayload.records)
+        ? attendancePayload.records
+        : [];
+
       setStudents(studentList);
       setRecords(attendanceList);
-
-      // setStudents(studentList);
-      // setRecords(attendanceList);
 
       const nextStatuses = {};
       const nextRemarks = {};
@@ -192,11 +189,13 @@ const Attendance = () => {
 
       setStatuses(nextStatuses);
       setRemarks(nextRemarks);
-    } catch (err) {
-      setError(
-        err?.response?.data?.message ||
-          "Unable to load students or attendance."
-      );
+    } catch (error) {
+      setStudents([]);
+      setRecords([]);
+      setStatuses({});
+      setRemarks({});
+
+      notification.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -204,7 +203,7 @@ const Attendance = () => {
 
   useEffect(() => {
     loadAttendance();
-  }, [loadAttendance]);
+  }, [loadAttendance, attendanceRefreshKey]);
 
   const filteredBatches = batches.filter(
     (batch) => !courseId || getId(batch.course_id) === courseId
@@ -213,64 +212,79 @@ const Attendance = () => {
   const changeCourse = (value) => {
     setCourseId(value);
     setBatchId("");
+
     setStudents([]);
     setRecords([]);
+    setStatuses({});
+    setRemarks({});
+
+    setHistoryStudentId("");
+    setHistoryRequested(false);
+    setHistoryRecords([]);
   };
 
-    const markAll = (status) => {
+  const markAll = (status) => {
     setStatuses((previous) => {
-        const next = { ...previous };
+      const next = { ...previous };
 
-        students.forEach((student) => {
+      students.forEach((student) => {
         next[student._id] = status;
-        });
+      });
 
-        return next;
+      return next;
     });
-    };
+  };
 
-    const clearAll = () => {
+  const clearAll = () => {
     setStatuses((previous) => {
-        const next = { ...previous };
+      const next = { ...previous };
 
-        students.forEach((student) => {
+      students.forEach((student) => {
         next[student._id] = "";
-        });
+      });
 
-        return next;
+      return next;
     });
-    };
-
-
-
+  };
 
   const handleSave = async () => {
+    if (!canManageAttendance) {
+      notification.error(
+        "You do not have permission to manage attendance."
+      );
+      return;
+    }
+
     if (!courseId || !batchId || !date) {
-      setError("Select a course, batch, and date first.");
+      notification.warning(
+        "Select a course, batch, and date first."
+      );
       return;
     }
 
     if (!students.length) {
-      setError("No students found for the selected batch.");
+      notification.warning(
+        "No students found for the selected batch."
+      );
       return;
     }
 
     const incompleteStudent = students.find(
-    (student) => !statuses[student._id]
+      (student) => !statuses[student._id]
     );
 
     if (incompleteStudent) {
-    setError(
+      notification.warning(
         `Please select an attendance status for ${
-        incompleteStudent.firstName || "every student"
+          incompleteStudent.firstName || "every student"
         } before saving.`
-    );
-    return;
+      );
+      return;
     }
 
     setSaving(true);
-    setError("");
-    setMessage("");
+
+    let savedCount = 0;
 
     try {
       const existingByStudent = new Map(
@@ -282,8 +296,9 @@ const Attendance = () => {
 
       for (const student of students) {
         const existing = existingByStudent.get(student._id);
+
         const payload = {
-          status: statuses[student._id] || "Present",
+          status: statuses[student._id],
           remarks: remarks[student._id] || "",
         };
 
@@ -298,75 +313,164 @@ const Attendance = () => {
             ...payload,
           });
         }
+
+        savedCount += 1;
       }
 
-      setMessage("Attendance saved successfully.");
-      await loadAttendance();
-    } catch (err) {
-    const errorMessage =
-        err?.response?.data?.message ||
-        "Attendance could not be fully saved. Existing records have been reloaded; review them before retrying.";
+      notification.success(
+        `Attendance saved successfully for ${savedCount} student(s).`
+      );
 
+      await loadAttendance();
+
+      if (historyRequested && historyStudentId) {
+        setHistoryRefreshKey((previous) => previous + 1);
+      }
+    } catch (error) {
+      // Reload the roster after a partial save so the UI reflects
+      // records that were successfully saved before the failure.
       try {
         await loadAttendance();
-      } finally {
-        setError(errorMessage);
+      } catch {
+        // loadAttendance already reports its own error.
       }
+
+      notification.error(
+        savedCount > 0
+          ? `Attendance was saved for ${savedCount} student(s), but the remaining records could not be saved. Review the attendance and retry. ${getApiErrorMessage(error)}`
+          : getApiErrorMessage(error)
+      );
     } finally {
       setSaving(false);
     }
   };
 
   const count = (status) =>
-    Object.values(statuses).filter((value) => value === status).length;
+    Object.values(statuses).filter(
+      (value) => value === status
+    ).length;
 
-  const loadStudentHistory = async () => {
-  if (!historyStudentId) {
-    setHistoryError("Please select a student.");
-    return;
-  }
+  // Load one page of history directly from the backend.
+  const loadStudentHistory = useCallback(async () => {
+    if (!historyStudentId) {
+      notification.warning("Please select a student.");
+      return;
+    }
 
-  if (historyFrom && historyTo && historyFrom > historyTo) {
-    setHistoryError("Start date cannot be after end date.");
-    return;
-  }
+    if (historyFrom && historyTo && historyFrom > historyTo) {
+      notification.warning(
+        "Start date cannot be after end date."
+      );
+      return;
+    }
 
-  setHistoryLoading(true);
-  setHistoryError("");
-  setHistoryRecords([]);
+    setHistoryLoading(true);
 
-  try {
-    const params = {
-      student_id: historyStudentId,
-      page: 1,
-      limit: 500,
-    };
+    try {
+      const params = {
+        student_id: historyStudentId,
+        page: historyPage,
+        limit: historyLimit,
+      };
 
-    if (historyFrom) params.from = historyFrom;
-    if (historyTo) params.to = historyTo;
+      if (historyFrom) params.from = historyFrom;
+      if (historyTo) params.to = historyTo;
 
-    // const response = await getAttendance(params);
+      const response = await getAttendance(params);
 
-    // setHistoryRecords(getList(response, ["records"]));
+      const payload =
+        response?.data?.data ??
+        response?.data ??
+        {};
 
-    const allHistoryRecords = await getAllAttendanceRecords(params);
-    setHistoryRecords(allHistoryRecords);
+      const list = Array.isArray(payload.records)
+        ? payload.records
+        : [];
 
-  } catch (err) {
-    setHistoryError(
-      err?.response?.data?.message ||
-        "Unable to load student attendance history."
-    );
-  } finally {
-    setHistoryLoading(false);
-  }
-};
+      const pageData = payload.pagination || {};
+
+      const total = Number(pageData.total) || 0;
+      const totalPages =
+        Number(pageData.totalPages) ||
+        Math.ceil(total / historyLimit);
+
+      setHistoryRecords(list);
+
+      setHistoryPagination({
+        page: Number(pageData.page) || historyPage,
+        limit: Number(pageData.limit) || historyLimit,
+        total,
+        totalPages,
+      });
+
+      if (totalPages > 0 && historyPage > totalPages) {
+        setHistoryPage(totalPages);
+      }
+    } catch (error) {
+      setHistoryRecords([]);
+      notification.error(getApiErrorMessage(error));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [
+    historyStudentId,
+    historyFrom,
+    historyTo,
+    historyPage,
+    historyLimit,
+  ]);
+
+  useEffect(() => {
+    if (!historyRequested || !historyStudentId) return;
+
+    loadStudentHistory();
+  }, [
+    historyRequested,
+    historyStudentId,
+    historyPage,
+    historyLimit,
+    historyRefreshKey,
+    loadStudentHistory,
+  ]);
+
+  const handleHistorySearch = () => {
+    if (!historyStudentId) {
+      notification.warning("Please select a student.");
+      return;
+    }
+
+    if (historyFrom && historyTo && historyFrom > historyTo) {
+      notification.warning(
+        "Start date cannot be after end date."
+      );
+      return;
+    }
+
+    setHistoryPage(1);
+    setHistoryRequested(true);
+    setHistoryRecords([]);
+    setHistoryRefreshKey((previous) => previous + 1);
+  };
+
+  const handleHistoryStudentChange = (value) => {
+    setHistoryStudentId(value);
+    setHistoryRequested(false);
+    setHistoryRecords([]);
+    setHistoryPage(1);
+  };
+
+  const handleHistoryLimitChange = (value) => {
+    setHistoryLimit(value);
+    setHistoryPage(1);
+  };
 
   return (
     <div className="attendance-page">
       <div className="attendance-header">
         <div>
-          <span className="attendance-eyebrow">STUDENT MANAGEMENT</span>
+          <span className="attendance-eyebrow">
+            STUDENT MANAGEMENT
+          </span>
           <h1>Attendance Management</h1>
           <p>Record and review daily student attendance.</p>
         </div>
@@ -381,7 +485,6 @@ const Attendance = () => {
             {saving ? "Saving..." : "Save Attendance"}
           </button>
         )}
-
       </div>
 
       <section className="attendance-card">
@@ -391,8 +494,12 @@ const Attendance = () => {
             <select
               value={courseId}
               onChange={(event) => changeCourse(event.target.value)}
+              disabled={optionsLoading}
             >
-              <option value="">Select course</option>
+              <option value="">
+                {optionsLoading ? "Loading courses..." : "Select course"}
+              </option>
+
               {courses.map((course) => (
                 <option key={course._id} value={course._id}>
                   {course.courseTitle}
@@ -406,9 +513,10 @@ const Attendance = () => {
             <select
               value={batchId}
               onChange={(event) => setBatchId(event.target.value)}
-              disabled={!courseId}
+              disabled={!courseId || optionsLoading}
             >
               <option value="">Select batch</option>
+
               {filteredBatches.map((batch) => (
                 <option key={batch._id} value={batch._id}>
                   {batch.batch_name}
@@ -430,37 +538,40 @@ const Attendance = () => {
           <button
             type="button"
             className="attendance-secondary-button"
-            onClick={loadAttendance}
+            onClick={() =>
+              setAttendanceRefreshKey((previous) => previous + 1)
+            }
             disabled={loading || !courseId || !batchId}
           >
-            Load Records
+            {loading ? "Loading..." : "Load Records"}
           </button>
         </div>
 
-        {error && <div className="attendance-error">{error}</div>}
-        {message && <div className="attendance-success">{message}</div>}
-
         <div className="attendance-summary">
-            <div>
-                <span>Total students</span>
-                <strong>{students.length}</strong>
-            </div>
-            <div>
-                <span>Present</span>
-                <strong>{count("Present")}</strong>
-            </div>
-            <div>
-                <span>Absent</span>
-                <strong>{count("Absent")}</strong>
-            </div>
-            <div>
-                <span>Leave</span>
-                <strong>{count("Leave")}</strong>
-            </div>
-            <div>
-                <span>Late</span>
-                <strong>{count("Late")}</strong>
-            </div>
+          <div>
+            <span>Total students</span>
+            <strong>{students.length}</strong>
+          </div>
+
+          <div>
+            <span>Present</span>
+            <strong>{count("Present")}</strong>
+          </div>
+
+          <div>
+            <span>Absent</span>
+            <strong>{count("Absent")}</strong>
+          </div>
+
+          <div>
+            <span>Leave</span>
+            <strong>{count("Leave")}</strong>
+          </div>
+
+          <div>
+            <span>Late</span>
+            <strong>{count("Late")}</strong>
+          </div>
         </div>
 
         {!courseId || !batchId ? (
@@ -468,45 +579,41 @@ const Attendance = () => {
             Select a course and batch to load students.
           </div>
         ) : loading ? (
-          <div className="attendance-empty">Loading attendance...</div>
+          <div className="attendance-empty">
+            Loading attendance...
+          </div>
         ) : !students.length ? (
           <div className="attendance-empty">
             No students found for this course and batch.
           </div>
         ) : (
           <>
-            {/* <div className="attendance-bulk-actions">
-                <span>{students.length} students</span>
-
-                <div>
-                    <button type="button" onClick={() => markAll("Present")}>
-                    ✓ Mark all present
-                    </button>
-
-                    <button type="button" onClick={() => markAll("Absent")}>
-                    ✕ Mark all absent
-                    </button>
-
-                    <button type="button" onClick={clearAll}>
-                    Clear all
-                    </button>
-                </div>
-            </div> */}
-
             {canManageAttendance && (
               <div className="attendance-bulk-actions">
                 <span>{students.length} students</span>
 
                 <div>
-                  <button type="button" onClick={() => markAll("Present")}>
+                  <button
+                    type="button"
+                    onClick={() => markAll("Present")}
+                    disabled={saving}
+                  >
                     ✓ Mark all present
                   </button>
 
-                  <button type="button" onClick={() => markAll("Absent")}>
+                  <button
+                    type="button"
+                    onClick={() => markAll("Absent")}
+                    disabled={saving}
+                  >
                     ✕ Mark all absent
                   </button>
 
-                  <button type="button" onClick={clearAll}>
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    disabled={saving}
+                  >
                     Clear all
                   </button>
                 </div>
@@ -524,48 +631,59 @@ const Attendance = () => {
                     <th>Remarks</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {students.map((student, index) => (
                     <tr key={student._id}>
                       <td>{index + 1}</td>
                       <td>{student.rollNo || "—"}</td>
+
                       <td>
                         {`${student.firstName || ""} ${student.surname || ""}`.trim()}
                       </td>
+
                       <td>
                         <div className="attendance-radio-group">
-                            {["Present", "Absent", "Leave", "Late"].map((status) => (
-                            <label
+                          {["Present", "Absent", "Leave", "Late"].map(
+                            (status) => (
+                              <label
                                 key={status}
                                 className={`attendance-radio-option ${status.toLowerCase()} ${
-                                statuses[student._id] === status ? "selected" : ""
+                                  statuses[student._id] === status
+                                    ? "selected"
+                                    : ""
                                 }`}
-                            >
+                              >
                                 <input
-                                type="radio"
-                                name={`attendance-${student._id}`}
-                                value={status}
-                                checked={statuses[student._id] === status}
-                                disabled={!canManageAttendance}
-                                onChange={() =>
+                                  type="radio"
+                                  name={`attendance-${student._id}`}
+                                  value={status}
+                                  checked={
+                                    statuses[student._id] === status
+                                  }
+                                  disabled={!canManageAttendance || saving}
+                                  onChange={() =>
                                     setStatuses((previous) => ({
-                                    ...previous,
-                                    [student._id]: status,
+                                      ...previous,
+                                      [student._id]: status,
                                     }))
-                                }
+                                  }
                                 />
+
                                 <span>{status}</span>
-                            </label>
-                            ))}
+                              </label>
+                            )
+                          )}
                         </div>
                       </td>
+
                       <td>
                         <input
                           type="text"
                           value={remarks[student._id] || ""}
                           placeholder="Optional"
                           maxLength={500}
-                          disabled={!canManageAttendance}
+                          disabled={!canManageAttendance || saving}
                           onChange={(event) =>
                             setRemarks((previous) => ({
                               ...previous,
@@ -590,120 +708,127 @@ const Attendance = () => {
           date={date}
           onSuccess={async () => {
             await loadAttendance();
+
+            if (historyRequested && historyStudentId) {
+              setHistoryRefreshKey((previous) => previous + 1);
+            }
           }}
         />
       )}
 
       <section className="attendance-card attendance-history-card">
         <div className="attendance-history-heading">
-            <div>
+          <div>
             <h2>Student Attendance History</h2>
-            <p>View saved attendance records for an individual student.</p>
-            </div>
+            <p>
+              View saved attendance records for an individual student.
+            </p>
+          </div>
         </div>
 
         <div className="attendance-filters attendance-history-filters">
-            <label>
+          <label>
             Student
             <select
-                value={historyStudentId}
-                onChange={(event) =>
-                setHistoryStudentId(event.target.value)
-                }
+              value={historyStudentId}
+              onChange={(event) =>
+                handleHistoryStudentChange(event.target.value)
+              }
             >
-                <option value="">Select student</option>
+              <option value="">Select student</option>
 
-                {students.map((student) => (
+              {students.map((student) => (
                 <option key={student._id} value={student._id}>
-                    {student.rollNo || "No Roll No"} —{" "}
-                    {`${student.firstName || ""} ${student.surname || ""}`.trim()}
+                  {student.rollNo || "No Roll No"} —{" "}
+                  {`${student.firstName || ""} ${student.surname || ""}`.trim()}
                 </option>
-                ))}
+              ))}
             </select>
-            </label>
+          </label>
 
-            <label>
+          <label>
             From date
             <input
-                type="date"
-                value={historyFrom}
-                onChange={(event) => setHistoryFrom(event.target.value)}
-                max={historyTo || today()}
+              type="date"
+              value={historyFrom}
+              onChange={(event) => setHistoryFrom(event.target.value)}
+              max={historyTo || today()}
             />
-            </label>
+          </label>
 
-            <label>
+          <label>
             To date
             <input
-                type="date"
-                value={historyTo}
-                onChange={(event) => setHistoryTo(event.target.value)}
-                min={historyFrom || undefined}
-                max={today()}
+              type="date"
+              value={historyTo}
+              onChange={(event) => setHistoryTo(event.target.value)}
+              min={historyFrom || undefined}
+              max={today()}
             />
-            </label>
+          </label>
 
-            <button
+          <button
             type="button"
             className="attendance-primary-button"
-            onClick={loadStudentHistory}
+            onClick={handleHistorySearch}
             disabled={historyLoading}
-            >
+          >
             {historyLoading ? "Loading..." : "View History"}
-            </button>
+          </button>
         </div>
 
-        {historyError && (
-            <div className="attendance-error">{historyError}</div>
-        )}
-
         {historyLoading ? (
-            <div className="attendance-empty">Loading history...</div>
+          <div className="attendance-empty">
+            Loading attendance history...
+          </div>
         ) : historyRecords.length === 0 ? (
-            <div className="attendance-empty">
-            Select a student and click View History to see records.
-            </div>
+          <div className="attendance-empty">
+            {historyRequested
+              ? "No attendance history found for the selected filters."
+              : "Select a student and click View History to see records."}
+          </div>
         ) : (
+          <>
             <div className="attendance-table-wrapper">
-            <table className="attendance-table">
+              <table className="attendance-table">
                 <thead>
-                <tr>
+                  <tr>
                     <th>Date</th>
                     <th>Student</th>
                     <th>Course</th>
                     <th>Batch</th>
                     <th>Status</th>
                     <th>Remarks</th>
-                </tr>
+                  </tr>
                 </thead>
 
                 <tbody>
-                {historyRecords.map((record) => {
+                  {historyRecords.map((record) => {
                     const student =
-                    typeof record.student_id === "object"
+                      typeof record.student_id === "object"
                         ? record.student_id
                         : null;
 
                     const course =
-                    typeof record.course_id === "object"
+                      typeof record.course_id === "object"
                         ? record.course_id
                         : null;
 
                     const batch =
-                    typeof record.batch_id === "object"
+                      typeof record.batch_id === "object"
                         ? record.batch_id
                         : null;
 
                     return (
-                    <tr key={record._id}>
+                      <tr key={record._id}>
                         <td>
-                        {record.attendance_date
-                            ? record.attendance_date.slice(0, 10)
+                          {record.attendance_date
+                            ? String(record.attendance_date).slice(0, 10)
                             : "—"}
                         </td>
 
                         <td>
-                        {student
+                          {student
                             ? `${student.rollNo || ""} ${student.firstName || ""} ${student.surname || ""}`.trim()
                             : "Student"}
                         </td>
@@ -712,26 +837,38 @@ const Attendance = () => {
                         <td>{batch?.batch_name || "—"}</td>
 
                         <td>
-                        <span
-                            className={`attendance-history-status ${(
-                            record.status || ""
-                            ).toLowerCase()}`}
-                        >
-                            {record.status}
-                        </span>
+                          <span
+                            className={`attendance-history-status ${(record.status || "").toLowerCase()}`}
+                          >
+                            {record.status || "—"}
+                          </span>
                         </td>
 
                         <td>{record.remarks || "—"}</td>
-                    </tr>
+                      </tr>
                     );
-                })}
+                  })}
                 </tbody>
-            </table>
+              </table>
             </div>
+
+            <Pagination
+              page={historyPagination.page}
+              totalPages={historyPagination.totalPages}
+              total={historyPagination.total}
+              itemCount={historyRecords.length}
+              itemLabel="attendance records"
+              limit={historyLimit}
+              loading={historyLoading}
+              onPageChange={setHistoryPage}
+              onLimitChange={(value) => {
+                setHistoryLimit(value);
+                setHistoryPage(1);
+              }}
+            />
+          </>
         )}
       </section>
-
-
     </div>
   );
 };

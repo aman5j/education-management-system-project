@@ -1,6 +1,12 @@
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+
 import { createAttendance } from "../../services/attendanceService";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
 
 const QR_FORMAT = /^EMS-STUDENT:([a-f\d]{24})$/i;
 
@@ -29,14 +35,14 @@ const AttendanceQRScanner = ({
         if (scanner.isScanning) {
           await scanner.stop();
         }
-      } catch (err) {
-        console.warn("Unable to stop QR scanner:", err);
+      } catch (stopError) {
+        console.warn("Unable to stop QR scanner:", stopError);
       }
 
       try {
         scanner.clear();
       } catch {
-        // The scanner may already have been cleared.
+        // Scanner may already have been cleared.
       }
     }
 
@@ -89,12 +95,19 @@ const AttendanceQRScanner = ({
         const match = decodedText.trim().match(QR_FORMAT);
 
         if (!match) {
-          setError("Invalid EMS student QR code. Scan the official student QR code.");
+          const text =
+            "Invalid EMS student QR code. Scan the official student QR code.";
+
+          setError(text);
+          notification.warning(text);
           return;
         }
 
         if (!courseId || !batchId || !date) {
-          setError("Select a course, batch, and date first.");
+          const text = "Select a course, batch, and date first.";
+
+          setError(text);
+          notification.warning(text);
           return;
         }
 
@@ -111,25 +124,27 @@ const AttendanceQRScanner = ({
 
         if (!mountedRef.current) return;
 
-        setMessage("Attendance recorded successfully.");
+        const successMessage = "Attendance recorded successfully.";
+
+        setMessage(successMessage);
+        notification.success(successMessage);
 
         await stopScanner();
 
-        if (mountedRef.current && typeof onSuccess === "function") {
+        if (
+          mountedRef.current &&
+          typeof onSuccess === "function"
+        ) {
           await onSuccess();
         }
-      } catch (err) {
+      } catch (requestError) {
         if (!mountedRef.current) return;
 
-        const status = err?.response?.status;
+        const messageText = getApiErrorMessage(requestError);
 
         setMessage("");
-        setError(
-          status === 409
-            ? "Attendance has already been recorded for this student on this date."
-            : err?.response?.data?.message ||
-                "Could not record attendance. Verify the student and selected batch."
-        );
+        setError(messageText);
+        notification.error(messageText);
       } finally {
         busyRef.current = false;
       }
@@ -141,7 +156,10 @@ const AttendanceQRScanner = ({
     if (startingRef.current || scannerRef.current) return;
 
     if (!courseId || !batchId || !date) {
-      setError("Select a course, batch, and date first.");
+      const text = "Select a course, batch, and date first.";
+
+      setError(text);
+      notification.warning(text);
       return;
     }
 
@@ -182,7 +200,7 @@ const AttendanceQRScanner = ({
       }
 
       setScanning(true);
-    } catch (err) {
+    } catch (requestError) {
       if (scannerRef.current === scanner) {
         scannerRef.current = null;
       }
@@ -203,9 +221,12 @@ const AttendanceQRScanner = ({
 
       if (mountedRef.current) {
         setScanning(false);
-        setError(
-          "Could not start the camera. Check camera permission and ensure the page is served over HTTPS or localhost."
-        );
+
+        const text =
+          "Could not start the camera. Check camera permission and ensure the page is served over HTTPS or localhost.";
+
+        setError(text);
+        notification.error(text);
       }
     } finally {
       startingRef.current = false;
@@ -222,8 +243,8 @@ const AttendanceQRScanner = ({
         <div>
           <h2>QR Attendance Scanner</h2>
           <p>
-            Scan an official EMS student QR code to record attendance for
-            the selected course, batch, and date.
+            Scan an official EMS student QR code to record attendance
+            for the selected course, batch, and date.
           </p>
         </div>
 
@@ -252,8 +273,17 @@ const AttendanceQRScanner = ({
         className="attendance-qr-reader"
       />
 
-      {error && <div className="attendance-error">{error}</div>}
-      {message && <div className="attendance-success">{message}</div>}
+      {error && (
+        <div className="attendance-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      {message && (
+        <div className="attendance-success" role="status">
+          {message}
+        </div>
+      )}
 
       <p className="attendance-qr-note">
         Keep the camera pointed at the official EMS student QR code.
