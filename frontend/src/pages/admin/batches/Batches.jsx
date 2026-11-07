@@ -1,34 +1,24 @@
 
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  Link,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import React, { useCallback, useEffect, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 
 import BatchFilters from "../../../components/batches/BatchFilters";
 import BatchTable from "../../../components/batches/BatchTable";
+import Pagination from "../../../components/common/Pagination";
 
-import {
-  getBatches,
-  deleteBatch,
-} from "../../../services/batchService";
+import { getBatches, deleteBatch } from "../../../services/batchService";
+import { getCourses } from "../../../services/courseService";
 
-import {
-  getCourses,
-} from "../../../services/courseService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/BatchManagement.css";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 const Batches = () => {
   const location = useLocation();
@@ -41,11 +31,11 @@ const Batches = () => {
   const canView = hasPermission(user, "batches.view");
   const canCreate = hasPermission(user, "batches.create");
   const canDelete = hasPermission(user, "batches.delete");
+  const canEdit = hasPermission(user, "batches.update");
 
   const [batches, setBatches] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [filters, setFilters] = useState({
     search: "",
@@ -54,22 +44,19 @@ const Batches = () => {
   });
 
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: PAGE_SIZE,
+    limit: DEFAULT_PAGE_SIZE,
     total: 0,
     totalPages: 0,
   });
 
-  // Load courses for the batch filter.
-  // Ignore results if this request becomes outdated or the page unmounts.
+  // Load courses for the course filter.
   useEffect(() => {
-    if (authLoading || !user || !canView) {
-      setCourses([]);
-      return undefined;
-    }
+    if (authLoading || !user || !canView) return undefined;
 
     let cancelled = false;
 
@@ -83,17 +70,16 @@ const Batches = () => {
         if (cancelled) return;
 
         const payload = response?.data?.data;
-
-        const courseList = Array.isArray(payload)
+        const list = Array.isArray(payload)
           ? payload
           : Array.isArray(payload?.courses)
             ? payload.courses
             : [];
 
-        setCourses(courseList);
-      } catch (courseError) {
+        setCourses(list);
+      } catch (error) {
         if (!cancelled) {
-          console.error("Failed to load courses:", courseError);
+          notification.error(getApiErrorMessage(error));
         }
       }
     };
@@ -105,8 +91,7 @@ const Batches = () => {
     };
   }, [authLoading, user, canView]);
 
-  // Keep batch loading in one effect so older requests cannot
-  // overwrite results for newer filters, pages, or refreshes.
+  // Load batches using server-side pagination.
   useEffect(() => {
     if (authLoading) return undefined;
 
@@ -120,13 +105,12 @@ const Batches = () => {
 
     const loadBatches = async () => {
       setLoading(true);
-      setError("");
 
       try {
         const response = await getBatches({
           ...filters,
           page,
-          limit: PAGE_SIZE,
+          limit,
           sortBy: "createdAt",
           sortOrder: "desc",
         });
@@ -134,39 +118,34 @@ const Batches = () => {
         if (cancelled) return;
 
         const data = response?.data?.data;
-        const batchList = Array.isArray(data?.batches)
+        const list = Array.isArray(data?.batches)
           ? data.batches
           : [];
 
-        const paginationData = data?.pagination;
+        const pageData = data?.pagination || {};
 
-        setBatches(batchList);
+        const total = Number(pageData.total) || 0;
+        const totalPages =
+          Number(pageData.totalPages) ||
+          Math.ceil(total / limit);
 
-        setPagination(
-          paginationData
-            ? {
-                page: Number(paginationData.page) || page,
-                limit: Number(paginationData.limit) || PAGE_SIZE,
-                total: Number(paginationData.total) || 0,
-                totalPages: Math.max(
-                  Number(paginationData.totalPages) || 0,
-                  0
-                ),
-              }
-            : {
-                page,
-                limit: PAGE_SIZE,
-                total: batchList.length,
-                totalPages: batchList.length ? 1 : 0,
-              }
-        );
-      } catch (requestError) {
+        setBatches(list);
+
+        setPagination({
+          page: Number(pageData.page) || page,
+          limit: Number(pageData.limit) || limit,
+          total,
+          totalPages,
+        });
+
+        // Recover if a filter or deletion leaves the current page empty.
+        if (totalPages > 0 && page > totalPages) {
+          setPage(totalPages);
+        }
+      } catch (error) {
         if (!cancelled) {
           setBatches([]);
-          setError(
-            requestError?.response?.data?.message ||
-              "Failed to load batches."
-          );
+          notification.error(getApiErrorMessage(error));
         }
       } finally {
         if (!cancelled) {
@@ -180,14 +159,7 @@ const Batches = () => {
     return () => {
       cancelled = true;
     };
-  }, [
-    authLoading,
-    user,
-    canView,
-    filters,
-    page,
-    refreshKey,
-  ]);
+  }, [authLoading, user, canView, filters, page, limit, refreshKey]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -210,35 +182,36 @@ const Batches = () => {
     setPage(1);
   };
 
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+  };
+
   const handleDelete = useCallback(
     async (id) => {
       if (!canDelete) {
-        setError("You do not have permission to delete batches.");
+        notification.error(
+          "You do not have permission to delete batches."
+        );
         return;
       }
 
-      const confirmed = window.confirm(
-        "Are you sure you want to delete this batch?"
-      );
+      const confirmed = await notification.confirmDelete("this batch");
 
       if (!confirmed) return;
 
       try {
-        setError("");
         await deleteBatch(id);
 
-        // If the deleted batch was the only row on this page,
-        // move back one page. Otherwise, reload the current page.
+        notification.success("Batch deleted successfully.");
+
         if (batches.length === 1 && page > 1) {
           setPage((previous) => previous - 1);
         } else {
           setRefreshKey((previous) => previous + 1);
         }
-      } catch (deleteError) {
-        setError(
-          deleteError?.response?.data?.message ||
-            "Failed to delete batch."
-        );
+      } catch (error) {
+        notification.error(getApiErrorMessage(error));
       }
     },
     [canDelete, batches.length, page]
@@ -275,10 +248,7 @@ const Batches = () => {
         </div>
 
         {canCreate && (
-          <Link
-            to={`${basePath}/add`}
-            className="batch-add-button"
-          >
+          <Link to={`${basePath}/add`} className="batch-add-button">
             + Add Batch
           </Link>
         )}
@@ -292,50 +262,32 @@ const Batches = () => {
           onReset={handleReset}
         />
 
-        {error && (
-          <div className="batch-list-error" role="alert">
-            {error}
-          </div>
-        )}
-
         {loading ? (
           <div className="batch-loading">
             Loading batches...
           </div>
         ) : (
-          <BatchTable
-            batches={batches}
-            onDelete={handleDelete}
-            canView={canView}
-            canEdit={hasPermission(user, "batches.update")}
-            canDelete={canDelete}
-          />
-        )}
+          <>
+            <BatchTable
+              batches={batches}
+              onDelete={handleDelete}
+              canView={canView}
+              canEdit={canEdit}
+              canDelete={canDelete}
+            />
 
-        {!loading && pagination.totalPages > 0 && (
-          <div className="batch-pagination">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((previous) => previous - 1)}
-            >
-              Previous
-            </button>
-
-            <span>
-              Page {page} of {pagination.totalPages}
-              {" · "}
-              {pagination.total} batches
-            </span>
-
-            <button
-              type="button"
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((previous) => previous + 1)}
-            >
-              Next
-            </button>
-          </div>
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              itemCount={batches.length}
+              itemLabel="batches"
+              limit={limit}
+              loading={loading}
+              onPageChange={setPage}
+              onLimitChange={handleLimitChange}
+            />
+          </>
         )}
       </div>
     </div>

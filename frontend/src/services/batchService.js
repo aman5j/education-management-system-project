@@ -1,44 +1,28 @@
+
 import api from "./api";
 
-export const getBatches =
-  async (params = {}) => {
-    return api.get(
-      "/batches",
-      {
-        params,
-      }
-    );
-  };
+export const getBatches = (params = {}) =>
+  api.get("/batches", {
+    params,
+    silent: true,
+  });
 
-export const getBatch =
-  async (id) => {
-    return api.get(
-      `/batches/${id}`
-    );
-  };
+export const getBatch = (id) =>
+  api.get(`/batches/${id}`, {
+    silent: true,
+  });
 
-export const createBatch =
-  async (data) => {
-    return api.post(
-      "/batches",
-      data
-    );
-  };
+export const createBatch = (data) =>
+  api.post("/batches", data, {
+    silent: true,
+  });
 
-export const updateBatch =
-  async (
-    id,
-    data
-  ) => {
-    return api.put(
-      `/batches/${id}`,
-      data
-    );
-  };
+export const updateBatch = (id, data) =>
+  api.put(`/batches/${id}`, data, {
+    silent: true,
+  });
 
-export const deleteBatch =
-  async (id) => {
-    return api.delete(
-      `/batches/${id}`
-    );
-  };
+export const deleteBatch = (id) =>
+  api.delete(`/batches/${id}`, {
+    silent: true,
+  });

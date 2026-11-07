@@ -10,11 +10,19 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import BatchForm from "../../../components/batches/BatchForm";
+
 import {
   getBatch,
   updateBatch,
 } from "../../../services/batchService";
+
 import { getCourses } from "../../../services/courseService";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
+import "../../../styles/BatchManagement.css";
 
 const EditBatch = () => {
   const { id } = useParams();
@@ -36,11 +44,7 @@ const EditBatch = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (authLoading || !user || !canUpdate) {
-      setLoading(false);
-      setLoadingCourses(false);
-      return undefined;
-    }
+    if (authLoading || !user || !canUpdate) return undefined;
 
     let cancelled = false;
 
@@ -73,7 +77,7 @@ const EditBatch = () => {
           setError("Batch not found.");
         }
 
-        if (courseList.length === 0) {
+        if (!courseList.length) {
           setError((previous) =>
             previous
               ? `${previous} No courses are available.`
@@ -82,10 +86,9 @@ const EditBatch = () => {
         }
       } catch (requestError) {
         if (!cancelled) {
-          setError(
-            requestError?.response?.data?.message ||
-              "Failed to load batch information."
-          );
+          const message = getApiErrorMessage(requestError);
+          setError(message);
+          notification.error(message);
         }
       } finally {
         if (!cancelled) {
@@ -107,14 +110,24 @@ const EditBatch = () => {
 
     try {
       await updateBatch(id, formData);
+
+      notification.success("Batch updated successfully.");
+
       navigate(basePath, { replace: true });
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
     } finally {
       setSaving(false);
     }
   };
 
   if (authLoading) {
-    return <div className="batch-loading">Checking permissions...</div>;
+    return (
+      <div className="batch-loading">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (!user) {
@@ -132,13 +145,19 @@ const EditBatch = () => {
   }
 
   if (loading) {
-    return <div className="batch-loading">Loading batch...</div>;
+    return (
+      <div className="batch-loading">
+        Loading batch...
+      </div>
+    );
   }
 
   if (error || !batch) {
     return (
-      <div className="batch-list-error" role="alert">
-        {error || "Batch not found."}
+      <div className="batch-page">
+        <div className="batch-list-error" role="alert">
+          {error || "Batch not found."}
+        </div>
       </div>
     );
   }

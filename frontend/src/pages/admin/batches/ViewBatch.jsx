@@ -11,6 +11,12 @@ import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import { getBatch } from "../../../services/batchService";
 
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
+import "../../../styles/BatchManagement.css";
+
 const ViewBatch = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -28,10 +34,7 @@ const ViewBatch = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (authLoading || !user || !canView) {
-      setLoading(false);
-      return undefined;
-    }
+    if (authLoading || !user || !canView) return undefined;
 
     let cancelled = false;
 
@@ -41,20 +44,22 @@ const ViewBatch = () => {
 
       try {
         const response = await getBatch(id);
+        const data = response?.data?.data || null;
 
         if (!cancelled) {
-          setBatch(response?.data?.data || null);
+          setBatch(data);
 
-          if (!response?.data?.data) {
-            setError("Batch not found.");
+          if (!data) {
+            const message = "Batch not found.";
+            setError(message);
+            notification.error(message);
           }
         }
       } catch (requestError) {
         if (!cancelled) {
-          setError(
-            requestError?.response?.data?.message ||
-              "Failed to load batch."
-          );
+          const message = getApiErrorMessage(requestError);
+          setError(message);
+          notification.error(message);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -69,7 +74,11 @@ const ViewBatch = () => {
   }, [id, authLoading, user, canView]);
 
   if (authLoading) {
-    return <div className="batch-loading">Checking permissions...</div>;
+    return (
+      <div className="batch-loading">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (!user) {
@@ -87,13 +96,19 @@ const ViewBatch = () => {
   }
 
   if (loading) {
-    return <div className="batch-loading">Loading batch...</div>;
+    return (
+      <div className="batch-loading">
+        Loading batch...
+      </div>
+    );
   }
 
   if (error || !batch) {
     return (
-      <div className="batch-list-error" role="alert">
-        {error || "Batch not found."}
+      <div className="batch-page">
+        <div className="batch-list-error" role="alert">
+          {error || "Batch not found."}
+        </div>
       </div>
     );
   }

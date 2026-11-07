@@ -9,8 +9,15 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
 import BatchForm from "../../../components/batches/BatchForm";
+
 import { createBatch } from "../../../services/batchService";
 import { getCourses } from "../../../services/courseService";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
+import "../../../styles/BatchManagement.css";
 
 const AddBatch = () => {
   const navigate = useNavigate();
@@ -29,10 +36,7 @@ const AddBatch = () => {
   const [courseError, setCourseError] = useState("");
 
   useEffect(() => {
-    if (authLoading || !user || !canCreate) {
-      setLoadingCourses(false);
-      return undefined;
-    }
+    if (authLoading || !user || !canCreate) return undefined;
 
     let cancelled = false;
 
@@ -49,26 +53,25 @@ const AddBatch = () => {
         if (cancelled) return;
 
         const payload = response?.data?.data;
-        const courseList = Array.isArray(payload)
+        const list = Array.isArray(payload)
           ? payload
           : Array.isArray(payload?.courses)
             ? payload.courses
             : [];
 
-        setCourses(courseList);
+        setCourses(list);
 
-        if (courseList.length === 0) {
+        if (!list.length) {
           setCourseError(
             "No courses found. Please create a course first."
           );
         }
       } catch (error) {
         if (!cancelled) {
+          const message = getApiErrorMessage(error);
           setCourses([]);
-          setCourseError(
-            error?.response?.data?.message ||
-              "Unable to load courses."
-          );
+          setCourseError(message);
+          notification.error(message);
         }
       } finally {
         if (!cancelled) setLoadingCourses(false);
@@ -87,14 +90,24 @@ const AddBatch = () => {
 
     try {
       await createBatch(formData);
+
+      notification.success("Batch created successfully.");
+
       navigate(basePath, { replace: true });
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
     } finally {
       setSaving(false);
     }
   };
 
   if (authLoading) {
-    return <div className="batch-loading">Checking permissions...</div>;
+    return (
+      <div className="batch-loading">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (!user) {

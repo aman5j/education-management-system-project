@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState } from "react";
 
+import notification from "../../utils/notification";
+
 const initialState = {
   course_id: "",
   batch_name: "",
@@ -92,6 +94,9 @@ const BatchForm = ({
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+      notification.warning(
+        "Please correct the highlighted fields."
+      );
       return;
     }
 
