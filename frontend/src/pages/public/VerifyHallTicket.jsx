@@ -1,13 +1,63 @@
-
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { FiCheckCircle, FiXCircle, FiShield } from "react-icons/fi";
-import api from "../../services/api";
+import {
+  FiCheckCircle,
+  FiXCircle,
+  FiShield,
+} from "react-icons/fi";
 
+import api from "../../services/api";
 import "../../styles/VerifyHallTicket.css";
+
+const getAssetUrl = (path) => {
+  if (!path) return "";
+
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:image/")
+  ) {
+    return path;
+  }
+
+  const apiUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:5000/api";
+
+  try {
+    const backendOrigin = new URL(
+      apiUrl,
+      window.location.origin
+    ).origin;
+
+    return new URL(
+      path.replace(/^\/+/, ""),
+      `${backendOrigin}/`
+    ).href;
+  } catch {
+    return "";
+  }
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+};
 
 export default function VerifyHallTicket() {
   const { id } = useParams();
+
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,11 +71,16 @@ export default function VerifyHallTicket() {
       setResult(null);
 
       try {
-        const response = await api.get(`/public/hall-tickets/${id}`);
+        const response = await api.get(
+          `/public/hall-tickets/${id}`
+        );
+
         const payload = response?.data?.data;
 
         if (!payload) {
-          throw new Error("Verification details were not returned.");
+          throw new Error(
+            "Verification details were not returned."
+          );
         }
 
         if (mounted) setResult(payload);
@@ -33,6 +88,7 @@ export default function VerifyHallTicket() {
         if (mounted) {
           setError(
             err?.response?.data?.message ||
+              err?.message ||
               "Unable to verify this hall ticket."
           );
         }
@@ -49,21 +105,39 @@ export default function VerifyHallTicket() {
   }, [id]);
 
   const active = result?.status === "Active";
+  const institute = result?.institute || {};
+  const logoUrl = getAssetUrl(institute.logoUrl);
 
   return (
     <main className="verify-hall-page">
       <section className="verify-hall-card">
         <div className="verify-hall-brand">
-          <span className="verify-hall-logo">ITS</span>
+          {logoUrl ? (
+            <img
+              className="verify-hall-institute-logo"
+              src={logoUrl}
+              alt={`${institute.name || "Institute"} logo`}
+            />
+          ) : (
+            <span className="verify-hall-logo">EMS</span>
+          )}
+
           <div>
-            <strong>INDIA TECH SAMADHAAN</strong>
-            <span>Computer Education & Skill Development</span>
+            <strong>
+              {institute.name || "Institute Name Not Configured"}
+            </strong>
+
+            {institute.designation && (
+              <span>{institute.designation}</span>
+            )}
           </div>
         </div>
 
-        <div className="verify-hall-address">
-          123, Education Street, New Delhi - 110001
-        </div>
+        {institute.address && (
+          <div className="verify-hall-address">
+            {institute.address}
+          </div>
+        )}
 
         <div className="verify-hall-title">
           <FiShield />
@@ -84,15 +158,27 @@ export default function VerifyHallTicket() {
         ) : (
           <div
             className={`verify-hall-result ${
-              active ? "verify-hall-valid" : "verify-hall-invalid"
+              active
+                ? "verify-hall-valid"
+                : "verify-hall-invalid"
             }`}
           >
             {active ? <FiCheckCircle /> : <FiXCircle />}
-            <h2>{active ? "Valid Hall Ticket" : "Cancelled Hall Ticket"}</h2>
+
+            <h2>
+              {active
+                ? "Valid Hall Ticket"
+                : result.status === "Completed"
+                  ? "Completed Hall Ticket"
+                  : "Cancelled Hall Ticket"}
+            </h2>
+
             <p>
               {active
                 ? "This ticket exists in the institute records and is active."
-                : "This hall ticket exists but is not active."}
+                : result.status === "Completed"
+                  ? "This hall ticket exists in the institute records and is marked completed."
+                  : "This hall ticket exists but is not active."}
             </p>
 
             <div className="verify-hall-details">
@@ -100,36 +186,47 @@ export default function VerifyHallTicket() {
                 <span>Hall Ticket No.</span>
                 <strong>{result.hallTicketNo}</strong>
               </div>
+
               <div>
                 <span>Student Name</span>
                 <strong>{result.studentName || "—"}</strong>
               </div>
+
               <div>
                 <span>Roll Number</span>
                 <strong>{result.rollNo || "—"}</strong>
               </div>
+
               <div>
                 <span>Course</span>
                 <strong>{result.course || "—"}</strong>
               </div>
+
               <div>
                 <span>Exam Date</span>
-                <strong>
-                  {result.examDate
-                    ? new Date(result.examDate).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        timeZone: "UTC",
-                      })
-                    : "—"}
-                </strong>
+                <strong>{formatDate(result.examDate)}</strong>
               </div>
+
+              <div>
+                <span>Reporting Time</span>
+                <strong>{result.reportingTime || "—"}</strong>
+              </div>
+
               <div>
                 <span>Exam Time</span>
                 <strong>
                   {result.startTime || "—"} – {result.endTime || "—"}
                 </strong>
+              </div>
+
+              <div>
+                <span>Total Questions</span>
+                <strong>{result.totalQuestions ?? "—"}</strong>
+              </div>
+
+              <div>
+                <span>Total Marks</span>
+                <strong>{result.totalMarks ?? "—"}</strong>
               </div>
             </div>
           </div>

@@ -31,12 +31,24 @@ const parseDate = (value) => {
     : date;
 };
 
+const escapeRegex = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const indiaDateString = (date = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+
+const indiaDateTime = (date, time) =>
+  new Date(`${date}T${time}:00+05:30`);
+
 const makeTicketNo = (studentId) =>
   `HT-${Date.now().toString(36).toUpperCase()}-${String(studentId)
     .slice(-6)
-    .toUpperCase()}`;
-
-
+    .toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
 const populateTicket = (query) =>
   query
@@ -48,78 +60,100 @@ const populateTicket = (query) =>
     .populate({
       path: "student_id",
       select:
-        "firstName surname rollNo mobile email course_id status profileImage signature",
+        "firstName middleName surname rollNo mobile email status profileImage signature",
     });
 
-
-
+/**
+ * GET /api/hall-tickets
+ *
+ * Supports:
+ * page, limit, search, course_id, exam_id, status
+ */
 export const getHallTickets = async (req, res, next) => {
   try {
-    const { course_id, exam_id, search = "", page = 1, limit = 10 } =
-      req.query;
+    const {
+      course_id,
+      exam_id,
+      search = "",
+      page = 1,
+      limit = 10,
+      status,
+    } = req.query;
 
-    const pageNumber = Math.max(Number(page) || 1, 1);
-    const limitNumber = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const pageNumber = Math.max(Number.parseInt(page, 10) || 1, 1);
+    const limitNumber = Math.min(
+      Math.max(Number.parseInt(limit, 10) || 10, 1),
+      100
+    );
+
     const filter = {};
 
     if (course_id) {
-      if (!validId(course_id)) return fail(res, 400, "Invalid course ID.");
+      if (!validId(course_id)) {
+        return fail(res, 400, "Invalid course ID.");
+      }
       filter.course_id = course_id;
     }
 
     if (exam_id) {
-      if (!validId(exam_id)) return fail(res, 400, "Invalid exam ID.");
+      if (!validId(exam_id)) {
+        return fail(res, 400, "Invalid exam ID.");
+      }
       filter.exam_id = exam_id;
     }
 
-    if (req.query.status) {
-      if (!["Active", "Cancelled"].includes(req.query.status)) {
+    if (status) {
+      if (!["Active", "Cancelled", "Completed"].includes(status)) {
         return fail(res, 400, "Invalid hall ticket status.");
       }
-      filter.status = req.query.status;
+      filter.status = status;
+    }
+
+    const searchValue = String(search).trim();
+
+    if (searchValue) {
+      const regex = new RegExp(escapeRegex(searchValue), "i");
+
+      const matchingStudents = await Student.find({
+        $or: [
+          { firstName: regex },
+          { middleName: regex },
+          { surname: regex },
+          { rollNo: regex },
+        ],
+      })
+        .select("_id")
+        .lean();
+
+      const matchingStudentIds = matchingStudents.map(
+        (student) => student._id
+      );
+
+      filter.$or = [
+        { hallTicketNo: regex },
+        { student_id: { $in: matchingStudentIds } },
+      ];
     }
 
     const [tickets, total] = await Promise.all([
       populateTicket(
         HallTicket.find(filter)
-          .sort({ createdAt: -1 })
+          .sort({ createdAt: -1, _id: -1 })
           .skip((pageNumber - 1) * limitNumber)
           .limit(limitNumber)
       ).lean(),
       HallTicket.countDocuments(filter),
     ]);
 
-    const searchValue = String(search).trim().toLowerCase();
-    const filteredTickets = searchValue
-      ? tickets.filter((ticket) => {
-          const student = ticket.student_id || {};
-          const name = `${student.firstName || ""} ${
-            student.surname || ""
-          }`.toLowerCase();
-
-          return (
-            name.includes(searchValue) ||
-            String(student.rollNo || "")
-              .toLowerCase()
-              .includes(searchValue) ||
-            String(ticket.hallTicketNo || "")
-              .toLowerCase()
-              .includes(searchValue)
-          );
-        })
-      : tickets;
-
     return res.json({
       success: true,
       data: {
-        hallTickets: filteredTickets,
+        hallTickets: tickets,
         pagination: {
           page: pageNumber,
           limit: limitNumber,
-          total: searchValue ? filteredTickets.length : total,
-          totalPages: Math.ceil(
-            (searchValue ? filteredTickets.length : total) / limitNumber
-          ),
+          total,
+          totalPages: Math.ceil(total / limitNumber),
         },
       },
     });
@@ -128,18 +162,16 @@ export const getHallTickets = async (req, res, next) => {
   }
 };
 
-
 /**
  * GET /api/hall-tickets/eligible-students?course_id=COURSE_ID
  *
- * Returns active students who have an active admission
- * for the selected course.
+ * Only active students with an active admission for the course.
  */
 export const getEligibleHallTicketStudents = async (req, res, next) => {
   try {
     const { course_id } = req.query;
 
-    if (!mongoose.isValidObjectId(course_id)) {
+    if (!validId(course_id)) {
       return fail(res, 400, "Please select a valid course.");
     }
 
@@ -162,7 +194,7 @@ export const getEligibleHallTicketStudents = async (req, res, next) => {
       ),
     ];
 
-    if (studentIds.length === 0) {
+    if (!studentIds.length) {
       return res.json({
         success: true,
         data: { students: [] },
@@ -173,7 +205,7 @@ export const getEligibleHallTicketStudents = async (req, res, next) => {
       _id: { $in: studentIds },
       status: "active",
     })
-      .select("_id firstName surname rollNo mobile email status")
+      .select("_id firstName middleName surname rollNo mobile email status")
       .sort({ firstName: 1, surname: 1 })
       .lean();
 
@@ -186,7 +218,9 @@ export const getEligibleHallTicketStudents = async (req, res, next) => {
   }
 };
 
-
+/**
+ * POST /api/hall-tickets/generate
+ */
 export const generateHallTickets = async (req, res, next) => {
   try {
     const {
@@ -197,7 +231,7 @@ export const generateHallTickets = async (req, res, next) => {
       endTime,
       reportingTime,
       studentIds,
-    } = req.body;
+    } = req.body || {};
 
     if (!validId(course_id)) {
       return fail(res, 400, "Please select a valid course.");
@@ -213,7 +247,11 @@ export const generateHallTickets = async (req, res, next) => {
       return fail(res, 400, "Please select a valid exam date.");
     }
 
-    if (!isTime(startTime) || !isTime(endTime) || !isTime(reportingTime)) {
+    if (
+      !isTime(startTime) ||
+      !isTime(endTime) ||
+      !isTime(reportingTime)
+    ) {
       return fail(res, 400, "Please provide valid exam and reporting times.");
     }
 
@@ -256,7 +294,11 @@ export const generateHallTickets = async (req, res, next) => {
     if (!exam) return fail(res, 404, "Exam not found.");
 
     if (String(exam.course_id) !== String(course_id)) {
-      return fail(res, 400, "The selected exam does not belong to this course.");
+      return fail(
+        res,
+        400,
+        "The selected exam does not belong to this course."
+      );
     }
 
     const students = await Student.find({
@@ -287,23 +329,16 @@ export const generateHallTickets = async (req, res, next) => {
     );
 
     const ineligibleStudents = uniqueStudentIds.filter(
-      (studentId) => !eligibleStudentIds.has(String(studentId))
+      (studentId) => !eligibleStudentIds.has(studentId)
     );
 
-    if (ineligibleStudents.length > 0) {
+    if (ineligibleStudents.length) {
       return fail(
         res,
         400,
         "Every selected student must have an active admission for the selected course."
       );
     }
-
-    // const existingTickets = await HallTicket.find({
-    //   exam_id,
-    //   student_id: { $in: uniqueStudentIds },
-    // })
-    //   .select("student_id")
-    //   .lean();
 
     const existingTickets = await HallTicket.find({
       exam_id,
@@ -321,7 +356,7 @@ export const generateHallTickets = async (req, res, next) => {
       (student) => !existingIds.has(String(student._id))
     );
 
-    if (studentsToCreate.length === 0) {
+    if (!studentsToCreate.length) {
       return res.status(409).json({
         success: false,
         message: "Hall tickets already exist for all selected students.",
@@ -365,19 +400,31 @@ export const generateHallTickets = async (req, res, next) => {
   }
 };
 
+/**
+ * PATCH /api/hall-tickets/:id/cancel
+ */
 export const cancelHallTicket = async (req, res, next) => {
   try {
     if (!validId(req.params.id)) {
       return fail(res, 400, "Invalid hall ticket ID.");
     }
 
-    const ticket = await HallTicket.findByIdAndUpdate(
-      req.params.id,
-      { status: "Cancelled" },
-      { new: true, runValidators: true }
-    );
+    const ticket = await HallTicket.findById(req.params.id);
 
-    if (!ticket) return fail(res, 404, "Hall ticket not found.");
+    if (!ticket) {
+      return fail(res, 404, "Hall ticket not found.");
+    }
+
+    if (ticket.status !== "Active") {
+      return fail(
+        res,
+        409,
+        `Only active hall tickets can be cancelled. Current status: ${ticket.status}.`
+      );
+    }
+
+    ticket.status = "Cancelled";
+    await ticket.save();
 
     return res.json({
       success: true,
@@ -389,9 +436,12 @@ export const cancelHallTicket = async (req, res, next) => {
   }
 };
 
-
-
-
+/**
+ * PATCH /api/hall-tickets/:id/reschedule-missed
+ *
+ * Reissue only after the previous exam window has ended.
+ * Existing submitted/in-progress exam attempts are protected.
+ */
 export const rescheduleMissedHallTicket = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -443,10 +493,39 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       );
     }
 
+    const newDateString = examDateInput;
+    const todayInIndia = indiaDateString();
+
+    if (newDateString < todayInIndia) {
+      return fail(
+        res,
+        400,
+        "The new exam date cannot be in the past."
+      );
+    }
+
+    const newExamStart = indiaDateTime(newDateString, startTime);
+
+    if (newExamStart.getTime() <= Date.now()) {
+      return fail(
+        res,
+        400,
+        "The new exam start time must be in the future."
+      );
+    }
+
     const ticket = await HallTicket.findById(id);
 
     if (!ticket) {
       return fail(res, 404, "Hall ticket not found.");
+    }
+
+    if (ticket.status !== "Active") {
+      return fail(
+        res,
+        409,
+        "Only an active missed-exam hall ticket can be reissued."
+      );
     }
 
     const result = await ExamResult.findOne({
@@ -475,11 +554,8 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       );
     }
 
-    // Only allow reissue after the original scheduled exam window has passed.
     const oldDate = ticket.examDate.toISOString().slice(0, 10);
-    const oldEnd = new Date(
-      `${oldDate}T${ticket.endTime}:00+05:30`
-    );
+    const oldEnd = indiaDateTime(oldDate, ticket.endTime);
 
     if (Date.now() < oldEnd.getTime()) {
       return fail(
@@ -489,7 +565,6 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       );
     }
 
-    // Preserve the previous ticket details for administrative history.
     ticket.reissueHistory.push({
       hallTicketNo: ticket.hallTicketNo,
       examDate: ticket.examDate,
@@ -501,7 +576,6 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       reissuedAt: new Date(),
     });
 
-    // Issue the replacement schedule.
     ticket.examDate = examDate;
     ticket.startTime = startTime;
     ticket.endTime = endTime;
@@ -521,7 +595,7 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       return fail(
         res,
         409,
-        "The new hall ticket number already exists. Please retry."
+        "A duplicate hall ticket number or active exam assignment was detected."
       );
     }
 

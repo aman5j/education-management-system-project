@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FiDownload } from "react-icons/fi";
-import { generateHallTicketPDF } from "../../../utils/generateHallTicketPDF";
-import { getExam } from "../../../services/examService";
-// import { getStudents } from "../../../services/studentService";
+import {
+  FiDownload,
+  FiRefreshCw,
+  FiSearch,
+  FiFileText,
+  FiX,
+} from "react-icons/fi";
 
-import notification, {
-  getApiErrorMessage,
-} from "../../../utils/notification";
+import { getCourses } from "../../../services/courseService";
+import { getExams, getExam } from "../../../services/examService";
+import { generateHallTicketPDF } from "../../../utils/generateHallTicketPDF";
 
 import {
   getHallTickets,
@@ -16,23 +19,10 @@ import {
   rescheduleMissedHallTicket,
 } from "../../../services/hallTicketService";
 
-import {
-  FiCheckCircle,
-  FiRefreshCw,
-  FiSearch,
-  FiFileText,
-  FiX,
-} from "react-icons/fi";
-
-
-import { getCourses } from "../../../services/courseService";
-import { getExams } from "../../../services/examService";
-import { getStudents } from "../../../services/studentService";
-// import {
-//   getHallTickets,
-//   generateHallTickets,
-//   cancelHallTicket,
-// } from "../../../services/hallTicketService";
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/HallTicketManagement.css";
 
@@ -53,17 +43,18 @@ const getArray = (response, keys = []) => {
   return [];
 };
 
-const getErrorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Something went wrong. Please try again.";
-
 const getFullName = (student) =>
-  [student?.firstName, student?.surname].filter(Boolean).join(" ") ||
-  "Unnamed student";
+  [
+    student?.firstName,
+    student?.middleName,
+    student?.surname,
+  ]
+    .filter(Boolean)
+    .join(" ") || "Unnamed student";
 
 const formatDate = (value) => {
   if (!value) return "—";
+
   const date = new Date(value);
 
   return Number.isNaN(date.getTime())
@@ -77,12 +68,17 @@ const formatDate = (value) => {
 };
 
 const todayString = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  return parts;
 };
+
+const getErrorMessage = (error) => getApiErrorMessage(error);
 
 export default function HallTicketManagement() {
   const [courses, setCourses] = useState([]);
@@ -100,7 +96,15 @@ export default function HallTicketManagement() {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [ticketSearch, setTicketSearch] = useState("");
+
   const [ticketPage, setTicketPage] = useState(1);
+  const [ticketLimit, setTicketLimit] = useState(PAGE_SIZE);
+  const [ticketPagination, setTicketPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
+  });
 
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingExams, setLoadingExams] = useState(false);
@@ -108,132 +112,19 @@ export default function HallTicketManagement() {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
   const [reissueTicket, setReissueTicket] = useState(null);
-
   const [reissueDate, setReissueDate] = useState(todayString());
   const [reissueStartTime, setReissueStartTime] = useState("10:00");
   const [reissueEndTime, setReissueEndTime] = useState("12:00");
   const [reissueReportingTime, setReissueReportingTime] =
     useState("09:30");
-
   const [reissueReason, setReissueReason] = useState("");
   const [reissuing, setReissuing] = useState(false);
 
-  const selectedExam = exams.find((exam) => exam._id === examId);
-
-
-  const openReissueModal = (ticket) => {
-    setReissueTicket(ticket);
-
-    setReissueDate(todayString());
-    setReissueStartTime("10:00");
-    setReissueEndTime("12:00");
-    setReissueReportingTime("09:30");
-    setReissueReason("");
-  };
-
-
-  const handleReissueSubmit = async (event) => {
-      event.preventDefault();
-
-      if (!reissueTicket) return;
-
-      if (reissueStartTime >= reissueEndTime) {
-        setError("End time must be later than start time.");
-        return;
-      }
-
-      if (reissueReportingTime > reissueStartTime) {
-        setError("Reporting time must be before exam start time.");
-        return;
-      }
-
-      if (reissueReason.trim().length < 5) {
-        setError("Please enter a valid reissue reason.");
-        return;
-      }
-
-      setReissuing(true);
-      setError("");
-
-      try {
-        const response = await rescheduleMissedHallTicket(
-          reissueTicket._id,
-          {
-            examDate: reissueDate,
-            startTime: reissueStartTime,
-            endTime: reissueEndTime,
-            reportingTime: reissueReportingTime,
-            reason: reissueReason.trim(),
-          }
-        );
-
-        const root = unwrap(response);
-
-        setReissueTicket(null);
-
-        notification.success(
-          root?.message || "Hall ticket reissued successfully."
-        );
-
-        await loadTickets();
-      } catch (err) {
-        notification.error(getErrorMessage(err));
-      } finally {
-        setReissuing(false);
-      }
-    };
-  
-
-    const handleDownloadPDF = async (ticket) => {
-    setError("");
-    setSuccess("");
-
-    try {
-        const examId =
-        typeof ticket.exam_id === "object"
-            ? ticket.exam_id?._id
-            : ticket.exam_id;
-
-        if (!examId) {
-        throw new Error("The exam linked to this hall ticket was not found.");
-        }
-
-        const response = await getExam(examId);
-        const examResponse = response?.data?.data ?? response?.data;
-
-        if (!examResponse) {
-        throw new Error("Unable to load exam marks for this hall ticket.");
-        }
-
-        const ticketForPDF = {
-        ...ticket,
-        exam_id: {
-            ...(
-            typeof ticket.exam_id === "object"
-                ? ticket.exam_id
-                : {}
-            ),
-            ...examResponse,
-        },
-        };
-
-        await generateHallTicketPDF({ ticket: ticketForPDF });
-
-        setSuccess(`Hall ticket ${ticket.hallTicketNo} downloaded.`);
-    } catch (err) {
-        setError(
-        err?.response?.data?.message ||
-            err?.message ||
-            "Unable to generate the hall ticket PDF."
-        );
-    }
-    };
-
-
+  const selectedExam = useMemo(
+    () => exams.find((exam) => exam._id === examId),
+    [exams, examId]
+  );
 
   const filteredStudents = useMemo(() => {
     const value = studentSearch.trim().toLowerCase();
@@ -269,8 +160,8 @@ export default function HallTicketManagement() {
     try {
       const response = await getCourses({ page: 1, limit: 100 });
       setCourses(getArray(response, ["courses"]));
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (error) {
+      notification.error(getErrorMessage(error));
     } finally {
       setLoadingCourses(false);
     }
@@ -282,20 +173,29 @@ export default function HallTicketManagement() {
     try {
       const response = await getHallTickets({
         page: ticketPage,
-        limit: PAGE_SIZE,
-        search: ticketSearch || undefined,
+        limit: ticketLimit,
+        search: ticketSearch.trim() || undefined,
       });
 
       const root = unwrap(response);
       const data = root?.data ?? root;
 
       setTickets(data?.hallTickets || []);
-    } catch (err) {
-      setError(getErrorMessage(err));
+
+      const pagination = data?.pagination || {};
+
+      setTicketPagination({
+        page: Number(pagination.page) || ticketPage,
+        limit: Number(pagination.limit) || ticketLimit,
+        total: Number(pagination.total) || 0,
+        totalPages: Number(pagination.totalPages) || 0,
+      });
+    } catch (error) {
+      notification.error(getErrorMessage(error));
     } finally {
       setLoadingTickets(false);
     }
-  }, [ticketPage, ticketSearch]);
+  }, [ticketPage, ticketLimit, ticketSearch]);
 
   useEffect(() => {
     loadCourses();
@@ -305,53 +205,50 @@ export default function HallTicketManagement() {
     loadTickets();
   }, [loadTickets]);
 
-const loadExamsForCourse = async (nextCourseId) => {
-  setCourseId(nextCourseId);
-  setExamId("");
-  setExams([]);
-  setStudents([]);
-  setSelectedStudents([]);
-  setStudentSearch("");
-  setError("");
-  setSuccess("");
+  const loadExamsForCourse = async (nextCourseId) => {
+    setCourseId(nextCourseId);
+    setExamId("");
+    setExams([]);
+    setStudents([]);
+    setSelectedStudents([]);
+    setStudentSearch("");
 
-  if (!nextCourseId) return;
+    if (!nextCourseId) return;
 
-  setLoadingExams(true);
-  setLoadingStudents(true);
+    setLoadingExams(true);
+    setLoadingStudents(true);
 
-  try {
-    const [examResponse, studentResponse] = await Promise.all([
-      getExams({
-        course_id: nextCourseId,
-        page: 1,
-        limit: 100,
-      }),
-      getEligibleHallTicketStudents(nextCourseId),
-    ]);
+    try {
+      const [examResponse, studentResponse] = await Promise.all([
+        getExams({
+          course_id: nextCourseId,
+          page: 1,
+          limit: 100,
+        }),
+        getEligibleHallTicketStudents(nextCourseId),
+      ]);
 
-    const examRoot = unwrap(examResponse);
-    const examData = examRoot?.data ?? examRoot;
+      const examRoot = unwrap(examResponse);
+      const examData = examRoot?.data ?? examRoot;
 
-    setExams(
-      examData?.exams || getArray(examResponse, ["exams"])
-    );
+      setExams(
+        examData?.exams || getArray(examResponse, ["exams"])
+      );
 
-    const eligibleStudents = getArray(studentResponse, ["students"]);
+      const eligibleStudents = getArray(studentResponse, ["students"]);
 
-    setStudents(
-      eligibleStudents.filter(
-        (student) => student.status === "active"
-      )
-    );
-  } catch (err) {
-    setError(getErrorMessage(err));
-  } finally {
-    setLoadingExams(false);
-    setLoadingStudents(false);
-  }
-};
-
+      setStudents(
+        eligibleStudents.filter(
+          (student) => student.status === "active"
+        )
+      );
+    } catch (error) {
+      notification.error(getErrorMessage(error));
+    } finally {
+      setLoadingExams(false);
+      setLoadingStudents(false);
+    }
+  };
 
   const toggleStudent = (id, checked) => {
     setSelectedStudents((current) =>
@@ -376,49 +273,43 @@ const loadExamsForCourse = async (nextCourseId) => {
     });
   };
 
-  const handleExamChange = (nextExamId) => {
-    setExamId(nextExamId);
-    setError("");
-    setSuccess("");
-  };
-
   const handleGenerate = async (event) => {
     event.preventDefault();
-    setError("");
-    setSuccess("");
 
     if (!courseId) {
-      setError("Please select a course.");
+      notification.warning("Please select a course.");
       return;
     }
 
     if (!examId) {
-      setError("Please select an exam.");
+      notification.warning("Please select an exam.");
       return;
     }
 
     if (!examDate) {
-      setError("Please select the exam date.");
+      notification.warning("Please select the exam date.");
       return;
     }
 
     if (!startTime || !endTime || !reportingTime) {
-      setError("Please complete all exam times.");
+      notification.warning("Please complete all exam times.");
       return;
     }
 
     if (startTime >= endTime) {
-      setError("End time must be later than start time.");
+      notification.warning("End time must be later than start time.");
       return;
     }
 
     if (reportingTime > startTime) {
-      setError("Reporting time must be at or before the start time.");
+      notification.warning(
+        "Reporting time must be at or before the start time."
+      );
       return;
     }
 
     if (selectedStudents.length === 0) {
-      setError("Select at least one student.");
+      notification.warning("Select at least one student.");
       return;
     }
 
@@ -436,16 +327,24 @@ const loadExamsForCourse = async (nextCourseId) => {
       });
 
       const root = unwrap(response);
-      setSuccess(
+
+      notification.success(
         root?.message ||
           `Generated ${root?.generatedCount || 0} hall ticket(s).`
       );
 
       setSelectedStudents([]);
       setStudentSearch("");
+
+      setTicketPage(1);
+
+      if (ticketPage !== 1) {
+        return;
+      }
+
       await loadTickets();
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (error) {
+      notification.error(getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -454,26 +353,155 @@ const loadExamsForCourse = async (nextCourseId) => {
   const handleCancelTicket = async (ticket) => {
     const name = getFullName(ticket.student_id);
 
-    if (
-      !window.confirm(
-        `Cancel hall ticket ${ticket.hallTicketNo} for ${name}?`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await notification.confirm({
+      title: "Cancel hall ticket?",
+      text: `Cancel hall ticket ${ticket.hallTicketNo} for ${name}?`,
+      icon: "warning",
+      confirmText: "Yes, cancel ticket",
+      confirmButtonColor: "#dc2626",
+    });
 
-    setError("");
-    setSuccess("");
+    if (!confirmed) return;
 
     try {
       const response = await cancelHallTicket(ticket._id);
       const root = unwrap(response);
 
-      setSuccess(root?.message || "Hall ticket cancelled.");
+      notification.success(
+        root?.message || "Hall ticket cancelled successfully."
+      );
+
       await loadTickets();
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (error) {
+      notification.error(getErrorMessage(error));
     }
+  };
+
+  const handleDownloadPDF = async (ticket) => {
+    if (ticket.status === "Cancelled") {
+      notification.warning(
+        "A cancelled hall ticket cannot be downloaded as a valid ticket."
+      );
+      return;
+    }
+
+    try {
+      const linkedExamId =
+        typeof ticket.exam_id === "object"
+          ? ticket.exam_id?._id
+          : ticket.exam_id;
+
+      if (!linkedExamId) {
+        throw new Error(
+          "The exam linked to this hall ticket was not found."
+        );
+      }
+
+      const response = await getExam(linkedExamId);
+      const examResponse =
+        response?.data?.data ?? response?.data;
+
+      if (!examResponse) {
+        throw new Error(
+          "Unable to load exam details for this hall ticket."
+        );
+      }
+
+      const ticketForPDF = {
+        ...ticket,
+        exam_id: {
+          ...(typeof ticket.exam_id === "object"
+            ? ticket.exam_id
+            : {}),
+          ...examResponse,
+        },
+      };
+
+      await generateHallTicketPDF({ ticket: ticketForPDF });
+
+      notification.success(
+        `Hall ticket ${ticket.hallTicketNo} downloaded.`
+      );
+    } catch (error) {
+      notification.error(getErrorMessage(error));
+    }
+  };
+
+  const openReissueModal = (ticket) => {
+    setReissueTicket(ticket);
+    setReissueDate(todayString());
+    setReissueStartTime("10:00");
+    setReissueEndTime("12:00");
+    setReissueReportingTime("09:30");
+    setReissueReason("");
+  };
+
+  const closeReissueModal = () => {
+    if (reissuing) return;
+    setReissueTicket(null);
+  };
+
+  const handleReissueSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!reissueTicket) return;
+
+    if (reissueDate < todayString()) {
+      notification.warning("The new exam date cannot be in the past.");
+      return;
+    }
+
+    if (reissueStartTime >= reissueEndTime) {
+      notification.warning("End time must be later than start time.");
+      return;
+    }
+
+    if (reissueReportingTime > reissueStartTime) {
+      notification.warning(
+        "Reporting time must be at or before exam start time."
+      );
+      return;
+    }
+
+    if (reissueReason.trim().length < 5) {
+      notification.warning(
+        "Please enter a reissue reason of at least 5 characters."
+      );
+      return;
+    }
+
+    setReissuing(true);
+
+    try {
+      const response = await rescheduleMissedHallTicket(
+        reissueTicket._id,
+        {
+          examDate: reissueDate,
+          startTime: reissueStartTime,
+          endTime: reissueEndTime,
+          reportingTime: reissueReportingTime,
+          reason: reissueReason.trim(),
+        }
+      );
+
+      const root = unwrap(response);
+
+      setReissueTicket(null);
+
+      notification.success(
+        root?.message || "Hall ticket reissued successfully."
+      );
+
+      await loadTickets();
+    } catch (error) {
+      notification.error(getErrorMessage(error));
+    } finally {
+      setReissuing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    await Promise.all([loadCourses(), loadTickets()]);
   };
 
   return (
@@ -493,36 +521,12 @@ const loadExamsForCourse = async (nextCourseId) => {
         <button
           type="button"
           className="hall-ticket-secondary-btn"
-          onClick={() => {
-            loadCourses();
-            loadTickets();
-          }}
+          onClick={handleRefresh}
+          disabled={loadingCourses || loadingTickets}
         >
           <FiRefreshCw /> Refresh
         </button>
       </header>
-
-      {error && (
-        <div className="hall-ticket-alert hall-ticket-alert-error" role="alert">
-          <span>{error}</span>
-          <button type="button" onClick={() => setError("")} aria-label="Dismiss">
-            <FiX />
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div
-          className="hall-ticket-alert hall-ticket-alert-success"
-          role="status"
-        >
-          <FiCheckCircle />
-          <span>{success}</span>
-          <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss">
-            <FiX />
-          </button>
-        </div>
-      )}
 
       <section className="hall-ticket-card">
         <div className="hall-ticket-section-heading">
@@ -541,7 +545,9 @@ const loadExamsForCourse = async (nextCourseId) => {
               Select Course <span>*</span>
               <select
                 value={courseId}
-                onChange={(event) => loadExamsForCourse(event.target.value)}
+                onChange={(event) =>
+                  loadExamsForCourse(event.target.value)
+                }
                 disabled={loadingCourses || saving}
                 required
               >
@@ -560,7 +566,7 @@ const loadExamsForCourse = async (nextCourseId) => {
               Select Exam <span>*</span>
               <select
                 value={examId}
-                onChange={(event) => handleExamChange(event.target.value)}
+                onChange={(event) => setExamId(event.target.value)}
                 disabled={!courseId || loadingExams || saving}
                 required
               >
@@ -571,6 +577,7 @@ const loadExamsForCourse = async (nextCourseId) => {
                       ? "Loading exams..."
                       : "Select exam"}
                 </option>
+
                 {exams.map((exam) => (
                   <option key={exam._id} value={exam._id}>
                     {exam.course_id?.courseTitle || "Exam"} —{" "}
@@ -581,6 +588,7 @@ const loadExamsForCourse = async (nextCourseId) => {
                   </option>
                 ))}
               </select>
+
               {courseId && !loadingExams && exams.length === 0 && (
                 <small>No exams have been created for this course.</small>
               )}
@@ -608,6 +616,7 @@ const loadExamsForCourse = async (nextCourseId) => {
               <input
                 type="date"
                 value={examDate}
+                min={todayString()}
                 onChange={(event) => setExamDate(event.target.value)}
                 required
               />
@@ -651,6 +660,7 @@ const loadExamsForCourse = async (nextCourseId) => {
                 Only active students assigned to the selected course are shown.
               </p>
             </div>
+
             <span className="hall-ticket-selected-count">
               {selectedStudents.length} selected
             </span>
@@ -692,6 +702,7 @@ const loadExamsForCourse = async (nextCourseId) => {
                   <th>Mobile</th>
                 </tr>
               </thead>
+
               <tbody>
                 {loadingStudents ? (
                   <tr>
@@ -726,7 +737,10 @@ const loadExamsForCourse = async (nextCourseId) => {
                           type="checkbox"
                           checked={selectedStudents.includes(student._id)}
                           onChange={(event) =>
-                            toggleStudent(student._id, event.target.checked)
+                            toggleStudent(
+                              student._id,
+                              event.target.checked
+                            )
                           }
                           aria-label={`Select ${getFullName(student)}`}
                         />
@@ -748,6 +762,7 @@ const loadExamsForCourse = async (nextCourseId) => {
             <span>
               {selectedStudents.length} student(s) selected for this exam.
             </span>
+
             <button
               type="submit"
               className="hall-ticket-primary-btn"
@@ -770,8 +785,9 @@ const loadExamsForCourse = async (nextCourseId) => {
         <div className="hall-ticket-section-heading hall-ticket-list-heading">
           <div>
             <h2>Generated Hall Tickets</h2>
-            <p>Review assigned tickets or cancel an assignment.</p>
+            <p>Review, download, reissue or cancel assigned tickets.</p>
           </div>
+
           <label className="hall-ticket-search hall-ticket-list-search">
             <FiSearch />
             <input
@@ -800,6 +816,7 @@ const loadExamsForCourse = async (nextCourseId) => {
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody>
               {loadingTickets ? (
                 <tr>
@@ -810,7 +827,9 @@ const loadExamsForCourse = async (nextCourseId) => {
               ) : tickets.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="hall-ticket-empty">
-                    No hall tickets generated yet.
+                    {ticketSearch.trim()
+                      ? "No hall tickets match your search."
+                      : "No hall tickets generated yet."}
                   </td>
                 </tr>
               ) : (
@@ -819,18 +838,21 @@ const loadExamsForCourse = async (nextCourseId) => {
                     <td>
                       <strong>{ticket.hallTicketNo}</strong>
                     </td>
+
                     <td>
                       <strong>{getFullName(ticket.student_id)}</strong>
                       <small>
                         Roll No: {ticket.student_id?.rollNo || "—"}
                       </small>
                     </td>
+
                     <td>{ticket.course_id?.courseTitle || "—"}</td>
                     <td>{formatDate(ticket.examDate)}</td>
                     <td>
                       {ticket.startTime}–{ticket.endTime}
                     </td>
                     <td>{ticket.reportingTime}</td>
+
                     <td>
                       <span
                         className={`hall-ticket-status hall-ticket-status-${ticket.status?.toLowerCase()}`}
@@ -838,38 +860,47 @@ const loadExamsForCourse = async (nextCourseId) => {
                         {ticket.status}
                       </span>
                     </td>
-                    <td>
 
-                       <button
+                    <td>
+                      <button
                         type="button"
                         className="hall-ticket-download-btn"
-                        title="Download hall ticket PDF"
+                        title={
+                          ticket.status === "Cancelled"
+                            ? "Cancelled tickets cannot be downloaded"
+                            : "Download hall ticket PDF"
+                        }
+                        disabled={ticket.status === "Cancelled"}
                         onClick={() => handleDownloadPDF(ticket)}
-                        >
+                      >
                         <FiDownload />
                         PDF
-                        </button>
+                      </button>
 
-                        <button
-                          type="button"
-                          className="hall-ticket-reissue-btn"
-                          onClick={() => openReissueModal(ticket)}
-                          title="Reschedule and reissue missed exam"
-                        >
-                          <FiRefreshCw />
-                          Reissue
-                        </button>
+                      {ticket.status === "Active" && (
+                        <>
+                          <button
+                            type="button"
+                            className="hall-ticket-reissue-btn"
+                            onClick={() => openReissueModal(ticket)}
+                            title="Reissue after the original exam window has ended"
+                          >
+                            <FiRefreshCw />
+                            Reissue
+                          </button>
 
-                      {ticket.status === "Active" ? (
-                        <button
-                          type="button"
-                          className="hall-ticket-cancel-btn"
-                          onClick={() => handleCancelTicket(ticket)}
-                          title="Cancel hall ticket"
-                        >
-                          Cancel
-                        </button>
-                      ) : (
+                          <button
+                            type="button"
+                            className="hall-ticket-cancel-btn"
+                            onClick={() => handleCancelTicket(ticket)}
+                            title="Cancel hall ticket"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+
+                      {ticket.status !== "Active" && (
                         <span className="hall-ticket-muted">—</span>
                       )}
                     </td>
@@ -880,151 +911,145 @@ const loadExamsForCourse = async (nextCourseId) => {
           </table>
         </div>
 
-        <div className="hall-ticket-pagination">
-          <span>Page {ticketPage}</span>
-          <div>
-            <button
-              type="button"
-              className="hall-ticket-secondary-btn"
-              disabled={ticketPage <= 1 || loadingTickets}
-              onClick={() => setTicketPage((page) => page - 1)}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              className="hall-ticket-secondary-btn"
-              disabled={tickets.length < PAGE_SIZE || loadingTickets}
-              onClick={() => setTicketPage((page) => page + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={ticketPagination.page}
+          totalPages={ticketPagination.totalPages}
+          total={ticketPagination.total}
+          itemCount={tickets.length}
+          itemLabel="hall tickets"
+          limit={ticketLimit}
+          loading={loadingTickets}
+          onPageChange={setTicketPage}
+          onLimitChange={(nextLimit) => {
+            setTicketLimit(nextLimit);
+            setTicketPage(1);
+          }}
+        />
       </section>
 
       {reissueTicket && (
-      <div className="ht-modal-overlay">
-        <div className="ht-reissue-modal">
-          <div className="ht-modal-header">
-            <div>
-              <h2>Reissue Hall Ticket</h2>
-              <p>
-                Reschedule the missed examination for this student.
-              </p>
-            </div>
+        <div className="ht-modal-overlay">
+          <div className="ht-reissue-modal">
+            <div className="ht-modal-header">
+              <div>
+                <h2>Reissue Hall Ticket</h2>
+                <p>
+                  Reschedule the missed examination for this student.
+                </p>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setReissueTicket(null)}
-              disabled={reissuing}
-            >
-              <FiX />
-            </button>
-          </div>
-
-          <div className="ht-reissue-student">
-            <strong>
-              {getFullName(reissueTicket.student_id)}
-            </strong>
-
-            <span>
-              Roll No: {reissueTicket.student_id?.rollNo || "—"}
-            </span>
-
-            <span>
-              Previous Ticket: {reissueTicket.hallTicketNo}
-            </span>
-          </div>
-
-          <form onSubmit={handleReissueSubmit}>
-            <div className="hall-ticket-form-grid">
-              <label className="hall-ticket-field">
-                New Exam Date *
-                <input
-                  type="date"
-                  value={reissueDate}
-                  onChange={(e) => setReissueDate(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="hall-ticket-field">
-                Start Time *
-                <input
-                  type="time"
-                  value={reissueStartTime}
-                  onChange={(e) =>
-                    setReissueStartTime(e.target.value)
-                  }
-                  required
-                />
-              </label>
-
-              <label className="hall-ticket-field">
-                End Time *
-                <input
-                  type="time"
-                  value={reissueEndTime}
-                  onChange={(e) =>
-                    setReissueEndTime(e.target.value)
-                  }
-                  required
-                />
-              </label>
-
-              <label className="hall-ticket-field">
-                Reporting Time *
-                <input
-                  type="time"
-                  value={reissueReportingTime}
-                  onChange={(e) =>
-                    setReissueReportingTime(e.target.value)
-                  }
-                  required
-                />
-              </label>
-
-              <label className="hall-ticket-field hall-ticket-field-wide">
-                Reason for Reissue *
-                <textarea
-                  value={reissueReason}
-                  onChange={(e) =>
-                    setReissueReason(e.target.value)
-                  }
-                  placeholder="Example: Student missed the scheduled examination."
-                  minLength={5}
-                  maxLength={1000}
-                  required
-                  rows={3}
-                />
-              </label>
-            </div>
-
-            <div className="ht-modal-footer">
               <button
                 type="button"
-                className="hall-ticket-secondary-btn"
-                onClick={() => setReissueTicket(null)}
+                onClick={closeReissueModal}
                 disabled={reissuing}
+                aria-label="Close reissue dialog"
               >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="hall-ticket-primary-btn"
-                disabled={reissuing}
-              >
-                <FiRefreshCw />
-                {reissuing ? "Reissuing..." : "Confirm Reissue"}
+                <FiX />
               </button>
             </div>
-          </form>
+
+            <div className="ht-reissue-student">
+              <strong>{getFullName(reissueTicket.student_id)}</strong>
+
+              <span>
+                Roll No: {reissueTicket.student_id?.rollNo || "—"}
+              </span>
+
+              <span>
+                Previous Ticket: {reissueTicket.hallTicketNo}
+              </span>
+            </div>
+
+            <form onSubmit={handleReissueSubmit}>
+              <div className="hall-ticket-form-grid">
+                <label className="hall-ticket-field">
+                  New Exam Date *
+                  <input
+                    type="date"
+                    value={reissueDate}
+                    min={todayString()}
+                    onChange={(event) =>
+                      setReissueDate(event.target.value)
+                    }
+                    required
+                  />
+                </label>
+
+                <label className="hall-ticket-field">
+                  Start Time *
+                  <input
+                    type="time"
+                    value={reissueStartTime}
+                    onChange={(event) =>
+                      setReissueStartTime(event.target.value)
+                    }
+                    required
+                  />
+                </label>
+
+                <label className="hall-ticket-field">
+                  End Time *
+                  <input
+                    type="time"
+                    value={reissueEndTime}
+                    onChange={(event) =>
+                      setReissueEndTime(event.target.value)
+                    }
+                    required
+                  />
+                </label>
+
+                <label className="hall-ticket-field">
+                  Reporting Time *
+                  <input
+                    type="time"
+                    value={reissueReportingTime}
+                    onChange={(event) =>
+                      setReissueReportingTime(event.target.value)
+                    }
+                    required
+                  />
+                </label>
+
+                <label className="hall-ticket-field hall-ticket-field-wide">
+                  Reason for Reissue *
+                  <textarea
+                    value={reissueReason}
+                    onChange={(event) =>
+                      setReissueReason(event.target.value)
+                    }
+                    placeholder="Example: Student missed the scheduled examination."
+                    minLength={5}
+                    maxLength={1000}
+                    required
+                    rows={3}
+                  />
+                </label>
+              </div>
+
+              <div className="ht-modal-footer">
+                <button
+                  type="button"
+                  className="hall-ticket-secondary-btn"
+                  onClick={closeReissueModal}
+                  disabled={reissuing}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="hall-ticket-primary-btn"
+                  disabled={reissuing}
+                >
+                  <FiRefreshCw />
+                  {reissuing ? "Reissuing..." : "Confirm Reissue"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    )}
-    
+      )}
     </main>
   );
 }

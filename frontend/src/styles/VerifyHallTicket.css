@@ -180,3 +180,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+
+.verify-hall-institute-logo {
+  width: 58px;
+  height: 52px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 6px;
+}
