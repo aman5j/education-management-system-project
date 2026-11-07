@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiBookOpen,
@@ -22,9 +23,10 @@ import {
   deleteExam,
 } from "../../../services/examService";
 
-import "../../../styles/ExamSchedule.css";
+import Pagination from "../../../components/common/Pagination";
+import notification from "../../../utils/notification";
 
-const PAGE_SIZE = 10;
+import "../../../styles/ExamSchedule.css";
 
 const EMPTY_FORM = {
   course_id: "",
@@ -60,13 +62,19 @@ const getQuestionText = (question) =>
   question.questionText || "Untitled question";
 
 const getOptionSummary = (question) =>
-  [question.optionA, question.optionB, question.optionC, question.optionD]
+  [
+    question.optionA,
+    question.optionB,
+    question.optionC,
+    question.optionD,
+  ]
     .filter(Boolean)
     .join(" · ");
 
 export default function ExamSchedule() {
   const [courses, setCourses] = useState([]);
   const [exams, setExams] = useState([]);
+
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 1,
@@ -78,10 +86,13 @@ export default function ExamSchedule() {
 
   const [search, setSearch] = useState("");
   const [courseSearch, setCourseSearch] = useState("");
+
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const [editingId, setEditingId] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -99,9 +110,12 @@ export default function ExamSchedule() {
       : 0;
 
   const selectedKeys = useMemo(
-    () => new Set(form.selectedQuestions.map((item) =>
-      `${item.subject_id}:${item.question_id}`
-    )),
+    () =>
+      new Set(
+        form.selectedQuestions.map(
+          (item) => `${item.subject_id}:${item.question_id}`
+        )
+      ),
     [form.selectedQuestions]
   );
 
@@ -147,7 +161,7 @@ export default function ExamSchedule() {
     try {
       const response = await getExams({
         page,
-        limit: PAGE_SIZE,
+        limit,
         course_id: courseSearch || undefined,
       });
 
@@ -155,15 +169,19 @@ export default function ExamSchedule() {
       const data = root?.data ?? root;
 
       setExams(Array.isArray(data?.exams) ? data.exams : []);
+
       setPagination(
-        data?.pagination || { total: 0, totalPages: 1 }
+        data?.pagination || {
+          total: 0,
+          totalPages: 1,
+        }
       );
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [page, courseSearch]);
+  }, [page, limit, courseSearch]);
 
   useEffect(() => {
     loadCourses();
@@ -192,6 +210,7 @@ export default function ExamSchedule() {
   const loadCourseQuestions = async (courseId) => {
     setSubjects([]);
     setQuestions([]);
+
     setForm((current) => ({
       ...current,
       course_id: courseId,
@@ -206,7 +225,7 @@ export default function ExamSchedule() {
     try {
       let linkedSubjects = [];
 
-      // The course model stores linked subjects in Course.subjects.
+      // Read the subjects explicitly linked to this course.
       try {
         const courseResponse = await getCourse(courseId);
         const courseRoot = unwrap(courseResponse);
@@ -226,18 +245,20 @@ export default function ExamSchedule() {
           courseSubjects.length > 0
         ) {
           const ids = new Set(courseSubjects.map(String));
+
           const allResponse = await getSubjects({
             page: 1,
             limit: 100,
             status: "Active",
           });
 
-          linkedSubjects = getArray(allResponse, ["subjects"]).filter(
-            (subject) => ids.has(String(subject._id))
-          );
+          linkedSubjects = getArray(
+            allResponse,
+            ["subjects"]
+          ).filter((subject) => ids.has(String(subject._id)));
         }
       } catch {
-        // Fall back to the subjects API below.
+        // Use the existing fallback below if course lookup fails.
       }
 
       if (linkedSubjects.length === 0) {
@@ -249,10 +270,9 @@ export default function ExamSchedule() {
 
         const allSubjects = getArray(response, ["subjects"]);
 
-        // Only use legacy course_id as a fallback when the course's
-        // explicit subjects relationship could not be read.
         linkedSubjects = allSubjects.filter(
-          (subject) => String(getId(subject.course_id)) === String(courseId)
+          (subject) =>
+            String(getId(subject.course_id)) === String(courseId)
         );
       }
 
@@ -264,15 +284,13 @@ export default function ExamSchedule() {
 
       const questionResults = await Promise.all(
         linkedSubjects.map(async (subject) => {
-          const subjectId = subject._id;
-
           try {
-            const response = await getSubjectQuestionBank(subjectId);
+            const response = await getSubjectQuestionBank(subject._id);
             const rows = getArray(response, ["questions"]);
 
             return rows.map((question) => ({
               ...question,
-              subject_id: subjectId,
+              subject_id: subject._id,
               subjectName: subject.subjectName,
               subjectCode: subject.subjectCode,
             }));
@@ -336,8 +354,11 @@ export default function ExamSchedule() {
 
         const key = `${item.subject_id}:${item.question_id}`;
 
-        if (checked) next.set(key, item);
-        else next.delete(key);
+        if (checked) {
+          next.set(key, item);
+        } else {
+          next.delete(key);
+        }
       });
 
       return {
@@ -345,6 +366,100 @@ export default function ExamSchedule() {
         selectedQuestions: Array.from(next.values()),
       };
     });
+  };
+
+  const loadCourseQuestionsForEdit = async (
+    courseId,
+    selected
+  ) => {
+    setLoadingQuestions(true);
+
+    try {
+      let linkedSubjects = [];
+
+      const courseResponse = await getCourse(courseId);
+      const root = unwrap(courseResponse);
+      const course = root?.data?.course ?? root?.data ?? root;
+
+      if (Array.isArray(course?.subjects)) {
+        const ids = course.subjects.map((item) =>
+          String(getId(item))
+        );
+
+        if (
+          course.subjects.some(
+            (item) => typeof item === "object"
+          )
+        ) {
+          linkedSubjects = course.subjects;
+        } else {
+          const response = await getSubjects({
+            page: 1,
+            limit: 100,
+            status: "Active",
+          });
+
+          linkedSubjects = getArray(
+            response,
+            ["subjects"]
+          ).filter((subject) =>
+            ids.includes(String(subject._id))
+          );
+        }
+      }
+
+      if (linkedSubjects.length === 0) {
+        const response = await getSubjects({
+          page: 1,
+          limit: 100,
+          status: "Active",
+        });
+
+        const ids = new Set(
+          selected.map((item) =>
+            String(getId(item.subject_id))
+          )
+        );
+
+        linkedSubjects = getArray(
+          response,
+          ["subjects"]
+        ).filter(
+          (subject) =>
+            ids.has(String(subject._id)) ||
+            String(getId(subject.course_id)) === String(courseId)
+        );
+      }
+
+      setSubjects(linkedSubjects);
+
+      const results = await Promise.all(
+        linkedSubjects.map(async (subject) => {
+          try {
+            const response = await getSubjectQuestionBank(
+              subject._id
+            );
+
+            return getArray(response, ["questions"]).map(
+              (question) => ({
+                ...question,
+                subject_id: subject._id,
+                subjectName: subject.subjectName,
+                subjectCode: subject.subjectCode,
+              })
+            );
+          } catch {
+            return [];
+          }
+        })
+      );
+
+      setQuestions(results.flat());
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingQuestions(false);
+    }
   };
 
   const openEdit = async (exam) => {
@@ -360,105 +475,52 @@ export default function ExamSchedule() {
       course_id: courseId,
       totalQuestions: String(exam.totalQuestions ?? ""),
       totalMarks: String(exam.totalMarks ?? ""),
-      selectedQuestions: (exam.selectedQuestions || []).map((item) => ({
-        subject_id: String(getId(item.subject_id)),
-        question_id: String(getId(item.question_id)),
-      })),
+      selectedQuestions: (exam.selectedQuestions || []).map(
+        (item) => ({
+          subject_id: String(getId(item.subject_id)),
+          question_id: String(getId(item.question_id)),
+        })
+      ),
     });
 
-    await loadCourseQuestionsForEdit(courseId, exam.selectedQuestions || []);
-  };
-
-  const loadCourseQuestionsForEdit = async (courseId, selected) => {
-    setLoadingQuestions(true);
-
-    try {
-      let linkedSubjects = [];
-      const courseResponse = await getCourse(courseId);
-      const root = unwrap(courseResponse);
-      const course = root?.data?.course ?? root?.data ?? root;
-
-      if (Array.isArray(course?.subjects)) {
-        const ids = course.subjects.map((item) => String(getId(item)));
-
-        if (course.subjects.some((item) => typeof item === "object")) {
-          linkedSubjects = course.subjects;
-        } else {
-          const response = await getSubjects({
-            page: 1,
-            limit: 100,
-            status: "Active",
-          });
-          linkedSubjects = getArray(response, ["subjects"]).filter(
-            (subject) => ids.includes(String(subject._id))
-          );
-        }
-      }
-
-      if (linkedSubjects.length === 0) {
-        const response = await getSubjects({
-          page: 1,
-          limit: 100,
-          status: "Active",
-        });
-        const ids = new Set(
-          selected.map((item) => String(getId(item.subject_id)))
-        );
-        linkedSubjects = getArray(response, ["subjects"]).filter(
-          (subject) =>
-            ids.has(String(subject._id)) ||
-            String(getId(subject.course_id)) === String(courseId)
-        );
-      }
-
-      setSubjects(linkedSubjects);
-
-      const results = await Promise.all(
-        linkedSubjects.map(async (subject) => {
-          try {
-            const response = await getSubjectQuestionBank(subject._id);
-            return getArray(response, ["questions"]).map((question) => ({
-              ...question,
-              subject_id: subject._id,
-              subjectName: subject.subjectName,
-              subjectCode: subject.subjectCode,
-            }));
-          } catch {
-            return [];
-          }
-        })
-      );
-
-      setQuestions(results.flat());
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoadingQuestions(false);
-    }
+    await loadCourseQuestionsForEdit(
+      courseId,
+      exam.selectedQuestions || []
+    );
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     setError("");
     setSuccess("");
 
     if (!form.course_id) {
-      setError("Please select a course.");
+      notification.warning("Please select a course.");
       return;
     }
 
-    if (!Number.isInteger(totalQuestions) || totalQuestions < 1) {
-      setError("Total questions must be a positive whole number.");
+    if (
+      !Number.isInteger(totalQuestions) ||
+      totalQuestions < 1
+    ) {
+      notification.warning(
+        "Total questions must be a positive whole number."
+      );
       return;
     }
 
     if (!Number.isFinite(totalMarks) || totalMarks <= 0) {
-      setError("Total marks must be greater than zero.");
+      notification.warning(
+        "Total marks must be greater than zero."
+      );
       return;
     }
 
-    if (form.selectedQuestions.length !== totalQuestions) {
-      setError(
+    if (
+      form.selectedQuestions.length !== totalQuestions
+    ) {
+      notification.warning(
         `Select exactly ${totalQuestions} questions. You selected ${form.selectedQuestions.length}.`
       );
       return;
@@ -476,15 +538,19 @@ export default function ExamSchedule() {
 
       if (editingId) {
         await updateExam(editingId, payload);
-        setSuccess("Exam updated successfully.");
+        notification.success("Exam updated successfully.");
       } else {
         await createExam(payload);
-        setSuccess("Exam created successfully.");
+        notification.success("Exam created successfully.");
       }
 
       resetForm();
       setPage(1);
-      await loadExams();
+
+      // Refresh the list using the first page after saving.
+      if (page === 1) {
+        await loadExams();
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -493,33 +559,54 @@ export default function ExamSchedule() {
   };
 
   const handleDelete = async (exam) => {
-    if (!window.confirm("Delete this exam? This action cannot be undone.")) {
-      return;
-    }
+    const confirmed = await notification.confirmDelete(
+      "this exam"
+    );
+
+    if (!confirmed) return;
 
     setError("");
     setSuccess("");
 
     try {
       await deleteExam(exam._id);
-      setSuccess("Exam deleted successfully.");
-      await loadExams();
+
+      notification.success("Exam deleted successfully.");
+
+      // If the deleted exam was the only row on this page,
+      // move to the previous page when possible.
+      if (exams.length === 1 && page > 1) {
+        setPage((current) => current - 1);
+      } else {
+        await loadExams();
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     }
   };
 
-  const filteredCourses = courses;
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+  };
+
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
+  };
 
   return (
     <main className="exam-page">
       <header className="exam-page-header">
         <div>
-          <span className="exam-eyebrow">EXAMS / MANAGEMENT</span>
+          <span className="exam-eyebrow">
+            EXAMS / MANAGEMENT
+          </span>
+
           <h1>Create Exam</h1>
+
           <p>
-            Create an exam first. Hall tickets and exam timings will be
-            managed separately.
+            Create an exam first. Hall tickets and exam timings
+            will be managed separately.
           </p>
         </div>
 
@@ -532,6 +619,7 @@ export default function ExamSchedule() {
           >
             <FiRefreshCw /> Refresh
           </button>
+
           <button
             type="button"
             className="exam-primary-btn"
@@ -543,19 +631,35 @@ export default function ExamSchedule() {
       </header>
 
       {error && (
-        <div className="exam-alert exam-alert-error" role="alert">
+        <div
+          className="exam-alert exam-alert-error"
+          role="alert"
+        >
           <span>{error}</span>
-          <button type="button" onClick={() => setError("")} aria-label="Dismiss">
+
+          <button
+            type="button"
+            onClick={() => setError("")}
+            aria-label="Dismiss"
+          >
             <FiX />
           </button>
         </div>
       )}
 
       {success && (
-        <div className="exam-alert exam-alert-success" role="status">
+        <div
+          className="exam-alert exam-alert-success"
+          role="status"
+        >
           <FiCheckCircle />
           <span>{success}</span>
-          <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss">
+
+          <button
+            type="button"
+            onClick={() => setSuccess("")}
+            aria-label="Dismiss"
+          >
             <FiX />
           </button>
         </div>
@@ -568,8 +672,14 @@ export default function ExamSchedule() {
               <span className="exam-eyebrow">
                 {editingId ? "EDIT EXAM" : "NEW EXAM"}
               </span>
-              <h2>{editingId ? "Edit Exam" : "Exam Details"}</h2>
-              <p>Select a course, set marks, then choose its MCQs.</p>
+
+              <h2>
+                {editingId ? "Edit Exam" : "Exam Details"}
+              </h2>
+
+              <p>
+                Select a course, set marks, then choose its MCQs.
+              </p>
             </div>
 
             <button
@@ -586,17 +696,30 @@ export default function ExamSchedule() {
             <div className="exam-form-grid exam-create-grid">
               <label className="exam-field exam-field-wide">
                 Select Course <span className="required">*</span>
+
                 <select
                   value={form.course_id}
-                  onChange={(event) => loadCourseQuestions(event.target.value)}
-                  disabled={loadingCourses || loadingQuestions || saving}
+                  onChange={(event) =>
+                    loadCourseQuestions(event.target.value)
+                  }
+                  disabled={
+                    loadingCourses ||
+                    loadingQuestions ||
+                    saving
+                  }
                   required
                 >
                   <option value="">
-                    {loadingCourses ? "Loading courses..." : "Select course"}
+                    {loadingCourses
+                      ? "Loading courses..."
+                      : "Select course"}
                   </option>
-                  {filteredCourses.map((course) => (
-                    <option key={course._id} value={course._id}>
+
+                  {courses.map((course) => (
+                    <option
+                      key={course._id}
+                      value={course._id}
+                    >
                       {course.courseTitle}
                     </option>
                   ))}
@@ -604,7 +727,9 @@ export default function ExamSchedule() {
               </label>
 
               <label className="exam-field">
-                Total Questions <span className="required">*</span>
+                Total Questions{" "}
+                <span className="required">*</span>
+
                 <input
                   type="number"
                   min="1"
@@ -622,7 +747,9 @@ export default function ExamSchedule() {
               </label>
 
               <label className="exam-field">
-                Total Marks <span className="required">*</span>
+                Total Marks{" "}
+                <span className="required">*</span>
+
                 <input
                   type="number"
                   min="0.01"
@@ -640,18 +767,27 @@ export default function ExamSchedule() {
 
               <div className="exam-calculated-marks">
                 <span>Marks per Question</span>
+
                 <strong>
                   {marksPerQuestion > 0
-                    ? Number(marksPerQuestion.toFixed(4)).toString()
+                    ? Number(
+                        marksPerQuestion.toFixed(4)
+                      ).toString()
                     : "—"}
                 </strong>
+
                 <small>Calculated automatically</small>
               </div>
 
               <div className="exam-question-summary">
                 <span>Available questions</span>
+
                 <strong>{questions.length}</strong>
-                <span>Selected {form.selectedQuestions.length} of {totalQuestions || 0}</span>
+
+                <span>
+                  Selected {form.selectedQuestions.length} of{" "}
+                  {totalQuestions || 0}
+                </span>
               </div>
             </div>
 
@@ -659,11 +795,13 @@ export default function ExamSchedule() {
               <div className="exam-section-heading exam-question-heading">
                 <div>
                   <h2>Select Exam Questions</h2>
+
                   <p>
-                    Questions are loaded from the selected course's linked
-                    subjects.
+                    Questions are loaded from the selected
+                    course&apos;s linked subjects.
                   </p>
                 </div>
+
                 <div className="exam-question-count">
                   {form.selectedQuestions.length} selected
                 </div>
@@ -672,10 +810,13 @@ export default function ExamSchedule() {
               <div className="exam-question-toolbar">
                 <label className="exam-search-box">
                   <FiSearch aria-hidden="true" />
+
                   <input
                     type="search"
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) =>
+                      setSearch(event.target.value)
+                    }
                     placeholder="Search question or subject..."
                     disabled={!form.course_id}
                   />
@@ -693,10 +834,13 @@ export default function ExamSchedule() {
                       )
                     }
                     onChange={(event) =>
-                      selectVisibleQuestions(event.target.checked)
+                      selectVisibleQuestions(
+                        event.target.checked
+                      )
                     }
                     disabled={filteredQuestions.length === 0}
                   />
+
                   Select visible
                 </label>
               </div>
@@ -705,7 +849,9 @@ export default function ExamSchedule() {
                 <div className="exam-question-empty">
                   <FiBookOpen />
                   <strong>Select a course first</strong>
-                  <span>Its linked subjects and MCQs will appear here.</span>
+                  <span>
+                    Its linked subjects and MCQs will appear here.
+                  </span>
                 </div>
               ) : loadingQuestions ? (
                 <div className="exam-question-empty">
@@ -716,7 +862,8 @@ export default function ExamSchedule() {
                   <FiBookOpen />
                   <strong>No questions found</strong>
                   <span>
-                    Add MCQs to the selected course's linked subjects first.
+                    Add MCQs to the selected course&apos;s linked
+                    subjects first.
                   </span>
                 </div>
               ) : filteredQuestions.length === 0 ? (
@@ -725,47 +872,63 @@ export default function ExamSchedule() {
                 </div>
               ) : (
                 <div className="exam-question-list">
-                  {filteredQuestions.map((question, index) => {
-                    const key = `${question.subject_id}:${question._id}`;
-                    const checked = selectedKeys.has(key);
+                  {filteredQuestions.map(
+                    (question, index) => {
+                      const key =
+                        `${question.subject_id}:${question._id}`;
 
-                    return (
-                      <label
-                        key={key}
-                        className={`exam-question-item ${checked ? "is-selected" : ""}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleQuestion(question)}
-                        />
+                      const checked = selectedKeys.has(key);
 
-                        <span className="exam-question-number">
-                          {index + 1}
-                        </span>
+                      return (
+                        <label
+                          key={key}
+                          className={`exam-question-item ${
+                            checked ? "is-selected" : ""
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              toggleQuestion(question)
+                            }
+                          />
 
-                        <span className="exam-question-content">
-                          <strong>{getQuestionText(question)}</strong>
-                          <span>{getOptionSummary(question)}</span>
-                          <small>
-                            {question.subjectName}
-                            {question.subjectCode
-                              ? ` (${question.subjectCode})`
-                              : ""}
-                          </small>
-                        </span>
-                      </label>
-                    );
-                  })}
+                          <span className="exam-question-number">
+                            {index + 1}
+                          </span>
+
+                          <span className="exam-question-content">
+                            <strong>
+                              {getQuestionText(question)}
+                            </strong>
+
+                            <span>
+                              {getOptionSummary(question)}
+                            </span>
+
+                            <small>
+                              {question.subjectName}
+                              {question.subjectCode
+                                ? ` (${question.subjectCode})`
+                                : ""}
+                            </small>
+                          </span>
+                        </label>
+                      );
+                    }
+                  )}
                 </div>
               )}
 
               <div className="exam-selection-footer">
                 <span>
-                  {form.selectedQuestions.length} of {totalQuestions || 0} required
-                  questions selected
+                  {form.selectedQuestions.length} of{" "}
+                  {totalQuestions || 0} required questions selected
                 </span>
-                {form.selectedQuestions.length !== totalQuestions && (
+
+                {form.selectedQuestions.length !==
+                  totalQuestions && (
                   <span className="exam-selection-warning">
                     Select the exact number before saving.
                   </span>
@@ -782,6 +945,7 @@ export default function ExamSchedule() {
               >
                 Cancel
               </button>
+
               <button
                 type="submit"
                 className="exam-primary-btn"
@@ -789,7 +953,8 @@ export default function ExamSchedule() {
                   saving ||
                   loadingQuestions ||
                   !form.course_id ||
-                  form.selectedQuestions.length !== totalQuestions ||
+                  form.selectedQuestions.length !==
+                    totalQuestions ||
                   totalQuestions < 1 ||
                   totalMarks <= 0
                 }
@@ -811,8 +976,10 @@ export default function ExamSchedule() {
             <h2>Created Exams</h2>
             <p>{pagination.total} exam(s)</p>
           </div>
+
           <label className="exam-list-course-filter">
             Filter by course
+
             <select
               value={courseSearch}
               onChange={(event) => {
@@ -821,8 +988,12 @@ export default function ExamSchedule() {
               }}
             >
               <option value="">All courses</option>
+
               {courses.map((course) => (
-                <option key={course._id} value={course._id}>
+                <option
+                  key={course._id}
+                  value={course._id}
+                >
                   {course.courseTitle}
                 </option>
               ))}
@@ -843,10 +1014,13 @@ export default function ExamSchedule() {
                 <th>Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="exam-empty">Loading exams...</td>
+                  <td colSpan="7" className="exam-empty">
+                    Loading exams...
+                  </td>
                 </tr>
               ) : exams.length === 0 ? (
                 <tr>
@@ -857,18 +1031,28 @@ export default function ExamSchedule() {
               ) : (
                 exams.map((exam, index) => (
                   <tr key={exam._id}>
-                    <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
                     <td>
-                      <strong>{exam.course_id?.courseTitle || "Course"}</strong>
+                      {(page - 1) * limit + index + 1}
                     </td>
+
+                    <td>
+                      <strong>
+                        {exam.course_id?.courseTitle || "Course"}
+                      </strong>
+                    </td>
+
                     <td>{exam.totalQuestions}</td>
                     <td>{exam.totalMarks}</td>
                     <td>{exam.marksPerQuestion}</td>
+
                     <td>
                       {exam.createdAt
-                        ? new Date(exam.createdAt).toLocaleDateString("en-IN")
+                        ? new Date(
+                            exam.createdAt
+                          ).toLocaleDateString("en-IN")
                         : "—"}
                     </td>
+
                     <td>
                       <div className="exam-row-actions">
                         <button
@@ -879,6 +1063,7 @@ export default function ExamSchedule() {
                         >
                           <FiEdit2 />
                         </button>
+
                         <button
                           type="button"
                           className="exam-icon-btn exam-icon-danger"
@@ -896,29 +1081,17 @@ export default function ExamSchedule() {
           </table>
         </div>
 
-        <div className="exam-pagination">
-          <span>
-            Page {page} of {Math.max(pagination.totalPages || 1, 1)}
-          </span>
-          <div>
-            <button
-              type="button"
-              className="exam-secondary-btn"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((current) => current - 1)}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              className="exam-secondary-btn"
-              disabled={page >= (pagination.totalPages || 1) || loading}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages || 1}
+          total={pagination.total || 0}
+          itemCount={exams.length}
+          itemLabel="exams"
+          limit={limit}
+          loading={loading}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+        />
       </section>
     </main>
   );
