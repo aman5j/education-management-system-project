@@ -16,3 +16,12 @@ export const cancelHallTicket = (id) => {
 
   return api.patch(`/hall-tickets/${id}/cancel`);
 };
+
+export const rescheduleMissedHallTicket = (id, payload) => {
+  if (!id) throw new Error("Hall ticket ID is required.");
+
+  return api.patch(
+    `/hall-tickets/${id}/reschedule-missed`,
+    payload
+  );
+};

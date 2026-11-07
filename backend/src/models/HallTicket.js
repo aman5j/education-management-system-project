@@ -53,6 +53,11 @@ const hallTicketSchema = new mongoose.Schema(
       match: /^([01]\d|2[0-3]):[0-5]\d$/,
     },
 
+    reissueHistory: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+
     status: {
       type: String,
       enum: ["Active", "Cancelled", "Completed"],

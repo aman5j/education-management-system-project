@@ -298,9 +298,17 @@ export const generateHallTickets = async (req, res, next) => {
       );
     }
 
+    // const existingTickets = await HallTicket.find({
+    //   exam_id,
+    //   student_id: { $in: uniqueStudentIds },
+    // })
+    //   .select("student_id")
+    //   .lean();
+
     const existingTickets = await HallTicket.find({
       exam_id,
       student_id: { $in: uniqueStudentIds },
+      status: "Active",
     })
       .select("student_id")
       .lean();
@@ -392,6 +400,7 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       startTime,
       endTime,
       reportingTime,
+      reason,
     } = req.body || {};
 
     if (!validId(id)) {
@@ -421,6 +430,16 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
         res,
         400,
         "Reporting time must be at or before the exam start time."
+      );
+    }
+
+    const reissueReason = String(reason || "").trim();
+
+    if (reissueReason.length < 5) {
+      return fail(
+        res,
+        400,
+        "Please provide a reason of at least 5 characters."
       );
     }
 
@@ -470,6 +489,19 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       );
     }
 
+    // Preserve the previous ticket details for administrative history.
+    ticket.reissueHistory.push({
+      hallTicketNo: ticket.hallTicketNo,
+      examDate: ticket.examDate,
+      startTime: ticket.startTime,
+      endTime: ticket.endTime,
+      reportingTime: ticket.reportingTime,
+      status: ticket.status,
+      reason: reissueReason,
+      reissuedAt: new Date(),
+    });
+
+    // Issue the replacement schedule.
     ticket.examDate = examDate;
     ticket.startTime = startTime;
     ticket.endTime = endTime;

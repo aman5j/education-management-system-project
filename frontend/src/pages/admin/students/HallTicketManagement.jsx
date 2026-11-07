@@ -4,11 +4,16 @@ import { generateHallTicketPDF } from "../../../utils/generateHallTicketPDF";
 import { getExam } from "../../../services/examService";
 // import { getStudents } from "../../../services/studentService";
 
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import {
   getHallTickets,
   getEligibleHallTicketStudents,
   generateHallTickets,
   cancelHallTicket,
+  rescheduleMissedHallTicket,
 } from "../../../services/hallTicketService";
 
 import {
@@ -106,9 +111,81 @@ export default function HallTicketManagement() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [reissueTicket, setReissueTicket] = useState(null);
+
+  const [reissueDate, setReissueDate] = useState(todayString());
+  const [reissueStartTime, setReissueStartTime] = useState("10:00");
+  const [reissueEndTime, setReissueEndTime] = useState("12:00");
+  const [reissueReportingTime, setReissueReportingTime] =
+    useState("09:30");
+
+  const [reissueReason, setReissueReason] = useState("");
+  const [reissuing, setReissuing] = useState(false);
+
   const selectedExam = exams.find((exam) => exam._id === examId);
 
 
+  const openReissueModal = (ticket) => {
+    setReissueTicket(ticket);
+
+    setReissueDate(todayString());
+    setReissueStartTime("10:00");
+    setReissueEndTime("12:00");
+    setReissueReportingTime("09:30");
+    setReissueReason("");
+  };
+
+
+  const handleReissueSubmit = async (event) => {
+      event.preventDefault();
+
+      if (!reissueTicket) return;
+
+      if (reissueStartTime >= reissueEndTime) {
+        setError("End time must be later than start time.");
+        return;
+      }
+
+      if (reissueReportingTime > reissueStartTime) {
+        setError("Reporting time must be before exam start time.");
+        return;
+      }
+
+      if (reissueReason.trim().length < 5) {
+        setError("Please enter a valid reissue reason.");
+        return;
+      }
+
+      setReissuing(true);
+      setError("");
+
+      try {
+        const response = await rescheduleMissedHallTicket(
+          reissueTicket._id,
+          {
+            examDate: reissueDate,
+            startTime: reissueStartTime,
+            endTime: reissueEndTime,
+            reportingTime: reissueReportingTime,
+            reason: reissueReason.trim(),
+          }
+        );
+
+        const root = unwrap(response);
+
+        setReissueTicket(null);
+
+        notification.success(
+          root?.message || "Hall ticket reissued successfully."
+        );
+
+        await loadTickets();
+      } catch (err) {
+        notification.error(getErrorMessage(err));
+      } finally {
+        setReissuing(false);
+      }
+    };
   
 
     const handleDownloadPDF = async (ticket) => {
@@ -773,6 +850,16 @@ const loadExamsForCourse = async (nextCourseId) => {
                         PDF
                         </button>
 
+                        <button
+                          type="button"
+                          className="hall-ticket-reissue-btn"
+                          onClick={() => openReissueModal(ticket)}
+                          title="Reschedule and reissue missed exam"
+                        >
+                          <FiRefreshCw />
+                          Reissue
+                        </button>
+
                       {ticket.status === "Active" ? (
                         <button
                           type="button"
@@ -815,6 +902,129 @@ const loadExamsForCourse = async (nextCourseId) => {
           </div>
         </div>
       </section>
+
+      {reissueTicket && (
+      <div className="ht-modal-overlay">
+        <div className="ht-reissue-modal">
+          <div className="ht-modal-header">
+            <div>
+              <h2>Reissue Hall Ticket</h2>
+              <p>
+                Reschedule the missed examination for this student.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setReissueTicket(null)}
+              disabled={reissuing}
+            >
+              <FiX />
+            </button>
+          </div>
+
+          <div className="ht-reissue-student">
+            <strong>
+              {getFullName(reissueTicket.student_id)}
+            </strong>
+
+            <span>
+              Roll No: {reissueTicket.student_id?.rollNo || "—"}
+            </span>
+
+            <span>
+              Previous Ticket: {reissueTicket.hallTicketNo}
+            </span>
+          </div>
+
+          <form onSubmit={handleReissueSubmit}>
+            <div className="hall-ticket-form-grid">
+              <label className="hall-ticket-field">
+                New Exam Date *
+                <input
+                  type="date"
+                  value={reissueDate}
+                  onChange={(e) => setReissueDate(e.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="hall-ticket-field">
+                Start Time *
+                <input
+                  type="time"
+                  value={reissueStartTime}
+                  onChange={(e) =>
+                    setReissueStartTime(e.target.value)
+                  }
+                  required
+                />
+              </label>
+
+              <label className="hall-ticket-field">
+                End Time *
+                <input
+                  type="time"
+                  value={reissueEndTime}
+                  onChange={(e) =>
+                    setReissueEndTime(e.target.value)
+                  }
+                  required
+                />
+              </label>
+
+              <label className="hall-ticket-field">
+                Reporting Time *
+                <input
+                  type="time"
+                  value={reissueReportingTime}
+                  onChange={(e) =>
+                    setReissueReportingTime(e.target.value)
+                  }
+                  required
+                />
+              </label>
+
+              <label className="hall-ticket-field hall-ticket-field-wide">
+                Reason for Reissue *
+                <textarea
+                  value={reissueReason}
+                  onChange={(e) =>
+                    setReissueReason(e.target.value)
+                  }
+                  placeholder="Example: Student missed the scheduled examination."
+                  minLength={5}
+                  maxLength={1000}
+                  required
+                  rows={3}
+                />
+              </label>
+            </div>
+
+            <div className="ht-modal-footer">
+              <button
+                type="button"
+                className="hall-ticket-secondary-btn"
+                onClick={() => setReissueTicket(null)}
+                disabled={reissuing}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="hall-ticket-primary-btn"
+                disabled={reissuing}
+              >
+                <FiRefreshCw />
+                {reissuing ? "Reissuing..." : "Confirm Reissue"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+    
     </main>
   );
 }
