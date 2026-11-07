@@ -128,6 +128,12 @@ const menuItems = [
   },
 
   {
+    label: "Expenses",
+    path: "/admin/expenses",
+    icon: FiDollarSign,
+  },
+
+  {
     label: "HelpDesk & Support",
     path: "/admin/support",
     icon: FiHelpCircle,
@@ -137,12 +143,10 @@ const menuItems = [
     label: "Fees Management",
     icon: FiDollarSign,
     children: [
-      {
-        label: "Expenses",
-        path: "/admin/expenses",
-      },
-     
-      
+      // {
+      //   label: "Expenses",
+      //   path: "/admin/expenses",
+      // },
      
       {
         label: "Add Fee Payment",
