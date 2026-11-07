@@ -1,27 +1,43 @@
+
 import api from "./api";
 
 export const getHallTickets = (params = {}) =>
-  api.get("/hall-tickets", { params });
+  api.get("/hall-tickets", {
+    params,
+    silent: true,
+  });
 
 export const getEligibleHallTicketStudents = (courseId) =>
   api.get("/hall-tickets/eligible-students", {
     params: { course_id: courseId },
+    silent: true,
   });
 
 export const generateHallTickets = (payload) =>
-  api.post("/hall-tickets/generate", payload);
+  api.post("/hall-tickets/generate", payload, {
+    silent: true,
+  });
 
 export const cancelHallTicket = (id) => {
-  if (!id) throw new Error("Hall ticket ID is required.");
+  if (!id) {
+    throw new Error("Hall ticket ID is required.");
+  }
 
-  return api.patch(`/hall-tickets/${id}/cancel`);
+  return api.patch(`/hall-tickets/${id}/cancel`, {}, {
+    silent: true,
+  });
 };
 
 export const rescheduleMissedHallTicket = (id, payload) => {
-  if (!id) throw new Error("Hall ticket ID is required.");
+  if (!id) {
+    throw new Error("Hall ticket ID is required.");
+  }
 
   return api.patch(
     `/hall-tickets/${id}/reschedule-missed`,
-    payload
+    payload,
+    {
+      silent: true,
+    }
   );
 };
