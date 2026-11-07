@@ -75,54 +75,73 @@ const CourseForm = ({
   const [categoriesError, setCategoriesError] = useState("");
 
 
-  useEffect(() => {
-    let cancelled = false;
+useEffect(() => {
+  let cancelled = false;
 
-    const loadCategories = async () => {
-      setCategoriesLoading(true);
-      setCategoriesError("");
+  const loadCategories = async () => {
+    setCategoriesLoading(true);
+    setCategoriesError("");
 
-      try {
+    try {
+      const firstResponse = await getCategories({
+        status: "Active",
+        page: 1,
+        limit: 100,
+        sortBy: "categoryName",
+        sortOrder: "asc",
+      });
+
+      const firstPayload = firstResponse?.data?.data;
+      const firstPage = Array.isArray(firstPayload?.categories)
+        ? firstPayload.categories
+        : [];
+
+      const totalPages = Math.max(
+        Number(firstPayload?.pagination?.totalPages) || 1,
+        1
+      );
+
+      const allCategories = [...firstPage];
+
+      for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
         const response = await getCategories({
           status: "Active",
+          page: currentPage,
           limit: 100,
           sortBy: "categoryName",
           sortOrder: "asc",
         });
 
-        const payload = response?.data;
+        const pageCategories = response?.data?.data?.categories;
 
-        // Category API returns:
-        // { success: true, data: { categories: [], pagination: {} } }
-        const categories = Array.isArray(payload?.data?.categories)
-          ? payload.data.categories
-          : Array.isArray(payload?.data)
-            ? payload.data
-            : [];
-
-        if (!cancelled) {
-          setAvailableCategories(categories);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setCategoriesError(
-            error?.response?.data?.message ||
-              "Unable to load course categories. Please try again."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setCategoriesLoading(false);
+        if (Array.isArray(pageCategories)) {
+          allCategories.push(...pageCategories);
         }
       }
-    };
 
-    loadCategories();
+      if (!cancelled) {
+        setAvailableCategories(allCategories);
+      }
+    } catch (error) {
+      if (!cancelled) {
+        setCategoriesError(
+          error?.response?.data?.message ||
+            "Unable to load course categories. Please try again."
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setCategoriesLoading(false);
+      }
+    }
+  };
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  loadCategories();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
 
   const toggleSubject = (subjectId) => {
@@ -156,49 +175,73 @@ const CourseForm = ({
     });
 
 
-  useEffect(() => {
-    let cancelled = false;
+useEffect(() => {
+  let cancelled = false;
 
-    const loadSubjects = async () => {
-      setSubjectsLoading(true);
-      setSubjectsError("");
+  const loadSubjects = async () => {
+    setSubjectsLoading(true);
+    setSubjectsError("");
 
-      try {
+    try {
+      const firstResponse = await getSubjects({
+        status: "Active",
+        page: 1,
+        limit: 100,
+        sortBy: "subjectName",
+        order: "asc",
+      });
+
+      const firstPayload = firstResponse?.data;
+      const firstPage = Array.isArray(firstPayload?.data)
+        ? firstPayload.data
+        : [];
+
+      const totalPages = Math.max(
+        Number(firstPayload?.pagination?.totalPages) || 1,
+        1
+      );
+
+      const allSubjects = [...firstPage];
+
+      for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
         const response = await getSubjects({
           status: "Active",
+          page: currentPage,
           limit: 100,
           sortBy: "subjectName",
           order: "asc",
         });
 
-        const payload = response?.data;
-        const list = Array.isArray(payload?.data)
-          ? payload.data
-          : Array.isArray(payload)
-            ? payload
-            : [];
+        const pageSubjects = response?.data?.data;
 
-        if (!cancelled) {
-          setAvailableSubjects(list);
+        if (Array.isArray(pageSubjects)) {
+          allSubjects.push(...pageSubjects);
         }
-      } catch (error) {
-        if (!cancelled) {
-          setSubjectsError(
-            error?.response?.data?.message ||
-              "Unable to load subjects. Please refresh and try again."
-          );
-        }
-      } finally {
-        if (!cancelled) setSubjectsLoading(false);
       }
-    };
 
-    loadSubjects();
+      if (!cancelled) {
+        setAvailableSubjects(allSubjects);
+      }
+    } catch (error) {
+      if (!cancelled) {
+        setSubjectsError(
+          error?.response?.data?.message ||
+            "Unable to load subjects. Please refresh and try again."
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setSubjectsLoading(false);
+      }
+    }
+  };
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  loadSubjects();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   useEffect(() => {
     // ADD COURSE

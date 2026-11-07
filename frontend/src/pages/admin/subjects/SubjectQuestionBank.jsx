@@ -8,6 +8,9 @@ import {
 
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -110,7 +113,7 @@ export default function SubjectQuestionBank() {
   const [excelFileName, setExcelFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  // const [notice, setNotice] = useState("");
   const [importReport, setImportReport] = useState(null);
 
   const formSectionRef = useRef(null);
@@ -190,7 +193,7 @@ export default function SubjectQuestionBank() {
     }));
 
     setError("");
-    setNotice("");
+    // setNotice("");
   };
 
   const startNewQuestion = () => {
@@ -201,7 +204,7 @@ export default function SubjectQuestionBank() {
     setEditingId("");
     setShowForm(true);
     setError("");
-    setNotice("");
+    // setNotice("");
   };
 
   const startEdit = (question) => {
@@ -220,16 +223,16 @@ export default function SubjectQuestionBank() {
     setEditingId(question._id);
     setShowForm(true);
     setError("");
-    setNotice("");
+    // setNotice("");
   };
 
   const handleSave = async (event) => {
+    event.preventDefault();
+
     if (!canManageQuestionBank) {
-      setError("You do not have permission to manage MCQs.");
+      notification.error("You do not have permission to manage MCQs.");
       return;
     }
-
-    event.preventDefault();
 
     const payload = {
       questionText: form.questionText.trim(),
@@ -247,26 +250,27 @@ export default function SubjectQuestionBank() {
       !payload.optionC ||
       !payload.optionD
     ) {
-      setError("Please fill in the question and all four options.");
+      notification.warning(
+        "Please fill in the question and all four options."
+      );
       return;
     }
 
     if (!["A", "B", "C", "D"].includes(payload.correctAnswer)) {
-      setError("Please select the correct answer.");
+      notification.warning("Please select the correct answer.");
       return;
     }
 
     try {
       setSaving(true);
       setError("");
-      setNotice("");
 
       if (editingId) {
         await updateSubjectQuestion(subjectId, editingId, payload);
-        setNotice("MCQ updated successfully.");
+        notification.success("MCQ updated successfully.");
       } else {
         await addSubjectQuestion(subjectId, payload);
-        setNotice("MCQ added successfully.");
+        notification.success("MCQ added successfully.");
       }
 
       setShowForm(false);
@@ -274,8 +278,8 @@ export default function SubjectQuestionBank() {
       setForm({ ...EMPTY_FORM });
 
       await loadData();
-    } catch (err) {
-      setError(messageFrom(err, "Unable to save the MCQ."));
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -283,27 +287,24 @@ export default function SubjectQuestionBank() {
 
   const handleDelete = async (question) => {
     if (!canManageQuestionBank) {
-      setError("You do not have permission to manage MCQs.");
+      notification.error("You do not have permission to manage MCQs.");
       return;
     }
 
-    if (!window.confirm("Delete this MCQ permanently?")) {
-      return;
-    }
+    const confirmed = await notification.confirmDelete("this MCQ");
+
+    if (!confirmed) return;
 
     try {
-      setError("");
-      setNotice("");
-
       await deleteSubjectQuestion(subjectId, question._id);
 
       setQuestions((previous) =>
         previous.filter((item) => item._id !== question._id)
       );
 
-      setNotice("MCQ deleted successfully.");
-    } catch (err) {
-      setError(messageFrom(err, "Unable to delete the MCQ."));
+      notification.success("MCQ deleted successfully.");
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     }
   };
 
@@ -346,7 +347,7 @@ export default function SubjectQuestionBank() {
 
     try {
       setError("");
-      setNotice("");
+      // setNotice("");
       setImportReport(null);
 
       const workbook = XLSX.read(await file.arrayBuffer(), {
@@ -393,18 +394,19 @@ export default function SubjectQuestionBank() {
   };
 
   const handleImport = async () => {
-
     if (!canManageQuestionBank) {
-      setError("You do not have permission to import MCQs.");
+      notification.error("You do not have permission to import MCQs.");
       return;
     }
-    
-    if (!excelRows.length) return;
+
+    if (!excelRows.length) {
+      notification.warning("Please select a valid Excel file first.");
+      return;
+    }
 
     try {
       setImporting(true);
       setError("");
-      setNotice("");
       setImportReport(null);
 
       const response = await importSubjectQuestions(
@@ -415,13 +417,20 @@ export default function SubjectQuestionBank() {
       const result = response?.data || {};
 
       setImportReport(result);
-      setNotice(result.message || "Excel import completed.");
 
       if (result.importedCount > 0) {
+        notification.success(
+          `Successfully imported ${result.importedCount} MCQ(s).`
+        );
+
         await loadData();
       }
 
       if (result.rejected?.length > 0) {
+        notification.warning(
+          `${result.rejected.length} row(s) were rejected. Review the rejected rows below.`
+        );
+
         const rejectedRows = new Set(
           result.rejected.map((item) => item.row)
         );
@@ -434,9 +443,13 @@ export default function SubjectQuestionBank() {
       } else {
         setExcelRows([]);
         setExcelFileName("");
+
+        if (!result.importedCount) {
+          notification.info("No MCQs were imported.");
+        }
       }
-    } catch (err) {
-      setError(messageFrom(err, "Excel import failed."));
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     } finally {
       setImporting(false);
     }
