@@ -1,7 +1,19 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
 import ExpenseForm from "../../../components/expenses/ExpenseForm";
-import { getExpense, updateExpense } from "../../../services/expenseService";
+import {
+  getExpense,
+  updateExpense,
+} from "../../../services/expenseService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/ExpenseManagement.css";
 
 const EditExpense = () => {
@@ -33,12 +45,14 @@ const EditExpense = () => {
         }
       } catch (err) {
         if (active) {
-          setError(
-            err?.response?.data?.message || "Unable to load expense."
-          );
+          const message = getApiErrorMessage(err);
+          setError(message);
+          notification.error(message);
         }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
@@ -55,28 +69,44 @@ const EditExpense = () => {
 
     try {
       await updateExpense(id, data);
-      navigate(`${basePath}/expenses`, { replace: true });
+
+      notification.success("Expense updated successfully.");
+
+      navigate(`${basePath}/expenses`, {
+        replace: true,
+      });
     } catch (err) {
-      const message =
-        err?.response?.data?.message || "Unable to update expense.";
+      const message = getApiErrorMessage(err);
 
       setError(message);
-      throw new Error(message);
+      throw err;
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="expense-state">Loading expense...</div>;
+    return (
+      <div className="expense-state">
+        Loading expense...
+      </div>
+    );
   }
 
   if (error && !expense) {
-    return <div className="expense-alert" role="alert">{error}</div>;
+    return (
+      <div className="expense-alert" role="alert">
+        {error}
+      </div>
+    );
   }
 
   if (!expense) {
-    return <div className="expense-empty">Expense not found.</div>;
+    return (
+      <div className="expense-empty">
+        Expense not found.
+      </div>
+    );
   }
 
   return (
@@ -88,7 +118,11 @@ const EditExpense = () => {
         </div>
       </div>
 
-      {error && <div className="expense-alert" role="alert">{error}</div>}
+      {error && (
+        <div className="expense-alert" role="alert">
+          {error}
+        </div>
+      )}
 
       <ExpenseForm
         initialData={expense}

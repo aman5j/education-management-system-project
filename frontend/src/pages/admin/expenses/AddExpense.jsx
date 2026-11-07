@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import ExpenseForm from "../../../components/expenses/ExpenseForm";
 import { createExpense } from "../../../services/expenseService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/ExpenseManagement.css";
 
 const AddExpense = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
     : "/admin";
@@ -20,13 +26,17 @@ const AddExpense = () => {
 
     try {
       await createExpense(data);
-      navigate(`${basePath}/expenses`, { replace: true });
+
+      notification.success("Expense created successfully.");
+
+      navigate(`${basePath}/expenses`, {
+        replace: true,
+      });
     } catch (err) {
-      const message =
-        err?.response?.data?.message || "Unable to create expense.";
+      const message = getApiErrorMessage(err);
 
       setError(message);
-      throw new Error(message);
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -41,7 +51,11 @@ const AddExpense = () => {
         </div>
       </div>
 
-      {error && <div className="expense-alert" role="alert">{error}</div>}
+      {error && (
+        <div className="expense-alert" role="alert">
+          {error}
+        </div>
+      )}
 
       <ExpenseForm
         onSubmit={handleSubmit}

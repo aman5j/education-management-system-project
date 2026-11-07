@@ -1,17 +1,42 @@
-
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { FiArrowLeft, FiSave, FiUpload, FiX } from "react-icons/fi";
+import {
+  Link,
+  useLocation,
+} from "react-router-dom";
+import {
+  FiArrowLeft,
+  FiSave,
+  FiUpload,
+  FiX,
+} from "react-icons/fi";
+
 import { uploadExpenseReceipt } from "../../services/expenseService";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
 
 const CATEGORIES = [
-  "Rent", "Salary", "Electricity", "Internet", "Stationery",
-  "Equipment", "Maintenance", "Marketing", "Travel",
-  "Software", "Utilities", "Other",
+  "Rent",
+  "Salary",
+  "Electricity",
+  "Internet",
+  "Stationery",
+  "Equipment",
+  "Maintenance",
+  "Marketing",
+  "Travel",
+  "Software",
+  "Utilities",
+  "Other",
 ];
 
 const PAYMENT_METHODS = [
-  "Cash", "UPI", "Card", "Bank Transfer", "Cheque", "Other",
+  "Cash",
+  "UPI",
+  "Card",
+  "Bank Transfer",
+  "Cheque",
+  "Other",
 ];
 
 const EMPTY_FORM = {
@@ -27,6 +52,7 @@ const EMPTY_FORM = {
 };
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
@@ -40,6 +66,12 @@ const ExpenseForm = ({
   submitting = false,
   submitLabel = "Save Expense",
 }) => {
+  const location = useLocation();
+
+  const basePath = location.pathname.startsWith("/staff")
+    ? "/staff"
+    : "/admin";
+
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [receiptFile, setReceiptFile] = useState(null);
@@ -48,9 +80,13 @@ const ExpenseForm = ({
 
   useEffect(() => {
     if (!initialData) {
-      setForm(EMPTY_FORM);
+      setForm({
+        ...EMPTY_FORM,
+        expenseDate: new Date().toLocaleDateString("en-CA"),
+      });
       setReceiptFile(null);
       setReceiptPreview("");
+      setError("");
       return;
     }
 
@@ -59,9 +95,10 @@ const ExpenseForm = ({
       category: initialData.category || "Other",
       amount: String(initialData.amount ?? ""),
       expenseDate: initialData.expenseDate
-        ? new Date(initialData.expenseDate).toLocaleDateString("en-CA", {
-            timeZone: "UTC",
-          })
+        ? new Date(initialData.expenseDate).toLocaleDateString(
+            "en-CA",
+            { timeZone: "UTC" }
+          )
         : EMPTY_FORM.expenseDate,
       paymentMethod: initialData.paymentMethod || "Cash",
       vendor: initialData.vendor || "",
@@ -72,39 +109,56 @@ const ExpenseForm = ({
 
     setReceiptFile(null);
     setReceiptPreview("");
+    setError("");
   }, [initialData]);
 
   useEffect(() => {
     if (!receiptFile || receiptFile.type === "application/pdf") {
       setReceiptPreview("");
-      return;
+      return undefined;
     }
 
-    const url = URL.createObjectURL(receiptFile);
-    setReceiptPreview(url);
+    const objectUrl = URL.createObjectURL(receiptFile);
+    setReceiptPreview(objectUrl);
 
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
   }, [receiptFile]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    if (error) setError("");
   };
 
   const handleReceiptChange = (event) => {
     const file = event.target.files?.[0];
+
     setError("");
 
     if (!file) return;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Choose a JPG, PNG, WEBP, or PDF receipt.");
+      const message =
+        "Choose a JPG, PNG, WEBP, or PDF receipt.";
+
+      setError(message);
+      notification.warning(message);
       event.target.value = "";
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("Receipt size must not exceed 5 MB.");
+      const message = "Receipt size must not exceed 5 MB.";
+
+      setError(message);
+      notification.warning(message);
       event.target.value = "";
       return;
     }
@@ -115,10 +169,17 @@ const ExpenseForm = ({
   const removeReceipt = () => {
     setReceiptFile(null);
     setReceiptPreview("");
-    setForm((previous) => ({ ...previous, receiptUrl: "" }));
+
+    setForm((previous) => ({
+      ...previous,
+      receiptUrl: "",
+    }));
 
     const input = document.getElementById("expense-receipt");
-    if (input) input.value = "";
+
+    if (input) {
+      input.value = "";
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -126,18 +187,27 @@ const ExpenseForm = ({
     setError("");
 
     if (!form.title.trim()) {
-      setError("Please enter an expense title.");
+      const message = "Please enter an expense title.";
+      setError(message);
+      notification.warning(message);
       return;
     }
 
-    if (!form.amount || !Number.isFinite(Number(form.amount)) ||
-        Number(form.amount) <= 0) {
-      setError("Enter an amount greater than zero.");
+    if (
+      !form.amount ||
+      !Number.isFinite(Number(form.amount)) ||
+      Number(form.amount) <= 0
+    ) {
+      const message = "Enter an amount greater than zero.";
+      setError(message);
+      notification.warning(message);
       return;
     }
 
     if (!form.expenseDate) {
-      setError("Please select the expense date.");
+      const message = "Please select the expense date.";
+      setError(message);
+      notification.warning(message);
       return;
     }
 
@@ -147,11 +217,16 @@ const ExpenseForm = ({
       if (receiptFile) {
         setUploading(true);
 
-        const uploadResponse = await uploadExpenseReceipt(receiptFile);
-        receiptUrl = uploadResponse?.data?.data?.receiptUrl;
+        const uploadResponse =
+          await uploadExpenseReceipt(receiptFile);
+
+        receiptUrl =
+          uploadResponse?.data?.data?.receiptUrl;
 
         if (!receiptUrl) {
-          throw new Error("The server did not return the uploaded receipt.");
+          throw new Error(
+            "The server did not return the uploaded receipt."
+          );
         }
       }
 
@@ -164,11 +239,10 @@ const ExpenseForm = ({
         receiptUrl,
       });
     } catch (submitError) {
-      setError(
-        submitError?.response?.data?.message ||
-          submitError.message ||
-          "Unable to save expense."
-      );
+      const message = getApiErrorMessage(submitError);
+
+      setError(message);
+      notification.error(message);
     } finally {
       setUploading(false);
     }
@@ -181,12 +255,17 @@ const ExpenseForm = ({
   const receiptLink = form.receiptUrl
     ? /^https?:\/\//i.test(form.receiptUrl)
       ? form.receiptUrl
-      : `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}`
-          .replace(/\/api\/?$/, "") + form.receiptUrl
+      : `${
+          import.meta.env.VITE_API_URL ||
+          "http://localhost:5000/api"
+        }`.replace(/\/api\/?$/, "") + form.receiptUrl
     : "";
 
   return (
-    <form className="expense-form" onSubmit={handleSubmit}>
+    <form
+      className="expense-form"
+      onSubmit={handleSubmit}
+    >
       <div className="expense-form-heading">
         <div>
           <h2>Expense Information</h2>
@@ -194,7 +273,11 @@ const ExpenseForm = ({
         </div>
       </div>
 
-      {error && <div className="expense-alert">{error}</div>}
+      {error && (
+        <div className="expense-alert" role="alert">
+          {error}
+        </div>
+      )}
 
       <div className="expense-form-grid">
         <label>
@@ -211,40 +294,69 @@ const ExpenseForm = ({
 
         <label>
           Category <span>*</span>
-          <select name="category" value={form.category}
-            onChange={handleChange} required>
+          <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            required
+          >
             {CATEGORIES.map((item) => (
-              <option key={item} value={item}>{item}</option>
+              <option key={item} value={item}>
+                {item}
+              </option>
             ))}
           </select>
         </label>
 
         <label>
           Amount (₹) <span>*</span>
-          <input name="amount" type="number" min="0.01"
-            max="999999999" step="0.01" value={form.amount}
-            onChange={handleChange} placeholder="0.00" required />
+          <input
+            name="amount"
+            type="number"
+            min="0.01"
+            max="999999999"
+            step="0.01"
+            value={form.amount}
+            onChange={handleChange}
+            placeholder="0.00"
+            required
+          />
         </label>
 
         <label>
           Expense Date <span>*</span>
-          <input name="expenseDate" type="date"
-            value={form.expenseDate} onChange={handleChange} required />
+          <input
+            name="expenseDate"
+            type="date"
+            value={form.expenseDate}
+            onChange={handleChange}
+            required
+          />
         </label>
 
         <label>
           Payment Method <span>*</span>
-          <select name="paymentMethod" value={form.paymentMethod}
-            onChange={handleChange} required>
+          <select
+            name="paymentMethod"
+            value={form.paymentMethod}
+            onChange={handleChange}
+            required
+          >
             {PAYMENT_METHODS.map((item) => (
-              <option key={item} value={item}>{item}</option>
+              <option key={item} value={item}>
+                {item}
+              </option>
             ))}
           </select>
         </label>
 
         <label>
           Status
-          <select name="status" value={form.status} onChange={handleChange}>
+          <select
+            name="status"
+            value={form.status}
+            onChange={handleChange}
+          >
             <option value="Paid">Paid</option>
             <option value="Pending">Pending</option>
           </select>
@@ -252,8 +364,13 @@ const ExpenseForm = ({
 
         <label>
           Vendor / Paid To
-          <input name="vendor" value={form.vendor} onChange={handleChange}
-            maxLength={150} placeholder="Vendor or recipient name" />
+          <input
+            name="vendor"
+            value={form.vendor}
+            onChange={handleChange}
+            maxLength={150}
+            placeholder="Vendor or recipient name"
+          />
         </label>
 
         <div className="expense-full-width expense-receipt-field">
@@ -261,28 +378,52 @@ const ExpenseForm = ({
             Upload Receipt / Bill
           </label>
 
-          <label className="expense-upload-box" htmlFor="expense-receipt">
+          <label
+            className="expense-upload-box"
+            htmlFor="expense-receipt"
+          >
             <FiUpload size={22} />
-            <strong>{receiptFile ? receiptFile.name : "Choose a receipt file"}</strong>
-            <span>JPG, PNG, WEBP or PDF · Maximum 5 MB</span>
+
+            <strong>
+              {receiptFile
+                ? receiptFile.name
+                : "Choose a receipt file"}
+            </strong>
+
+            <span>
+              JPG, PNG, WEBP or PDF · Maximum 5 MB
+            </span>
+
             <input
               id="expense-receipt"
               type="file"
               accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
               onChange={handleReceiptChange}
+              disabled={uploading || submitting}
             />
           </label>
 
           {receiptFile && (
             <div className="expense-receipt-preview">
               {receiptPreview && (
-                <img src={receiptPreview} alt="Receipt preview" />
+                <img
+                  src={receiptPreview}
+                  alt="Receipt preview"
+                />
               )}
+
               {receiptFile.type === "application/pdf" && (
-                <span>PDF receipt selected: {receiptFile.name}</span>
+                <span>
+                  PDF receipt selected: {receiptFile.name}
+                </span>
               )}
-              <button type="button" onClick={removeReceipt}
-                className="expense-remove-receipt">
+
+              <button
+                type="button"
+                onClick={removeReceipt}
+                className="expense-remove-receipt"
+                disabled={uploading || submitting}
+              >
                 <FiX /> Remove selected file
               </button>
             </div>
@@ -291,16 +432,29 @@ const ExpenseForm = ({
           {!receiptFile && form.receiptUrl && (
             <div className="expense-receipt-preview">
               {receiptIsPdf ? (
-                <a href={receiptLink} target="_blank" rel="noreferrer">
+                <a
+                  href={receiptLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   View existing receipt PDF
                 </a>
               ) : (
-                <a href={receiptLink} target="_blank" rel="noreferrer">
+                <a
+                  href={receiptLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   View existing receipt
                 </a>
               )}
-              <button type="button" onClick={removeReceipt}
-                className="expense-remove-receipt">
+
+              <button
+                type="button"
+                onClick={removeReceipt}
+                className="expense-remove-receipt"
+                disabled={uploading || submitting}
+              >
                 <FiX /> Remove receipt
               </button>
             </div>
@@ -309,22 +463,37 @@ const ExpenseForm = ({
 
         <label className="expense-full-width">
           Description / Notes
-          <textarea name="description" value={form.description}
-            onChange={handleChange} rows={4} maxLength={1000}
-            placeholder="Additional expense details..." />
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            rows={4}
+            maxLength={1000}
+            placeholder="Additional expense details..."
+          />
         </label>
       </div>
 
       <div className="expense-form-actions">
-        <Link to="/admin/expenses" className="expense-secondary-button">
+        <Link
+          to={`${basePath}/expenses`}
+          className="expense-secondary-button"
+        >
           <FiArrowLeft /> Cancel
         </Link>
 
-        <button className="expense-primary-button" type="submit"
-          disabled={submitting || uploading}>
+        <button
+          className="expense-primary-button"
+          type="submit"
+          disabled={submitting || uploading}
+        >
           <FiSave />
-          {uploading ? "Uploading receipt..." :
-            submitting ? "Saving..." : submitLabel}
+
+          {uploading
+            ? "Uploading receipt..."
+            : submitting
+              ? "Saving..."
+              : submitLabel}
         </button>
       </div>
     </form>

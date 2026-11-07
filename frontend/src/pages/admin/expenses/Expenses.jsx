@@ -1,5 +1,3 @@
-
-
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -14,7 +12,6 @@ import {
   FiFileText,
 } from "react-icons/fi";
 
-
 import {
   getExpenses,
   getExpenseSummary,
@@ -23,6 +20,10 @@ import {
 
 import { useAuth } from "../../../context/AuthContext";
 import { hasPermission } from "../../../utils/permissions";
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/ExpenseManagement.css";
 
@@ -33,9 +34,27 @@ const money = (value) =>
   })}`;
 
 const CATEGORIES = [
-  "Rent", "Salary", "Electricity", "Internet",
-  "Stationery", "Equipment", "Maintenance",
-  "Marketing", "Travel", "Software", "Utilities", "Other",
+  "Rent",
+  "Salary",
+  "Electricity",
+  "Internet",
+  "Stationery",
+  "Equipment",
+  "Maintenance",
+  "Marketing",
+  "Travel",
+  "Software",
+  "Utilities",
+  "Other",
+];
+
+const PAYMENT_METHODS = [
+  "Cash",
+  "UPI",
+  "Card",
+  "Bank Transfer",
+  "Cheque",
+  "Other",
 ];
 
 const getReceiptUrl = (receiptUrl) => {
@@ -45,27 +64,32 @@ const getReceiptUrl = (receiptUrl) => {
     return receiptUrl;
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const apiUrl =
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
   const serverUrl = apiUrl.replace(/\/api\/?$/, "");
 
   return `${serverUrl}${receiptUrl.startsWith("/") ? "" : "/"}${receiptUrl}`;
 };
 
-
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [pagination, setPagination] = useState({
-    page: 1, total: 0, totalPages: 1,
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
   });
 
   const location = useLocation();
@@ -79,53 +103,88 @@ const Expenses = () => {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    setError("");
 
-    const params = {
+    const filters = {
       search: search.trim(),
       category,
       status,
       paymentMethod,
       from,
       to,
+    };
+
+    const params = {
+      ...filters,
       page,
-      limit: 10,
+      limit,
     };
 
     Object.keys(params).forEach((key) => {
       if (params[key] === "") delete params[key];
     });
 
+    const summaryParams = { ...filters };
+    Object.keys(summaryParams).forEach((key) => {
+      if (summaryParams[key] === "") delete summaryParams[key];
+    });
+
     try {
       const [listResponse, summaryResponse] = await Promise.all([
         getExpenses(params),
-        getExpenseSummary({
-          search: search.trim(),
-          category,
-          status,
-          paymentMethod,
-          from,
-          to,
-        }),
+        getExpenseSummary(summaryParams),
       ]);
 
       const data = listResponse?.data?.data;
-      setExpenses(Array.isArray(data?.expenses) ? data.expenses : []);
-      setPagination(data?.pagination || {
-        page: 1, total: 0, totalPages: 1,
-      });
-      setSummary(summaryResponse?.data?.data || null);
-    } catch (err) {
-      setError(
-        err?.response?.data?.message || "Unable to load expenses."
+      const nextPagination = data?.pagination || {
+        page: 1,
+        limit,
+        total: 0,
+        totalPages: 0,
+      };
+
+      setExpenses(
+        Array.isArray(data?.expenses) ? data.expenses : []
       );
+      setPagination(nextPagination);
+      setSummary(summaryResponse?.data?.data || null);
+
+      // If a record was deleted from the last page, move back
+      // to the last page that still contains records.
+      if (
+        nextPagination.totalPages > 0 &&
+        page > nextPagination.totalPages
+      ) {
+        setPage(nextPagination.totalPages);
+      }
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      setExpenses([]);
+      setSummary(null);
+      setPagination({
+        page: 1,
+        limit,
+        total: 0,
+        totalPages: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [search, category, status, paymentMethod, from, to, page]);
+  }, [
+    search,
+    category,
+    status,
+    paymentMethod,
+    from,
+    to,
+    page,
+    limit,
+  ]);
 
   useEffect(() => {
-    const timer = setTimeout(loadData, 300);
+    const timer = setTimeout(() => {
+      loadData();
+    }, 300);
+
     return () => clearTimeout(timer);
   }, [loadData]);
 
@@ -140,17 +199,20 @@ const Expenses = () => {
   };
 
   const handleDelete = async (expense) => {
-    if (!window.confirm(
-      `Delete "${expense.title}"? This action cannot be undone.`
-    )) return;
+    const confirmed = await notification.confirmDelete(
+      `"${expense.title}"`
+    );
+
+    if (!confirmed) return;
 
     try {
       await deleteExpense(expense._id);
+      notification.success("Expense deleted successfully.");
+
+      // Reload with the current filters and pagination.
       await loadData();
-    } catch (err) {
-      setError(
-        err?.response?.data?.message || "Unable to delete expense."
-      );
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     }
   };
 
@@ -163,15 +225,20 @@ const Expenses = () => {
         </div>
 
         {canManageExpenses && (
-        <Link to={`${basePath}/expenses/add`} className="expense-primary-button">
-          <FiPlus /> Add Expense
-        </Link>
+          <Link
+            to={`${basePath}/expenses/add`}
+            className="expense-primary-button"
+          >
+            <FiPlus /> Add Expense
+          </Link>
         )}
       </div>
 
       <div className="expense-summary-grid">
         <article className="expense-summary-card">
-          <span className="expense-summary-icon"><FiDollarSign /></span>
+          <span className="expense-summary-icon">
+            <FiDollarSign />
+          </span>
           <div>
             <p>Total Recorded Expenses</p>
             <h2>{money(summary?.overall?.totalAmount)}</h2>
@@ -180,7 +247,9 @@ const Expenses = () => {
         </article>
 
         <article className="expense-summary-card">
-          <span className="expense-summary-icon"><FiCalendar /></span>
+          <span className="expense-summary-icon">
+            <FiCalendar />
+          </span>
           <div>
             <p>This Month</p>
             <h2>{money(summary?.monthly?.totalAmount)}</h2>
@@ -189,7 +258,9 @@ const Expenses = () => {
         </article>
 
         <article className="expense-summary-card">
-          <span className="expense-summary-icon"><FiTrendingUp /></span>
+          <span className="expense-summary-icon">
+            <FiTrendingUp />
+          </span>
           <div>
             <p>This Year</p>
             <h2>{money(summary?.yearly?.totalAmount)}</h2>
@@ -197,8 +268,6 @@ const Expenses = () => {
           </div>
         </article>
       </div>
-
-      {error && <div className="expense-alert">{error}</div>}
 
       <section className="expense-card">
         <div className="expense-section-heading">
@@ -221,48 +290,77 @@ const Expenses = () => {
             />
           </div>
 
-          <select value={category} onChange={(event) => {
-            setCategory(event.target.value); setPage(1);
-          }}>
+          <select
+            value={category}
+            onChange={(event) => {
+              setCategory(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="">All Categories</option>
             {CATEGORIES.map((item) => (
-              <option key={item} value={item}>{item}</option>
+              <option key={item} value={item}>
+                {item}
+              </option>
             ))}
           </select>
 
-          <select value={status} onChange={(event) => {
-            setStatus(event.target.value); setPage(1);
-          }}>
+          <select
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="">All Statuses</option>
             <option value="Paid">Paid</option>
             <option value="Pending">Pending</option>
           </select>
 
-          <select value={paymentMethod} onChange={(event) => {
-            setPaymentMethod(event.target.value); setPage(1);
-          }}>
+          <select
+            value={paymentMethod}
+            onChange={(event) => {
+              setPaymentMethod(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="">All Payment Methods</option>
-            {["Cash", "UPI", "Card", "Bank Transfer", "Cheque", "Other"].map((item) => (
-              <option key={item} value={item}>{item}</option>
+            {PAYMENT_METHODS.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
             ))}
           </select>
 
           <label className="expense-date-filter">
             From
-            <input type="date" value={from} onChange={(event) => {
-              setFrom(event.target.value); setPage(1);
-            }} />
+            <input
+              type="date"
+              value={from}
+              onChange={(event) => {
+                setFrom(event.target.value);
+                setPage(1);
+              }}
+            />
           </label>
 
           <label className="expense-date-filter">
             To
-            <input type="date" value={to} onChange={(event) => {
-              setTo(event.target.value); setPage(1);
-            }} />
+            <input
+              type="date"
+              value={to}
+              onChange={(event) => {
+                setTo(event.target.value);
+                setPage(1);
+              }}
+            />
           </label>
 
-          <button type="button" className="expense-secondary-button"
-            onClick={resetFilters}>
+          <button
+            type="button"
+            className="expense-secondary-button"
+            onClick={resetFilters}
+          >
             <FiRefreshCw /> Reset
           </button>
         </div>
@@ -290,6 +388,7 @@ const Expenses = () => {
                   <th>Receipt / Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {expenses.map((expense) => (
                   <tr key={expense._id}>
@@ -301,66 +400,55 @@ const Expenses = () => {
                         </small>
                       )}
                     </td>
+
                     <td>{expense.category}</td>
+
                     <td>
                       {expense.expenseDate
-                        ? new Date(expense.expenseDate).toLocaleDateString("en-IN", {
+                        ? new Date(
+                            expense.expenseDate
+                          ).toLocaleDateString("en-IN", {
                             timeZone: "UTC",
                           })
                         : "—"}
                     </td>
+
                     <td>{expense.paymentMethod}</td>
                     <td>{expense.vendor || "—"}</td>
-                    <td><strong>{money(expense.amount)}</strong></td>
                     <td>
-                      <span className={`expense-status expense-status-${expense.status.toLowerCase()}`}>
-                        {expense.status}
+                      <strong>{money(expense.amount)}</strong>
+                    </td>
+
+                    <td>
+                      <span
+                        className={`expense-status expense-status-${(
+                          expense.status || ""
+                        ).toLowerCase()}`}
+                      >
+                        {expense.status || "—"}
                       </span>
                     </td>
-                    {/* <td>
-                  
-                     
 
-                      <div className="expense-actions">
-                        <Link
-                          to={`/admin/expenses/${expense._id}/edit`}
-                          title="Edit expense"
-                          aria-label="Edit expense"
-                        >
-                          <FiEdit2 />
-                        </Link>
-                        <button
-                          type="button"
-                          title="Delete expense"
-                          aria-label="Delete expense"
-                          onClick={() => handleDelete(expense)}
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </td> */}
-
-                    
                     <td>
-                    <div className="expense-actions">
+                      <div className="expense-actions">
                         {expense.receiptUrl ? (
-                        <a
+                          <a
                             href={getReceiptUrl(expense.receiptUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="View uploaded receipt"
                             aria-label={`View receipt for ${expense.title}`}
                             className="expense-receipt-action"
-                        >
+                          >
                             <FiFileText />
-                        </a>
+                          </a>
                         ) : (
-                        <span
+                          <span
                             className="expense-no-receipt"
                             title="No receipt uploaded"
-                        >
+                          >
                             No receipt
-                        </span>
+                          </span>
                         )}
 
                         {canManageExpenses && (
@@ -383,10 +471,8 @@ const Expenses = () => {
                             </button>
                           </>
                         )}
-
-                    </div>
+                      </div>
                     </td>
-
                   </tr>
                 ))}
               </tbody>
@@ -394,18 +480,21 @@ const Expenses = () => {
           </div>
         )}
 
-        {!loading && pagination.totalPages > 1 && (
-          <div className="expense-pagination">
-            <button disabled={page <= 1}
-              onClick={() => setPage((current) => current - 1)}>
-              Previous
-            </button>
-            <span>Page {page} of {pagination.totalPages}</span>
-            <button disabled={page >= pagination.totalPages}
-              onClick={() => setPage((current) => current + 1)}>
-              Next
-            </button>
-          </div>
+        {!loading && (
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            itemCount={expenses.length}
+            itemLabel="expenses"
+            limit={limit}
+            loading={loading}
+            onPageChange={setPage}
+            onLimitChange={(nextLimit) => {
+              setLimit(nextLimit);
+              setPage(1);
+            }}
+          />
         )}
       </section>
     </div>
