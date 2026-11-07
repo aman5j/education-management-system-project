@@ -17,17 +17,15 @@ import {
   reviewExamAccessRequest,
 } from "../../../services/examAccessService";
 
-import "../../../styles/ExamAccessRequests.css";
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
-const PAGE_SIZE = 10;
+import "../../../styles/ExamAccessRequests.css";
 
 const unwrap = (response) =>
   response?.data?.data ?? response?.data ?? response;
-
-const getErrorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Something went wrong. Please try again.";
 
 const fullName = (student) =>
   [student?.firstName, student?.surname]
@@ -81,20 +79,21 @@ function StatusBadge({ status }) {
 export default function ExamAccessRequests() {
   const [requests, setRequests] = useState([]);
   const [summary, setSummary] = useState({ pending: 0 });
+
   const [pagination, setPagination] = useState({
-    page: 1,
     total: 0,
     totalPages: 1,
   });
 
   const [status, setStatus] = useState("Pending");
   const [search, setSearch] = useState("");
+
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const [rejectingRequest, setRejectingRequest] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -107,7 +106,7 @@ export default function ExamAccessRequests() {
       const response = await getExamAccessRequests({
         status: status === "All" ? undefined : status,
         page,
-        limit: PAGE_SIZE,
+        limit,
       });
 
       const data = unwrap(response);
@@ -120,17 +119,18 @@ export default function ExamAccessRequests() {
 
       setPagination(
         data?.pagination || {
-          page,
           total: 0,
           totalPages: 1,
         }
       );
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getApiErrorMessage(err);
+      setError(message);
+      notification.error(message);
     } finally {
       setLoading(false);
     }
-  }, [page, status]);
+  }, [page, limit, status]);
 
   useEffect(() => {
     loadRequests();
@@ -166,20 +166,34 @@ export default function ExamAccessRequests() {
     setStatus(nextStatus);
     setPage(1);
     setSearch("");
-    setSuccess("");
     setError("");
   };
 
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
+  };
+
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+  };
+
   const handleApprove = async (request) => {
-    const confirmed = window.confirm(
-      `Approve exam access for ${fullName(request.student_id)}?`
-    );
+    const studentName = fullName(request.student_id);
+
+    const confirmed = await notification.confirm({
+      title: "Approve exam access?",
+      text: `Are you sure you want to approve exam access for ${studentName}?`,
+      icon: "question",
+      confirmText: "Yes, approve",
+      cancelText: "Cancel",
+      confirmButtonColor: "#059669",
+    });
 
     if (!confirmed) return;
 
     setWorkingId(String(request._id));
     setError("");
-    setSuccess("");
 
     try {
       const response = await reviewExamAccessRequest(
@@ -189,13 +203,13 @@ export default function ExamAccessRequests() {
 
       const data = unwrap(response);
 
-      setSuccess(
+      notification.success(
         data?.message || "Exam access approved successfully."
       );
 
       await loadRequests();
     } catch (err) {
-      setError(getErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setWorkingId("");
     }
@@ -205,7 +219,6 @@ export default function ExamAccessRequests() {
     setRejectingRequest(request);
     setRejectionReason("");
     setError("");
-    setSuccess("");
   };
 
   const closeReject = () => {
@@ -213,6 +226,7 @@ export default function ExamAccessRequests() {
 
     setRejectingRequest(null);
     setRejectionReason("");
+    setError("");
   };
 
   const handleReject = async (event) => {
@@ -220,27 +234,41 @@ export default function ExamAccessRequests() {
 
     if (!rejectingRequest) return;
 
-    if (rejectionReason.trim().length < 5) {
+    const reason = rejectionReason.trim();
+
+    if (reason.length < 5) {
       setError("Enter a rejection reason of at least 5 characters.");
       return;
     }
 
+    const confirmed = await notification.confirm({
+      title: "Reject exam access request?",
+      text: `This will reject the request from ${fullName(
+        rejectingRequest.student_id
+      )}. The rejection reason will be visible to the student.`,
+      icon: "warning",
+      confirmText: "Yes, reject request",
+      cancelText: "Go back",
+      confirmButtonColor: "#dc2626",
+    });
+
+    if (!confirmed) return;
+
     setWorkingId(String(rejectingRequest._id));
     setError("");
-    setSuccess("");
 
     try {
       const response = await reviewExamAccessRequest(
         rejectingRequest._id,
         {
           status: "Rejected",
-          rejectionReason: rejectionReason.trim(),
+          rejectionReason: reason,
         }
       );
 
       const data = unwrap(response);
 
-      setSuccess(
+      notification.success(
         data?.message || "Exam access request rejected."
       );
 
@@ -249,7 +277,9 @@ export default function ExamAccessRequests() {
 
       await loadRequests();
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getApiErrorMessage(err);
+      setError(message);
+      notification.error(message);
     } finally {
       setWorkingId("");
     }
@@ -260,7 +290,9 @@ export default function ExamAccessRequests() {
       <header className="ear-header">
         <div>
           <span className="ear-eyebrow">EXAM MANAGEMENT</span>
+
           <h1>Exam Access Requests</h1>
+
           <p>
             Review student requests and approve or reject access
             before an exam attempt can begin.
@@ -278,17 +310,10 @@ export default function ExamAccessRequests() {
         </button>
       </header>
 
-      {error && (
+      {error && !rejectingRequest && (
         <div className="ear-alert ear-alert--error" role="alert">
           <FiAlertCircle />
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="ear-alert ear-alert--success" role="status">
-          <FiCheckCircle />
-          {success}
+          <span>{error}</span>
         </div>
       )}
 
@@ -297,6 +322,7 @@ export default function ExamAccessRequests() {
           <span className="ear-summary-icon ear-summary-icon--orange">
             <FiClock />
           </span>
+
           <div>
             <small>Pending requests</small>
             <strong>{summary.pending ?? 0}</strong>
@@ -307,6 +333,7 @@ export default function ExamAccessRequests() {
           <span className="ear-summary-icon">
             <FiShield />
           </span>
+
           <div>
             <small>Requests in this view</small>
             <strong>{pagination.total ?? 0}</strong>
@@ -323,8 +350,10 @@ export default function ExamAccessRequests() {
                 type="button"
                 className={status === item ? "is-active" : ""}
                 onClick={() => changeStatus(item)}
+                disabled={loading && status === item}
               >
                 {item}
+
                 {item === "Pending" && (
                   <span>{summary.pending ?? 0}</span>
                 )}
@@ -334,6 +363,7 @@ export default function ExamAccessRequests() {
 
           <label className="ear-search">
             <FiSearch />
+
             <input
               type="search"
               value={search}
@@ -351,7 +381,9 @@ export default function ExamAccessRequests() {
         ) : filteredRequests.length === 0 ? (
           <div className="ear-state">
             <FiShield />
-            <strong>No {status.toLowerCase()} requests found</strong>
+            <strong>
+              No {status.toLowerCase()} requests found
+            </strong>
             <p>
               Student exam access requests will appear here when
               students submit them.
@@ -387,7 +419,9 @@ export default function ExamAccessRequests() {
                       <td>
                         <div className="ear-student">
                           <strong>{fullName(student)}</strong>
-                          <span>Roll No: {student.rollNo || "—"}</span>
+                          <span>
+                            Roll No: {student.rollNo || "—"}
+                          </span>
                           <span>{student.email || "—"}</span>
                         </div>
                       </td>
@@ -397,6 +431,7 @@ export default function ExamAccessRequests() {
                           <strong>
                             {course.courseTitle || "Course unavailable"}
                           </strong>
+
                           <span>
                             {exam.totalQuestions ?? "—"} questions ·{" "}
                             {exam.totalMarks ?? "—"} marks
@@ -461,39 +496,17 @@ export default function ExamAccessRequests() {
           </div>
         )}
 
-        <footer className="ear-pagination">
-          <span>
-            Page {pagination.page || page} of{" "}
-            {Math.max(1, pagination.totalPages || 1)} ·{" "}
-            {pagination.total || 0} requests
-          </span>
-
-          <div>
-            <button
-              type="button"
-              className="ear-button ear-button--light"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-            >
-              Previous
-            </button>
-
-            <button
-              type="button"
-              className="ear-button ear-button--light"
-              disabled={
-                page >= (pagination.totalPages || 1) || loading
-              }
-              onClick={() =>
-                setPage((value) =>
-                  Math.min(pagination.totalPages || 1, value + 1)
-                )
-              }
-            >
-              Next
-            </button>
-          </div>
-        </footer>
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages || 1}
+          total={pagination.total || 0}
+          itemCount={requests.length}
+          itemLabel="requests"
+          limit={limit}
+          loading={loading}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+        />
       </section>
 
       {rejectingRequest && (
@@ -501,17 +514,22 @@ export default function ExamAccessRequests() {
           className="ear-modal-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeReject();
+            if (event.target === event.currentTarget) {
+              closeReject();
+            }
           }}
         >
           <form className="ear-modal" onSubmit={handleReject}>
             <div className="ear-modal-heading">
               <div>
                 <span className="ear-eyebrow">REVIEW REQUEST</span>
+
                 <h2>Reject exam access</h2>
+
                 <p>
                   {fullName(rejectingRequest.student_id)} ·{" "}
-                  {rejectingRequest.ticket_id?.hallTicketNo || "Hall ticket"}
+                  {rejectingRequest.ticket_id?.hallTicketNo ||
+                    "Hall ticket"}
                 </p>
               </div>
 
@@ -528,26 +546,29 @@ export default function ExamAccessRequests() {
 
             <label className="ear-field">
               Rejection reason
+
               <textarea
                 rows={4}
                 maxLength={500}
                 value={rejectionReason}
-                onChange={(event) =>
-                  setRejectionReason(event.target.value)
-                }
+                onChange={(event) => {
+                  setRejectionReason(event.target.value);
+                  setError("");
+                }}
                 placeholder="Explain why this request is being rejected..."
                 required
               />
+
               <small>
-                Minimum 5 characters. This reason will be visible to
-                the student.
+                Minimum 5 characters. This reason will be visible
+                to the student.
               </small>
             </label>
 
             {error && (
               <div className="ear-alert ear-alert--error">
                 <FiAlertCircle />
-                {error}
+                <span>{error}</span>
               </div>
             )}
 

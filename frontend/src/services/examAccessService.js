@@ -2,7 +2,10 @@
 import api from "./api";
 
 export const getExamAccessRequests = (params = {}) =>
-  api.get("/exam-access-requests", { params });
+  api.get("/exam-access-requests", {
+    params,
+    silent: true,
+  });
 
 export const reviewExamAccessRequest = (requestId, data) => {
   if (!requestId) {
@@ -11,6 +14,7 @@ export const reviewExamAccessRequest = (requestId, data) => {
 
   return api.patch(
     `/exam-access-requests/${requestId}/review`,
-    data
+    data,
+    { silent: true }
   );
 };
