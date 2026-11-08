@@ -565,6 +565,14 @@ export const rescheduleMissedHallTicket = async (req, res, next) => {
       );
     }
 
+    // if (ticket.status !== "Active") {
+    //   return fail(
+    //     res,
+    //     409,
+    //     "Only an active missed-exam hall ticket can be reissued."
+    //   );
+    // }
+
     ticket.reissueHistory.push({
       hallTicketNo: ticket.hallTicketNo,
       examDate: ticket.examDate,

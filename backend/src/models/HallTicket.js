@@ -71,6 +71,14 @@ const hallTicketSchema = new mongoose.Schema(
   }
 );
 
+// examResultSchema.index(
+//   { exam_id: 1, student_id: 1 },
+//   {
+//     unique: true,
+//     name: "unique_exam_result_per_student"
+//   }
+// );
+
 hallTicketSchema.index(
   { exam_id: 1, student_id: 1 },
   { 
