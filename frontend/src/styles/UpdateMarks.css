@@ -1214,3 +1214,38 @@
     font-size: 12px;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.um-pagination-summary {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 15px;
+  color: #718096;
+  font-size: 12px;
+}
+
+.um-pagination-summary strong {
+  color: #26364c;
+  font-weight: 750;
+}
+
+@media (max-width: 600px) {
+  .um-pagination-summary {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
