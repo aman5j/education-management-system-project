@@ -66,13 +66,22 @@ export const deletePracticeTest = (id) => {
 // };
 
 
+// =========================================================
+// ADMIN: PRACTICE ATTEMPTS & RESULTS
+// =========================================================
+
 export const getPracticeAttempts = (params = {}) =>
-  api.get(`${BASE_URL}/attempts`, { params });
+  api.get(`${BASE_URL}/attempts`, {
+    params,
+    silent: true,
+  });
 
 export const getPracticeAttempt = (id) => {
   if (!id) {
     throw new Error("Practice attempt ID is required.");
   }
 
-  return api.get(`${BASE_URL}/attempts/${id}`);
+  return api.get(`${BASE_URL}/attempts/${id}`, {
+    silent: true,
+  });
 };

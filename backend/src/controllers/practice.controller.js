@@ -548,47 +548,293 @@ export const adminDeletePracticeTest = async (req, res, next) => {
 // ADMIN: VIEW ALL ATTEMPTS
 // GET /api/practice/admin/attempts
 // =========================================================
+// export const adminGetPracticeAttempts = async (req, res, next) => {
+//   try {
+//     const filter = {};
+
+//     for (const key of ["test_id", "course_id", "subject_id", "student_id"]) {
+//       if (req.query[key]) {
+//         if (!validId(req.query[key])) {
+//           return fail(res, 400, `Invalid ${key}.`);
+//         }
+
+//         filter[
+//           key === "test_id"
+//             ? "practiceTest_id"
+//             : key
+//         ] = req.query[key];
+//       }
+//     }
+
+//     if (req.query.status) {
+//       if (!["In Progress", "Submitted", "Timed Out"].includes(req.query.status)) {
+//         return fail(res, 400, "Invalid attempt status.");
+//       }
+//       filter.status = req.query.status;
+//     }
+
+//     const attempts = await populateAttempt(
+//       PracticeAttempt.find(filter)
+//         .select("-questions.correctAnswer")
+//         .sort({ createdAt: -1 })
+//         .limit(500)
+//     ).lean();
+
+//     return res.json({
+//       success: true,
+//       data: attempts,
+//       total: attempts.length,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+
+// =========================================================
+// ADMIN: VIEW ALL PRACTICE ATTEMPTS
+// GET /api/practice/admin/attempts
+// Database pagination, search, filters and global statistics.
+// =========================================================
 export const adminGetPracticeAttempts = async (req, res, next) => {
   try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(
+      Math.max(Number(req.query.limit) || 10, 1),
+      100
+    );
+
     const filter = {};
 
-    for (const key of ["test_id", "course_id", "subject_id", "student_id"]) {
-      if (req.query[key]) {
-        if (!validId(req.query[key])) {
-          return fail(res, 400, `Invalid ${key}.`);
+    const filterFields = {
+      test_id: "practiceTest_id",
+      course_id: "course_id",
+      subject_id: "subject_id",
+      student_id: "student_id",
+    };
+
+    for (const [queryKey, fieldName] of Object.entries(filterFields)) {
+      const value = req.query[queryKey];
+
+      if (value) {
+        if (!validId(value)) {
+          return fail(res, 400, `Invalid ${queryKey}.`);
         }
 
-        filter[
-          key === "test_id"
-            ? "practiceTest_id"
-            : key
-        ] = req.query[key];
+        filter[fieldName] = value;
       }
     }
 
     if (req.query.status) {
-      if (!["In Progress", "Submitted", "Timed Out"].includes(req.query.status)) {
+      const allowedStatuses = [
+        "In Progress",
+        "Submitted",
+        "Timed Out",
+      ];
+
+      if (!allowedStatuses.includes(req.query.status)) {
         return fail(res, 400, "Invalid attempt status.");
       }
+
       filter.status = req.query.status;
     }
 
-    const attempts = await populateAttempt(
-      PracticeAttempt.find(filter)
-        .select("-questions.correctAnswer")
-        .sort({ createdAt: -1 })
-        .limit(500)
-    ).lean();
+    const search = String(req.query.search || "").trim();
+
+    if (search.length > 100) {
+      return fail(res, 400, "Search cannot exceed 100 characters.");
+    }
+
+    if (search) {
+      const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      const [
+        matchingTests,
+        matchingCourses,
+        matchingSubjects,
+        matchingStudents,
+      ] = await Promise.all([
+        PracticeTest.find({ title: searchRegex })
+          .select("_id")
+          .lean(),
+
+        Course.find({ courseTitle: searchRegex })
+          .select("_id")
+          .lean(),
+
+        Subject.find({ subjectName: searchRegex })
+          .select("_id")
+          .lean(),
+
+        Student.find({
+          $or: [
+            { firstName: searchRegex },
+            { surname: searchRegex },
+            { rollNo: searchRegex },
+          ],
+        })
+          .select("_id")
+          .lean(),
+      ]);
+
+      const searchConditions = [];
+
+      const testIds = matchingTests.map((item) => item._id);
+      const courseIds = matchingCourses.map((item) => item._id);
+      const subjectIds = matchingSubjects.map((item) => item._id);
+      const studentIds = matchingStudents.map((item) => item._id);
+
+      if (testIds.length) {
+        searchConditions.push({
+          practiceTest_id: { $in: testIds },
+        });
+      }
+
+      if (courseIds.length) {
+        searchConditions.push({
+          course_id: { $in: courseIds },
+        });
+      }
+
+      if (subjectIds.length) {
+        searchConditions.push({
+          subject_id: { $in: subjectIds },
+        });
+      }
+
+      if (studentIds.length) {
+        searchConditions.push({
+          student_id: { $in: studentIds },
+        });
+      }
+
+      // If nothing matches, force an empty result instead of
+      // accidentally returning every attempt.
+      filter.$or = searchConditions.length
+        ? searchConditions
+        : [{ _id: null }];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [
+      attempts,
+      total,
+      totalAttempts,
+      inProgress,
+      submitted,
+      timedOut,
+    ] = await Promise.all([
+      populateAttempt(
+        PracticeAttempt.find(filter)
+          .select("-questions.correctAnswer")
+          .sort({ createdAt: -1, _id: -1 })
+          .skip(skip)
+          .limit(limit)
+      ).lean(),
+
+      PracticeAttempt.countDocuments(filter),
+
+      PracticeAttempt.countDocuments({}),
+
+      PracticeAttempt.countDocuments({
+        status: "In Progress",
+      }),
+
+      PracticeAttempt.countDocuments({
+        status: "Submitted",
+      }),
+
+      PracticeAttempt.countDocuments({
+        status: "Timed Out",
+      }),
+    ]);
+
+    // Build filter dropdown options from all attempts, not just
+    // the current page or current search results.
+    const [
+      testIds,
+      courseIds,
+      subjectIds,
+      studentIds,
+    ] = await Promise.all([
+      PracticeAttempt.distinct("practiceTest_id"),
+      PracticeAttempt.distinct("course_id"),
+      PracticeAttempt.distinct("subject_id"),
+      PracticeAttempt.distinct("student_id"),
+    ]);
+
+    const [
+      tests,
+      courses,
+      subjects,
+      students,
+    ] = await Promise.all([
+      PracticeTest.find({
+        _id: { $in: testIds },
+      })
+        .select("_id title")
+        .sort({ title: 1 })
+        .lean(),
+
+      Course.find({
+        _id: { $in: courseIds },
+      })
+        .select("_id courseTitle")
+        .sort({ courseTitle: 1 })
+        .lean(),
+
+      Subject.find({
+        _id: { $in: subjectIds },
+      })
+        .select("_id subjectName")
+        .sort({ subjectName: 1 })
+        .lean(),
+
+      Student.find({
+        _id: { $in: studentIds },
+      })
+        .select("_id firstName surname rollNo")
+        .sort({ firstName: 1, surname: 1 })
+        .lean(),
+    ]);
 
     return res.json({
       success: true,
-      data: attempts,
-      total: attempts.length,
+      data: {
+        attempts,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+        stats: {
+          total: totalAttempts,
+          inProgress,
+          submitted,
+          timedOut,
+        },
+        filterOptions: {
+          tests,
+          courses,
+          subjects,
+          students,
+        },
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
+
 
 // =========================================================
 // ADMIN: VIEW ATTEMPT RESULT

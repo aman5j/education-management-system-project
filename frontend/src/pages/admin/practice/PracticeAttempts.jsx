@@ -1,43 +1,56 @@
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FiActivity,
   FiArrowLeft,
-  FiBookOpen,
   FiCheckCircle,
   FiClock,
   FiEye,
   FiFilter,
   FiRefreshCw,
   FiSearch,
-  FiTarget,
-  FiUsers,
   FiX,
   FiXCircle,
 } from "react-icons/fi";
 
-import { getPracticeAttempts, getPracticeAttempt } from "../../../services/practiceService";
+import {
+  getPracticeAttempts,
+  getPracticeAttempt,
+} from "../../../services/practiceService";
+
+import Pagination from "../../../components/common/Pagination";
+
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/PracticeAttempts.css";
 
-const PAGE_SIZE = 10;
+const DEFAULT_LIMIT = 10;
 
-const unwrap = (response) => response?.data ?? response;
-
-const getArray = (response) => {
-  const root = unwrap(response);
-  const data = root?.data ?? root;
-
-  return Array.isArray(data) ? data : [];
+const EMPTY_FILTERS = {
+  test_id: "",
+  course_id: "",
+  subject_id: "",
+  student_id: "",
+  status: "",
 };
 
-const getId = (value) =>
-  typeof value === "object" ? value?._id : value;
+const EMPTY_STATS = {
+  total: 0,
+  inProgress: 0,
+  submitted: 0,
+  timedOut: 0,
+};
+
+const unwrap = (response) => response?.data ?? response;
 
 const getStudentName = (student) => {
   if (!student) return "Unknown Student";
 
-  const name = [student.firstName, student.surname]
+  const name = [
+    student.firstName,
+    student.surname,
+  ]
     .filter(Boolean)
     .join(" ")
     .trim();
@@ -49,11 +62,6 @@ const getStatusClass = (status) =>
   `practice-attempt-status practice-attempt-${String(status || "")
     .toLowerCase()
     .replace(/\s+/g, "-")}`;
-
-const getErrorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Something went wrong. Please try again.";
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -82,9 +90,7 @@ const formatMarks = (value) => {
 const getOptionText = (question, option) => {
   if (!option) return "Not answered";
 
-  const key = `option${option}`;
-
-  return question?.[key] || option;
+  return question?.[`option${option}`] || option;
 };
 
 const getAnswerClass = (question) => {
@@ -97,166 +103,128 @@ const getAnswerClass = (question) => {
 
 export default function PracticeAttempts() {
   const [attempts, setAttempts] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const [search, setSearch] = useState("");
-
-  const [filters, setFilters] = useState({
-    test_id: "",
-    course_id: "",
-    subject_id: "",
-    student_id: "",
-    status: "",
+  const [filterOptions, setFilterOptions] = useState({
+    tests: [],
+    courses: [],
+    subjects: [],
+    students: [],
   });
 
+  const [stats, setStats] = useState(EMPTY_STATS);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: DEFAULT_LIMIT,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+
+  const [loading, setLoading] = useState(false);
 
   const [selectedAttempt, setSelectedAttempt] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  // Debounce server-side search to avoid one request per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 350);
 
-  const [detailError, setDetailError] = useState("");
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // ---------------------------------------------------------
+  // LOAD ATTEMPTS
+  // ---------------------------------------------------------
 
   const loadAttempts = useCallback(async () => {
     setLoading(true);
-    setError("");
 
     try {
-      const params = {};
+      const params = {
+        page,
+        limit,
+      };
+
+      if (search) {
+        params.search = search;
+      }
 
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params[key] = value;
+        if (value) {
+          params[key] = value;
+        }
       });
 
       const response = await getPracticeAttempts(params);
-      const data = getArray(response);
 
-      setAttempts(data);
-      setPage(1);
+      const root = unwrap(response);
+      const data = root?.data ?? root;
+
+      setAttempts(
+        Array.isArray(data?.attempts)
+          ? data.attempts
+          : []
+      );
+
+      setPagination({
+        page: Number(data?.pagination?.page) || page,
+        limit: Number(data?.pagination?.limit) || limit,
+        total: Number(data?.pagination?.total) || 0,
+        totalPages: Number(data?.pagination?.totalPages) || 0,
+      });
+
+      setStats({
+        total: Number(data?.stats?.total) || 0,
+        inProgress: Number(data?.stats?.inProgress) || 0,
+        submitted: Number(data?.stats?.submitted) || 0,
+        timedOut: Number(data?.stats?.timedOut) || 0,
+      });
+
+      setFilterOptions({
+        tests: Array.isArray(data?.filterOptions?.tests)
+          ? data.filterOptions.tests
+          : [],
+        courses: Array.isArray(data?.filterOptions?.courses)
+          ? data.filterOptions.courses
+          : [],
+        subjects: Array.isArray(data?.filterOptions?.subjects)
+          ? data.filterOptions.subjects
+          : [],
+        students: Array.isArray(data?.filterOptions?.students)
+          ? data.filterOptions.students
+          : [],
+      });
     } catch (err) {
-      setError(getErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
       setAttempts([]);
+      setPagination({
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [page, limit, search, filters]);
 
   useEffect(() => {
     loadAttempts();
   }, [loadAttempts]);
 
-  const stats = useMemo(() => {
-    const total = attempts.length;
-
-    const inProgress = attempts.filter(
-      (item) => item.status === "In Progress"
-    ).length;
-
-    const submitted = attempts.filter(
-      (item) => item.status === "Submitted"
-    ).length;
-
-    const timedOut = attempts.filter(
-      (item) => item.status === "Timed Out"
-    ).length;
-
-    return {
-      total,
-      inProgress,
-      submitted,
-      timedOut,
-    };
-  }, [attempts]);
-
-  const options = useMemo(() => {
-    const tests = new Map();
-    const courses = new Map();
-    const subjects = new Map();
-    const students = new Map();
-
-    attempts.forEach((attempt) => {
-      const test = attempt.practiceTest_id;
-      const course = attempt.course_id;
-      const subject = attempt.subject_id;
-      const student = attempt.student_id;
-
-      if (test?._id) {
-        tests.set(String(test._id), test.title || "Untitled Test");
-      }
-
-      if (course?._id) {
-        courses.set(
-          String(course._id),
-          course.courseTitle || "Unknown Course"
-        );
-      }
-
-      if (subject?._id) {
-        subjects.set(
-          String(subject._id),
-          subject.subjectName || "Unknown Subject"
-        );
-      }
-
-      if (student?._id) {
-        students.set(
-          String(student._id),
-          `${getStudentName(student)} (${student.rollNo || "No Roll No"})`
-        );
-      }
-    });
-
-    const toOptions = (map) =>
-      Array.from(map.entries())
-        .map(([value, label]) => ({ value, label }))
-        .sort((a, b) => a.label.localeCompare(b.label));
-
-    return {
-      tests: toOptions(tests),
-      courses: toOptions(courses),
-      subjects: toOptions(subjects),
-      students: toOptions(students),
-    };
-  }, [attempts]);
-
-  const filteredAttempts = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    if (!keyword) return attempts;
-
-    return attempts.filter((attempt) => {
-      const student = attempt.student_id;
-      const test = attempt.practiceTest_id;
-      const course = attempt.course_id;
-      const subject = attempt.subject_id;
-
-      const searchable = [
-        getStudentName(student),
-        student?.rollNo,
-        test?.title,
-        course?.courseTitle,
-        subject?.subjectName,
-        attempt.status,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(keyword);
-    });
-  }, [attempts, search]);
-
-  const totalPages = Math.max(
-    Math.ceil(filteredAttempts.length / PAGE_SIZE),
-    1
-  );
-
-  const visibleAttempts = filteredAttempts.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
+  // ---------------------------------------------------------
+  // FILTER HANDLING
+  // ---------------------------------------------------------
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -265,44 +233,59 @@ export default function PracticeAttempts() {
       ...current,
       [name]: value,
     }));
+
+    setPage(1);
   };
 
   const clearFilters = () => {
-    setFilters({
-      test_id: "",
-      course_id: "",
-      subject_id: "",
-      student_id: "",
-      status: "",
-    });
-
+    setFilters(EMPTY_FILTERS);
+    setSearchInput("");
     setSearch("");
+    setPage(1);
   };
 
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+  };
+
+  const hasActiveFilters =
+    Object.values(filters).some(Boolean) ||
+    Boolean(searchInput.trim());
+
+  // ---------------------------------------------------------
+  // VIEW ATTEMPT
+  // ---------------------------------------------------------
+
   const handleViewAttempt = async (attempt) => {
+    setSelectedAttempt(null);
+
     if (attempt.status === "In Progress") {
       setSelectedAttempt({
         ...attempt,
         _reviewUnavailable: true,
       });
 
-      setDetailError("");
       return;
     }
 
-    setSelectedAttempt(null);
-    setDetailError("");
     setDetailLoading(true);
-    setError("");
 
     try {
       const response = await getPracticeAttempt(attempt._id);
+
       const root = unwrap(response);
       const data = root?.data ?? root;
 
+      if (!data || !Array.isArray(data.questions)) {
+        throw new Error(
+          "Attempt review data is incomplete. Please refresh and try again."
+        );
+      }
+
       setSelectedAttempt(data);
     } catch (err) {
-      setDetailError(getErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setDetailLoading(false);
     }
@@ -310,11 +293,11 @@ export default function PracticeAttempts() {
 
   const closeDetail = () => {
     setSelectedAttempt(null);
-    setDetailError("");
   };
 
-  const hasActiveFilters =
-    Object.values(filters).some(Boolean) || Boolean(search);
+  // ---------------------------------------------------------
+  // DETAIL DATA
+  // ---------------------------------------------------------
 
   const reviewQuestions = selectedAttempt?.questions || [];
 
@@ -323,9 +306,26 @@ export default function PracticeAttempts() {
   const detailCourse = selectedAttempt?.course_id;
   const detailSubject = selectedAttempt?.subject_id;
 
-  const correctCount = Number(selectedAttempt?.correctCount || 0);
-  const incorrectCount = Number(selectedAttempt?.incorrectCount || 0);
-  const unansweredCount = Number(selectedAttempt?.unansweredCount || 0);
+  const correctCount = Number(
+    selectedAttempt?.correctCount || 0
+  );
+
+  const incorrectCount = Number(
+    selectedAttempt?.incorrectCount || 0
+  );
+
+  const unansweredCount = Number(
+    selectedAttempt?.unansweredCount || 0
+  );
+
+  const totalPages = Math.max(
+    pagination.totalPages,
+    1
+  );
+
+  // ---------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------
 
   return (
     <main className="practice-attempts-page">
@@ -338,7 +338,8 @@ export default function PracticeAttempts() {
           <h1>Attempts & Results</h1>
 
           <p>
-            Monitor student practice attempts, scores and question-wise answers.
+            Monitor student practice attempts, scores and
+            question-wise answers.
           </p>
         </div>
 
@@ -355,37 +356,9 @@ export default function PracticeAttempts() {
         </div>
       </header>
 
-      {error && (
-        <div className="practice-attempts-alert error" role="alert">
-          <span>{error}</span>
-
-          <button
-            type="button"
-            onClick={() => setError("")}
-            aria-label="Dismiss"
-          >
-            <FiX />
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div className="practice-attempts-alert success" role="status">
-          <FiCheckCircle />
-          <span>{success}</span>
-
-          <button
-            type="button"
-            onClick={() => setSuccess("")}
-            aria-label="Dismiss"
-          >
-            <FiX />
-          </button>
-        </div>
-      )}
-
       {!selectedAttempt && !detailLoading && (
         <>
+          {/* GLOBAL STATISTICS */}
           <section className="practice-attempts-stats">
             <article className="practice-attempts-stat-card">
               <span className="stat-icon blue">
@@ -432,30 +405,37 @@ export default function PracticeAttempts() {
             </article>
           </section>
 
+          {/* ATTEMPTS TABLE */}
           <section className="practice-attempts-card">
             <div className="practice-attempts-section-heading">
               <div>
                 <h2>Student Attempts</h2>
 
                 <p>
-                  {filteredAttempts.length} attempt(s) found
-                  {hasActiveFilters ? " with current filters" : ""}
+                  {loading
+                    ? "Loading attempts..."
+                    : `${pagination.total} attempt(s) found`}
+                  {hasActiveFilters
+                    ? " with current filters"
+                    : ""}
                 </p>
               </div>
             </div>
 
+            {/* SEARCH AND FILTERS */}
             <div className="practice-attempts-filters">
               <label className="practice-attempts-search">
                 <FiSearch />
 
                 <input
                   type="search"
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
+                  value={searchInput}
+                  maxLength={100}
+                  onChange={(event) =>
+                    setSearchInput(event.target.value)
+                  }
                   placeholder="Search student, roll number, test..."
+                  aria-label="Search attempts"
                 />
               </label>
 
@@ -467,9 +447,9 @@ export default function PracticeAttempts() {
               >
                 <option value="">All Tests</option>
 
-                {options.tests.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
+                {filterOptions.tests.map((item) => (
+                  <option key={item._id} value={item._id}>
+                    {item.title || "Untitled Test"}
                   </option>
                 ))}
               </select>
@@ -482,9 +462,9 @@ export default function PracticeAttempts() {
               >
                 <option value="">All Courses</option>
 
-                {options.courses.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
+                {filterOptions.courses.map((item) => (
+                  <option key={item._id} value={item._id}>
+                    {item.courseTitle || "Unknown Course"}
                   </option>
                 ))}
               </select>
@@ -497,9 +477,9 @@ export default function PracticeAttempts() {
               >
                 <option value="">All Subjects</option>
 
-                {options.subjects.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
+                {filterOptions.subjects.map((item) => (
+                  <option key={item._id} value={item._id}>
+                    {item.subjectName || "Unknown Subject"}
                   </option>
                 ))}
               </select>
@@ -512,9 +492,12 @@ export default function PracticeAttempts() {
               >
                 <option value="">All Students</option>
 
-                {options.students.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
+                {filterOptions.students.map((item) => (
+                  <option key={item._id} value={item._id}>
+                    {getStudentName(item)}
+                    {" ("}
+                    {item.rollNo || "No Roll No"}
+                    {")"}
                   </option>
                 ))}
               </select>
@@ -542,6 +525,7 @@ export default function PracticeAttempts() {
               </button>
             </div>
 
+            {/* TABLE */}
             <div className="practice-attempts-table-wrap">
               <table className="practice-attempts-table">
                 <thead>
@@ -561,21 +545,29 @@ export default function PracticeAttempts() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="9" className="practice-attempts-empty">
+                      <td
+                        colSpan="9"
+                        className="practice-attempts-empty"
+                      >
                         Loading student attempts...
                       </td>
                     </tr>
-                  ) : visibleAttempts.length === 0 ? (
+                  ) : attempts.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="practice-attempts-empty">
-                        No practice attempts found.
+                      <td
+                        colSpan="9"
+                        className="practice-attempts-empty"
+                      >
+                        {hasActiveFilters
+                          ? "No attempts match your search or filters."
+                          : "No practice attempts found."}
                       </td>
                     </tr>
                   ) : (
-                    visibleAttempts.map((attempt, index) => {
+                    attempts.map((attempt, index) => {
                       const student = attempt.student_id;
 
-                      const submitted = [
+                      const isSubmitted = [
                         "Submitted",
                         "Timed Out",
                       ].includes(attempt.status);
@@ -583,7 +575,7 @@ export default function PracticeAttempts() {
                       return (
                         <tr key={attempt._id}>
                           <td>
-                            {(page - 1) * PAGE_SIZE + index + 1}
+                            {(page - 1) * limit + index + 1}
                           </td>
 
                           <td>
@@ -619,13 +611,15 @@ export default function PracticeAttempts() {
                           </td>
 
                           <td>
-                            <span className={getStatusClass(attempt.status)}>
+                            <span
+                              className={getStatusClass(attempt.status)}
+                            >
                               {attempt.status}
                             </span>
                           </td>
 
                           <td>
-                            {submitted ? (
+                            {isSubmitted ? (
                               <>
                                 <strong>
                                   {formatMarks(attempt.marksObtained)}
@@ -645,7 +639,7 @@ export default function PracticeAttempts() {
                           </td>
 
                           <td>
-                            {submitted ? (
+                            {isSubmitted ? (
                               <span className="practice-attempts-counts">
                                 <b className="count-correct">
                                   {attempt.correctCount ?? 0}
@@ -668,7 +662,9 @@ export default function PracticeAttempts() {
                             <button
                               type="button"
                               className="practice-attempts-view-btn"
-                              onClick={() => handleViewAttempt(attempt)}
+                              onClick={() =>
+                                handleViewAttempt(attempt)
+                              }
                               disabled={detailLoading}
                             >
                               <FiEye />
@@ -683,35 +679,22 @@ export default function PracticeAttempts() {
               </table>
             </div>
 
-            <div className="practice-attempts-pagination">
-              <span>
-                Page {page} of {totalPages}
-              </span>
-
-              <div>
-                <button
-                  type="button"
-                  className="practice-attempts-secondary-btn"
-                  disabled={page <= 1}
-                  onClick={() => setPage((current) => current - 1)}
-                >
-                  Previous
-                </button>
-
-                <button
-                  type="button"
-                  className="practice-attempts-secondary-btn"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((current) => current + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={pagination.total}
+              itemCount={attempts.length}
+              itemLabel="attempts"
+              limit={limit}
+              loading={loading}
+              onPageChange={setPage}
+              onLimitChange={handleLimitChange}
+            />
           </section>
         </>
       )}
 
+      {/* DETAIL LOADING */}
       {detailLoading && (
         <section className="practice-attempts-card">
           <div className="practice-attempts-loading">
@@ -721,20 +704,7 @@ export default function PracticeAttempts() {
         </section>
       )}
 
-      {detailError && (
-        <div className="practice-attempts-alert error" role="alert">
-          <span>{detailError}</span>
-
-          <button
-            type="button"
-            onClick={() => setDetailError("")}
-            aria-label="Dismiss"
-          >
-            <FiX />
-          </button>
-        </div>
-      )}
-
+      {/* DETAIL VIEW */}
       {selectedAttempt && (
         <section className="practice-attempts-detail">
           <div className="practice-attempts-detail-header">
@@ -760,6 +730,7 @@ export default function PracticeAttempts() {
             </button>
           </div>
 
+          {/* STUDENT AND TEST INFORMATION */}
           <section className="practice-attempts-card practice-attempts-student-info">
             <div>
               <small>Student</small>
@@ -788,7 +759,8 @@ export default function PracticeAttempts() {
               <small>Attempt Date</small>
               <strong>
                 {formatDateTime(
-                  selectedAttempt.startedAt || selectedAttempt.createdAt
+                  selectedAttempt.startedAt ||
+                  selectedAttempt.createdAt
                 )}
               </strong>
             </div>
@@ -803,6 +775,7 @@ export default function PracticeAttempts() {
             </div>
           </section>
 
+          {/* IN-PROGRESS ATTEMPT: NO ANSWER KEY */}
           {selectedAttempt._reviewUnavailable ? (
             <section className="practice-attempts-card practice-attempts-unavailable">
               <FiClock />
@@ -811,14 +784,15 @@ export default function PracticeAttempts() {
                 <h3>Answer review is not available yet</h3>
 
                 <p>
-                  This attempt is still in progress. Correct answers are
-                  intentionally hidden until the student submits the test or
-                  the attempt times out.
+                  This attempt is still in progress. Correct answers
+                  are intentionally hidden until the student submits
+                  the test or the attempt times out.
                 </p>
               </div>
             </section>
           ) : (
             <>
+              {/* RESULT SUMMARY */}
               <section className="practice-attempts-result-grid">
                 <article>
                   <small>Marks Obtained</small>
@@ -863,6 +837,7 @@ export default function PracticeAttempts() {
                 </article>
               </section>
 
+              {/* ANSWER REVIEW */}
               <div className="practice-attempts-review-heading">
                 <div>
                   <h3>Answer Review</h3>
@@ -873,9 +848,20 @@ export default function PracticeAttempts() {
                 </div>
 
                 <div className="practice-attempts-review-legend">
-                  <span><i className="correct" /> Correct</span>
-                  <span><i className="incorrect" /> Incorrect</span>
-                  <span><i className="unanswered" /> Unanswered</span>
+                  <span>
+                    <i className="correct" />
+                    Correct
+                  </span>
+
+                  <span>
+                    <i className="incorrect" />
+                    Incorrect
+                  </span>
+
+                  <span>
+                    <i className="unanswered" />
+                    Unanswered
+                  </span>
                 </div>
               </div>
 
@@ -888,6 +874,12 @@ export default function PracticeAttempts() {
                   {reviewQuestions.map((question, index) => {
                     const statusClass = getAnswerClass(question);
 
+                    const marksAwarded =
+                      question.selectedAnswer &&
+                      question.selectedAnswer === question.correctAnswer
+                        ? selectedAttempt.marksPerQuestion
+                        : 0;
+
                     return (
                       <article
                         className={`practice-attempt-question ${statusClass}`}
@@ -899,7 +891,9 @@ export default function PracticeAttempts() {
                               Question {index + 1}
                             </span>
 
-                            <span className={`question-result ${statusClass}`}>
+                            <span
+                              className={`question-result ${statusClass}`}
+                            >
                               {statusClass === "correct"
                                 ? "Correct"
                                 : statusClass === "incorrect"
@@ -909,14 +903,12 @@ export default function PracticeAttempts() {
                           </div>
 
                           <span>
-                            {formatMarks(
-                              question.selectedAnswer &&
-                              question.selectedAnswer === question.correctAnswer
-                                ? selectedAttempt.marksPerQuestion
-                                : 0
-                            )}
+                            {formatMarks(marksAwarded)}
                             {" / "}
-                            {formatMarks(selectedAttempt.marksPerQuestion)} marks
+                            {formatMarks(
+                              selectedAttempt.marksPerQuestion
+                            )}
+                            {" marks"}
                           </span>
                         </header>
 
@@ -933,7 +925,9 @@ export default function PracticeAttempts() {
                             const optionClass = [
                               isSelected ? "selected" : "",
                               isCorrect ? "correct-answer" : "",
-                              isSelected && !isCorrect ? "wrong-answer" : "",
+                              isSelected && !isCorrect
+                                ? "wrong-answer"
+                                : "",
                             ]
                               .filter(Boolean)
                               .join(" ");
@@ -986,6 +980,7 @@ export default function PracticeAttempts() {
             </>
           )}
 
+          {/* ATTEMPT TIMING */}
           <div className="practice-attempts-detail-footer">
             <span>
               Started: {formatDateTime(selectedAttempt.startedAt)}
@@ -997,7 +992,9 @@ export default function PracticeAttempts() {
 
             <span>
               Time Taken:{" "}
-              {Math.floor(Number(selectedAttempt.timeTakenSeconds || 0) / 60)}
+              {Math.floor(
+                Number(selectedAttempt.timeTakenSeconds || 0) / 60
+              )}
               {" min "}
               {Number(selectedAttempt.timeTakenSeconds || 0) % 60}
               {" sec"}
