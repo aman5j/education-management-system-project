@@ -267,11 +267,11 @@ export const getNotes = async (req, res, next) => {
       subjectId,
       status,
       page = 1,
-      limit = 20,
+      limit = 10,
     } = req.query;
 
     const currentPage = Math.max(1, Number(page) || 1);
-    const pageSize = Math.min(100, Math.max(1, Number(limit) || 20));
+    const pageSize = Math.min(100, Math.max(1, Number(limit) || 10));
 
     const filter = {};
 
@@ -299,33 +299,62 @@ export const getNotes = async (req, res, next) => {
       filter.status = status;
     }
 
-    if (String(search).trim()) {
+    const searchText = String(search).trim();
+
+    if (searchText) {
+      const escapedSearch = searchText.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
       filter.title = {
-        $regex: String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        $regex: escapedSearch,
         $options: "i",
       };
     }
 
-    const [notes, total] = await Promise.all([
+    const skip = (currentPage - 1) * pageSize;
+
+    const [
+      notes,
+      total,
+      totalNotes,
+      publishedNotes,
+      draftNotes,
+    ] = await Promise.all([
       populateNote(
         Note.find(filter)
-          .sort({ createdAt: -1 })
-          .skip((currentPage - 1) * pageSize)
+          .sort({ createdAt: -1, _id: -1 })
+          .skip(skip)
           .limit(pageSize)
       ).lean(),
 
       Note.countDocuments(filter),
+
+      // Global statistics: independent of search and filters.
+      Note.countDocuments({}),
+
+      Note.countDocuments({ status: "Published" }),
+
+      Note.countDocuments({ status: "Draft" }),
     ]);
 
     return res.status(200).json({
       success: true,
       data: {
         notes: notes.map(serializeNote),
+
         pagination: {
           total,
           page: currentPage,
           limit: pageSize,
           totalPages: Math.ceil(total / pageSize),
+        },
+
+        stats: {
+          total: totalNotes,
+          published: publishedNotes,
+          drafts: draftNotes,
         },
       },
     });
