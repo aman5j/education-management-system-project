@@ -147,16 +147,73 @@ const populateAttempt = (query) =>
 // ADMIN: LIST PRACTICE TESTS
 // GET /api/practice/admin/tests
 // =========================================================
+// export const adminGetPracticeTests = async (req, res, next) => {
+//   try {
+//     const page = Math.max(Number(req.query.page) || 1, 1);
+//     const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
+//     const filter = {};
+
+//     if (req.query.status) {
+//       if (!["Draft", "Published", "Archived"].includes(req.query.status)) {
+//         return fail(res, 400, "Invalid test status.");
+//       }
+//       filter.status = req.query.status;
+//     }
+
+//     if (req.query.course_id) {
+//       if (!validId(req.query.course_id)) {
+//         return fail(res, 400, "Invalid course ID.");
+//       }
+//       filter.course_id = req.query.course_id;
+//     }
+
+//     const [tests, total] = await Promise.all([
+//       populateTest(
+//         PracticeTest.find(filter)
+//           .sort({ createdAt: -1 })
+//           .skip((page - 1) * limit)
+//           .limit(limit)
+//       ).lean(),
+//       PracticeTest.countDocuments(filter),
+//     ]);
+
+//     return res.json({
+//       success: true,
+//       data: {
+//         tests,
+//         pagination: {
+//           page,
+//           limit,
+//           total,
+//           totalPages: Math.ceil(total / limit),
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+// =========================================================
+// ADMIN: LIST PRACTICE TESTS
+// GET /api/practice/admin/tests
+// Supports database pagination, search, filters and global stats.
+// =========================================================
 export const adminGetPracticeTests = async (req, res, next) => {
   try {
     const page = Math.max(Number(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
+    const limit = Math.min(
+      Math.max(Number(req.query.limit) || 10, 1),
+      100
+    );
+
     const filter = {};
 
     if (req.query.status) {
       if (!["Draft", "Published", "Archived"].includes(req.query.status)) {
         return fail(res, 400, "Invalid test status.");
       }
+
       filter.status = req.query.status;
     }
 
@@ -164,17 +221,79 @@ export const adminGetPracticeTests = async (req, res, next) => {
       if (!validId(req.query.course_id)) {
         return fail(res, 400, "Invalid course ID.");
       }
+
       filter.course_id = req.query.course_id;
     }
 
-    const [tests, total] = await Promise.all([
+    const search = String(req.query.search || "").trim();
+
+    if (search) {
+      // Escape regex characters so user input is treated as plain text.
+      const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      const searchRegex = new RegExp(escapedSearch, "i");
+
+      const [matchingCourses, matchingSubjects] = await Promise.all([
+        Course.find({ courseTitle: searchRegex })
+          .select("_id")
+          .lean(),
+
+        Subject.find({ subjectName: searchRegex })
+          .select("_id")
+          .lean(),
+      ]);
+
+      const matchingCourseIds = matchingCourses.map((item) => item._id);
+      const matchingSubjectIds = matchingSubjects.map((item) => item._id);
+
+      const searchConditions = [
+        { title: searchRegex },
+      ];
+
+      if (matchingCourseIds.length) {
+        searchConditions.push({
+          course_id: { $in: matchingCourseIds },
+        });
+      }
+
+      if (matchingSubjectIds.length) {
+        searchConditions.push({
+          subject_id: { $in: matchingSubjectIds },
+        });
+      }
+
+      filter.$or = searchConditions;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [
+      tests,
+      total,
+      totalTests,
+      published,
+      draft,
+      archived,
+    ] = await Promise.all([
       populateTest(
         PracticeTest.find(filter)
           .sort({ createdAt: -1 })
-          .skip((page - 1) * limit)
+          .skip(skip)
           .limit(limit)
       ).lean(),
+
       PracticeTest.countDocuments(filter),
+
+      // These counts are global and are not affected by the current
+      // search term, status filter, course filter or page.
+      PracticeTest.countDocuments({}),
+
+      PracticeTest.countDocuments({ status: "Published" }),
+      PracticeTest.countDocuments({ status: "Draft" }),
+      PracticeTest.countDocuments({ status: "Archived" }),
     ]);
 
     return res.json({
@@ -186,6 +305,12 @@ export const adminGetPracticeTests = async (req, res, next) => {
           limit,
           total,
           totalPages: Math.ceil(total / limit),
+        },
+        stats: {
+          total: totalTests,
+          published,
+          draft,
+          archived,
         },
       },
     });

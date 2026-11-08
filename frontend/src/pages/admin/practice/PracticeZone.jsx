@@ -1,6 +1,6 @@
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  FiArchive,
   FiBookOpen,
   FiCheckCircle,
   FiEdit2,
@@ -9,7 +9,6 @@ import {
   FiRefreshCw,
   FiSearch,
   FiTrash2,
-  FiArchive,
   FiX,
 } from "react-icons/fi";
 
@@ -24,9 +23,14 @@ import {
   deletePracticeTest,
 } from "../../../services/practiceService";
 
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/PracticeZone.css";
 
-const PAGE_SIZE = 10;
+const DEFAULT_LIMIT = 10;
 
 const EMPTY_FORM = {
   title: "",
@@ -44,10 +48,14 @@ const getArray = (response, keys = []) => {
   const root = unwrap(response);
   const data = root?.data ?? root;
 
-  if (Array.isArray(data)) return data;
+  if (Array.isArray(data)) {
+    return data;
+  }
 
   for (const key of keys) {
-    if (Array.isArray(data?.[key])) return data[key];
+    if (Array.isArray(data?.[key])) {
+      return data[key];
+    }
   }
 
   return [];
@@ -56,15 +64,16 @@ const getArray = (response, keys = []) => {
 const getId = (value) =>
   typeof value === "object" ? value?._id : value;
 
-const getErrorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Something went wrong. Please try again.";
-
 const formatDate = (value) => {
   if (!value) return "—";
 
-  return new Date(value).toLocaleDateString("en-IN", {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -76,6 +85,13 @@ const getStatusClass = (status) =>
     .toLowerCase()
     .replace(/\s+/g, "-")}`;
 
+const getInitialStats = () => ({
+  total: 0,
+  published: 0,
+  draft: 0,
+  archived: 0,
+});
+
 export default function PracticeZone() {
   const [courses, setCourses] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -85,9 +101,20 @@ export default function PracticeZone() {
   const [editingId, setEditingId] = useState("");
   const [formOpen, setFormOpen] = useState(false);
 
-  const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: DEFAULT_LIMIT,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const [stats, setStats] = useState(getInitialStats);
 
   const [loading, setLoading] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
@@ -96,50 +123,21 @@ export default function PracticeZone() {
   const [actionId, setActionId] = useState("");
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const totalQuestions = Number(form.totalQuestions);
   const durationMinutes = Number(form.durationMinutes);
   const marksPerQuestion = Number(form.marksPerQuestion);
 
   const totalMarks =
-    totalQuestions > 0 && marksPerQuestion > 0
+    totalQuestions > 0 &&
+    marksPerQuestion > 0 &&
+    Number.isFinite(totalQuestions * marksPerQuestion)
       ? Number((totalQuestions * marksPerQuestion).toFixed(2))
       : 0;
 
-  const stats = useMemo(() => ({
-    total: tests.length,
-    published: tests.filter((item) => item.status === "Published").length,
-    draft: tests.filter((item) => item.status === "Draft").length,
-    archived: tests.filter((item) => item.status === "Archived").length,
-  }), [tests]);
-
-  const filteredTests = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    return tests.filter((test) => {
-      const matchesSearch =
-        !keyword ||
-        test.title?.toLowerCase().includes(keyword) ||
-        test.course_id?.courseTitle?.toLowerCase().includes(keyword) ||
-        test.subject_id?.subjectName?.toLowerCase().includes(keyword);
-
-      const matchesStatus =
-        !statusFilter || test.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [tests, search, statusFilter]);
-
-  const totalPages = Math.max(
-    Math.ceil(filteredTests.length / PAGE_SIZE),
-    1
-  );
-
-  const visibleTests = filteredTests.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
+  // ---------------------------------------------------------
+  // LOAD COURSES
+  // ---------------------------------------------------------
 
   const loadCourses = useCallback(async () => {
     setLoadingCourses(true);
@@ -152,11 +150,16 @@ export default function PracticeZone() {
 
       setCourses(getArray(response, ["courses"]));
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err));
     } finally {
       setLoadingCourses(false);
     }
   }, []);
+
+  // ---------------------------------------------------------
+  // LOAD PRACTICE TESTS
+  // Server-side pagination and search
+  // ---------------------------------------------------------
 
   const loadTests = useCallback(async () => {
     setLoading(true);
@@ -164,9 +167,13 @@ export default function PracticeZone() {
 
     try {
       const params = {
-        page: 1,
-        limit: 100,
+        page,
+        limit,
       };
+
+      if (search.trim()) {
+        params.search = search.trim();
+      }
 
       if (statusFilter) {
         params.status = statusFilter;
@@ -177,12 +184,33 @@ export default function PracticeZone() {
       const data = root?.data ?? root;
 
       setTests(Array.isArray(data?.tests) ? data.tests : []);
+
+      setPagination({
+        page: Number(data?.pagination?.page) || page,
+        limit: Number(data?.pagination?.limit) || limit,
+        total: Number(data?.pagination?.total) || 0,
+        totalPages: Number(data?.pagination?.totalPages) || 0,
+      });
+
+      setStats({
+        total: Number(data?.stats?.total) || 0,
+        published: Number(data?.stats?.published) || 0,
+        draft: Number(data?.stats?.draft) || 0,
+        archived: Number(data?.stats?.archived) || 0,
+      });
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err));
+      setTests([]);
+      setPagination({
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [page, limit, search, statusFilter]);
 
   useEffect(() => {
     loadCourses();
@@ -192,19 +220,32 @@ export default function PracticeZone() {
     loadTests();
   }, [loadTests]);
 
+  // If the last record on the current page is deleted,
+  // move back to the last page that still exists.
   useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter]);
+    const lastPage = Math.max(pagination.totalPages, 1);
+
+    if (page > lastPage) {
+      setPage(lastPage);
+    }
+  }, [page, pagination.totalPages]);
+
+  // ---------------------------------------------------------
+  // COURSE / SUBJECT HANDLING
+  // ---------------------------------------------------------
 
   const loadSubjectsForCourse = async (courseId) => {
     setSubjects([]);
+
     setForm((current) => ({
       ...current,
       course_id: courseId,
       subject_id: "",
     }));
 
-    if (!courseId) return;
+    if (!courseId) {
+      return;
+    }
 
     setLoadingSubjects(true);
     setError("");
@@ -221,7 +262,11 @@ export default function PracticeZone() {
           String(getId(item))
         );
 
-        if (course.subjects.some((item) => typeof item === "object")) {
+        if (
+          course.subjects.some(
+            (item) => typeof item === "object"
+          )
+        ) {
           linkedSubjects = course.subjects;
         } else {
           const response = await getSubjects({
@@ -236,23 +281,105 @@ export default function PracticeZone() {
         }
       }
 
+      const activeSubjects = linkedSubjects.filter(
+        (subject) => subject.status === "Active"
+      );
+
+      setSubjects(activeSubjects);
+
+      if (!activeSubjects.length) {
+        setError(
+          "No active linked subjects found. Add subjects to this course first."
+        );
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  const loadSubjectsForEdit = async (
+    courseId,
+    selectedSubjectId
+  ) => {
+    if (!courseId) return;
+
+    setLoadingSubjects(true);
+
+    try {
+      const courseResponse = await getCourse(courseId);
+      const root = unwrap(courseResponse);
+      const course = root?.data?.course ?? root?.data ?? root;
+
+      let linkedSubjects = [];
+
+      if (Array.isArray(course?.subjects)) {
+        const ids = course.subjects.map((item) =>
+          String(getId(item))
+        );
+
+        if (
+          course.subjects.some(
+            (item) => typeof item === "object"
+          )
+        ) {
+          linkedSubjects = course.subjects;
+        } else {
+          const response = await getSubjects({
+            page: 1,
+            limit: 100,
+            status: "Active",
+          });
+
+          linkedSubjects = getArray(response, ["subjects"]).filter(
+            (subject) => ids.includes(String(subject._id))
+          );
+        }
+      }
+
+      // Keep the selected subject available when editing,
+      // provided it is still active.
+      if (
+        selectedSubjectId &&
+        !linkedSubjects.some(
+          (subject) =>
+            String(subject._id) === String(selectedSubjectId)
+        )
+      ) {
+        const response = await getSubjects({
+          page: 1,
+          limit: 100,
+          status: "Active",
+        });
+
+        const allSubjects = getArray(response, ["subjects"]);
+
+        const selectedSubject = allSubjects.find(
+          (subject) =>
+            String(subject._id) === String(selectedSubjectId)
+        );
+
+        if (selectedSubject) {
+          linkedSubjects.push(selectedSubject);
+        }
+      }
+
       setSubjects(
         linkedSubjects.filter(
           (subject) => subject.status === "Active"
         )
       );
-
-      if (!linkedSubjects.length) {
-        setError(
-          "No linked subjects found. Add subjects to this course first."
-        );
-      }
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err));
     } finally {
       setLoadingSubjects(false);
     }
   };
+
+  // ---------------------------------------------------------
+  // FORM HANDLING
+  // ---------------------------------------------------------
 
   const resetForm = () => {
     setForm(EMPTY_FORM);
@@ -264,95 +391,28 @@ export default function PracticeZone() {
   const openCreate = () => {
     resetForm();
     setError("");
-    setSuccess("");
     setFormOpen(true);
   };
 
   const openEdit = async (test) => {
     setError("");
-    setSuccess("");
     setEditingId(test._id);
     setFormOpen(true);
+
+    const courseId = String(getId(test.course_id) || "");
+    const subjectId = String(getId(test.subject_id) || "");
 
     setForm({
       title: test.title || "",
       description: test.description || "",
-      course_id: String(getId(test.course_id) || ""),
-      subject_id: String(getId(test.subject_id) || ""),
+      course_id: courseId,
+      subject_id: subjectId,
       totalQuestions: String(test.totalQuestions ?? 10),
       durationMinutes: String(test.durationMinutes ?? 20),
       marksPerQuestion: String(test.marksPerQuestion ?? 1),
     });
 
-    await loadSubjectsForEdit(
-      String(getId(test.course_id) || ""),
-      String(getId(test.subject_id) || "")
-    );
-  };
-
-  const loadSubjectsForEdit = async (courseId, selectedSubjectId) => {
-    if (!courseId) return;
-
-    setLoadingSubjects(true);
-
-    try {
-      const courseResponse = await getCourse(courseId);
-      const root = unwrap(courseResponse);
-      const course = root?.data?.course ?? root?.data ?? root;
-
-      let linkedSubjects = [];
-
-      if (Array.isArray(course?.subjects)) {
-        const ids = course.subjects.map((item) =>
-          String(getId(item))
-        );
-
-        if (course.subjects.some((item) => typeof item === "object")) {
-          linkedSubjects = course.subjects;
-        } else {
-          const response = await getSubjects({
-            page: 1,
-            limit: 100,
-            status: "Active",
-          });
-
-          linkedSubjects = getArray(response, ["subjects"]).filter(
-            (subject) => ids.includes(String(subject._id))
-          );
-        }
-      }
-
-      // Include the selected subject if it is still active.
-      if (
-        selectedSubjectId &&
-        !linkedSubjects.some(
-          (subject) => String(subject._id) === selectedSubjectId
-        )
-      ) {
-        const response = await getSubjects({
-          page: 1,
-          limit: 100,
-          status: "Active",
-        });
-
-        const allSubjects = getArray(response, ["subjects"]);
-        const selected = allSubjects.find(
-          (subject) => String(subject._id) === selectedSubjectId
-        );
-
-        if (selected) linkedSubjects.push(selected);
-      }
-
-      setSubjects(
-        linkedSubjects.filter(
-          (subject) => subject.status === "Active"
-        )
-      );
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoadingSubjects(false);
-    }
+    await loadSubjectsForEdit(courseId, subjectId);
   };
 
   const handleChange = (event) => {
@@ -367,6 +427,14 @@ export default function PracticeZone() {
   const validateForm = () => {
     if (!form.title.trim()) {
       return "Please enter a test title.";
+    }
+
+    if (form.title.trim().length > 150) {
+      return "Test title cannot exceed 150 characters.";
+    }
+
+    if (form.description.length > 1000) {
+      return "Description cannot exceed 1000 characters.";
     }
 
     if (!form.course_id || !form.subject_id) {
@@ -391,7 +459,8 @@ export default function PracticeZone() {
 
     if (
       !Number.isFinite(marksPerQuestion) ||
-      marksPerQuestion <= 0
+      marksPerQuestion <= 0 ||
+      marksPerQuestion > 1000
     ) {
       return "Marks per question must be greater than zero.";
     }
@@ -402,12 +471,11 @@ export default function PracticeZone() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
-    setSuccess("");
 
     const validationError = validateForm();
 
     if (validationError) {
-      setError(validationError);
+      notification.warning(validationError);
       return;
     }
 
@@ -426,81 +494,147 @@ export default function PracticeZone() {
     try {
       if (editingId) {
         await updatePracticeTest(editingId, payload);
-        setSuccess("Practice test updated successfully.");
+        notification.success(
+          "Practice test updated successfully."
+        );
       } else {
         await createPracticeTest(payload);
-        setSuccess("Practice test created successfully as Draft.");
+        notification.success(
+          "Practice test created successfully as Draft."
+        );
       }
 
       resetForm();
       setPage(1);
-      await loadTests();
+
+      // The page state change triggers the list reload.
+      // If already on page 1, explicitly reload.
+      if (page === 1) {
+        await loadTests();
+      }
     } catch (err) {
-      setError(getErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleStatusChange = async (test, status) => {
-    const action =
-      status === "Published"
-        ? "publish"
-        : status === "Archived"
-          ? "archive"
-          : "move back to Draft";
+  // ---------------------------------------------------------
+  // STATUS ACTIONS
+  // ---------------------------------------------------------
 
-    if (!window.confirm(`Are you sure you want to ${action} this test?`)) {
-      return;
+  const handleStatusChange = async (test, status) => {
+    let confirmed = false;
+    let actionLabel = "";
+
+    if (status === "Published") {
+      confirmed = await notification.confirmPublish(
+        `"${test.title}"`
+      );
+      actionLabel = "published";
+    } else if (status === "Archived") {
+      confirmed = await notification.confirmArchive(
+        `"${test.title}"`
+      );
+      actionLabel = "archived";
+    } else {
+      confirmed = await notification.confirm({
+        title: "Move test back to Draft?",
+        text: `"${test.title}" will no longer be available to students.`,
+        icon: "question",
+        confirmText: "Yes, move to Draft",
+        confirmButtonColor: "#d97706",
+      });
+      actionLabel = "moved to Draft";
     }
 
+    if (!confirmed) return;
+
     setError("");
-    setSuccess("");
     setActionId(test._id);
 
     try {
       await updatePracticeTestStatus(test._id, status);
-      setSuccess(`Practice test ${action}ed successfully.`);
+
+      notification.success(
+        `Practice test ${actionLabel} successfully.`
+      );
+
       await loadTests();
     } catch (err) {
-      setError(getErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setActionId("");
     }
   };
 
+  // ---------------------------------------------------------
+  // DELETE
+  // ---------------------------------------------------------
+
   const handleDelete = async (test) => {
-    if (
-      !window.confirm(
-        `Delete "${test.title}" permanently? Tests with student attempts cannot be deleted.`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await notification.confirmDelete(
+      `"${test.title}"`
+    );
+
+    if (!confirmed) return;
 
     setError("");
-    setSuccess("");
     setActionId(test._id);
 
     try {
       await deletePracticeTest(test._id);
-      setSuccess("Practice test deleted successfully.");
+
+      notification.success(
+        "Practice test deleted successfully."
+      );
+
       await loadTests();
     } catch (err) {
-      setError(getErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setActionId("");
     }
   };
+
+  // ---------------------------------------------------------
+  // SEARCH / FILTER / PAGINATION
+  // ---------------------------------------------------------
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (event) => {
+    setStatusFilter(event.target.value);
+    setPage(1);
+  };
+
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+  };
+
+  const handleRefresh = () => {
+    loadTests();
+  };
+
+  const totalPages = Math.max(pagination.totalPages, 1);
 
   return (
     <main className="practice-page">
       <header className="practice-page-header">
         <div>
-          <span className="practice-eyebrow">PRACTICE / MANAGEMENT</span>
+          <span className="practice-eyebrow">
+            PRACTICE / MANAGEMENT
+          </span>
+
           <h1>Practice Zone</h1>
+
           <p>
-            Create and manage practice tests using your existing Subject Question Bank.
+            Create and manage practice tests using your existing
+            Subject Question Bank.
           </p>
         </div>
 
@@ -508,52 +642,49 @@ export default function PracticeZone() {
           <button
             type="button"
             className="practice-secondary-btn"
-            onClick={loadTests}
+            onClick={handleRefresh}
             disabled={loading}
           >
-            <FiRefreshCw /> Refresh
+            <FiRefreshCw />
+            Refresh
           </button>
 
           <button
             type="button"
             className="practice-primary-btn"
             onClick={openCreate}
+            disabled={saving}
           >
-            <FiPlus /> Create Practice Test
+            <FiPlus />
+            Create Practice Test
           </button>
         </div>
       </header>
 
       {error && (
-        <div className="practice-alert practice-alert-error" role="alert">
+        <div
+          className="practice-alert practice-alert-error"
+          role="alert"
+        >
           <span>{error}</span>
+
           <button
             type="button"
             onClick={() => setError("")}
-            aria-label="Dismiss"
+            aria-label="Dismiss error"
           >
             <FiX />
           </button>
         </div>
       )}
 
-      {success && (
-        <div className="practice-alert practice-alert-success" role="status">
-          <FiCheckCircle />
-          <span>{success}</span>
-          <button
-            type="button"
-            onClick={() => setSuccess("")}
-            aria-label="Dismiss"
-          >
-            <FiX />
-          </button>
-        </div>
-      )}
-
+      {/* DATABASE-WIDE STATISTICS */}
       <section className="practice-stats-grid">
         <article className="practice-stat-card">
-          <span className="practice-stat-icon"><FiFileText /></span>
+          <span className="practice-stat-icon">
+            <FiFileText />
+          </span>
+
           <div>
             <small>Total Tests</small>
             <strong>{stats.total}</strong>
@@ -561,7 +692,10 @@ export default function PracticeZone() {
         </article>
 
         <article className="practice-stat-card">
-          <span className="practice-stat-icon practice-stat-green"><FiCheckCircle /></span>
+          <span className="practice-stat-icon practice-stat-green">
+            <FiCheckCircle />
+          </span>
+
           <div>
             <small>Published</small>
             <strong>{stats.published}</strong>
@@ -569,7 +703,10 @@ export default function PracticeZone() {
         </article>
 
         <article className="practice-stat-card">
-          <span className="practice-stat-icon practice-stat-orange"><FiEdit2 /></span>
+          <span className="practice-stat-icon practice-stat-orange">
+            <FiEdit2 />
+          </span>
+
           <div>
             <small>Draft</small>
             <strong>{stats.draft}</strong>
@@ -577,7 +714,10 @@ export default function PracticeZone() {
         </article>
 
         <article className="practice-stat-card">
-          <span className="practice-stat-icon practice-stat-grey"><FiArchive /></span>
+          <span className="practice-stat-icon practice-stat-grey">
+            <FiArchive />
+          </span>
+
           <div>
             <small>Archived</small>
             <strong>{stats.archived}</strong>
@@ -585,16 +725,26 @@ export default function PracticeZone() {
         </article>
       </section>
 
+      {/* CREATE / EDIT FORM */}
       {formOpen && (
         <section className="practice-card practice-form-card">
           <div className="practice-section-heading">
             <div>
               <span className="practice-eyebrow">
-                {editingId ? "EDIT PRACTICE TEST" : "NEW PRACTICE TEST"}
+                {editingId
+                  ? "EDIT PRACTICE TEST"
+                  : "NEW PRACTICE TEST"}
               </span>
-              <h2>{editingId ? "Edit Practice Test" : "Create Practice Test"}</h2>
+
+              <h2>
+                {editingId
+                  ? "Edit Practice Test"
+                  : "Create Practice Test"}
+              </h2>
+
               <p>
-                Questions will be randomly selected from the selected subject when a student starts an attempt.
+                Questions will be randomly selected from the
+                selected subject when a student starts an attempt.
               </p>
             </div>
 
@@ -603,6 +753,7 @@ export default function PracticeZone() {
               className="practice-icon-btn"
               onClick={resetForm}
               aria-label="Close form"
+              disabled={saving}
             >
               <FiX />
             </button>
@@ -612,6 +763,7 @@ export default function PracticeZone() {
             <div className="practice-form-grid">
               <label className="practice-field practice-field-wide">
                 Test Title <span>*</span>
+
                 <input
                   name="title"
                   value={form.title}
@@ -619,11 +771,13 @@ export default function PracticeZone() {
                   maxLength={150}
                   placeholder="Example: HTML Fundamentals Practice"
                   required
+                  disabled={saving}
                 />
               </label>
 
               <label className="practice-field practice-field-wide">
                 Description
+
                 <textarea
                   name="description"
                   value={form.description}
@@ -631,25 +785,36 @@ export default function PracticeZone() {
                   rows={3}
                   maxLength={1000}
                   placeholder="Enter a short description..."
+                  disabled={saving}
                 />
               </label>
 
               <label className="practice-field">
                 Select Course <span>*</span>
+
                 <select
                   value={form.course_id}
                   onChange={(event) =>
                     loadSubjectsForCourse(event.target.value)
                   }
-                  disabled={loadingCourses || loadingSubjects || saving}
+                  disabled={
+                    loadingCourses ||
+                    loadingSubjects ||
+                    saving
+                  }
                   required
                 >
                   <option value="">
-                    {loadingCourses ? "Loading courses..." : "Select course"}
+                    {loadingCourses
+                      ? "Loading courses..."
+                      : "Select course"}
                   </option>
 
                   {courses.map((course) => (
-                    <option key={course._id} value={course._id}>
+                    <option
+                      key={course._id}
+                      value={course._id}
+                    >
                       {course.courseTitle}
                     </option>
                   ))}
@@ -658,21 +823,33 @@ export default function PracticeZone() {
 
               <label className="practice-field">
                 Select Subject <span>*</span>
+
                 <select
                   name="subject_id"
                   value={form.subject_id}
                   onChange={handleChange}
-                  disabled={!form.course_id || loadingSubjects || saving}
+                  disabled={
+                    !form.course_id ||
+                    loadingSubjects ||
+                    saving
+                  }
                   required
                 >
                   <option value="">
-                    {loadingSubjects ? "Loading subjects..." : "Select subject"}
+                    {loadingSubjects
+                      ? "Loading subjects..."
+                      : "Select subject"}
                   </option>
 
                   {subjects.map((subject) => (
-                    <option key={subject._id} value={subject._id}>
+                    <option
+                      key={subject._id}
+                      value={subject._id}
+                    >
                       {subject.subjectName}
-                      {subject.subjectCode ? ` (${subject.subjectCode})` : ""}
+                      {subject.subjectCode
+                        ? ` (${subject.subjectCode})`
+                        : ""}
                     </option>
                   ))}
                 </select>
@@ -680,6 +857,7 @@ export default function PracticeZone() {
 
               <label className="practice-field">
                 Number of Questions <span>*</span>
+
                 <input
                   type="number"
                   name="totalQuestions"
@@ -689,11 +867,13 @@ export default function PracticeZone() {
                   value={form.totalQuestions}
                   onChange={handleChange}
                   required
+                  disabled={saving}
                 />
               </label>
 
               <label className="practice-field">
                 Duration (Minutes) <span>*</span>
+
                 <input
                   type="number"
                   name="durationMinutes"
@@ -703,11 +883,13 @@ export default function PracticeZone() {
                   value={form.durationMinutes}
                   onChange={handleChange}
                   required
+                  disabled={saving}
                 />
               </label>
 
               <label className="practice-field">
                 Marks per Question <span>*</span>
+
                 <input
                   type="number"
                   name="marksPerQuestion"
@@ -717,6 +899,7 @@ export default function PracticeZone() {
                   value={form.marksPerQuestion}
                   onChange={handleChange}
                   required
+                  disabled={saving}
                 />
               </label>
 
@@ -729,9 +912,11 @@ export default function PracticeZone() {
 
             <div className="practice-form-note">
               <FiBookOpen />
+
               <span>
-                Make sure the selected subject has enough MCQs in its Question Bank.
-                The backend checks the available question count before saving and publishing.
+                Make sure the selected subject has enough MCQs in
+                its Question Bank. The backend checks the available
+                question count before saving and publishing.
               </span>
             </div>
 
@@ -767,27 +952,35 @@ export default function PracticeZone() {
         </section>
       )}
 
+      {/* PRACTICE TEST LIST */}
       <section className="practice-card">
         <div className="practice-section-heading practice-list-heading">
           <div>
             <h2>Practice Tests</h2>
-            <p>{filteredTests.length} test(s) found</p>
+
+            <p>
+              {loading
+                ? "Loading practice tests..."
+                : `${pagination.total} test(s) found`}
+            </p>
           </div>
 
           <div className="practice-list-filters">
             <label className="practice-search">
               <FiSearch />
+
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search tests..."
+                onChange={handleSearchChange}
+                placeholder="Search title, course or subject..."
+                aria-label="Search practice tests"
               />
             </label>
 
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={handleStatusFilterChange}
               aria-label="Filter by status"
             >
               <option value="">All Statuses</option>
@@ -817,23 +1010,34 @@ export default function PracticeZone() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="practice-empty">
+                  <td
+                    colSpan="9"
+                    className="practice-empty"
+                  >
                     Loading practice tests...
                   </td>
                 </tr>
-              ) : visibleTests.length === 0 ? (
+              ) : tests.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="practice-empty">
-                    No practice tests found.
+                  <td
+                    colSpan="9"
+                    className="practice-empty"
+                  >
+                    {search.trim() || statusFilter
+                      ? "No practice tests match your search or filter."
+                      : "No practice tests found. Create your first practice test."}
                   </td>
                 </tr>
               ) : (
-                visibleTests.map((test, index) => (
+                tests.map((test, index) => (
                   <tr key={test._id}>
-                    <td>{(page - 1) * PAGE_SIZE + index + 1}</td>
+                    <td>
+                      {(page - 1) * limit + index + 1}
+                    </td>
 
                     <td>
                       <strong>{test.title}</strong>
+
                       {test.description && (
                         <small className="practice-description">
                           {test.description}
@@ -842,14 +1046,19 @@ export default function PracticeZone() {
                     </td>
 
                     <td>
-                      <strong>{test.course_id?.courseTitle || "—"}</strong>
+                      <strong>
+                        {test.course_id?.courseTitle || "—"}
+                      </strong>
+
                       <small className="practice-description">
                         {test.subject_id?.subjectName || "—"}
                       </small>
                     </td>
 
                     <td>{test.totalQuestions}</td>
+
                     <td>{test.durationMinutes} min</td>
+
                     <td>{test.totalMarks}</td>
 
                     <td>
@@ -866,10 +1075,12 @@ export default function PracticeZone() {
                           type="button"
                           className="practice-icon-btn"
                           title="Edit test"
+                          aria-label={`Edit ${test.title}`}
                           onClick={() => openEdit(test)}
                           disabled={
                             Boolean(actionId) ||
-                            saving
+                            saving ||
+                            loading
                           }
                         >
                           <FiEdit2 />
@@ -880,10 +1091,18 @@ export default function PracticeZone() {
                             type="button"
                             className="practice-icon-btn practice-action-publish"
                             title="Publish test"
+                            aria-label={`Publish ${test.title}`}
                             onClick={() =>
-                              handleStatusChange(test, "Published")
+                              handleStatusChange(
+                                test,
+                                "Published"
+                              )
                             }
-                            disabled={actionId === test._id}
+                            disabled={
+                              Boolean(actionId) ||
+                              saving ||
+                              loading
+                            }
                           >
                             <FiCheckCircle />
                           </button>
@@ -894,12 +1113,17 @@ export default function PracticeZone() {
                             type="button"
                             className="practice-icon-btn"
                             title="Move to Draft"
+                            aria-label={`Move ${test.title} to Draft`}
                             onClick={() =>
                               handleStatusChange(test, "Draft")
                             }
-                            disabled={actionId === test._id}
+                            disabled={
+                              Boolean(actionId) ||
+                              saving ||
+                              loading
+                            }
                           >
-                            <FiFileText />
+                            <FiEdit2 />
                           </button>
                         )}
 
@@ -908,10 +1132,18 @@ export default function PracticeZone() {
                             type="button"
                             className="practice-icon-btn"
                             title="Archive test"
+                            aria-label={`Archive ${test.title}`}
                             onClick={() =>
-                              handleStatusChange(test, "Archived")
+                              handleStatusChange(
+                                test,
+                                "Archived"
+                              )
                             }
-                            disabled={actionId === test._id}
+                            disabled={
+                              Boolean(actionId) ||
+                              saving ||
+                              loading
+                            }
                           >
                             <FiArchive />
                           </button>
@@ -921,8 +1153,13 @@ export default function PracticeZone() {
                           type="button"
                           className="practice-icon-btn practice-action-delete"
                           title="Delete test"
+                          aria-label={`Delete ${test.title}`}
                           onClick={() => handleDelete(test)}
-                          disabled={actionId === test._id}
+                          disabled={
+                            Boolean(actionId) ||
+                            saving ||
+                            loading
+                          }
                         >
                           <FiTrash2 />
                         </button>
@@ -935,31 +1172,17 @@ export default function PracticeZone() {
           </table>
         </div>
 
-        <div className="practice-pagination">
-          <span>
-            Page {page} of {totalPages}
-          </span>
-
-          <div>
-            <button
-              type="button"
-              className="practice-secondary-btn"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((current) => current - 1)}
-            >
-              Previous
-            </button>
-
-            <button
-              type="button"
-              className="practice-secondary-btn"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={pagination.total}
+          itemCount={tests.length}
+          itemLabel="practice tests"
+          limit={limit}
+          loading={loading}
+          onPageChange={setPage}
+          onLimitChange={handleLimitChange}
+        />
       </section>
     </main>
   );
