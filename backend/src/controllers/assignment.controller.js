@@ -594,24 +594,13 @@ const sendPrivateFile = async (res, file, download = true) => {
 
 export const adminGetAssignments = async (req, res, next) => {
   try {
-    const page = Math.max(
-      1,
-      Number(req.query.page) || 1
-    );
-
-    const limit = Math.min(
-      100,
-      Math.max(1, Number(req.query.limit) || 20)
-    );
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
 
     const filter = {};
 
     if (req.query.status) {
-      if (
-        !["Draft", "Published", "Archived"].includes(
-          req.query.status
-        )
-      ) {
+      if (!["Draft", "Published", "Archived"].includes(req.query.status)) {
         return fail(res, 400, "Invalid assignment status.");
       }
 
@@ -626,36 +615,67 @@ export const adminGetAssignments = async (req, res, next) => {
       filter.course_id = req.query.course_id;
     }
 
-    if (req.query.search) {
+    const search = String(req.query.search || "").trim();
+
+    if (search) {
+      if (search.length > 100) {
+        return fail(res, 400, "Search cannot exceed 100 characters.");
+      }
+
+      const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
       filter.title = {
-        $regex: String(req.query.search).replace(
-          /[.*+?^${}()|[\]\\]/g,
-          "\\$&"
-        ),
+        $regex: escapedSearch,
         $options: "i",
       };
     }
 
-    const [items, total] = await Promise.all([
+    const skip = (page - 1) * limit;
+
+    const [
+      items,
+      total,
+      totalAssignments,
+      draftCount,
+      publishedCount,
+      archivedCount,
+    ] = await Promise.all([
       populateAssignment(
         Assignment.find(filter)
-          .sort({ createdAt: -1 })
-          .skip((page - 1) * limit)
+          .sort({ createdAt: -1, _id: -1 })
+          .skip(skip)
           .limit(limit)
       ).lean(),
 
       Assignment.countDocuments(filter),
+
+      // Global statistics, independent of search and filters.
+      Assignment.countDocuments({}),
+      Assignment.countDocuments({ status: "Draft" }),
+      Assignment.countDocuments({ status: "Published" }),
+      Assignment.countDocuments({ status: "Archived" }),
     ]);
 
     return res.json({
       success: true,
       data: {
         assignments: items.map(serializeAssignment),
+
         pagination: {
           page,
           limit,
           total,
           totalPages: Math.ceil(total / limit),
+        },
+
+        stats: {
+          total: totalAssignments,
+          drafts: draftCount,
+          published: publishedCount,
+          archived: archivedCount,
         },
       },
     });

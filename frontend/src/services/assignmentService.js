@@ -1,50 +1,91 @@
 import api from "./api";
 
-// Assignment management
+// ----------------------------------------------------
+// ADMIN ASSIGNMENT MANAGEMENT
+// ----------------------------------------------------
+
 export const getAssignments = (params = {}) =>
-  api.get("/assignments/admin", { params });
+  api.get("/assignments/admin", {
+    params,
+    silent: true,
+  });
 
 export const getAssignment = (id) =>
-  api.get(`/assignments/admin/${id}`);
+  api.get(`/assignments/admin/${id}`, {
+    silent: true,
+  });
 
 export const createAssignment = (formData) =>
   api.post("/assignments/admin", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    silent: true,
   });
 
 export const updateAssignment = (id, formData) =>
   api.put(`/assignments/admin/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    silent: true,
   });
 
 export const updateAssignmentStatus = (id, status) =>
-  api.patch(`/assignments/admin/${id}/status`, { status });
+  api.patch(
+    `/assignments/admin/${id}/status`,
+    { status },
+    { silent: true }
+  );
 
 export const deleteAssignment = (id) =>
-  api.delete(`/assignments/admin/${id}`);
+  api.delete(`/assignments/admin/${id}`, {
+    silent: true,
+  });
 
-// Reference attachments
+// ----------------------------------------------------
+// ADMIN REFERENCE ATTACHMENTS
+// ----------------------------------------------------
+
 export const addAssignmentAttachments = (id, formData) =>
   api.post(`/assignments/admin/${id}/attachments`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    silent: true,
   });
 
 export const removeAssignmentAttachment = (id, fileId) =>
-  api.delete(`/assignments/admin/${id}/attachments/${fileId}`);
+  api.delete(`/assignments/admin/${id}/attachments/${fileId}`, {
+    silent: true,
+  });
 
 export const downloadAssignmentFile = (id, fileId) =>
   api.get(
     `/assignments/admin/${id}/files/${fileId}/download`,
-    { responseType: "blob" }
+    {
+      responseType: "blob",
+      silent: true,
+    }
   );
 
-// Admin submissions
-export const getAssignmentSubmissions = (id, params = {}) =>
-  api.get(`/assignments/admin/${id}/submissions`, { params });
+// ----------------------------------------------------
+// ADMIN SUBMISSIONS
+// ----------------------------------------------------
 
-export const getAdminSubmissionHistory = (assignmentId, submissionId) =>
+export const getAssignmentSubmissions = (id, params = {}) =>
+  api.get(`/assignments/admin/${id}/submissions`, {
+    params,
+    silent: true,
+  });
+
+export const getAdminSubmissionHistory = (
+  assignmentId,
+  submissionId
+) =>
   api.get(
-    `/assignments/admin/${assignmentId}/submissions/${submissionId}/history`
+    `/assignments/admin/${assignmentId}/submissions/${submissionId}/history`,
+    { silent: true }
   );
 
 export const setStudentResubmission = (
@@ -54,28 +95,39 @@ export const setStudentResubmission = (
 ) =>
   api.patch(
     `/assignments/admin/${assignmentId}/submissions/${submissionId}/resubmission`,
-    { enabled }
+    { enabled },
+    { silent: true }
   );
 
 export const downloadSubmissionFile = (submissionId, fileId) =>
   api.get(
     `/assignments/admin/submissions/${submissionId}/files/${fileId}`,
-    { responseType: "blob" }
+    {
+      responseType: "blob",
+      silent: true,
+    }
   );
 
-// Admin evaluation
+// ----------------------------------------------------
+// ADMIN EVALUATION
+// ----------------------------------------------------
+
 export const getSubmissionEvaluation = (submissionId) =>
   api.get(
-    `/assignments/admin/submissions/${submissionId}/evaluation`
+    `/assignments/admin/submissions/${submissionId}/evaluation`,
+    { silent: true }
   );
 
 export const saveSubmissionEvaluation = (submissionId, data) =>
   api.post(
     `/assignments/admin/submissions/${submissionId}/evaluation`,
-    data
+    data,
+    { silent: true }
   );
 
 export const publishSubmissionEvaluation = (submissionId) =>
   api.patch(
-    `/assignments/admin/submissions/${submissionId}/evaluation/publish`
+    `/assignments/admin/submissions/${submissionId}/evaluation/publish`,
+    {},
+    { silent: true }
   );
