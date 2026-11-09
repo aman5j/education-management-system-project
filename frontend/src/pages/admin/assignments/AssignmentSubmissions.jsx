@@ -1,5 +1,11 @@
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -24,9 +30,12 @@ import {
   downloadSubmissionFile,
 } from "../../../services/assignmentService";
 
-import "./AssignmentSubmissions.css";
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
-const PAGE_SIZE = 15;
+import "./AssignmentSubmissions.css";
 
 const STATUS_OPTIONS = [
   "Pending",
@@ -36,13 +45,10 @@ const STATUS_OPTIONS = [
   "Evaluated",
 ];
 
+const DEFAULT_LIMIT = 10;
+
 const getRoot = (response) =>
   response?.data?.data ?? response?.data ?? {};
-
-const getError = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Something went wrong. Please try again.";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -61,15 +67,22 @@ const formatDate = (value) => {
 };
 
 const formatSize = (bytes = 0) => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
+  const size = Number(bytes) || 0;
+
+  if (size < 1024) return `${size} B`;
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
   }
 
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
 const saveBlob = (blob, filename) => {
+  if (!(blob instanceof Blob)) {
+    throw new Error("The downloaded file is invalid.");
+  }
+
   const url = window.URL.createObjectURL(blob);
   const anchor = document.createElement("a");
 
@@ -80,7 +93,10 @@ const saveBlob = (blob, filename) => {
   anchor.click();
   anchor.remove();
 
-  window.URL.revokeObjectURL(url);
+  // Allow the browser to begin the download before releasing the URL.
+  window.setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+  }, 1000);
 };
 
 const getStudentName = (student) => {
@@ -95,52 +111,94 @@ const getStudentName = (student) => {
 };
 
 const getBatchName = (submission) =>
-  submission?.admission_id?.batch_id?.batch_name ||
-  "—";
+  submission?.admission_id?.batch_id?.batch_name || "—";
 
 const getStatusLabel = (status) => {
   if (status === "UnderEvaluation") return "Under evaluation";
   return status || "Pending";
 };
 
+const getFileId = (file) => file?.id || file?._id || "";
+
 export default function AssignmentSubmissions() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // --------------------------------------------------
+  // MAIN DATA
+  // --------------------------------------------------
+
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
+
+  // --------------------------------------------------
+  // FILTERS AND PAGINATION
+  // --------------------------------------------------
 
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
 
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+
   const [pagination, setPagination] = useState({
+    page: 1,
+    limit: DEFAULT_LIMIT,
     total: 0,
-    totalPages: 1,
+    totalPages: 0,
   });
+
+  // --------------------------------------------------
+  // HISTORY
+  // --------------------------------------------------
 
   const [historyOpen, setHistoryOpen] = useState("");
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // --------------------------------------------------
+  // LOADING AND ACTION STATES
+  // --------------------------------------------------
+
+  const [assignmentLoading, setAssignmentLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+
+  // --------------------------------------------------
+  // LOAD ASSIGNMENT DETAILS
+  // --------------------------------------------------
 
   const loadAssignment = useCallback(async () => {
-    const response = await getAssignment(id);
-    setAssignment(getRoot(response));
+    if (!id) return;
+
+    setAssignmentLoading(true);
+
+    try {
+      const response = await getAssignment(id);
+      const root = getRoot(response);
+
+      setAssignment(root);
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      setAssignment(null);
+    } finally {
+      setAssignmentLoading(false);
+    }
   }, [id]);
 
+  // --------------------------------------------------
+  // LOAD STUDENT SUBMISSIONS
+  // --------------------------------------------------
+
   const loadSubmissions = useCallback(async () => {
+    if (!id) return;
+
     setLoading(true);
-    setError("");
 
     try {
       const params = {
         page,
-        limit: PAGE_SIZE,
+        limit,
       };
 
       if (statusFilter) {
@@ -150,38 +208,51 @@ export default function AssignmentSubmissions() {
       const response = await getAssignmentSubmissions(id, params);
       const root = getRoot(response);
 
-      setSubmissions(
-        Array.isArray(root.submissions)
-          ? root.submissions
-          : []
-      );
+      const items = Array.isArray(root.submissions)
+        ? root.submissions
+        : [];
 
-      setPagination(
-        root.pagination || {
-          total: 0,
-          totalPages: 1,
-        }
-      );
-    } catch (err) {
-      setError(getError(err));
+      setSubmissions(items);
+
+      setPagination({
+        page: Number(root.pagination?.page) || page,
+        limit: Number(root.pagination?.limit) || limit,
+        total: Number(root.pagination?.total) || 0,
+        totalPages: Number(root.pagination?.totalPages) || 0,
+      });
+
+      // Close history when the current page changes.
+      setHistoryOpen("");
+      setHistory([]);
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
-  }, [id, page, statusFilter]);
+  }, [id, page, limit, statusFilter]);
 
   useEffect(() => {
-    loadAssignment().catch((err) => setError(getError(err)));
+    loadAssignment();
   }, [loadAssignment]);
 
   useEffect(() => {
     loadSubmissions();
   }, [loadSubmissions]);
 
+  // --------------------------------------------------
+  // RESET PAGE WHEN FILTERS CHANGE
+  // --------------------------------------------------
+
   useEffect(() => {
     setPage(1);
     setHistoryOpen("");
     setHistory([]);
-  }, [statusFilter]);
+  }, [statusFilter, search]);
+
+  // --------------------------------------------------
+  // PAGE-LEVEL STATUS COUNTS
+  // --------------------------------------------------
 
   const counts = useMemo(() => {
     const result = {
@@ -193,13 +264,19 @@ export default function AssignmentSubmissions() {
     };
 
     submissions.forEach((item) => {
-      if (result[item.status] !== undefined) {
+      if (Object.prototype.hasOwnProperty.call(result, item.status)) {
         result[item.status] += 1;
       }
     });
 
     return result;
   }, [submissions]);
+
+  // --------------------------------------------------
+  // CLIENT-SIDE SEARCH
+  // Search applies to the currently loaded page only.
+  // Global search requires backend support.
+  // --------------------------------------------------
 
   const filteredSubmissions = useMemo(() => {
     const value = search.trim().toLowerCase();
@@ -223,11 +300,38 @@ export default function AssignmentSubmissions() {
     });
   }, [submissions, search]);
 
+  // --------------------------------------------------
+  // REFRESH
+  // --------------------------------------------------
+
   const handleRefresh = async () => {
     setHistoryOpen("");
     setHistory([]);
-    await loadSubmissions();
+
+    await Promise.all([
+      loadAssignment(),
+      loadSubmissions(),
+    ]);
   };
+
+  // --------------------------------------------------
+  // PAGINATION
+  // --------------------------------------------------
+
+  const handlePageChange = (nextPage) => {
+    setPage(Math.max(1, nextPage));
+  };
+
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+    setHistoryOpen("");
+    setHistory([]);
+  };
+
+  // --------------------------------------------------
+  // SUBMISSION VERSION HISTORY
+  // --------------------------------------------------
 
   const handleHistory = async (submission) => {
     if (!submission?._id) return;
@@ -241,7 +345,6 @@ export default function AssignmentSubmissions() {
     setHistoryOpen(submission._id);
     setHistory([]);
     setHistoryLoading(true);
-    setError("");
 
     try {
       const response = await getAdminSubmissionHistory(
@@ -252,27 +355,48 @@ export default function AssignmentSubmissions() {
       const root = getRoot(response);
 
       setHistory(Array.isArray(root) ? root : []);
-    } catch (err) {
-      setError(getError(err));
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      setHistoryOpen("");
     } finally {
       setHistoryLoading(false);
     }
   };
 
+  // --------------------------------------------------
+  // ENABLE / DISABLE INDIVIDUAL RESUBMISSION
+  // --------------------------------------------------
+
   const handleResubmission = async (submission, enabled) => {
     if (!submission?._id) return;
 
+    if (!assignment?.allowResubmission && enabled) {
+      notification.warning(
+        "Enable resubmission in the assignment settings first."
+      );
+      return;
+    }
+
     const studentName = getStudentName(submission.student_id);
 
-    const message = enabled
-      ? `Allow ${studentName} to submit another version?`
-      : `Disable resubmission for ${studentName}?`;
+    const confirmed = await notification.confirm({
+      title: enabled
+        ? "Enable resubmission?"
+        : "Disable resubmission?",
+      text: enabled
+        ? `Allow ${studentName} to submit another version of this assignment?`
+        : `Prevent ${studentName} from submitting another version?`,
+      confirmText: enabled
+        ? "Yes, enable"
+        : "Yes, disable",
+      cancelText: "Cancel",
+      icon: "question",
+      confirmButtonColor: enabled ? "#2563eb" : "#d97706",
+    });
 
-    if (!window.confirm(message)) return;
+    if (!confirmed) return;
 
     setActionId(submission._id);
-    setError("");
-    setSuccess("");
 
     try {
       await setStudentResubmission(
@@ -281,81 +405,135 @@ export default function AssignmentSubmissions() {
         enabled
       );
 
-      setSuccess(
+      notification.success(
         enabled
           ? "Resubmission enabled for this student."
           : "Resubmission disabled for this student."
       );
 
       await loadSubmissions();
-    } catch (err) {
-      setError(getError(err));
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
     } finally {
       setActionId("");
     }
   };
 
+  // --------------------------------------------------
+  // DOWNLOAD SUBMISSION FILE
+  // --------------------------------------------------
 
-const handleDownload = async (submissionId, file) => {
-  // Mongoose populated files use _id.
-  // History API files are serialized with id.
-  const fileId = file?.id || file?._id;
+  const handleDownload = async (submissionId, file) => {
+    const fileId = getFileId(file);
 
-  if (!submissionId || !fileId) {
-    setError("Unable to download file: submission or file ID is missing.");
-    return;
-  }
+    if (!submissionId || !fileId) {
+      notification.error(
+        "Unable to download file. Submission or file ID is missing."
+      );
+      return;
+    }
 
-  setActionId(fileId);
-  setError("");
+    setActionId(fileId);
 
-  try {
-    const response = await downloadSubmissionFile(
-      submissionId,
-      fileId
+    try {
+      const response = await downloadSubmissionFile(
+        submissionId,
+        fileId
+      );
+
+      saveBlob(
+        response.data,
+        file.originalName || "submission-file"
+      );
+
+      notification.success("File download started.");
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+    } finally {
+      setActionId("");
+    }
+  };
+
+  // --------------------------------------------------
+  // EVALUATION NAVIGATION
+  // Existing evaluation route is preserved.
+  // --------------------------------------------------
+
+  const handleEvaluate = (submission) => {
+    if (!submission?._id) return;
+
+    navigate(
+      `/admin/assignments/${id}/submissions/${submission._id}/evaluate`
     );
+  };
 
-    saveBlob(
-      response.data,
-      file.originalName || "submission-file"
-    );
-  } catch (err) {
-    setError(getError(err));
-  } finally {
-    setActionId("");
-  }
-};
+  // --------------------------------------------------
+  // LOADING / NOT FOUND
+  // --------------------------------------------------
 
-
-  const totalEligible = pagination.total || 0;
-  const submittedCount = submissions.filter(
-    (item) => Number(item.submissionCount || 0) > 0
-  ).length;
-
-  if (!assignment) {
+  if (assignmentLoading && !assignment) {
     return (
       <div className="assignment-submissions-page">
-        {loading ? "Loading assignment..." : (
-          <div className="as-alert as-alert-error">
-            {error || "Assignment not found."}
-          </div>
-        )}
+        <div className="as-empty">
+          Loading assignment details...
+        </div>
       </div>
     );
   }
 
+  if (!assignment) {
+    return (
+      <div className="assignment-submissions-page">
+        <div className="as-header">
+          <div>
+            <button
+              type="button"
+              className="as-back-button"
+              onClick={() => navigate("/admin/assignments")}
+            >
+              <FiArrowLeft />
+              Back to Assignments
+            </button>
+
+            <h1>Assignment Submissions</h1>
+          </div>
+        </div>
+
+        <div className="as-alert as-alert-error">
+          Assignment not found or you do not have permission to view it.
+        </div>
+      </div>
+    );
+  }
+
+  // --------------------------------------------------
+  // SUMMARY VALUES
+  // --------------------------------------------------
+
+  const totalEligible = pagination.total || 0;
+
+  const submittedCount = submissions.filter(
+    (item) => Number(item.submissionCount || 0) > 0
+  ).length;
+
   return (
     <div className="assignment-submissions-page">
+      {/* HEADER */}
+
       <div className="as-header">
         <div>
           <button
+            type="button"
             className="as-back-button"
             onClick={() => navigate("/admin/assignments")}
           >
-            <FiArrowLeft /> Back to Assignments
+            <FiArrowLeft />
+            Back to Assignments
           </button>
 
-          <span className="as-eyebrow">ACADEMIC MANAGEMENT</span>
+          <span className="as-eyebrow">
+            ACADEMIC MANAGEMENT
+          </span>
 
           <h1>Assignment Submissions</h1>
 
@@ -365,28 +543,17 @@ const handleDownload = async (submissionId, file) => {
         </div>
 
         <button
+          type="button"
           className="as-refresh-button"
           onClick={handleRefresh}
-          disabled={loading}
+          disabled={loading || assignmentLoading}
         >
           <FiRefreshCw className={loading ? "as-spin" : ""} />
           Refresh
         </button>
       </div>
 
-      {error && (
-        <div className="as-alert as-alert-error">
-          <span>{error}</span>
-          <button onClick={() => setError("")}><FiX /></button>
-        </div>
-      )}
-
-      {success && (
-        <div className="as-alert as-alert-success">
-          <span>{success}</span>
-          <button onClick={() => setSuccess("")}><FiX /></button>
-        </div>
-      )}
+      {/* ASSIGNMENT DETAILS */}
 
       <section className="as-assignment-card">
         <div className="as-assignment-main">
@@ -396,13 +563,14 @@ const handleDownload = async (submissionId, file) => {
 
           <div>
             <span className="as-assignment-status">
-              {assignment.status}
+              {assignment.status || "—"}
             </span>
 
-            <h2>{assignment.title}</h2>
+            <h2>{assignment.title || "Untitled assignment"}</h2>
 
             <p>
-              {assignment.description || "No assignment description provided."}
+              {assignment.description ||
+                "No assignment description provided."}
             </p>
           </div>
         </div>
@@ -427,7 +595,10 @@ const handleDownload = async (submissionId, file) => {
             <span>Target</span>
             <strong>
               {assignment.batches?.length
-                ? assignment.batches.map((batch) => batch.name).join(", ")
+                ? assignment.batches
+                    .map((batch) => batch.name)
+                    .filter(Boolean)
+                    .join(", ")
                 : "All eligible batches"}
             </strong>
           </div>
@@ -441,10 +612,12 @@ const handleDownload = async (submissionId, file) => {
           <div>
             <FiCheckCircle />
             <span>Total marks</span>
-            <strong>{assignment.total_marks}</strong>
+            <strong>{assignment.total_marks ?? "—"}</strong>
           </div>
         </div>
       </section>
+
+      {/* SUMMARY CARDS */}
 
       <section className="as-stats">
         <div className="as-stat-card">
@@ -453,7 +626,7 @@ const handleDownload = async (submissionId, file) => {
         </div>
 
         <div className="as-stat-card">
-          <span>Submitted students</span>
+          <span>Submitted on this page</span>
           <strong>{submittedCount}</strong>
         </div>
 
@@ -468,6 +641,8 @@ const handleDownload = async (submissionId, file) => {
         </div>
       </section>
 
+      {/* SUBMISSIONS TABLE */}
+
       <section className="as-panel">
         <div className="as-toolbar">
           <div>
@@ -480,18 +655,33 @@ const handleDownload = async (submissionId, file) => {
           <div className="as-controls">
             <div className="as-search">
               <FiSearch />
+
               <input
+                type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search student, roll no, batch..."
+                aria-label="Search submissions on this page"
               />
+
+              {search && (
+                <button
+                  type="button"
+                  title="Clear search"
+                  onClick={() => setSearch("")}
+                >
+                  <FiX />
+                </button>
+              )}
             </div>
 
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
+              aria-label="Filter by submission status"
             >
               <option value="">All statuses</option>
+
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
                   {getStatusLabel(status)}
@@ -525,23 +715,34 @@ const handleDownload = async (submissionId, file) => {
               ) : filteredSubmissions.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="as-empty">
-                    No eligible students found for this filter.
+                    {search
+                      ? "No students match your search on this page."
+                      : "No eligible students found for this filter."}
                   </td>
                 </tr>
               ) : (
                 filteredSubmissions.map((item) => {
                   const student = item.student_id || {};
-                  const hasSubmitted = Number(item.submissionCount || 0) > 0;
+
+                  const hasSubmitted =
+                    Number(item.submissionCount || 0) > 0;
+
                   const isResubmissionEnabled = Boolean(
                     item.resubmissionEnabled
                   );
 
                   const latestVersion = item.latestVersion_id;
-                  const isBusy = actionId === item._id;
+                  const latestFile = latestVersion?.files?.[0];
+
+                  const isBusy =
+                    actionId === item._id ||
+                    actionId === getFileId(latestFile);
 
                   return (
-                    <React.Fragment key={item._id}>
+                    <Fragment key={item._id}>
                       <tr>
+                        {/* STUDENT */}
+
                         <td>
                           <div className="as-student-cell">
                             <div className="as-avatar">
@@ -550,18 +751,25 @@ const handleDownload = async (submissionId, file) => {
 
                             <div>
                               <strong>{getStudentName(student)}</strong>
+
                               <span>
                                 Roll No: {student.rollNo || "—"}
                               </span>
+
                               <small>{student.email || ""}</small>
                             </div>
                           </div>
                         </td>
 
+                        {/* BATCH */}
+
                         <td>{getBatchName(item)}</td>
+
+                        {/* SUBMISSION DATE */}
 
                         <td>
                           {formatDate(item.lastSubmittedAt)}
+
                           {item.isLate && (
                             <span className="as-late-label">
                               Late submission
@@ -569,9 +777,13 @@ const handleDownload = async (submissionId, file) => {
                           )}
                         </td>
 
+                        {/* VERSION COUNT */}
+
                         <td>
                           <strong>{item.submissionCount || 0}</strong>
                         </td>
+
+                        {/* STATUS */}
 
                         <td>
                           <span
@@ -582,6 +794,8 @@ const handleDownload = async (submissionId, file) => {
                             {getStatusLabel(item.status)}
                           </span>
                         </td>
+
+                        {/* RESUBMISSION */}
 
                         <td>
                           {hasSubmitted ? (
@@ -600,66 +814,67 @@ const handleDownload = async (submissionId, file) => {
                                   )
                                 }
                               />
+
                               <span />
+
                               <small>
-                                {isResubmissionEnabled ? "Enabled" : "Disabled"}
+                                {isResubmissionEnabled
+                                  ? "Enabled"
+                                  : "Disabled"}
                               </small>
                             </label>
                           ) : (
-                            <span className="as-muted">Not applicable</span>
+                            <span className="as-muted">
+                              Not applicable
+                            </span>
                           )}
                         </td>
 
+                        {/* ACTIONS */}
+
                         <td>
                           <div className="as-actions">
-                            {hasSubmitted && item.status !== "Pending" && (
-                                <button
-                                    title="Evaluate student submission"
-                                    onClick={() =>
-                                    navigate(
-                                        `/admin/assignments/${id}/submissions/${item._id}/evaluate`
-                                    )
-                                    }
-                                >
-                                    <FiCheckCircle />
-                                    Evaluate
-                                </button>
-                                )}
+                            {hasSubmitted && (
+                              <button
+                                type="button"
+                                title="Evaluate student submission"
+                                onClick={() => handleEvaluate(item)}
+                              >
+                                <FiCheckCircle />
+                                Evaluate
+                              </button>
+                            )}
 
                             {hasSubmitted && (
                               <button
+                                type="button"
                                 title="View version history"
                                 onClick={() => handleHistory(item)}
+                                disabled={historyLoading}
                               >
                                 <FiClock />
                                 History
                               </button>
                             )}
 
-                            {latestVersion?.files?.length > 0 && (
+                            {latestFile && (
                               <button
+                                type="button"
                                 title="Download latest submission"
                                 onClick={() =>
-                                    handleDownload(
-                                    item._id,
-                                    latestVersion.files[0]
-                                    )
+                                  handleDownload(item._id, latestFile)
                                 }
-                                disabled={
-                                    isBusy ||
-                                    actionId === (
-                                    latestVersion?.files?.[0]?.id ||
-                                    latestVersion?.files?.[0]?._id
-                                    )
-                                }
-                                >
+                                disabled={isBusy}
+                              >
                                 <FiDownload />
                                 Latest file
-                                </button>
+                              </button>
                             )}
                           </div>
                         </td>
                       </tr>
+
+                      {/* VERSION HISTORY */}
 
                       {historyOpen === item._id && (
                         <tr className="as-history-row">
@@ -668,6 +883,7 @@ const handleDownload = async (submissionId, file) => {
                               <div className="as-history-heading">
                                 <div>
                                   <h3>Submission version history</h3>
+
                                   <p>
                                     {getStudentName(student)} ·{" "}
                                     {item.submissionCount || 0} version(s)
@@ -675,10 +891,12 @@ const handleDownload = async (submissionId, file) => {
                                 </div>
 
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setHistoryOpen("");
                                     setHistory([]);
                                   }}
+                                  title="Close history"
                                 >
                                   <FiX />
                                 </button>
@@ -732,13 +950,16 @@ const handleDownload = async (submissionId, file) => {
                                             </span>
 
                                             <button
+                                              type="button"
                                               onClick={() =>
                                                 handleDownload(
                                                   item._id,
                                                   file
                                                 )
                                               }
-                                              disabled={actionId === file.id}
+                                              disabled={
+                                                actionId === file.id
+                                              }
                                               title="Download file"
                                             >
                                               <FiDownload />
@@ -754,7 +975,7 @@ const handleDownload = async (submissionId, file) => {
                           </td>
                         </tr>
                       )}
-                    </React.Fragment>
+                    </Fragment>
                   );
                 })
               )}
@@ -762,40 +983,28 @@ const handleDownload = async (submissionId, file) => {
           </table>
         </div>
 
-        <div className="as-pagination">
-          <span>
-            {pagination.total || 0} eligible student(s)
-          </span>
+        {/* SHARED PAGINATION */}
 
-          <div>
-            <button
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((current) => current - 1)}
-            >
-              Previous
-            </button>
-
-            <strong>
-              {page} / {Math.max(1, pagination.totalPages || 1)}
-            </strong>
-
-            <button
-              disabled={
-                page >= (pagination.totalPages || 1) || loading
-              }
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          itemCount={filteredSubmissions.length}
+          itemLabel="eligible students"
+          limit={limit}
+          loading={loading}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+        />
       </section>
+
+      {/* RESUBMISSION POLICY INFORMATION */}
 
       {!assignment.allowResubmission && (
         <div className="as-information">
           Individual resubmission cannot be enabled while the assignment-level
-          resubmission setting is disabled. Enable it in the assignment policy
-          before using individual overrides.
+          resubmission setting is disabled. Enable it in the assignment
+          settings before using individual student overrides.
         </div>
       )}
     </div>
