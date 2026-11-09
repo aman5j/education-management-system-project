@@ -5,13 +5,16 @@ import {
 } from "react-icons/fi";
 
 import certificateService from "../../../services/certificateService";
+import {
+  default as notification,
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 export default function CertificateShareAction({
   certificate,
   onShared,
 }) {
   const [sharing, setSharing] = useState(false);
-  const [error, setError] = useState("");
   const [shared, setShared] = useState(
     certificate?.status === "Shared"
   );
@@ -23,18 +26,26 @@ export default function CertificateShareAction({
       certificate.generationState !== "Generated" ||
       !certificate.certificateUrl
     ) {
-      setError("Generate the PDF before sharing.");
+      notification.warning("Generate the PDF before sharing.");
       return;
     }
 
-    const confirmed = window.confirm(
-      `Share certificate ${certificate.certificateNo} with ${certificate.studentNameSnapshot || "the linked student"}?\n\nThe student will be able to see it in Student Portal → My Certificates.`
-    );
+    const studentName =
+      certificate.studentNameSnapshot ||
+      "the linked student";
+
+    const confirmed = await notification.confirm({
+      title: "Share certificate?",
+      text: `Certificate ${certificate.certificateNo || ""} will be shared with ${studentName}. The student will be able to view it in Student Portal → My Certificates.`,
+      confirmText: "Yes, share",
+      cancelText: "Cancel",
+      icon: "question",
+      confirmButtonColor: "#2563eb",
+    });
 
     if (!confirmed) return;
 
     setSharing(true);
-    setError("");
 
     try {
       const response =
@@ -42,22 +53,34 @@ export default function CertificateShareAction({
           certificate._id
         );
 
-      const data = response?.data?.data;
+      const data =
+        response?.data?.data ??
+        response?.data ??
+        {};
 
-      // !!!!!!! START
+      if (
+        data?.success === false ||
+        data?.status === "Generated"
+      ) {
+        throw new Error(
+          data?.message ||
+            "The certificate could not be shared."
+        );
+      }
+
       setShared(true);
-      // !!!!!!! END
 
-    //   setShared(data?.status === "Shared" || true);
+      notification.success(
+        data?.message ||
+          "Certificate shared with the student successfully."
+      );
 
       if (onShared) {
         await onShared();
       }
-    } catch (err) {
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to share this certificate."
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error)
       );
     } finally {
       setSharing(false);
@@ -95,15 +118,6 @@ export default function CertificateShareAction({
         <FiShare2 />
         {sharing ? "Sharing..." : "Share"}
       </button>
-
-      {error && (
-        <span
-          className="cert-share-error"
-          title={error}
-        >
-          {error}
-        </span>
-      )}
     </div>
   );
 }

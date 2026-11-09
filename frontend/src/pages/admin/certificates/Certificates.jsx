@@ -15,17 +15,27 @@ import {
 
 import certificateService from "../../../services/certificateService";
 import CertificateShareAction from "./CertificateShareAction";
+import Pagination from "../../../components/common/Pagination";
 import { getAssetUrl } from "../../../utils/assetUrl";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "./Certificates.css";
 
+const DEFAULT_PAGE_SIZE = 10;
+
+const EMPTY_SUMMARY = {
+  total: 0,
+  generated: 0,
+  shared: 0,
+  revoked: 0,
+  generating: 0,
+  failed: 0,
+};
+
 const unwrap = (response) =>
   response?.data?.data ?? response?.data ?? response;
-
-const getErrorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Unable to complete this request.";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -47,10 +57,7 @@ const formatNumber = (value) =>
   });
 
 const getStudentName = (student) =>
-  [
-    student?.firstName,
-    student?.surname,
-  ]
+  [student?.firstName, student?.surname]
     .filter(Boolean)
     .join(" ") || "Student";
 
@@ -75,13 +82,10 @@ const getGenerationClass = (state) => {
   switch (state) {
     case "Generated":
       return "cert-status-generated";
-
     case "Generating":
       return "cert-status-generating";
-
     case "Failed":
       return "cert-status-failed";
-
     default:
       return "";
   }
@@ -91,13 +95,10 @@ const getBusinessStatusClass = (status) => {
   switch (status) {
     case "Shared":
       return "cert-status-shared";
-
     case "Revoked":
       return "cert-status-revoked";
-
     case "Generated":
       return "cert-status-generated";
-
     default:
       return "";
   }
@@ -109,14 +110,7 @@ const Certificates = () => {
   const [eligibleResults, setEligibleResults] = useState([]);
   const [certificates, setCertificates] = useState([]);
 
-  const [summary, setSummary] = useState({
-    total: 0,
-    generated: 0,
-    shared: 0,
-    revoked: 0,
-    generating: 0,
-    failed: 0,
-  });
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -125,9 +119,11 @@ const Certificates = () => {
   const [generationState, setGenerationState] = useState("All");
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: DEFAULT_PAGE_SIZE,
     total: 0,
     totalPages: 1,
   });
@@ -136,12 +132,8 @@ const Certificates = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [generatingId, setGeneratingId] = useState("");
 
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
   const [selectedCertificate, setSelectedCertificate] =
     useState(null);
-
   const [detailLoading, setDetailLoading] = useState(false);
 
   const loadData = useCallback(
@@ -152,18 +144,15 @@ const Certificates = () => {
         setLoading(true);
       }
 
-      setError("");
-
       try {
         if (activeTab === "eligible") {
           const [eligibleResponse, summaryResponse] =
             await Promise.all([
               certificateService.getEligibleResults({
                 page,
-                limit: 10,
+                limit: pageSize,
                 search,
               }),
-
               certificateService.getCertificates({
                 page: 1,
                 limit: 1,
@@ -179,28 +168,21 @@ const Certificates = () => {
 
           setPagination(
             eligibleData?.pagination || {
-              page: 1,
-              limit: 10,
+              page,
+              limit: pageSize,
               total: 0,
               totalPages: 1,
             }
           );
 
           setSummary(
-            summaryData?.summary || {
-              total: 0,
-              generated: 0,
-              shared: 0,
-              revoked: 0,
-              generating: 0,
-              failed: 0,
-            }
+            summaryData?.summary || EMPTY_SUMMARY
           );
         } else {
           const response =
             await certificateService.getCertificates({
               page,
-              limit: 10,
+              limit: pageSize,
               search,
               status: businessStatus,
               generationState,
@@ -208,32 +190,23 @@ const Certificates = () => {
 
           const data = unwrap(response);
 
-          setCertificates(
-            data?.certificates || []
-          );
+          setCertificates(data?.certificates || []);
 
           setPagination(
             data?.pagination || {
-              page: 1,
-              limit: 10,
+              page,
+              limit: pageSize,
               total: 0,
               totalPages: 1,
             }
           );
 
-          setSummary(
-            data?.summary || {
-              total: 0,
-              generated: 0,
-              shared: 0,
-              revoked: 0,
-              generating: 0,
-              failed: 0,
-            }
-          );
+          setSummary(data?.summary || EMPTY_SUMMARY);
         }
-      } catch (err) {
-        setError(getErrorMessage(err));
+      } catch (error) {
+        notification.error(
+          getApiErrorMessage(error)
+        );
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -242,6 +215,7 @@ const Certificates = () => {
     [
       activeTab,
       page,
+      pageSize,
       search,
       businessStatus,
       generationState,
@@ -256,7 +230,6 @@ const Certificates = () => {
     if (!selectedCertificate) return undefined;
 
     const previousOverflow = document.body.style.overflow;
-
     document.body.style.overflow = "hidden";
 
     const handleEscape = (event) => {
@@ -281,7 +254,6 @@ const Certificates = () => {
 
     setPage(1);
     setSearch(searchInput.trim());
-    setNotice("");
   };
 
   const handleClearSearch = () => {
@@ -291,29 +263,34 @@ const Certificates = () => {
   };
 
   const handleTabChange = (tab) => {
+    if (tab === activeTab) return;
+
     setActiveTab(tab);
     setPage(1);
-    setError("");
-    setNotice("");
   };
 
   const handleGenerate = async (result) => {
-    if (!result?.resultId) return;
+    if (!result?.resultId || generatingId) return;
 
-    const studentName = result.student?.name || "this student";
+    const studentName =
+      result.student?.name || "this student";
 
-    const confirmed = window.confirm(
-      `Generate a certificate for ${studentName}?\n\n` +
+    const confirmed = await notification.confirm({
+      title: "Generate certificate?",
+      text:
+        `Generate a certificate for ${studentName}? ` +
         `Certificate type: ${getCertificateTypeLabel(
           result.certificateType
-        )}`
-    );
+        )}.`,
+      confirmText: "Yes, generate",
+      cancelText: "Cancel",
+      icon: "question",
+      confirmButtonColor: "#2563eb",
+    });
 
     if (!confirmed) return;
 
     setGeneratingId(result.resultId);
-    setError("");
-    setNotice("");
 
     try {
       const response =
@@ -323,14 +300,16 @@ const Certificates = () => {
 
       const data = unwrap(response);
 
-      setNotice(
+      notification.success(
         data?.message ||
           "Certificate generated successfully."
       );
 
       await loadData(true);
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error)
+      );
     } finally {
       setGeneratingId("");
     }
@@ -341,7 +320,6 @@ const Certificates = () => {
 
     setSelectedCertificate(certificate);
     setDetailLoading(true);
-    setError("");
 
     try {
       const response =
@@ -352,8 +330,10 @@ const Certificates = () => {
       const data = unwrap(response);
 
       setSelectedCertificate(data);
-    } catch (err) {
-      setError(getErrorMessage(err));
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error)
+      );
     } finally {
       setDetailLoading(false);
     }
@@ -361,24 +341,50 @@ const Certificates = () => {
 
   const handleOpenPdf = (certificateUrl) => {
     if (!certificateUrl) {
-      setError("PDF is not available for this certificate.");
+      notification.warning(
+        "PDF is not available for this certificate."
+      );
       return;
     }
 
     const url = getAssetUrl(certificateUrl);
 
+    if (!url) {
+      notification.error(
+        "Unable to resolve the certificate PDF URL."
+      );
+      return;
+    }
+
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handlePageChange = (nextPage) => {
+    const totalPages = Math.max(
+      Number(pagination.totalPages) || 1,
+      1
+    );
+
     if (
       nextPage < 1 ||
-      nextPage > pagination.totalPages
+      nextPage > totalPages ||
+      nextPage === page
     ) {
       return;
     }
 
     setPage(nextPage);
+  };
+
+  const handlePageSizeChange = (nextLimit) => {
+    const allowedLimits = [10, 25, 50];
+
+    if (!allowedLimits.includes(Number(nextLimit))) {
+      return;
+    }
+
+    setPageSize(Number(nextLimit));
+    setPage(1);
   };
 
   const handleFilterChange = (type, value) => {
@@ -394,22 +400,26 @@ const Certificates = () => {
   };
 
   const selected = selectedCertificate;
+  const currentRows =
+    activeTab === "eligible"
+      ? eligibleResults
+      : certificates;
+
+  const currentItemCount = currentRows.length;
 
   return (
     <div className="certificates-page">
       <div className="certificates-page-header">
-        <div>
-          <div className="certificates-title-row">
-            <div className="certificates-title-icon">
-              <FiAward />
-            </div>
+        <div className="certificates-title-row">
+          <div className="certificates-title-icon">
+            <FiAward />
+          </div>
 
-            <div>
-              <h1>Certificates</h1>
-              <p>
-                Generate, manage and verify student certificates.
-              </p>
-            </div>
+          <div>
+            <h1>Certificates</h1>
+            <p>
+              Generate, manage and verify student certificates.
+            </p>
           </div>
         </div>
 
@@ -420,9 +430,7 @@ const Certificates = () => {
           disabled={loading || refreshing}
         >
           <FiRefreshCw
-            className={
-              refreshing ? "cert-spin" : ""
-            }
+            className={refreshing ? "cert-spin" : ""}
           />
           Refresh
         </button>
@@ -434,7 +442,6 @@ const Certificates = () => {
           <div className="cert-summary-icon cert-icon-blue">
             <FiFileText />
           </div>
-
           <div>
             <span>Total Certificates</span>
             <strong>{summary.total}</strong>
@@ -445,7 +452,6 @@ const Certificates = () => {
           <div className="cert-summary-icon cert-icon-green">
             <FiCheckCircle />
           </div>
-
           <div>
             <span>Generated</span>
             <strong>{summary.generated}</strong>
@@ -456,7 +462,6 @@ const Certificates = () => {
           <div className="cert-summary-icon cert-icon-purple">
             <FiAward />
           </div>
-
           <div>
             <span>Shared</span>
             <strong>{summary.shared}</strong>
@@ -467,7 +472,6 @@ const Certificates = () => {
           <div className="cert-summary-icon cert-icon-orange">
             <FiClock />
           </div>
-
           <div>
             <span>Generating</span>
             <strong>{summary.generating}</strong>
@@ -478,7 +482,6 @@ const Certificates = () => {
           <div className="cert-summary-icon cert-icon-red">
             <FiAlertCircle />
           </div>
-
           <div>
             <span>Failed</span>
             <strong>{summary.failed}</strong>
@@ -547,9 +550,7 @@ const Certificates = () => {
             </button>
           )}
 
-          <button type="submit">
-            Search
-          </button>
+          <button type="submit">Search</button>
         </form>
 
         {activeTab === "issued" && (
@@ -589,42 +590,15 @@ const Certificates = () => {
         )}
       </div>
 
-      {notice && (
-        <div className="cert-alert cert-alert-success">
-          <FiCheckCircle />
-          <span>{notice}</span>
-          <button
-            type="button"
-            onClick={() => setNotice("")}
-            aria-label="Dismiss message"
-          >
-            <FiX />
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="cert-alert cert-alert-error">
-          <FiAlertCircle />
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={() => setError("")}
-            aria-label="Dismiss error"
-          >
-            <FiX />
-          </button>
-        </div>
-      )}
-
-      {/* Eligible results table */}
+      {/* Eligible results */}
       {activeTab === "eligible" && (
         <section className="certificates-table-card">
           <div className="cert-table-heading">
             <div>
               <h2>Eligible Students</h2>
               <p>
-                Published exam results available for certificate generation.
+                Published exam results available for certificate
+                generation.
               </p>
             </div>
 
@@ -643,8 +617,8 @@ const Certificates = () => {
               <FiFileText />
               <h3>No eligible results found</h3>
               <p>
-                Published exam results that do not already have an
-                active certificate will appear here.
+                Published exam results that do not already have
+                an active certificate will appear here.
               </p>
             </div>
           ) : (
@@ -677,7 +651,6 @@ const Certificates = () => {
                               <strong>
                                 {item.student?.name || "Student"}
                               </strong>
-
                               <span>
                                 Roll No:{" "}
                                 {item.student?.rollNo || "—"}
@@ -690,7 +663,6 @@ const Certificates = () => {
                           <strong className="cert-primary-text">
                             {item.course?.name || "—"}
                           </strong>
-
                           <span className="cert-cell-subtext">
                             {item.course?.duration || ""}
                           </span>
@@ -743,9 +715,7 @@ const Certificates = () => {
                           <button
                             type="button"
                             className="cert-generate-button"
-                            onClick={() =>
-                              handleGenerate(item)
-                            }
+                            onClick={() => handleGenerate(item)}
                             disabled={
                               generatingId === item.resultId
                             }
@@ -770,22 +740,30 @@ const Certificates = () => {
               </div>
 
               <Pagination
-                pagination={pagination}
+                page={pagination.page || page}
+                totalPages={pagination.totalPages || 1}
+                total={pagination.total || 0}
+                itemCount={currentItemCount}
+                itemLabel="eligible results"
+                limit={pageSize}
+                loading={loading}
                 onPageChange={handlePageChange}
+                onLimitChange={handlePageSizeChange}
               />
             </>
           )}
         </section>
       )}
 
-      {/* Generated certificates table */}
+      {/* Generated certificates */}
       {activeTab === "issued" && (
         <section className="certificates-table-card">
           <div className="cert-table-heading">
             <div>
               <h2>Certificate Records</h2>
               <p>
-                Review generated PDFs and certificate generation status.
+                Review generated PDFs and certificate generation
+                status.
               </p>
             </div>
 
@@ -831,7 +809,6 @@ const Certificates = () => {
                           <strong className="cert-number">
                             {item.certificateNo || "—"}
                           </strong>
-
                           <span className="cert-cell-subtext">
                             {getCertificateTypeLabel(
                               item.certificateType
@@ -844,7 +821,6 @@ const Certificates = () => {
                             {item.studentNameSnapshot ||
                               getStudentName(item.student_id)}
                           </strong>
-
                           <span className="cert-cell-subtext">
                             Roll No:{" "}
                             {item.rollNoSnapshot ||
@@ -918,40 +894,42 @@ const Certificates = () => {
                           </span>
                         </td>
 
-                        <td>
-                          {formatDate(item.issueDate)}
-                        </td>
+                        <td>{formatDate(item.issueDate)}</td>
 
                         <td>
                           <div className="cert-row-actions">
                             <button
-                                type="button"
-                                className="cert-icon-button"
-                                title="View certificate details"
-                                onClick={() => handleViewCertificate(item)}
+                              type="button"
+                              className="cert-icon-button"
+                              title="View certificate details"
+                              onClick={() =>
+                                handleViewCertificate(item)
+                              }
                             >
-                                <FiEye />
+                              <FiEye />
                             </button>
 
                             {item.generationState === "Generated" &&
-                                item.certificateUrl && (
+                              item.certificateUrl && (
                                 <button
-                                    type="button"
-                                    className="cert-icon-button cert-download-button"
-                                    title="Open PDF"
-                                    onClick={() =>
-                                    handleOpenPdf(item.certificateUrl)
-                                    }
+                                  type="button"
+                                  className="cert-icon-button cert-download-button"
+                                  title="Open PDF"
+                                  onClick={() =>
+                                    handleOpenPdf(
+                                      item.certificateUrl
+                                    )
+                                  }
                                 >
-                                    <FiDownload />
+                                  <FiDownload />
                                 </button>
-                                )}
+                              )}
 
-                                <CertificateShareAction
-                                    certificate={item}
-                                    onShared={() => loadData(true)}
-                                />
-                            </div>
+                            <CertificateShareAction
+                              certificate={item}
+                              onShared={() => loadData(true)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -960,8 +938,15 @@ const Certificates = () => {
               </div>
 
               <Pagination
-                pagination={pagination}
+                page={pagination.page || page}
+                totalPages={pagination.totalPages || 1}
+                total={pagination.total || 0}
+                itemCount={currentItemCount}
+                itemLabel="certificates"
+                limit={pageSize}
+                loading={loading}
                 onPageChange={handlePageChange}
+                onLimitChange={handlePageSizeChange}
               />
             </>
           )}
@@ -1192,46 +1177,6 @@ const Certificates = () => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-const Pagination = ({ pagination, onPageChange }) => {
-  const currentPage = pagination.page || 1;
-  const totalPages = Math.max(
-    pagination.totalPages || 1,
-    1
-  );
-
-  if (totalPages <= 1) return null;
-
-  return (
-    <div className="cert-pagination">
-      <span>
-        Page {currentPage} of {totalPages}
-      </span>
-
-      <div>
-        <button
-          type="button"
-          disabled={currentPage <= 1}
-          onClick={() =>
-            onPageChange(currentPage - 1)
-          }
-        >
-          Previous
-        </button>
-
-        <button
-          type="button"
-          disabled={currentPage >= totalPages}
-          onClick={() =>
-            onPageChange(currentPage + 1)
-          }
-        >
-          Next
-        </button>
-      </div>
     </div>
   );
 };
