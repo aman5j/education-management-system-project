@@ -1,44 +1,22 @@
 import api from "./api";
 
-/*
-|--------------------------------------------------------------------------
-| GET STUDENT REPORT FILTERS
-|--------------------------------------------------------------------------
-*/
+export const getStudentReportFilters = async () => {
+  return api.get("/reports/student-filters", {
+    silent: true,
+  });
+};
 
-export const getStudentReportFilters =
-  async () => {
-    return api.get(
-      "/reports/student-filters"
-    );
-  };
+export const getStudentReport = async (filters = {}) => {
+  const params = {};
 
-/*
-|--------------------------------------------------------------------------
-| GET STUDENT REPORT
-|--------------------------------------------------------------------------
-*/
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      params[key] = value;
+    }
+  });
 
-export const getStudentReport =
-  async (filters = {}) => {
-    const params = {};
-
-    Object.entries(filters).forEach(
-      ([key, value]) => {
-        if (
-          value !== undefined &&
-          value !== null &&
-          value !== ""
-        ) {
-          params[key] = value;
-        }
-      }
-    );
-
-    return api.get(
-      "/reports/students",
-      {
-        params,
-      }
-    );
-  };
+  return api.get("/reports/students", {
+    params,
+    silent: true,
+  });
+};
