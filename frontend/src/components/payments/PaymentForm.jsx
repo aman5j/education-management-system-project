@@ -7,6 +7,7 @@ import {
 import {
   getAdmissions,
 } from "../../services/admissionService";
+import notification from "../../utils/notification";
 
 const getToday = () =>
   new Date()
@@ -42,8 +43,8 @@ const PaymentForm = ({
     setLoadingAdmissions,
   ] = useState(false);
 
-  const [error, setError] =
-    useState("");
+  // const [error, setError] =
+  //   useState("");
 
   useEffect(() => {
     const loadAdmissions =
@@ -80,9 +81,13 @@ const PaymentForm = ({
 
           setAdmissions([]);
 
-          setError(
-            loadError?.response
-              ?.data?.message ||
+          // setError(
+          //   loadError?.response
+          //     ?.data?.message ||
+          //     "Unable to load admissions."
+          // );
+          notification.error(
+            loadError?.response?.data?.message ||
               "Unable to load admissions."
           );
         } finally {
@@ -204,7 +209,7 @@ const PaymentForm = ({
       })
     );
 
-    setError("");
+    // setError("");
   };
 
   const handleAdmissionChange =
@@ -218,117 +223,68 @@ const PaymentForm = ({
         })
       );
 
-      setError("");
+      // setError("");
     };
 
-  const handleSubmit = async (
-    event
-  ) => {
-    event.preventDefault();
+const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    setError("");
+  if (submitting) return;
 
-    if (!form.admission_id) {
-      setError(
-        "Please select an admission."
-      );
-      return;
-    }
+  if (!form.admission_id) {
+    notification.warning("Please select an admission.");
+    return;
+  }
 
-    if (
-      enteredAmount <= 0
-    ) {
-      setError(
-        "Payment amount must be greater than zero."
-      );
-      return;
-    }
+  if (!form.payment_date) {
+    notification.warning("Please select a payment date.");
+    return;
+  }
 
-    /*
-     * When editing an existing payment,
-     * the current payment is already included
-     * inside paidAmount.
-     *
-     * Therefore add it back to calculate
-     * the maximum allowed edited amount.
-     */
-    let maximumAllowed =
-      remainingAmount;
+  if (!Number.isFinite(enteredAmount) || enteredAmount <= 0) {
+    notification.warning(
+      "Payment amount must be greater than zero."
+    );
+    return;
+  }
 
-    if (
-      initialData &&
-      selectedAdmission
-    ) {
-      const currentPaymentAmount =
-        Number(
-          initialData.amount || 0
-        );
+  let maximumAllowed = remainingAmount;
 
-      maximumAllowed =
-        remainingAmount +
-        currentPaymentAmount;
-    }
+  if (initialData && selectedAdmission) {
+    maximumAllowed =
+      remainingAmount + Number(initialData.amount || 0);
+  }
 
-    if (
-      form.status ===
-        "Verified" &&
-      enteredAmount >
-        maximumAllowed
-    ) {
-      setError(
-        `Payment cannot exceed ₹${maximumAllowed.toFixed(
-          2
-        )}.`
-      );
+  if (
+    form.status === "Verified" &&
+    enteredAmount > maximumAllowed
+  ) {
+    notification.warning(
+      `Payment cannot exceed ₹${maximumAllowed.toFixed(2)}.`
+    );
+    return;
+  }
 
-      return;
-    }
-
-    try {
-      await onSubmit({
-        admission_id:
-          form.admission_id,
-
-        /*
-         * student_id is taken from
-         * selected admission on backend.
-         * We still send it when available.
-         */
-        student_id:
-          selectedAdmission
-            ?.student_id?._id ||
-          selectedAdmission
-            ?.student_id ||
-          initialData?.student_id?._id ||
-          initialData?.student_id,
-
-        amount:
-          enteredAmount,
-
-        payment_date:
-          form.payment_date,
-
-        payment_mode:
-          form.payment_mode,
-
-        receipt_no:
-          form.receipt_no,
-
-        status:
-          form.status,
-
-        notes:
-          form.notes,
-      });
-    } catch (submitError) {
-      setError(
-        submitError?.response
-          ?.data?.message ||
-          submitError?.message ||
-          "Unable to save payment."
-      );
-    }
-  };
+  try {
+    await onSubmit({
+      admission_id: form.admission_id,
+      student_id:
+        selectedAdmission?.student_id?._id ||
+        selectedAdmission?.student_id ||
+        initialData?.student_id?._id ||
+        initialData?.student_id,
+      amount: enteredAmount,
+      payment_date: form.payment_date,
+      payment_mode: form.payment_mode,
+      receipt_no: form.receipt_no,
+      status: form.status,
+      notes: form.notes,
+    });
+  } catch {
+    // The Add/Edit page owns API error notifications.
+    // Do not show another Toast here.
+  }
+};
 
   return (
     <form
@@ -337,11 +293,11 @@ const PaymentForm = ({
         handleSubmit
       }
     >
-      {error && (
+      {/* {error && (
         <div className="payment-form-error">
           {error}
         </div>
-      )}
+      )} */}
 
       {/* ADMISSION */}
 

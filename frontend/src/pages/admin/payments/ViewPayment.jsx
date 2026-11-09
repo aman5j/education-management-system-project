@@ -9,6 +9,11 @@ import {
   useParams,
 } from "react-router-dom";
 
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
+
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -84,10 +89,12 @@ const ViewPayment = () => {
           loadError
         );
 
-        setError(
-          loadError?.response?.data?.message ||
-            "Unable to load payment."
-        );
+        // setError(
+        //   loadError?.response?.data?.message ||
+        //     "Unable to load payment."
+        // );
+        notification.error(getApiErrorMessage(loadError));
+        setError(getApiErrorMessage(loadError));
       } finally {
         setLoading(false);
       }
@@ -210,35 +217,29 @@ const ViewPayment = () => {
   |--------------------------------------------------------------------------
   */
 
-  const handleDownloadReceipt = async () => {
-    if (!payment) {
-      return;
-    }
+const handleDownloadReceipt = async () => {
+  if (!payment) return;
 
-    if (payment.status !== "Verified") {
-      alert(
-        "Receipt can only be downloaded for verified payments."
-      );
+  if (payment.status !== "Verified") {
+    notification.warning(
+      "Receipt can only be downloaded for verified payments."
+    );
+    return;
+  }
 
-      return;
-    }
+  try {
+    await generatePaymentReceipt(payment);
 
-    try {
-      await generatePaymentReceipt(
-        payment
-      );
-    } catch (receiptError) {
-      console.error(
-        "Download receipt error:",
-        receiptError
-      );
-
-      alert(
-        receiptError?.message ||
-          "Unable to generate payment receipt."
-      );
-    }
-  };
+    notification.success(
+      "Payment receipt generated successfully."
+    );
+  } catch (receiptError) {
+    notification.error(
+      receiptError?.message ||
+        "Unable to generate payment receipt."
+    );
+  }
+};
 
   /*
   |--------------------------------------------------------------------------

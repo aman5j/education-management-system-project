@@ -1,42 +1,32 @@
 import api from "./api";
 
-export const getPayments = (
-  params = {}
-) =>
+export const getPayments = (params = {}) =>
   api.get("/payments", {
     params,
     silent: true,
   });
 
-export const getStudentPaymentHistory = async (
-  studentId
-) => {
-  const response = await api.get(
-    `/payments/student/${studentId}`
-  );
+export const getStudentPaymentHistory = (studentId) =>
+  api.get(`/payments/student/${studentId}`, {
+    silent: true,
+  });
 
-  return response;
-};
+export const getPayment = (id) =>
+  api.get(`/payments/${id}`, {
+    silent: true,
+  });
 
-export const getPayment = (
-  id
-) =>
-  api.get(`/payments/${id}`);
+export const createPayment = (data) =>
+  api.post("/payments", data, {
+    silent: true,
+  });
 
-export const createPayment = (
-  data
-) =>
-  api.post("/payments", data);
+export const updatePayment = (id, data) =>
+  api.put(`/payments/${id}`, data, {
+    silent: true,
+  });
 
-export const updatePayment = (
-  id,
-  data
-) =>
-  api.put(`/payments/${id}`, data);
-
-export const deletePayment = (
-  id
-) =>
+export const deletePayment = (id) =>
   api.delete(`/payments/${id}`, {
     silent: true,
   });

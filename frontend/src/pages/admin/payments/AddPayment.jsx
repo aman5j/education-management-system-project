@@ -1,81 +1,72 @@
+import { useState } from "react";
 import {
-  useState,
-} from "react";
-
-import {
+  Link,
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import { FiArrowLeft } from "react-icons/fi";
+
+import PaymentForm from "../../../components/payments/PaymentForm";
+import { createPayment } from "../../../services/paymentService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/PaymentManagement.css";
-import PaymentForm from "../../../components/payments/PaymentForm";
-
-import {
-  createPayment,
-} from "../../../services/paymentService";
 
 const AddPayment = () => {
-  const navigate =
-    useNavigate();
-
+  const navigate = useNavigate();
   const location = useLocation();
+
   const basePath = location.pathname.startsWith("/staff")
     ? "/staff"
     : "/admin";
 
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit =
-    async (formData) => {
-      try {
-        setSaving(true);
+  const handleSubmit = async (formData) => {
+    if (saving) return;
 
-        await createPayment(
-          formData
-        );
+    setSaving(true);
 
-         navigate(`${basePath}/payments`);
-      } catch (error) {
-        console.error(
-          "Create payment error:",
-          error
-        );
+    try {
+      const response = await createPayment(formData);
+      const data = response?.data?.data ?? {};
 
-        throw new Error(
-          error?.response
-            ?.data?.message ||
-            "Unable to create payment."
-        );
-      } finally {
-        setSaving(false);
-      }
-    };
+      notification.success(
+        response?.data?.message ||
+          "Payment created successfully."
+      );
+
+      navigate(`${basePath}/payments/${data._id || ""}`.replace(/\/$/, ""));
+    } catch (error) {
+      notification.error(getApiErrorMessage(error));
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="payment-page">
       <div className="payment-page-header">
         <div>
-          <h1>
-            Add Payment
-          </h1>
-
-          <p>
-            Create a new student payment.
-          </p>
+          <Link
+            to={`${basePath}/payments`}
+            className="payment-back-link"
+          >
+            <FiArrowLeft />
+            Back to Payments
+          </Link>
+          <h1>Add Payment</h1>
+          <p>Create a new student payment.</p>
         </div>
       </div>
 
       <PaymentForm
-        submitting={
-          saving
-        }
+        submitting={saving}
         submitLabel="Create Payment"
-        onSubmit={
-          handleSubmit
-        }
+        onSubmit={handleSubmit}
       />
     </div>
   );
