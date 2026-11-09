@@ -3,12 +3,10 @@ import api from "./api";
 export const getPayments = (
   params = {}
 ) =>
-  api.get(
-    "/payments",
-    {
-      params,
-    }
-  );
+  api.get("/payments", {
+    params,
+    silent: true,
+  });
 
 export const getStudentPaymentHistory = async (
   studentId
@@ -23,38 +21,22 @@ export const getStudentPaymentHistory = async (
 export const getPayment = (
   id
 ) =>
-  api.get(
-    `/payments/${id}`
-  );
-
-// export const getPayment = async (id) => {
-//   const response = await api.get(
-//     `/payments/${id}`
-//   );
-
-//   return response;
-// };
+  api.get(`/payments/${id}`);
 
 export const createPayment = (
   data
 ) =>
-  api.post(
-    "/payments",
-    data
-  );
+  api.post("/payments", data);
 
 export const updatePayment = (
   id,
   data
 ) =>
-  api.put(
-    `/payments/${id}`,
-    data
-  );
+  api.put(`/payments/${id}`, data);
 
 export const deletePayment = (
   id
 ) =>
-  api.delete(
-    `/payments/${id}`
-  );
+  api.delete(`/payments/${id}`, {
+    silent: true,
+  });

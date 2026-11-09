@@ -12,15 +12,28 @@ import { hasPermission } from "../../../utils/permissions";
 
 import PaymentFilters from "../../../components/payments/PaymentFilters";
 import PaymentTable from "../../../components/payments/PaymentTable";
+import Pagination from "../../../components/common/Pagination";
 
 import {
   getPayments,
   deletePayment,
 } from "../../../services/paymentService";
 
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/PaymentManagement.css";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
+const ALLOWED_PAGE_SIZES = [10, 25, 50];
+
+const EMPTY_PAGINATION = {
+  page: 1,
+  limit: DEFAULT_PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
+};
 
 const Payments = () => {
   const { user } = useAuth();
@@ -37,94 +50,120 @@ const Payments = () => {
 
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
+
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
   const [deletingId, setDeletingId] = useState("");
 
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: PAGE_SIZE,
-    total: 0,
-    totalPages: 1,
-  });
+  const [pagination, setPagination] = useState(
+    EMPTY_PAGINATION
+  );
 
   const loadPayments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+    setLoading(true);
 
+    try {
       const response = await getPayments({
         search: search.trim(),
         status,
         payment_mode: paymentMode,
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
       });
 
-      const data = response?.data?.data;
+      const data =
+        response?.data?.data ??
+        response?.data ??
+        {};
 
-      setPayments(
-        Array.isArray(data?.payments) ? data.payments : []
-      );
+      const records = Array.isArray(data?.payments)
+        ? data.payments
+        : [];
 
-      setPagination(
-        data?.pagination || {
-          page,
-          limit: PAGE_SIZE,
-          total: 0,
-          totalPages: 1,
-        }
-      );
-    } catch (loadError) {
-      console.error("Load payments error:", loadError);
-      setError(
-        loadError?.response?.data?.message ||
-          "Unable to load payments."
-      );
+      const pageInfo = data?.pagination || {
+        page,
+        limit: pageSize,
+        total: records.length,
+        totalPages: 1,
+      };
+
+      setPayments(records);
+      setPagination(pageInfo);
+    } catch (error) {
       setPayments([]);
+      setPagination({
+        ...EMPTY_PAGINATION,
+        page,
+        limit: pageSize,
+      });
+
+      notification.error(
+        getApiErrorMessage(error)
+      );
     } finally {
       setLoading(false);
     }
-  }, [search, status, paymentMode, page]);
+  }, [search, status, paymentMode, page, pageSize]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       loadPayments();
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, [loadPayments]);
 
   const handleDelete = async (id) => {
-    if (!canManagePayments || deletingId) return;
+    if (!canManagePayments || deletingId || !id) {
+      return;
+    }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this payment? The admission's paid amount will be recalculated."
+    const payment = payments.find(
+      (item) => String(item._id) === String(id)
     );
 
-    if (!confirmed) return;
+    const receiptNumber =
+      payment?.receipt_no || "this payment";
+
+    const confirmed = await notification.confirm({
+      title: "Delete payment?",
+      text:
+        `Are you sure you want to delete ${receiptNumber}? ` +
+        "The admission's paid amount will be recalculated using the remaining verified payments.",
+      confirmText: "Yes, delete",
+      cancelText: "Cancel",
+      icon: "warning",
+      confirmButtonColor: "#dc2626",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(id);
 
     try {
-      setDeletingId(id);
-      setError("");
-
       await deletePayment(id);
 
-      // If the last row on a page was deleted, go back one page.
+      notification.success(
+        "Payment deleted successfully. Admission paid amount has been recalculated."
+      );
+
+      // If the deleted row was the only row on this page,
+      // navigate to the previous page.
       if (payments.length === 1 && page > 1) {
-        setPage((current) => current - 1);
+        setPage((current) => Math.max(current - 1, 1));
       } else {
         await loadPayments();
       }
-    } catch (deleteError) {
-      const message =
-        deleteError?.response?.data?.message ||
-        "Unable to delete payment.";
-
-      setError(message);
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error)
+      );
     } finally {
       setDeletingId("");
     }
@@ -149,6 +188,34 @@ const Payments = () => {
 
   const handlePaymentModeChange = (value) => {
     setPaymentMode(value);
+    setPage(1);
+  };
+
+  const handlePageChange = (nextPage) => {
+    const totalPages = Math.max(
+      Number(pagination.totalPages) || 1,
+      1
+    );
+
+    if (
+      nextPage < 1 ||
+      nextPage > totalPages ||
+      nextPage === page
+    ) {
+      return;
+    }
+
+    setPage(nextPage);
+  };
+
+  const handlePageSizeChange = (nextLimit) => {
+    const limit = Number(nextLimit);
+
+    if (!ALLOWED_PAGE_SIZES.includes(limit)) {
+      return;
+    }
+
+    setPageSize(limit);
     setPage(1);
   };
 
@@ -184,12 +251,6 @@ const Payments = () => {
           onReset={resetFilters}
         />
 
-        {error && (
-          <div className="payment-error" role="alert">
-            {error}
-          </div>
-        )}
-
         {loading ? (
           <div className="payment-state">
             Loading payments...
@@ -204,34 +265,18 @@ const Payments = () => {
           />
         )}
 
-        {!loading && pagination.totalPages > 1 && (
-          <div className="payment-pagination">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() =>
-                setPage((current) => Math.max(1, current - 1))
-              }
-            >
-              Previous
-            </button>
-
-            <span>
-              Page {page} of {pagination.totalPages}
-            </span>
-
-            <button
-              type="button"
-              disabled={page >= pagination.totalPages}
-              onClick={() =>
-                setPage((current) =>
-                  Math.min(pagination.totalPages, current + 1)
-                )
-              }
-            >
-              Next
-            </button>
-          </div>
+        {!loading && pagination.total > 0 && (
+          <Pagination
+            page={pagination.page || page}
+            totalPages={pagination.totalPages || 1}
+            total={pagination.total || 0}
+            itemCount={payments.length}
+            itemLabel="payments"
+            limit={pageSize}
+            loading={loading || Boolean(deletingId)}
+            onPageChange={handlePageChange}
+            onLimitChange={handlePageSizeChange}
+          />
         )}
       </div>
     </div>
