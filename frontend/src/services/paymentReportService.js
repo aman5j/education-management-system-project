@@ -1,11 +1,12 @@
 import api from "./api";
 
-export const getPaymentReport = async (params = {}) => {
-  return api.get("/reports/payments", {
+export const getPaymentReport = (params = {}) =>
+  api.get("/reports/payments", {
     params,
+    silent: true,
   });
-};
 
-export const getPaymentReportFilters = async () => {
-  return api.get("/reports/payment-filters");
-};
+export const getPaymentReportFilters = () =>
+  api.get("/reports/payment-filters", {
+    silent: true,
+  });
