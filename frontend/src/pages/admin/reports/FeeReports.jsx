@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -11,7 +12,6 @@ import {
 } from "react-icons/fi";
 
 import * as XLSX from "xlsx";
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -20,785 +20,453 @@ import {
   getFeeReportFilters,
 } from "../../../services/feeReportService";
 
+import notification from "../../../utils/notification";
+import Pagination from "../../../components/common/Pagination";
+import { fetchAllReportPages } from "../../../utils/fetchAllReportPages";
+
 import "../../../styles/FeeReports.css";
 
-const getResponseData = (
-  response
-) => {
-  return (
-    response?.data?.data ??
-    response?.data ??
-    {}
-  );
+const getResponseData = (response) =>
+  response?.data?.data ?? response?.data ?? {};
+
+const INITIAL_FILTERS = {
+  date_from: "",
+  date_to: "",
+  course_id: "",
+  batch_id: "",
+  status: "",
 };
 
-const formatCurrency = (
-  value
-) => {
-  return `₹${Number(
-    value || 0
-  ).toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
+const INITIAL_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
 };
 
-const formatDate = (
-  value
-) => {
-  if (!value) {
-    return "-";
-  }
+const formatCurrency = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
-  const date =
-    new Date(value);
+const formatPdfCurrency = (value) =>
+  `Rs. ${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "-";
-  }
+const formatDate = (value) => {
+  if (!value) return "-";
 
-  return date.toLocaleDateString(
-    "en-IN"
-  );
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleDateString("en-IN");
 };
 
 const FeeReports = () => {
-  const [filters, setFilters] =
-    useState({
-      date_from: "",
-      date_to: "",
-      course_id: "",
-      batch_id: "",
-      status: "",
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+
+  const [filterData, setFilterData] = useState({
+    courses: [],
+    batches: [],
+  });
+
+  const [report, setReport] = useState({
+    summary: {},
+    fees: [],
+    pagination: INITIAL_PAGINATION,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const availableBatches = useMemo(() => {
+    if (!filters.course_id) {
+      return filterData.batches;
+    }
+
+    return filterData.batches.filter((batch) => {
+      const batchCourseId =
+        batch?.course_id?._id || batch?.course_id;
+
+      return String(batchCourseId) === String(filters.course_id);
     });
+  }, [filters.course_id, filterData.batches]);
 
-  const [filterData, setFilterData] =
-    useState({
-      courses: [],
-      batches: [],
-    });
+  const loadFilters = useCallback(async () => {
+    try {
+      setFiltersLoading(true);
 
-  const [report, setReport] =
-    useState({
-      summary: {},
-      fees: [],
-    });
+      const response = await getFeeReportFilters();
+      const data = getResponseData(response);
 
-  const [loading, setLoading] =
-    useState(false);
+      setFilterData({
+        courses: Array.isArray(data.courses)
+          ? data.courses
+          : [],
+        batches: Array.isArray(data.batches)
+          ? data.batches
+          : [],
+      });
+    } catch (error) {
+      console.error("Fee report filters error:", error);
 
-  const [
-    filtersLoading,
-    setFiltersLoading,
-  ] = useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  /*
-  |--------------------------------------------------------------------------
-  | Available Batches
-  |--------------------------------------------------------------------------
-  */
-
-  const availableBatches =
-    useMemo(() => {
-      if (!filters.course_id) {
-        return filterData.batches;
-      }
-
-      return filterData.batches.filter(
-        (batch) =>
-          String(
-            batch?.course_id?._id ||
-              batch?.course_id
-          ) ===
-          String(
-            filters.course_id
-          )
+      notification.error(
+        error?.response?.data?.message ||
+          "Unable to load fee report filters."
       );
-    }, [
-      filters.course_id,
-      filterData.batches,
-    ]);
+    } finally {
+      setFiltersLoading(false);
+    }
+  }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | Filters
-  |--------------------------------------------------------------------------
-  */
-
-  const loadFilters =
-    async () => {
-      try {
-        setFiltersLoading(
-          true
-        );
-
-        const response =
-          await getFeeReportFilters();
-
-        const data =
-          getResponseData(
-            response
-          );
-
-        setFilterData({
-          courses:
-            Array.isArray(
-              data.courses
-            )
-              ? data.courses
-              : [],
-
-          batches:
-            Array.isArray(
-              data.batches
-            )
-              ? data.batches
-              : [],
-        });
-      } catch (err) {
-        console.error(
-          "Fee report filters error:",
-          err
-        );
-
-        setError(
-          err?.response?.data
-            ?.message ||
-            "Unable to load fee report filters."
-        );
-      } finally {
-        setFiltersLoading(
-          false
-        );
-      }
-    };
-
-  /*
-  |--------------------------------------------------------------------------
-  | Report
-  |--------------------------------------------------------------------------
-  */
-
-  const loadReport =
+  const loadReport = useCallback(
     async (
-      currentFilters = filters
+      currentFilters = filters,
+      page = 1,
+      limit = report.pagination.limit || 10
     ) => {
       try {
         setLoading(true);
 
-        setError("");
+        const params = {
+          page,
+          limit,
+        };
 
-        const params = {};
-
-        Object.entries(
-          currentFilters
-        ).forEach(
-          ([key, value]) => {
-            if (
-              value !== undefined &&
-              value !== null &&
-              String(value).trim()
-            ) {
-              params[key] =
-                value;
-            }
+        Object.entries(currentFilters).forEach(([key, value]) => {
+          if (
+            value !== undefined &&
+            value !== null &&
+            String(value).trim()
+          ) {
+            params[key] = String(value).trim();
           }
-        );
+        });
 
-        const response =
-          await getFeeReport(
-            params
-          );
-
-        const data =
-          getResponseData(
-            response
-          );
+        const response = await getFeeReport(params);
+        const data = getResponseData(response);
 
         setReport({
-          summary:
-            data.summary || {},
-
-          fees:
-            Array.isArray(
-              data.fees
-            )
-              ? data.fees
-              : [],
+          summary: data.summary || {},
+          fees: Array.isArray(data.fees) ? data.fees : [],
+          pagination: data.pagination || {
+            ...INITIAL_PAGINATION,
+            limit,
+          },
         });
-      } catch (err) {
-        console.error(
-          "Fee report error:",
-          err
-        );
+      } catch (error) {
+        console.error("Fee report error:", error);
 
-        setError(
-          err?.response?.data
-            ?.message ||
+        notification.error(
+          error?.response?.data?.message ||
             "Unable to load fee report."
         );
       } finally {
         setLoading(false);
       }
-    };
+    },
+    [filters, report.pagination.limit]
+  );
 
   useEffect(() => {
     loadFilters();
-    loadReport();
+    loadReport(INITIAL_FILTERS, 1, 10);
+
+    // Initial data load only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | Change
-  |--------------------------------------------------------------------------
-  */
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
-  const handleChange = (
-    event
-  ) => {
-    const {
-      name,
-      value,
-    } = event.target;
+    setFilters((previous) => {
+      const next = {
+        ...previous,
+        [name]: value,
+      };
 
-    setFilters(
-      (previous) => {
-        const next = {
-          ...previous,
-          [name]: value,
-        };
-
-        if (
-          name ===
-          "course_id"
-        ) {
-          next.batch_id = "";
-        }
-
-        return next;
+      if (name === "course_id") {
+        next.batch_id = "";
       }
-    );
-  };
 
-  /*
-  |--------------------------------------------------------------------------
-  | Apply
-  |--------------------------------------------------------------------------
-  */
+      return next;
+    });
+  };
 
   const handleApply = () => {
-    loadReport(filters);
-  };
+    if (
+      filters.date_from &&
+      filters.date_to &&
+      filters.date_from > filters.date_to
+    ) {
+      notification.warning(
+        "Date From cannot be later than Date To."
+      );
+      return;
+    }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Reset
-  |--------------------------------------------------------------------------
-  */
+    loadReport(filters, 1, report.pagination.limit || 10);
+  };
 
   const handleReset = () => {
-    const reset = {
-      date_from: "",
-      date_to: "",
-      course_id: "",
-      batch_id: "",
-      status: "",
-    };
-
-    setFilters(reset);
-
-    loadReport(reset);
+    setFilters(INITIAL_FILTERS);
+    loadReport(INITIAL_FILTERS, 1, report.pagination.limit || 10);
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | Refresh
-  |--------------------------------------------------------------------------
-  */
-
-  const handleRefresh =
-    async () => {
-      await Promise.all([
-        loadFilters(),
-        loadReport(filters),
-      ]);
-    };
-
-  /*
-  |--------------------------------------------------------------------------
-  | Excel
-  |--------------------------------------------------------------------------
-  */
-
-  const exportExcel = () => {
-    const fees =
-      report.fees || [];
-
-    if (!fees.length) {
-      return;
-    }
-
-    const summary =
-      report.summary || {};
-
-    const rows =
-      fees.map(
-        (item, index) => ({
-          "S.No":
-            index + 1,
-
-          "Student":
-            item.student
-              ?.name || "-",
-
-          "Roll Number":
-            item.student
-              ?.rollNo || "-",
-
-          Course:
-            item.course
-              ?.title || "-",
-
-          "Course Type":
-            item.course
-              ?.type || "-",
-
-          Batch:
-            item.batch
-              ?.name || "-",
-
-          "Admission Date":
-            formatDate(
-              item.admission_date
-            ),
-
-          "Course Fee":
-            Number(
-              item.course_fee ||
-                0
-            ),
-
-          Discount:
-            Number(
-              item.discount ||
-                0
-            ),
-
-          GST:
-            Number(
-              item.gst || 0
-            ),
-
-          "Admission Fee":
-            Number(
-              item.admission_fee ||
-                0
-            ),
-
-          "Final Fee":
-            Number(
-              item.final_amount ||
-                0
-            ),
-
-          Paid:
-            Number(
-              item.paid_amount ||
-                0
-            ),
-
-          Pending:
-            Number(
-              item.remaining_amount ||
-                0
-            ),
-
-          "Payment Status":
-            item.payment_status ||
-            "-",
-
-          "Admission Status":
-            item.admission_status ||
-            "-",
-        })
-      );
-
-    const summaryRows = [
-      {
-        "Report Item":
-          "Total Students",
-        Value:
-          Number(
-            summary.totalStudents ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Admissions",
-        Value:
-          Number(
-            summary.totalAdmissions ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Course Fees",
-        Value:
-          Number(
-            summary.totalCourseFees ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Discount",
-        Value:
-          Number(
-            summary.totalDiscount ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total GST",
-        Value:
-          Number(
-            summary.totalGst ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Admission Fees",
-        Value:
-          Number(
-            summary.totalAdmissionFees ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Final Fees",
-        Value:
-          Number(
-            summary.totalFinalFees ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Paid",
-        Value:
-          Number(
-            summary.totalPaid ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Total Pending",
-        Value:
-          Number(
-            summary.totalPending ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Fully Paid",
-        Value:
-          Number(
-            summary.fullyPaid ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Partially Paid",
-        Value:
-          Number(
-            summary.partiallyPaid ||
-              0
-          ),
-      },
-      {
-        "Report Item":
-          "Unpaid",
-        Value:
-          Number(
-            summary.unpaid ||
-              0
-          ),
-      },
-    ];
-
-    const workbook =
-      XLSX.utils.book_new();
-
-    const feeSheet =
-      XLSX.utils.json_to_sheet(
-        rows
-      );
-
-    const summarySheet =
-      XLSX.utils.json_to_sheet(
-        summaryRows
-      );
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      feeSheet,
-      "Fee Report"
-    );
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      summarySheet,
-      "Summary"
-    );
-
-    XLSX.writeFile(
-      workbook,
-      `fee-report-${new Date()
-        .toISOString()
-        .slice(0, 10)}.xlsx`
-    );
+  const handleRefresh = async () => {
+    await Promise.all([
+      loadFilters(),
+      loadReport(filters, report.pagination.page || 1, report.pagination.limit || 10),
+    ]);
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | PDF
-  |--------------------------------------------------------------------------
-  */
+  const getExportData = async () =>
+    fetchAllReportPages({
+      fetchPage: getFeeReport,
+      filters,
+      recordsKey: "fees",
+    });
 
-  const exportPDF = () => {
-    const fees =
-      report.fees || [];
+  const buildExcelRows = (fees) =>
+    fees.map((item, index) => ({
+      "S.No": index + 1,
+      Student: item.student?.name || "-",
+      "Roll Number": item.student?.rollNo || "-",
+      Course: item.course?.title || "-",
+      "Course Type": item.course?.type || "-",
+      Batch: item.batch?.name || "-",
+      "Admission Date": formatDate(item.admission_date),
+      "Course Fee": Number(item.course_fee || 0),
+      Discount: Number(item.discount || 0),
+      GST: Number(item.gst || 0),
+      "Admission Fee": Number(item.admission_fee || 0),
+      "Final Fee": Number(item.final_amount || 0),
+      Paid: Number(item.paid_amount || 0),
+      Pending: Number(item.remaining_amount || 0),
+      "Payment Status": item.payment_status || "-",
+      "Admission Status": item.admission_status || "-",
+    }));
 
-    if (!fees.length) {
-      return;
+  const buildSummaryRows = (summary) => [
+    ["Total Students", summary.totalStudents],
+    ["Total Admissions", summary.totalAdmissions],
+    ["Total Course Fees", summary.totalCourseFees],
+    ["Total Discount", summary.totalDiscount],
+    ["Total GST", summary.totalGst],
+    ["Total Admission Fees", summary.totalAdmissionFees],
+    ["Total Final Fees", summary.totalFinalFees],
+    ["Total Paid", summary.totalPaid],
+    ["Total Pending", summary.totalPending],
+    ["Fully Paid", summary.fullyPaid],
+    ["Partially Paid", summary.partiallyPaid],
+    ["Unpaid", summary.unpaid],
+  ].map(([label, value]) => ({
+    "Report Item": label,
+    Value: Number(value || 0),
+  }));
+
+  const exportExcel = async () => {
+    if (exporting || loading) return;
+
+    try {
+      setExporting(true);
+
+      const { rows, summary } = await getExportData();
+
+      if (!rows.length) {
+        notification.info("There are no fee records to export.");
+        return;
+      }
+
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(buildExcelRows(rows)),
+        "Fee Report"
+      );
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(buildSummaryRows(summary)),
+        "Summary"
+      );
+
+      XLSX.writeFile(
+        workbook,
+        `fee-report-${new Date().toISOString().slice(0, 10)}.xlsx`
+      );
+
+      notification.success(
+        `Excel exported successfully (${rows.length} records).`
+      );
+    } catch (error) {
+      console.error("Fee Excel export error:", error);
+
+      notification.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to export fee report."
+      );
+    } finally {
+      setExporting(false);
     }
+  };
 
-    const summary =
-      report.summary || {};
+  const exportPDF = async () => {
+    if (exporting || loading) return;
 
-    const doc =
-      new jsPDF({
-        orientation:
-          "landscape",
+    try {
+      setExporting(true);
+
+      const { rows, summary } = await getExportData();
+
+      if (!rows.length) {
+        notification.info("There are no fee records to export.");
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: "landscape",
         unit: "mm",
         format: "a4",
       });
 
-    doc.setFontSize(18);
+      doc.setFontSize(18);
+      doc.text("Fee Report", 12, 15);
 
-    doc.text(
-      "Fee Report",
-      12,
-      15
-    );
+      doc.setFontSize(8);
+      doc.text(
+        `Generated: ${new Date().toLocaleString("en-IN")}`,
+        12,
+        22
+      );
 
-    doc.setFontSize(8);
+      doc.text(
+        `Students: ${summary.totalStudents || 0}`,
+        12,
+        28
+      );
 
-    doc.text(
-      `Generated: ${new Date().toLocaleString(
-        "en-IN"
-      )}`,
-      12,
-      22
-    );
+      doc.text(
+        `Admissions: ${summary.totalAdmissions || 0}`,
+        55,
+        28
+      );
 
-    doc.text(
-      `Students: ${summary.totalStudents || 0}`,
-      12,
-      28
-    );
+      doc.text(
+        `Final Fees: ${formatPdfCurrency(summary.totalFinalFees)}`,
+        105,
+        28
+      );
 
-    doc.text(
-      `Admissions: ${summary.totalAdmissions || 0}`,
-      55,
-      28
-    );
+      doc.text(
+        `Paid: ${formatPdfCurrency(summary.totalPaid)}`,
+        165,
+        28
+      );
 
-    doc.text(
-      `Final Fees: ${formatCurrency(
-        summary.totalFinalFees
-      )}`,
-      105,
-      28
-    );
+      doc.text(
+        `Pending: ${formatPdfCurrency(summary.totalPending)}`,
+        215,
+        28
+      );
 
-    doc.text(
-      `Paid: ${formatCurrency(
-        summary.totalPaid
-      )}`,
-      165,
-      28
-    );
-
-    doc.text(
-      `Pending: ${formatCurrency(
-        summary.totalPending
-      )}`,
-      215,
-      28
-    );
-
-    autoTable(
-      doc,
-      {
+      autoTable(doc, {
         startY: 34,
-
-        head: [
-          [
-            "S.No",
-            "Student",
-            "Roll No",
-            "Course",
-            "Batch",
-            "Admission Date",
-            "Course Fee",
-            "Discount",
-            "GST",
-            "Admission Fee",
-            "Final Fee",
-            "Paid",
-            "Pending",
-            "Payment",
-            "Status",
-          ],
-        ],
-
-        body:
-          fees.map(
-            (
-              item,
-              index
-            ) => [
-              index + 1,
-
-              item.student
-                ?.name || "-",
-
-              item.student
-                ?.rollNo || "-",
-
-              item.course
-                ?.title || "-",
-
-              item.batch
-                ?.name || "-",
-
-              formatDate(
-                item.admission_date
-              ),
-
-              formatCurrency(
-                item.course_fee
-              ),
-
-              formatCurrency(
-                item.discount
-              ),
-
-              formatCurrency(
-                item.gst
-              ),
-
-              formatCurrency(
-                item.admission_fee
-              ),
-
-              formatCurrency(
-                item.final_amount
-              ),
-
-              formatCurrency(
-                item.paid_amount
-              ),
-
-              formatCurrency(
-                item.remaining_amount
-              ),
-
-              item.payment_status ||
-                "-",
-
-              item.admission_status ||
-                "-",
-            ]
-          ),
-
+        head: [[
+          "S.No",
+          "Student",
+          "Roll No",
+          "Course",
+          "Batch",
+          "Admission Date",
+          "Course Fee",
+          "Discount",
+          "GST",
+          "Admission Fee",
+          "Final Fee",
+          "Paid",
+          "Pending",
+          "Payment",
+          "Status",
+        ]],
+        body: rows.map((item, index) => [
+          index + 1,
+          item.student?.name || "-",
+          item.student?.rollNo || "-",
+          item.course?.title || "-",
+          item.batch?.name || "-",
+          formatDate(item.admission_date),
+          formatPdfCurrency(item.course_fee),
+          formatPdfCurrency(item.discount),
+          formatPdfCurrency(item.gst),
+          formatPdfCurrency(item.admission_fee),
+          formatPdfCurrency(item.final_amount),
+          formatPdfCurrency(item.paid_amount),
+          formatPdfCurrency(item.remaining_amount),
+          item.payment_status || "-",
+          item.admission_status || "-",
+        ]),
         styles: {
           fontSize: 5.8,
           cellPadding: 1.5,
         },
-
         headStyles: {
           fontSize: 5.8,
         },
-
         margin: {
           left: 7,
           right: 7,
         },
-      }
-    );
+        showHead: "everyPage",
+      });
 
-    doc.save(
-      `fee-report-${new Date()
-        .toISOString()
-        .slice(0, 10)}.pdf`
-    );
+      doc.save(
+        `fee-report-${new Date().toISOString().slice(0, 10)}.pdf`
+      );
+
+      notification.success(
+        `PDF exported successfully (${rows.length} records).`
+      );
+    } catch (error) {
+      console.error("Fee PDF export error:", error);
+
+      notification.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to export fee report."
+      );
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const summary =
-    report.summary || {};
-
-  const fees =
-    report.fees || [];
+  const summary = report.summary || {};
+  const fees = report.fees || [];
+  const pagination = report.pagination || INITIAL_PAGINATION;
 
   return (
     <div className="fee-reports-page">
-
       <div className="fee-reports-header">
-
         <div>
-          <h1>
-            Fee Reports
-          </h1>
-
+          <h1>Fee Reports</h1>
           <p>
-            Analyze total fees,
-            paid fees, pending
-            fees and collections.
+            Analyze total fees, paid fees, pending fees and collections.
           </p>
         </div>
 
         <div className="fee-report-actions">
-
           <button
             type="button"
             className="fee-report-btn secondary"
-            onClick={
-              handleRefresh
-            }
-            disabled={
-              loading ||
-              filtersLoading
-            }
+            onClick={handleRefresh}
+            disabled={loading || filtersLoading || exporting}
           >
             <FiRefreshCw />
             Refresh
@@ -807,299 +475,165 @@ const FeeReports = () => {
           <button
             type="button"
             className="fee-report-btn excel"
-            onClick={
-              exportExcel
-            }
+            onClick={exportExcel}
             disabled={
-              !fees.length
+              exporting ||
+              loading ||
+              !pagination.total
             }
           >
             <FiDownload />
-            Excel
+            {exporting ? "Preparing..." : "Excel"}
           </button>
 
           <button
             type="button"
             className="fee-report-btn pdf"
-            onClick={
-              exportPDF
-            }
+            onClick={exportPDF}
             disabled={
-              !fees.length
+              exporting ||
+              loading ||
+              !pagination.total
             }
           >
             <FiFileText />
-            PDF
+            {exporting ? "Preparing..." : "PDF"}
           </button>
-
         </div>
-
       </div>
-
-      {error && (
-        <div className="fee-report-error">
-          {error}
-        </div>
-      )}
 
       {/* SUMMARY */}
 
       <div className="fee-report-summary">
-
         <div className="fee-summary-card">
-          <span>
-            Total Students
-          </span>
-          <strong>
-            {summary.totalStudents || 0}
-          </strong>
+          <span>Total Students</span>
+          <strong>{summary.totalStudents || 0}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            Total Admissions
-          </span>
-          <strong>
-            {summary.totalAdmissions || 0}
-          </strong>
+          <span>Total Admissions</span>
+          <strong>{summary.totalAdmissions || 0}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            Total Final Fees
-          </span>
-          <strong>
-            {formatCurrency(
-              summary.totalFinalFees
-            )}
-          </strong>
+          <span>Total Final Fees</span>
+          <strong>{formatCurrency(summary.totalFinalFees)}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            Total Paid
-          </span>
-          <strong>
-            {formatCurrency(
-              summary.totalPaid
-            )}
-          </strong>
+          <span>Total Paid</span>
+          <strong>{formatCurrency(summary.totalPaid)}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            Total Pending
-          </span>
-          <strong>
-            {formatCurrency(
-              summary.totalPending
-            )}
-          </strong>
+          <span>Total Pending</span>
+          <strong>{formatCurrency(summary.totalPending)}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            Discount
-          </span>
-          <strong>
-            {formatCurrency(
-              summary.totalDiscount
-            )}
-          </strong>
+          <span>Discount</span>
+          <strong>{formatCurrency(summary.totalDiscount)}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            GST
-          </span>
-          <strong>
-            {formatCurrency(
-              summary.totalGst
-            )}
-          </strong>
+          <span>GST</span>
+          <strong>{formatCurrency(summary.totalGst)}</strong>
         </div>
 
         <div className="fee-summary-card">
-          <span>
-            Admission Fees
-          </span>
-          <strong>
-            {formatCurrency(
-              summary.totalAdmissionFees
-            )}
-          </strong>
+          <span>Admission Fees</span>
+          <strong>{formatCurrency(summary.totalAdmissionFees)}</strong>
         </div>
-
       </div>
 
       {/* FILTERS */}
 
       <div className="fee-report-filters">
-
         <div className="fee-filter-field">
-
-          <label>
-            Date From
-          </label>
-
+          <label htmlFor="fee-date-from">Date From</label>
           <input
+            id="fee-date-from"
             type="date"
             name="date_from"
-            value={
-              filters.date_from
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.date_from}
+            max={filters.date_to || undefined}
+            onChange={handleChange}
           />
-
         </div>
 
         <div className="fee-filter-field">
-
-          <label>
-            Date To
-          </label>
-
+          <label htmlFor="fee-date-to">Date To</label>
           <input
+            id="fee-date-to"
             type="date"
             name="date_to"
-            value={
-              filters.date_to
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.date_to}
+            min={filters.date_from || undefined}
+            onChange={handleChange}
           />
-
         </div>
 
         <div className="fee-filter-field">
-
-          <label>
-            Course
-          </label>
-
+          <label htmlFor="fee-course">Course</label>
           <select
+            id="fee-course"
             name="course_id"
-            value={
-              filters.course_id
-            }
-            onChange={
-              handleChange
-            }
-            disabled={
-              filtersLoading
-            }
+            value={filters.course_id}
+            onChange={handleChange}
+            disabled={filtersLoading}
           >
-            <option value="">
-              All Courses
-            </option>
+            <option value="">All Courses</option>
 
-            {filterData.courses.map(
-              (course) => (
-                <option
-                  key={
-                    course._id
-                  }
-                  value={
-                    course._id
-                  }
-                >
-                  {
-                    course.courseTitle
-                  }
-                </option>
-              )
-            )}
+            {filterData.courses.map((course) => (
+              <option key={course._id} value={course._id}>
+                {course.courseTitle}
+              </option>
+            ))}
           </select>
-
         </div>
 
         <div className="fee-filter-field">
-
-          <label>
-            Batch
-          </label>
-
+          <label htmlFor="fee-batch">Batch</label>
           <select
+            id="fee-batch"
             name="batch_id"
-            value={
-              filters.batch_id
-            }
-            onChange={
-              handleChange
-            }
-            disabled={
-              filtersLoading
-            }
+            value={filters.batch_id}
+            onChange={handleChange}
+            disabled={filtersLoading}
           >
-            <option value="">
-              All Batches
-            </option>
+            <option value="">All Batches</option>
 
-            {availableBatches.map(
-              (batch) => (
-                <option
-                  key={
-                    batch._id
-                  }
-                  value={
-                    batch._id
-                  }
-                >
-                  {
-                    batch.batch_name
-                  }
-                </option>
-              )
-            )}
+            {availableBatches.map((batch) => (
+              <option key={batch._id} value={batch._id}>
+                {batch.batch_name}
+              </option>
+            ))}
           </select>
-
         </div>
 
         <div className="fee-filter-field">
-
-          <label>
+          <label htmlFor="fee-admission-status">
             Admission Status
           </label>
-
           <select
+            id="fee-admission-status"
             name="status"
-            value={
-              filters.status
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.status}
+            onChange={handleChange}
           >
-            <option value="">
-              All Status
-            </option>
-
-            <option value="Active">
-              Active
-            </option>
-
-            <option value="Completed">
-              Completed
-            </option>
-
-            <option value="Dropped">
-              Dropped
-            </option>
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Dropped">Dropped</option>
           </select>
-
         </div>
 
         <div className="fee-filter-actions">
-
           <button
             type="button"
             className="fee-report-btn primary"
-            onClick={
-              handleApply
-            }
+            onClick={handleApply}
+            disabled={loading}
           >
             Apply
           </button>
@@ -1107,23 +641,18 @@ const FeeReports = () => {
           <button
             type="button"
             className="fee-report-btn secondary"
-            onClick={
-              handleReset
-            }
+            onClick={handleReset}
+            disabled={loading}
           >
             Reset
           </button>
-
         </div>
-
       </div>
 
       {/* TABLE */}
 
       <div className="fee-report-table-wrapper">
-
         <table className="fee-report-table">
-
           <thead>
             <tr>
               <th>S.No</th>
@@ -1145,148 +674,76 @@ const FeeReports = () => {
           </thead>
 
           <tbody>
-
             {loading ? (
               <tr>
-                <td colSpan="15">
-                  Loading fee report...
-                </td>
+                <td colSpan="15">Loading fee report...</td>
               </tr>
             ) : !fees.length ? (
               <tr>
-                <td colSpan="15">
-                  No fee records found.
-                </td>
+                <td colSpan="15">No fee records found.</td>
               </tr>
             ) : (
-              fees.map(
-                (
-                  item,
-                  index
-                ) => (
-                  <tr
-                    key={
-                      item._id ||
-                      index
-                    }
-                  >
-                    <td>
-                      {index + 1}
-                    </td>
+              fees.map((item, index) => (
+                <tr key={item._id || index}>
+                  <td>
+                    {(pagination.page - 1) * pagination.limit +
+                      index +
+                      1}
+                  </td>
 
-                    <td>
-                      <strong>
-                        {
-                          item.student
-                            ?.name ||
-                          "-"
-                        }
-                      </strong>
-                    </td>
+                  <td>
+                    <strong>{item.student?.name || "-"}</strong>
+                  </td>
 
-                    <td>
-                      {
-                        item.student
-                          ?.rollNo ||
-                        "-"
-                      }
-                    </td>
+                  <td>{item.student?.rollNo || "-"}</td>
+                  <td>{item.course?.title || "-"}</td>
+                  <td>{item.batch?.name || "-"}</td>
+                  <td>{formatDate(item.admission_date)}</td>
+                  <td>{formatCurrency(item.course_fee)}</td>
+                  <td>{formatCurrency(item.discount)}</td>
+                  <td>{formatCurrency(item.gst)}</td>
+                  <td>{formatCurrency(item.admission_fee)}</td>
+                  <td>{formatCurrency(item.final_amount)}</td>
+                  <td>{formatCurrency(item.paid_amount)}</td>
+                  <td>{formatCurrency(item.remaining_amount)}</td>
 
-                    <td>
-                      {
-                        item.course
-                          ?.title ||
-                        "-"
-                      }
-                    </td>
+                  <td>
+                    <span
+                      className={`fee-status ${String(
+                        item.payment_status || ""
+                      ).toLowerCase()}`}
+                    >
+                      {item.payment_status || "-"}
+                    </span>
+                  </td>
 
-                    <td>
-                      {
-                        item.batch
-                          ?.name ||
-                        "-"
-                      }
-                    </td>
-
-                    <td>
-                      {formatDate(
-                        item.admission_date
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.course_fee
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.discount
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.gst
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.admission_fee
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.final_amount
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.paid_amount
-                      )}
-                    </td>
-
-                    <td>
-                      {formatCurrency(
-                        item.remaining_amount
-                      )}
-                    </td>
-
-                    <td>
-                      <span
-                        className={`fee-status ${String(
-                          item.payment_status ||
-                            ""
-                        ).toLowerCase()}`}
-                      >
-                        {
-                          item.payment_status ||
-                          "-"
-                        }
-                      </span>
-                    </td>
-
-                    <td>
-                      {
-                        item.admission_status ||
-                        "-"
-                      }
-                    </td>
-                  </tr>
-                )
-              )
+                  <td>{item.admission_status || "-"}</td>
+                </tr>
+              ))
             )}
-
           </tbody>
-
         </table>
-
       </div>
 
+      <Pagination
+        page={pagination.page || 1}
+        totalPages={pagination.totalPages || 0}
+        total={pagination.total || 0}
+        itemCount={fees.length}
+        itemLabel="fee records"
+        limit={pagination.limit || 10}
+        loading={loading}
+        onPageChange={(nextPage) =>
+          loadReport(
+            filters,
+            nextPage,
+            pagination.limit || 10
+          )
+        }
+        onLimitChange={(nextLimit) =>
+          loadReport(filters, 1, nextLimit)
+        }
+      />
     </div>
   );
 };

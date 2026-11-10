@@ -1,18 +1,12 @@
 import api from "./api";
 
-export const getFeeReport =
-  (params = {}) => {
-    return api.get(
-      "/reports/fees",
-      {
-        params,
-      }
-    );
-  };
+export const getFeeReport = (params = {}) =>
+  api.get("/reports/fees", {
+    params,
+    silent: true,
+  });
 
-export const getFeeReportFilters =
-  () => {
-    return api.get(
-      "/reports/fee-filters"
-    );
-  };
+export const getFeeReportFilters = () =>
+  api.get("/reports/fee-filters", {
+    silent: true,
+  });
