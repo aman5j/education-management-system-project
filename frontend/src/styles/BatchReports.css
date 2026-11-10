@@ -399,3 +399,37 @@
     min-width: 1900px;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+.occupancy-cell {
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.occupancy-bar {
+  width: 55px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #e8edf4;
+  flex-shrink: 0;
+}
+
+.occupancy-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2864e8;
+}

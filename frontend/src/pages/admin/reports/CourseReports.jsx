@@ -1,185 +1,96 @@
-import {
-  useEffect,
-  useState,
-} from "react";
 
-import {
-  FiDownload,
-  FiFileText,
-  FiRefreshCw,
-  FiExternalLink,
-} from "react-icons/fi";
-import { FaBookOpen } from "react-icons/fa6";
-
-
+import { useCallback, useEffect, useState } from "react";
+import { FaBookOpen, FaFilePdf } from "react-icons/fa";
+import { MdCurrencyRupee, MdDateRange } from "react-icons/md";
+import { FiRefreshCw } from "react-icons/fi";
+import { RiFileExcel2Line } from "react-icons/ri";
 import * as XLSX from "xlsx";
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-import {
-  getCourseReport,
-} from "../../../services/courseReportService";
-
-import {
-  getAssetUrl,
-} from "../../../utils/assetUrl";
+import { getCourseReport } from "../../../services/courseReportService";
+import { getAssetUrl } from "../../../utils/assetUrl";
+import notification from "../../../utils/notification";
+import Pagination from "../../../components/common/Pagination";
+import { fetchAllReportPages } from "../../../utils/fetchAllReportPages";
 
 import "../../../styles/CourseReports.css";
-import { RiFileExcel2Line } from "react-icons/ri";
-import { FaFilePdf, FaUserFriends } from "react-icons/fa";
-import { MdCurrencyRupee, MdDateRange } from "react-icons/md";
-import { IoIosCall } from "react-icons/io";
 
-/*
-|--------------------------------------------------------------------------
-| Helpers
-|--------------------------------------------------------------------------
-*/
+const getData = (response) =>
+  response?.data?.data ?? response?.data ?? {};
 
-const getResponseData = (
-  response
-) => {
-  return (
-    response?.data?.data ??
-    response?.data ??
-    {}
-  );
-};
+const formatCurrency = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
-const formatCurrency = (
-  value
-) => {
-  const amount =
-    Number(value || 0);
+const formatPdfCurrency = (value) =>
+  `Rs. ${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
-  return `₹${amount.toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
-};
-
-const formatPdfCurrency = (
-  value
-) => {
-  const amount =
-    Number(value || 0);
-
-  return `Rs. ${amount.toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
-};
-
-const formatDuration = (
-  duration,
-  durationUnit
-) => {
-  if (
-    duration === null ||
-    duration === undefined ||
-    duration === ""
-  ) {
+const formatDuration = (duration, unit) => {
+  if (duration === null || duration === undefined || duration === "") {
     return "-";
   }
-
-  return `${duration} ${
-    durationUnit || ""
-  }`.trim();
+  return `${duration} ${unit || ""}`.trim();
 };
 
-const yesNo = (value) =>
-  value ? "Yes" : "No";
-
-/*
-|--------------------------------------------------------------------------
-| Component
-|--------------------------------------------------------------------------
-*/
+const initialFilters = {
+  course_search: "",
+  course_status: "",
+  course_type: "",
+  course_category: "",
+};
 
 const CourseReports = () => {
-  const [filters, setFilters] =
-    useState({
-      course_search: "",
-      course_status: "",
-      course_type: "",
-      course_category: "",
-    });
-
-  const [report, setReport] =
-    useState({
-      summary: {},
-      courses: [],
-    });
-
+  const [filters, setFilters] = useState(initialFilters);
+  const [report, setReport] = useState({
+    summary: {},
+    courses: [],
+    pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+  });
   const [filterOptions, setFilterOptions] = useState({
     courseTypes: [],
     categories: [],
   });
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  /*
-  |--------------------------------------------------------------------------
-  | Load Report
-  |--------------------------------------------------------------------------
-  */
-
-  const loadReport = async (
-    customFilters = filters
+  const loadReport = useCallback(async (
+    currentFilters = filters,
+    page = 1,
+    limit = report.pagination.limit
   ) => {
     try {
       setLoading(true);
 
-      setError("");
+      const params = {
+        page,
+        limit,
+      };
 
-      const params = {};
+      Object.entries(currentFilters).forEach(([key, value]) => {
+        if (String(value || "").trim()) {
+          params[key] = String(value).trim();
+        }
+      });
 
-      if (
-        customFilters.course_search?.trim()
-      ) {
-        params.course_search =
-          customFilters.course_search.trim();
-      }
+      const response = await getCourseReport(params);
+      const data = getData(response);
 
-      if (
-        customFilters.course_status
-      ) {
-        params.course_status =
-          customFilters.course_status;
-      }
-
-      if (
-        customFilters.course_type?.trim()
-      ) {
-        params.course_type =
-          customFilters.course_type.trim();
-      }
-
-      if (
-        customFilters.course_category?.trim()
-      ) {
-        params.course_category =
-          customFilters.course_category.trim();
-      }
-
-      const response =
-        await getCourseReport(
-          params
-        );
-
-      const data =
-        getResponseData(response);
+      setReport({
+        summary: data.summary || {},
+        courses: Array.isArray(data.courses) ? data.courses : [],
+        pagination: data.pagination || {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      });
 
       if (data.filterOptions) {
         setFilterOptions({
@@ -191,916 +102,328 @@ const CourseReports = () => {
             : [],
         });
       }
-
-      setReport({
-        summary:
-          data.summary || {},
-
-        courses:
-          Array.isArray(
-            data.courses
-          )
-            ? data.courses
-            : [],
-      });
-    } catch (err) {
-      console.error(
-        "Course report error:",
-        err
-      );
-
-      setError(
-        err?.response?.data
-          ?.message ||
-          "Unable to load course report."
+    } catch (error) {
+      console.error("Course report error:", error);
+      notification.error(
+        error?.response?.data?.message || "Unable to load course report."
       );
     } finally {
       setLoading(false);
     }
-  };
-
-  /*
-  |--------------------------------------------------------------------------
-  | Initial Load
-  |--------------------------------------------------------------------------
-  */
+  }, [filters, report.pagination.limit]);
 
   useEffect(() => {
-    loadReport();
+    loadReport(initialFilters, 1, 10);
+    // Initial report request only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | Filter Change
-  |--------------------------------------------------------------------------
-  */
-
-  const handleChange = (
-    event
-  ) => {
-    const {
-      name,
-      value,
-    } = event.target;
-
-    setFilters(
-      (previous) => ({
-        ...previous,
-        [name]: value,
-      })
-    );
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFilters((previous) => ({ ...previous, [name]: value }));
   };
-
-  /*
-  |--------------------------------------------------------------------------
-  | Apply
-  |--------------------------------------------------------------------------
-  */
 
   const handleApply = () => {
-    loadReport(filters);
+    loadReport(filters, 1, report.pagination.limit);
   };
-
-  /*
-  |--------------------------------------------------------------------------
-  | Reset
-  |--------------------------------------------------------------------------
-  */
 
   const handleReset = () => {
-    const resetFilters = {
-      course_search: "",
-      course_status: "",
-      course_type: "",
-      course_category: "",
-    };
-
-    setFilters(resetFilters);
-
-    loadReport(resetFilters);
+    setFilters(initialFilters);
+    loadReport(initialFilters, 1, report.pagination.limit);
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | Excel
-  |--------------------------------------------------------------------------
-  */
+  const getExportData = async () => {
+    const result = await fetchAllReportPages({
+      fetchPage: getCourseReport,
+      filters,
+      recordsKey: "courses",
+    });
 
-  const exportExcel = () => {
-    const courses =
-      report.courses || [];
-
-    if (!courses.length) {
-      return;
-    }
-
-    const summary =
-      report.summary || {};
-
-    const rows =
-      courses.map(
-        (
-          item,
-          index
-        ) => {
-          const course =
-            item.course || {};
-
-          return {
-            "S.No":
-              index + 1,
-
-            Course:
-              course.courseTitle ||
-              "-",
-
-            "Course Type":
-              course.courseType ||
-              "-",
-
-            "Certificate / Diploma":
-              course.certificateDiploma ||
-              "-",
-
-            Category:
-              course.courseCategory ||
-              "-",
-
-            "MRP":
-              Number(
-                course.mrp || 0
-              ),
-
-            Price:
-              Number(
-                course.price || 0
-              ),
-
-            "Display Order":
-              Number(
-                course.displayOrder ||
-                  0
-              ),
-
-            Duration:
-              formatDuration(
-                course.duration,
-                course.durationUnit
-              ),
-
-            "Duration Unit":
-              course.durationUnit ||
-              "-",
-
-            "Course Image":
-              course.courseImage ||
-              "-",
-
-            "Preview Video":
-              course.previewVideo ||
-              "-",
-
-            "Total Lectures":
-              Number(
-                course.totalLectures ||
-                  0
-              ),
-
-            "Practical Marks":
-              Number(
-                course.practicalMarks ||
-                  0
-              ),
-
-            "Objective Marks":
-              Number(
-                course.objectiveMarks ||
-                  0
-              ),
-
-            "Certificate Subject":
-              course.certificateSubject ||
-              "-",
-
-            Popular:
-              yesNo(
-                course.popular
-              ),
-
-            Recommended:
-              yesNo(
-                course.recommended
-              ),
-
-            "MRP Visible":
-              yesNo(
-                course.mrpVisible
-              ),
-
-            "Hide Exam Result":
-              yesNo(
-                course.hideExamResult
-              ),
-
-            Status:
-              course.status ||
-              "-",
-
-            Students:
-              Number(
-                item.totalStudents ||
-                  0
-              ),
-
-            Admissions:
-              Number(
-                item.totalAdmissions ||
-                  0
-              ),
-
-            Active:
-              Number(
-                item.activeAdmissions ||
-                  0
-              ),
-
-            Completed:
-              Number(
-                item.completedAdmissions ||
-                  0
-              ),
-
-            Dropped:
-              Number(
-                item.droppedAdmissions ||
-                  0
-              ),
-
-            "Course Fees":
-              Number(
-                item.totalCourseFees ||
-                  0
-              ),
-
-            Paid:
-              Number(
-                item.totalPaidAmount ||
-                  0
-              ),
-
-            Remaining:
-              Number(
-                item.totalRemainingAmount ||
-                  0
-              ),
-
-            Description:
-              course.description ||
-              "",
-
-            Syllabus:
-              course.syllabus ||
-              "",
-
-            Eligibility:
-              course.eligibility ||
-              "",
-          };
-        }
-      );
-
-    const summaryRows = [
-      {
-        "Report Item":
-          "Total Courses",
-
-        Value:
-          Number(
-            summary.totalCourses ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Total Students",
-
-        Value:
-          Number(
-            summary.totalStudents ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Total Admissions",
-
-        Value:
-          Number(
-            summary.totalAdmissions ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Active Admissions",
-
-        Value:
-          Number(
-            summary.activeAdmissions ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Completed Admissions",
-
-        Value:
-          Number(
-            summary.completedAdmissions ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Dropped Admissions",
-
-        Value:
-          Number(
-            summary.droppedAdmissions ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Total Course Fees",
-
-        Value:
-          Number(
-            summary.totalCourseFees ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Total Paid Amount",
-
-        Value:
-          Number(
-            summary.totalPaidAmount ||
-              0
-          ),
-      },
-
-      {
-        "Report Item":
-          "Total Remaining Amount",
-
-        Value:
-          Number(
-            summary.totalRemainingAmount ||
-              0
-          ),
-      },
-    ];
-
-    const workbook =
-      XLSX.utils.book_new();
-
-    const courseSheet =
-      XLSX.utils.json_to_sheet(
-        rows
-      );
-
-    const summarySheet =
-      XLSX.utils.json_to_sheet(
-        summaryRows
-      );
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      courseSheet,
-      "Course Report"
-    );
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      summarySheet,
-      "Summary"
-    );
-
-    const filename =
-      `course-report-${new Date()
-        .toISOString()
-        .slice(0, 10)}.xlsx`;
-
-    XLSX.writeFile(
-      workbook,
-      filename
-    );
+    return result;
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | PDF
-  |--------------------------------------------------------------------------
-  */
+  const exportExcel = async () => {
+    if (exporting) return;
 
-  const exportPDF = () => {
-    const courses =
-      report.courses || [];
+    try {
+      setExporting(true);
+      const { rows, summary } = await getExportData();
 
-    if (!courses.length) {
-      return;
+      if (!rows.length) {
+        notification.info("There are no course records to export.");
+        return;
+      }
+
+      const courseRows = rows.map((item, index) => {
+        const course = item.course || {};
+
+        return {
+          "S.No": index + 1,
+          Course: course.courseTitle || "-",
+          "Course Type": course.courseType || "-",
+          Category: course.courseCategory || "-",
+          MRP: Number(course.mrp || 0),
+          Price: Number(course.price || 0),
+          "Display Order": Number(course.displayOrder || 0),
+          Duration: formatDuration(course.duration, course.durationUnit),
+          "Duration Unit": course.durationUnit || "-",
+          "Course Image": course.courseImage || "-",
+          "Preview Video": course.previewVideo || "-",
+          "Total Lectures": Number(course.totalLectures || 0),
+          "Practical Marks": Number(course.practicalMarks || 0),
+          "Objective Marks": Number(course.objectiveMarks || 0),
+          "Certificate Subject": course.certificateSubject || "-",
+          Popular: course.popular ? "Yes" : "No",
+          Recommended: course.recommended ? "Yes" : "No",
+          "MRP Visible": course.mrpVisible ? "Yes" : "No",
+          "Hide Exam Result": course.hideExamResult ? "Yes" : "No",
+          Status: course.status || "-",
+          Students: Number(item.totalStudents || 0),
+          Admissions: Number(item.totalAdmissions || 0),
+          Active: Number(item.activeAdmissions || 0),
+          Completed: Number(item.completedAdmissions || 0),
+          Dropped: Number(item.droppedAdmissions || 0),
+          "Course Fees": Number(item.totalCourseFees || 0),
+          Paid: Number(item.totalPaidAmount || 0),
+          Remaining: Number(item.totalRemainingAmount || 0),
+          Description: course.description || "",
+          Syllabus: course.syllabus || "",
+          Eligibility: course.eligibility || "",
+        };
+      });
+
+      const summaryRows = [
+        ["Total Courses", summary.totalCourses],
+        ["Total Students", summary.totalStudents],
+        ["Total Admissions", summary.totalAdmissions],
+        ["Active Admissions", summary.activeAdmissions],
+        ["Completed Admissions", summary.completedAdmissions],
+        ["Dropped Admissions", summary.droppedAdmissions],
+        ["Total Course Fees", summary.totalCourseFees],
+        ["Total Paid Amount", summary.totalPaidAmount],
+        ["Total Remaining Amount", summary.totalRemainingAmount],
+      ].map(([label, value]) => ({
+        "Report Item": label,
+        Value: Number(value || 0),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(courseRows),
+        "Course Report"
+      );
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(summaryRows),
+        "Summary"
+      );
+
+      XLSX.writeFile(
+        workbook,
+        `course-report-${new Date().toISOString().slice(0, 10)}.xlsx`
+      );
+
+      notification.success(`Excel exported successfully (${rows.length} courses).`);
+    } catch (error) {
+      console.error("Course Excel export error:", error);
+      notification.error(
+        error?.response?.data?.message || error.message || "Unable to export course report."
+      );
+    } finally {
+      setExporting(false);
     }
+  };
 
-    const summary =
-      report.summary || {};
+  const exportPDF = async () => {
+    if (exporting) return;
 
-    const doc =
-      new jsPDF({
-        orientation:
-          "landscape",
+    try {
+      setExporting(true);
+      const { rows, summary } = await getExportData();
+
+      if (!rows.length) {
+        notification.info("There are no course records to export.");
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: "landscape",
         unit: "mm",
         format: "a4",
       });
 
-    doc.setFontSize(18);
+      doc.setFontSize(18);
+      doc.text("Course Report", 14, 16);
+      doc.setFontSize(9);
+      doc.text(`Generated: ${new Date().toLocaleString("en-IN")}`, 14, 23);
 
-    doc.text(
-      "Course Report",
-      14,
-      16
-    );
+      doc.text(`Courses: ${summary.totalCourses || 0}`, 14, 30);
+      doc.text(`Students: ${summary.totalStudents || 0}`, 55, 30);
+      doc.text(`Admissions: ${summary.totalAdmissions || 0}`, 100, 30);
+      doc.text(`Active: ${summary.activeAdmissions || 0}`, 155, 30);
+      doc.text(
+        `Remaining: ${formatPdfCurrency(summary.totalRemainingAmount)}`,
+        200,
+        30
+      );
 
-    doc.setFontSize(9);
+      autoTable(doc, {
+        startY: 37,
+        head: [[
+          "S.No", "Course", "Type", "Category", "MRP", "Price",
+          "Duration", "Lectures", "Students", "Admissions", "Active",
+          "Completed", "Dropped", "Fees", "Paid", "Remaining", "Status",
+        ]],
+        body: rows.map((item, index) => {
+          const course = item.course || {};
 
-    doc.text(
-      `Generated: ${new Date().toLocaleString(
-        "en-IN"
-      )}`,
-      14,
-      23
-    );
+          return [
+            index + 1,
+            course.courseTitle || "-",
+            course.courseType || "-",
+            course.courseCategory || "-",
+            formatPdfCurrency(course.mrp),
+            formatPdfCurrency(course.price),
+            formatDuration(course.duration, course.durationUnit),
+            Number(course.totalLectures || 0),
+            Number(item.totalStudents || 0),
+            Number(item.totalAdmissions || 0),
+            Number(item.activeAdmissions || 0),
+            Number(item.completedAdmissions || 0),
+            Number(item.droppedAdmissions || 0),
+            formatPdfCurrency(item.totalCourseFees),
+            formatPdfCurrency(item.totalPaidAmount),
+            formatPdfCurrency(item.totalRemainingAmount),
+            course.status || "-",
+          ];
+        }),
+        styles: { fontSize: 5.5, cellPadding: 1.5 },
+        headStyles: { fontSize: 5.5 },
+        margin: { left: 7, right: 7 },
+        showHead: "everyPage",
+      });
 
-    let currentY = 30;
+      doc.save(
+        `course-report-${new Date().toISOString().slice(0, 10)}.pdf`
+      );
 
-    doc.setFontSize(9);
-
-    doc.text(
-      `Courses: ${Number(
-        summary.totalCourses || 0
-      )}`,
-      14,
-      currentY
-    );
-
-    doc.text(
-      `Students: ${Number(
-        summary.totalStudents || 0
-      )}`,
-      55,
-      currentY
-    );
-
-    doc.text(
-      `Admissions: ${Number(
-        summary.totalAdmissions || 0
-      )}`,
-      100,
-      currentY
-    );
-
-    doc.text(
-      `Active: ${Number(
-        summary.activeAdmissions || 0
-      )}`,
-      155,
-      currentY
-    );
-
-    doc.text(
-      `Remaining: ${formatPdfCurrency(
-        summary.totalRemainingAmount
-      )}`,
-      200,
-      currentY
-    );
-
-    currentY += 7;
-
-    autoTable(
-      doc,
-      {
-        startY:
-          currentY,
-
-        head: [
-          [
-            "S.No",
-            "Course",
-            "Type",
-            "Certificate",
-            "Category",
-            "MRP",
-            "Price",
-            "Duration",
-            "Lectures",
-            "Students",
-            "Admissions",
-            "Active",
-            "Completed",
-            "Dropped",
-            "Fees",
-            "Paid",
-            "Remaining",
-            "Status",
-          ],
-        ],
-
-        body:
-          courses.map(
-            (
-              item,
-              index
-            ) => {
-              const course =
-                item.course ||
-                {};
-
-              return [
-                index + 1,
-
-                course.courseTitle ||
-                  "-",
-
-                course.courseType ||
-                  "-",
-
-                course.certificateDiploma ||
-                  "-",
-
-                course.courseCategory ||
-                  "-",
-
-                formatPdfCurrency(
-                  course.mrp
-                ),
-
-                formatPdfCurrency(
-                  course.price
-                ),
-
-                formatDuration(
-                  course.duration,
-                  course.durationUnit
-                ),
-
-                Number(
-                  course.totalLectures ||
-                    0
-                ),
-
-                Number(
-                  item.totalStudents ||
-                    0
-                ),
-
-                Number(
-                  item.totalAdmissions ||
-                    0
-                ),
-
-                Number(
-                  item.activeAdmissions ||
-                    0
-                ),
-
-                Number(
-                  item.completedAdmissions ||
-                    0
-                ),
-
-                Number(
-                  item.droppedAdmissions ||
-                    0
-                ),
-
-                formatPdfCurrency(
-                  item.totalCourseFees
-                ),
-
-                formatPdfCurrency(
-                  item.totalPaidAmount
-                ),
-
-                formatPdfCurrency(
-                  item.totalRemainingAmount
-                ),
-
-                course.status ||
-                  "-",
-              ];
-            }
-          ),
-
-        styles: {
-          fontSize: 5.5,
-          cellPadding: 1.5,
-        },
-
-        headStyles: {
-          fontSize: 5.5,
-        },
-
-        margin: {
-          left: 7,
-          right: 7,
-        },
-      }
-    );
-
-    const finalY =
-      doc.lastAutoTable
-        ?.finalY
-        ? doc.lastAutoTable
-            .finalY + 8
-        : currentY + 8;
-
-    doc.setFontSize(8);
-
-    doc.text(
-      `Total Course Fees: ${formatPdfCurrency(
-        summary.totalCourseFees
-      )}`,
-      10,
-      finalY
-    );
-
-    doc.text(
-      `Total Paid: ${formatPdfCurrency(
-        summary.totalPaidAmount
-      )}`,
-      90,
-      finalY
-    );
-
-    doc.text(
-      `Total Remaining: ${formatPdfCurrency(
-        summary.totalRemainingAmount
-      )}`,
-      160,
-      finalY
-    );
-
-    const filename =
-      `course-report-${new Date()
-        .toISOString()
-        .slice(0, 10)}.pdf`;
-
-    doc.save(filename);
+      notification.success(`PDF exported successfully (${rows.length} courses).`);
+    } catch (error) {
+      console.error("Course PDF export error:", error);
+      notification.error(
+        error?.response?.data?.message || error.message || "Unable to export course report."
+      );
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const summary =
-    report.summary || {};
-
-  const courses =
-    report.courses || [];
-
-  /*
-  |--------------------------------------------------------------------------
-  | Render
-  |--------------------------------------------------------------------------
-  */
+  const summary = report.summary || {};
+  const courses = report.courses || [];
+  const pagination = report.pagination || {};
 
   return (
     <div className="course-reports-page">
-
-      {/* HEADER */}
-
       <div className="page-header">
-
         <div>
-          <h1>
-            Course Reports
-          </h1>
-
-         
+          <h1>Course Reports</h1>
         </div>
 
         <div className="admission-report-actions">
-
-       
-
           <button
             type="button"
             className="themebtn exceldownload"
-            onClick={
-              exportExcel
-            }
-            disabled={
-              !courses.length
-            }
+            onClick={exportExcel}
+            disabled={exporting || loading || !pagination.total}
           >
-             <RiFileExcel2Line />
-
-            Excel
+            <RiFileExcel2Line />
+            {exporting ? "Preparing..." : "Excel"}
           </button>
 
           <button
             type="button"
             className="themebtn pdfdownload"
-            onClick={
-              exportPDF
-            }
-            disabled={
-              !courses.length
-            }
+            onClick={exportPDF}
+            disabled={exporting || loading || !pagination.total}
           >
             <FaFilePdf />
-
-            PDF
+            {exporting ? "Preparing..." : "PDF"}
           </button>
-
         </div>
-
       </div>
-
-
-      {/* ERROR */}
-
-      {error && (
-        <div className="course-report-error">
-          {error}
-        </div>
-      )}
-
-      {/* SUMMARY */}
 
       <div className="course-report-summary">
-
         <div className="dashboard-stat-card card-purple">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-purple">
-           <FaBookOpen /> 
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title">Total Courses</span>
-             
-               <strong class="stat-card-value">
-            {Number(
-              summary.totalCourses ||
-                0
-            )}
-          </strong>
-            </div>
-         
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-purple"><FaBookOpen /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Total Courses</span>
+            <strong className="stat-card-value">{Number(summary.totalCourses || 0)}</strong>
+          </div>
         </div>
 
-
-  <div className="dashboard-stat-card card-success">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-success">
-           <FaBookOpen /> 
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title">Completed Course </span>
-             
-               <strong class="stat-card-value">
-            {Number(
-              summary.completedAdmissions ||
-                0
-            )}
-          </strong>
-            </div>
-         
-        </div>
-       
-
-      
-
-       
- <div className="dashboard-stat-card card-bluewarning">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-bluewarning">
-          <MdCurrencyRupee />
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title">Total Course Fees </span>
-             
-               <strong class="stat-card-value">
-           {formatCurrency(
-              summary.totalCourseFees
-            )}
-          </strong>
-            </div>
-         
+        <div className="dashboard-stat-card card-success">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-success"><FaBookOpen /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Completed Admissions</span>
+            <strong className="stat-card-value">{Number(summary.completedAdmissions || 0)}</strong>
+          </div>
         </div>
 
-         <div className="dashboard-stat-card card-danger">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-danger">
-          <MdCurrencyRupee />
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title"> Remaining Fees </span>
-             
-               <strong class="stat-card-value">
-           {formatCurrency(
-              summary.totalRemainingAmount
-            )}
-          </strong>
-            </div>
-         
+        <div className="dashboard-stat-card card-bluewarning">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-bluewarning"><MdCurrencyRupee /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Total Course Fees</span>
+            <strong className="stat-card-value">{formatCurrency(summary.totalCourseFees)}</strong>
+          </div>
         </div>
 
-       
-
-     
-
-      
-
+        <div className="dashboard-stat-card card-danger">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-danger"><MdCurrencyRupee /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Remaining Fees</span>
+            <strong className="stat-card-value">{formatCurrency(summary.totalRemainingAmount)}</strong>
+          </div>
+        </div>
       </div>
 
-      {/* FILTERS */}
-
       <div className="common-card-filters">
-
         <div className="input-search noicon">
-
-          <label>
-            Search Course
-          </label>
-
+          <label htmlFor="course-report-search">Search Course</label>
           <input
-            type="text"
+            id="course-report-search"
             name="course_search"
-            value={
-              filters.course_search
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.course_search}
+            onChange={handleChange}
             placeholder="Search course..."
           />
-
         </div>
 
         <div className="input-search">
-
-          <label>
-            Status
-          </label>
-
+          <label htmlFor="course-report-status">Status</label>
           <select
+            id="course-report-status"
             name="course_status"
-            value={
-              filters.course_status
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.course_status}
+            onChange={handleChange}
           >
-            <option value="">
-              All Status
-            </option>
-
-            <option value="Published">
-              Published
-            </option>
-
-            <option value="Draft">
-              Draft
-            </option>
-
-            <option value="Archived">
-              Archived
-            </option>
+            <option value="">All Status</option>
+            <option value="Published">Published</option>
+            <option value="Draft">Draft</option>
+            <option value="Archived">Archived</option>
           </select>
-
         </div>
 
-
-
         <div className="input-search">
-          <label htmlFor="course-report-type">
-            Course Type
-          </label>
-
+          <label htmlFor="course-report-type">Course Type</label>
           <select
             id="course-report-type"
             name="course_type"
@@ -1109,23 +432,14 @@ const CourseReports = () => {
             disabled={loading}
           >
             <option value="">All Course Types</option>
-
             {filterOptions.courseTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
+              <option key={type} value={type}>{type}</option>
             ))}
           </select>
         </div>
 
-
-
-
         <div className="input-search">
-          <label htmlFor="course-report-category">
-            Category
-          </label>
-
+          <label htmlFor="course-report-category">Category</label>
           <select
             id="course-report-category"
             name="course_category"
@@ -1134,23 +448,17 @@ const CourseReports = () => {
             disabled={loading}
           >
             <option value="">All Categories</option>
-
             {filterOptions.categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
+              <option key={category} value={category}>{category}</option>
             ))}
           </select>
         </div>
 
         <div className="student-filter-actions">
-
           <button
             type="button"
             className="themebtn"
-            onClick={
-              handleApply
-            }
+            onClick={handleApply}
             disabled={loading}
           >
             Apply Filter
@@ -1159,473 +467,117 @@ const CourseReports = () => {
           <button
             type="button"
             className="themebtn themebtnline"
-            onClick={
-              handleReset
-            }
+            onClick={handleReset}
+            disabled={loading}
           >
-            <FiRefreshCw />  Reset
+            <FiRefreshCw /> Reset
           </button>
+        </div>
+      </div>
 
+      <div className="common-card">
+        <div className="common-table-wrapper">
+          <table className="common-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Course</th>
+                <th>Category</th>
+                <th>MRP</th>
+                <th>Price</th>
+                <th>Duration</th>
+                <th>Lectures</th>
+                <th>Popular</th>
+                <th>Recommended</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="10">Loading course report...</td></tr>
+              ) : !courses.length ? (
+                <tr><td colSpan="10">No course records found.</td></tr>
+              ) : (
+                courses.map((item, index) => {
+                  const course = item.course || {};
+
+                  return (
+                    <tr key={course._id || index}>
+                      <td>
+                        {course.courseImage ? (
+                          <img
+                            className="course-report-image"
+                            src={getAssetUrl(course.courseImage)}
+                            alt={course.courseTitle || "Course"}
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="course-report-image-placeholder">—</div>
+                        )}
+                      </td>
+
+                      <td className="course-name-cell">
+                        <strong>{course.courseTitle || "-"}</strong>
+                        <span>{course.courseType || "-"}</span>
+                      </td>
+
+                      <td>{course.courseCategory || "-"}</td>
+                      <td><span className="tag-purple">{formatCurrency(course.mrp)}</span></td>
+                      <td><span className="tag-success">{formatCurrency(course.price)}</span></td>
+                      <td>
+                        <div className="contact-details">
+                          <div className="contact-li">
+                            <MdDateRange />
+                            <span>{formatDuration(course.duration, course.durationUnit)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{Number(course.totalLectures || 0)}</td>
+
+                      <td>
+                        <span className={`report-badge ${course.popular ? "yes" : "no"}`}>
+                          {course.popular ? "Yes" : "No"}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span className={`report-badge ${course.recommended ? "yes" : "no"}`}>
+                          {course.recommended ? "Yes" : "No"}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span className={`course-status-badge ${String(course.status || "").toLowerCase()}`}>
+                          {course.status || "-"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
+        <Pagination
+          page={pagination.page || 1}
+          totalPages={pagination.totalPages || 0}
+          total={pagination.total || 0}
+          itemCount={courses.length}
+          itemLabel="courses"
+          limit={pagination.limit || 10}
+          loading={loading}
+          onPageChange={(nextPage) =>
+            loadReport(filters, nextPage, pagination.limit || 10)
+          }
+          onLimitChange={(nextLimit) =>
+            loadReport(filters, 1, nextLimit)
+          }
+        />
       </div>
-
-      {/* TABLE */}
-      <div className="common-card">
-            <div className="common-table-wrapper">
-
-              <table className="common-table">
-
-                <thead>
-                  <tr>
-
-                    {/* <th>
-                      #
-                    </th> */}
-
-                    <th>
-                      Image
-                    </th>
-
-                    <th>
-                      Course
-                    </th>
-
-                  
-
-                  
-
-                    <th>
-                      Category
-                    </th>
-
-                    <th>
-                      MRP
-                    </th>
-
-                    <th>
-                      Price
-                    </th>
-
-                    <th>
-                      Duration
-                    </th>
-
-                    <th>
-                      Lectures
-                    </th>
-
-                    {/* <th>
-                      Practical
-                    </th> */}
-
-                    {/* <th>
-                      Objective
-                    </th> */}
-
-                    {/* <th>
-                      Students
-                    </th> */}
-
-                    {/* <th>
-                      Admissions
-                    </th> */}
-
-                    {/* <th>
-                      Active
-                    </th> */}
-
-                    {/* <th>
-                      Completed
-                    </th> */}
-
-                    {/* <th>
-                      Dropped
-                    </th> */}
-
-                    {/* <th>
-                      Course Fees
-                    </th>
-
-                    <th>
-                      Paid
-                    </th>
-
-                    <th>
-                      Remaining
-                    </th> */}
-
-                    <th>
-                      Popular
-                    </th>
-
-                    <th>
-                      Recommended
-                    </th>
-
-                    {/* <th>
-                      MRP Visible
-                    </th>
-
-                    <th>
-                      Exam Result
-                    </th> */}
-
-                    <th>
-                      Status
-                    </th>
-
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {loading ? (
-                    <tr>
-                      <td colSpan="25">
-                        Loading course
-                        report...
-                      </td>
-                    </tr>
-                  ) : !courses.length ? (
-                    <tr>
-                      <td colSpan="25">
-                        No course records
-                        found.
-                      </td>
-                    </tr>
-                  ) : (
-                    courses.map(
-                      (
-                        item,
-                        index
-                      ) => {
-                        const course =
-                          item.course ||
-                          {};
-
-                        return (
-                          <tr
-                            key={
-                              course._id ||
-                              index
-                            }
-                          >
-
-                            {/* # */}
-
-                            {/* <td>
-                              {index + 1}
-                            </td> */}
-
-                            {/* IMAGE */}
-
-                            <td>
-
-                              {course.courseImage ? (
-                                <img
-                                  className="student-avatar"
-                                  src={getAssetUrl(
-                                    course.courseImage
-                                  )}
-                                  alt={
-                                    course.courseTitle ||
-                                    "Course"
-                                  }
-                                  onError={(
-                                    event
-                                  ) => {
-                                    event.currentTarget.style.display =
-                                      "none";
-                                  }}
-                                />
-                              ) : (
-                                <div className=".student-avatar-placeholder">
-                                  —
-                                </div>
-                              )}
-
-                            </td>
-
-                            {/* COURSE */}
-
-                            <td className="course-name-cell">
-
-                              <strong>
-                                {course.courseTitle ||
-                                  "-"}
-                              </strong>
-                                  <div>
-
-                             <span className={` ${course.courseType || ""}`}>
-  {course.courseType || "-"}
-</span>
-                                </div>
-                               
-
-                              {/* <span>
-                                Order:{" "}
-                                {Number(
-                                  course.displayOrder ||
-                                    0
-                                )}
-                              </span> */}
-
-                            </td>
-
-                            {/* TYPE */}
-
-                         
-
-                            {/* CERTIFICATE */}
-
-                          
-
-                            {/* CATEGORY */}
-
-                            <td>
-                              {course.courseCategory ||
-                                "-"}
-                            </td>
-
-                            {/* MRP */}
-
-                            <td>
-                             
-
-                              <span className="tag-purple">
-                                {formatCurrency(
-                                course.mrp
-                              )}
-                              </span>
-                            </td>
-
-                            {/* PRICE */}
-
-                            <td>
-                              <span className="tag-success">
- {formatCurrency(
-                                course.price
-                              )}
-                              </span>
-                             
-                            </td>
-
-                            {/* DURATION */}
-
-                            <td>
-                              <div className="contact-details">
-                                <div className="contact-li">
-                                 <MdDateRange />
-                                  <span>{formatDuration(
-                                course.duration,
-                                course.durationUnit
-                              )}</span>
-                                </div>
-                              </div>
-                              
-                            </td>
-
-                            {/* LECTURES */}
-
-                            <td>
-                              {Number(
-                                course.totalLectures ||
-                                  0
-                              )}
-                            </td>
-
-                            {/* PRACTICAL */}
-
-                            {/* <td>
-                              {Number(
-                                course.practicalMarks ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* OBJECTIVE */}
-
-                            {/* <td>
-                              {Number(
-                                course.objectiveMarks ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* STUDENTS */}
-
-                            {/* <td>
-                              {Number(
-                                item.totalStudents ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* ADMISSIONS */}
-
-                            {/* <td>
-                              {Number(
-                                item.totalAdmissions ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* ACTIVE */}
-
-                            {/* <td>
-                              {Number(
-                                item.activeAdmissions ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* COMPLETED */}
-
-                            {/* <td>
-                              {Number(
-                                item.completedAdmissions ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* DROPPED */}
-
-                            {/* <td>
-                              {Number(
-                                item.droppedAdmissions ||
-                                  0
-                              )}
-                            </td> */}
-
-                            {/* COURSE FEES */}
-
-                            {/* <td>
-                             
-                              <span className=" tag-purple"> {formatCurrency(
-                                item.totalCourseFees
-                              )}</span>
-                             
-                            </td> */}
-
-                            {/* PAID */}
-
-                            {/* <td>
-                             
-                               <span className="tag-success">
-                               {formatCurrency(
-                                item.totalPaidAmount
-                              )}
-                             </span>
-
-                            </td> */}
-
-                            {/* REMAINING */}
-
-                            {/* <td>
-                             <span className="tag-danger">
-                               {formatCurrency(
-                                item.totalRemainingAmount
-                              )}
-                             </span>
-                            </td> */}
-
-                            {/* POPULAR */}
-
-                            <td>
-                              <span
-                                className={
-                                  course.popular
-                                    ? "report-badge yes"
-                                    : "report-badge no"
-                                }
-                              >
-                                {course.popular
-                                  ? "Yes"
-                                  : "No"}
-                              </span>
-                            </td>
-
-                            {/* RECOMMENDED */}
-
-                            <td>
-                              <span
-                                className={
-                                  course.recommended
-                                    ? "report-badge yes"
-                                    : "report-badge no"
-                                }
-                              >
-                                {course.recommended
-                                  ? "Yes"
-                                  : "No"}
-                              </span>
-                            </td>
-
-                            {/* MRP VISIBLE */}
-
-                            {/* <td>
-                              <span
-                                className={
-                                  course.mrpVisible
-                                    ? "report-badge yes"
-                                    : "report-badge no"
-                                }
-                              >
-                                {course.mrpVisible
-                                  ? "Yes"
-                                  : "No"}
-                              </span>
-                            </td> */}
-
-                            {/* EXAM RESULT */}
-
-                            {/* <td>
-                              <span
-                                className={
-                                  course.hideExamResult
-                                    ? "report-badge no"
-                                    : "report-badge yes"
-                                }
-                              >
-                                {course.hideExamResult
-                                  ? "Hidden"
-                                  : "Visible"}
-                              </span>
-                            </td> */}
-
-                            {/* STATUS */}
-
-                            <td>
-                              <span
-                                className={`course-status-badge ${String(
-                                  course.status ||
-                                    ""
-                                )
-                                  .toLowerCase()
-                                  .replace(
-                                    /\s+/g,
-                                    "-"
-                                  )}`}
-                              >
-                                {course.status ||
-                                  "-"}
-                              </span>
-                            </td>
-
-                          </tr>
-                        );
-                      }
-                    )
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-      </div>
-
     </div>
   );
 };
