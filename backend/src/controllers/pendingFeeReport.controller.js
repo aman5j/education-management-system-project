@@ -8,7 +8,7 @@ import Student from "../models/Student.js";
 const ALLOWED_STATUSES = ["Active", "Completed", "Dropped"];
 const ALLOWED_LIMITS = [10, 25, 50];
 
-const EMPTY_SUMMARY = {
+const INITIAL_SUMMARY = {
   studentsWithPendingFees: 0,
   pendingAdmissions: 0,
   totalFinalFees: 0,
@@ -21,6 +21,9 @@ const EMPTY_SUMMARY = {
 const isValidObjectId = (value) =>
   typeof value === "string" &&
   /^[a-fA-F0-9]{24}$/.test(value);
+
+const escapeRegex = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const isValidDateInput = (value) => {
   if (
@@ -49,18 +52,14 @@ const getPagination = (query) => {
     (!/^\d+$/.test(String(pageValue)) ||
       Number(pageValue) < 1)
   ) {
-    return {
-      error: "Page must be a positive integer.",
-    };
+    return { error: "Page must be a positive integer." };
   }
 
   if (
     limitValue !== undefined &&
     !ALLOWED_LIMITS.includes(Number(limitValue))
   ) {
-    return {
-      error: "Limit must be 10, 25, or 50.",
-    };
+    return { error: "Limit must be 10, 25, or 50." };
   }
 
   return {
@@ -84,7 +83,9 @@ const getPendingFeeReportFilters = async (req, res, next) => {
         .lean(),
 
       Student.find({})
-        .select("_id rollNo firstName surname")
+        .select(
+          "_id rollNo firstName surname fatherName mobile alternateMobile email"
+        )
         .sort({ firstName: 1, surname: 1 })
         .lean(),
     ]);
@@ -110,10 +111,10 @@ const getPendingFeeReport = async (req, res, next) => {
       course_id,
       batch_id,
       student_id,
+      student_search = "",
       status,
     } = req.query;
 
-    // Pagination validation
     const paginationInput = getPagination(req.query);
 
     if (paginationInput.error) {
@@ -125,7 +126,7 @@ const getPendingFeeReport = async (req, res, next) => {
 
     const { page, limit } = paginationInput;
 
-    // ID validation
+    // Validate IDs.
     if (course_id && !isValidObjectId(course_id)) {
       return res.status(400).json({
         success: false,
@@ -147,7 +148,6 @@ const getPendingFeeReport = async (req, res, next) => {
       });
     }
 
-    // Admission status validation
     if (status && !ALLOWED_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -155,7 +155,7 @@ const getPendingFeeReport = async (req, res, next) => {
       });
     }
 
-    // Date validation
+    // Validate dates.
     if (date_from && !isValidDateInput(date_from)) {
       return res.status(400).json({
         success: false,
@@ -177,7 +177,19 @@ const getPendingFeeReport = async (req, res, next) => {
       });
     }
 
-    // Build the same admission filters as the existing report.
+    // Validate student text search.
+    const searchText =
+      typeof student_search === "string"
+        ? student_search.trim()
+        : "";
+
+    if (searchText.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Student search cannot exceed 100 characters.",
+      });
+    }
+
     const filter = {};
 
     if (course_id) {
@@ -212,11 +224,91 @@ const getPendingFeeReport = async (req, res, next) => {
       }
     }
 
-    // Load matching admissions before calculating the complete summary.
+    /*
+     * Student search:
+     * Search the Student collection first, then use the matching
+     * student IDs to filter StudentAdmission records.
+     *
+     * This supports name, roll number, father name, mobile,
+     * alternate mobile, email, address and pincode.
+     */
+    if (searchText) {
+      const searchRegex = new RegExp(
+        escapeRegex(searchText),
+        "i"
+      );
+
+      const matchingStudents = await Student.find({
+        $or: [
+          { firstName: searchRegex },
+          { surname: searchRegex },
+          { fatherName: searchRegex },
+          { rollNo: searchRegex },
+          { mobile: searchRegex },
+          { alternateMobile: searchRegex },
+          { email: searchRegex },
+          { address: searchRegex },
+          { pincode: searchRegex },
+        ],
+      })
+        .select("_id")
+        .lean();
+
+      const matchingStudentIds = matchingStudents.map(
+        (student) => student._id
+      );
+
+      // No matching student means no matching admissions.
+      if (!matchingStudentIds.length) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            summary: { ...INITIAL_SUMMARY },
+            rows: [],
+            pagination: {
+              page: 1,
+              limit,
+              total: 0,
+              totalPages: 0,
+            },
+          },
+        });
+      }
+
+      const searchStudentFilter = {
+        $in: matchingStudentIds,
+      };
+
+      if (filter.student_id) {
+        // Keep exact student selection and text search combined.
+        if (
+          !matchingStudentIds.some(
+            (id) => id.toString() === filter.student_id.toString()
+          )
+        ) {
+          return res.status(200).json({
+            success: true,
+            data: {
+              summary: { ...INITIAL_SUMMARY },
+              rows: [],
+              pagination: {
+                page: 1,
+                limit,
+                total: 0,
+                totalPages: 0,
+              },
+            },
+          });
+        }
+      } else {
+        filter.student_id = searchStudentFilter;
+      }
+    }
+
     const admissions = await StudentAdmission.find(filter)
       .populate(
         "student_id",
-        "_id rollNo firstName surname email"
+        "_id rollNo firstName surname fatherName mobile alternateMobile email address pincode"
       )
       .populate(
         "course_id",
@@ -228,10 +320,11 @@ const getPendingFeeReport = async (req, res, next) => {
       )
       .sort({
         admission_date: -1,
+        _id: -1,
       })
       .lean();
 
-    // Existing pending-fee calculations — intentionally unchanged.
+    // Existing fee calculations — unchanged.
     const rows = admissions
       .map((admission) => {
         const finalAmount = Math.max(
@@ -258,13 +351,18 @@ const getPendingFeeReport = async (req, res, next) => {
                 rollNo: admission.student_id.rollNo,
                 firstName: admission.student_id.firstName,
                 surname: admission.student_id.surname,
+                fatherName: admission.student_id.fatherName,
+                mobile: admission.student_id.mobile,
+                alternateMobile: admission.student_id.alternateMobile,
+                email: admission.student_id.email,
+                address: admission.student_id.address,
+                pincode: admission.student_id.pincode,
                 name: [
                   admission.student_id.firstName,
                   admission.student_id.surname,
                 ]
                   .filter(Boolean)
                   .join(" "),
-                email: admission.student_id.email,
               }
             : null,
 
@@ -306,7 +404,7 @@ const getPendingFeeReport = async (req, res, next) => {
       })
       .filter((row) => row.remaining_amount > 0);
 
-    // Summary is calculated from ALL filtered pending rows, not one page.
+    // Calculate complete summary before pagination.
     const uniqueStudents = new Set(
       rows
         .map((row) => row.student?._id?.toString())
@@ -342,7 +440,6 @@ const getPendingFeeReport = async (req, res, next) => {
       ).length,
     };
 
-    // Paginate only after the full filtered rows and summary are ready.
     const total = rows.length;
     const totalPages = Math.ceil(total / limit);
     const safePage = totalPages > 0
@@ -350,6 +447,7 @@ const getPendingFeeReport = async (req, res, next) => {
       : 1;
 
     const startIndex = (safePage - 1) * limit;
+
     const paginatedRows = rows.slice(
       startIndex,
       startIndex + limit

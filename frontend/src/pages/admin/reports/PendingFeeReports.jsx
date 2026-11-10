@@ -40,6 +40,7 @@ const INITIAL_FILTERS = {
   course_id: "",
   batch_id: "",
   student_id: "",
+  student_search: "",
   status: "",
 };
 
@@ -189,63 +190,51 @@ const PendingFeeReports = () => {
     }
   }, []);
 
-  const loadReport = useCallback(
-    async (
-      // nextFilters = appliedFilters,
-      // requestedPage = 1,
-      // requestedLimit = pagination.limit
-      nextFilters = INITIAL_FILTERS,
-      requestedPage = 1,
-      requestedLimit = INITIAL_PAGINATION.limit
-    ) => {
-      try {
-        setLoading(true);
+const loadReport = useCallback(
+  async (
+    nextFilters = INITIAL_FILTERS,
+    requestedPage = 1,
+    requestedLimit = INITIAL_PAGINATION.limit
+  ) => {
+    try {
+      setLoading(true);
 
-        const params = {
-          ...cleanFilters(nextFilters),
-          page: requestedPage,
-          limit: requestedLimit,
-        };
+      const params = {
+        ...cleanFilters(nextFilters),
+        page: requestedPage,
+        limit: requestedLimit,
+      };
 
-        const response =
-          await getPendingFeeReport(params);
+      const response = await getPendingFeeReport(params);
+      const data = response?.data?.data;
 
-        const data = response?.data?.data;
+      setRows(
+        Array.isArray(data?.rows)
+          ? data.rows
+          : []
+      );
 
-        setRows(
-          Array.isArray(data?.rows)
-            ? data.rows
-            : []
-        );
+      setSummary({
+        ...INITIAL_SUMMARY,
+        ...(data?.summary || {}),
+      });
 
-        setSummary({
-          ...INITIAL_SUMMARY,
-          ...(data?.summary || {}),
-        });
+      setPagination({
+        ...INITIAL_PAGINATION,
+        ...(data?.pagination || {}),
+      });
 
-        setPagination({
-          ...INITIAL_PAGINATION,
-          ...(data?.pagination || {}),
-        });
-
-        return true;
-      } catch (error) {
-        console.error(
-          "Pending fee report error:",
-          error
-        );
-
-        notification.error(
-          getApiErrorMessage(error)
-        );
-
-        return false;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [appliedFilters, pagination.limit]
-  );
+      return true;
+    } catch (error) {
+      console.error("Pending fee report error:", error);
+      notification.error(getApiErrorMessage(error));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  },
+  []
+);
 
   useEffect(() => {
     loadFilters();
@@ -264,39 +253,42 @@ const PendingFeeReports = () => {
     }));
   };
 
-  const handleApplyFilters = async () => {
-    if (
-      filters.date_from &&
-      filters.date_to &&
-      filters.date_from > filters.date_to
-    ) {
-      notification.warning(
-        "From Date cannot be after To Date."
-      );
-      return;
-    }
-
-    const nextFilters = { ...filters };
-
-    setAppliedFilters(nextFilters);
-
-    await loadReport(
-      nextFilters,
-      1,
-      pagination.limit
+const handleApplyFilters = async () => {
+  if (
+    filters.date_from &&
+    filters.date_to &&
+    filters.date_from > filters.date_to
+  ) {
+    notification.warning(
+      "From Date cannot be after To Date."
     );
+    return;
+  }
+
+  const nextFilters = {
+    ...filters,
+    student_search: filters.student_search.trim(),
   };
 
-  const handleResetFilters = async () => {
-    setFilters(INITIAL_FILTERS);
-    setAppliedFilters(INITIAL_FILTERS);
+  setAppliedFilters(nextFilters);
 
-    await loadReport(
-      INITIAL_FILTERS,
-      1,
-      pagination.limit
-    );
-  };
+  await loadReport(
+    nextFilters,
+    1,
+    pagination.limit
+  );
+};
+
+const handleResetFilters = async () => {
+  setFilters(INITIAL_FILTERS);
+  setAppliedFilters(INITIAL_FILTERS);
+
+  await loadReport(
+    INITIAL_FILTERS,
+    1,
+    pagination.limit
+  );
+};
 
   const handleRefresh = async () => {
     await loadReport(
@@ -780,7 +772,7 @@ const PendingFeeReports = () => {
           </select>
         </div>
 
-        <div className="filter-field">
+        {/* <div className="filter-field">
           <label htmlFor="pending-fee-student">
             Student
           </label>
@@ -805,6 +797,28 @@ const PendingFeeReports = () => {
               </option>
             ))}
           </select>
+        </div> */}
+
+        <div className="filter-field student-search-field">
+          <label htmlFor="pending-fee-student-search">
+            Search Student
+          </label>
+
+          <input
+            id="pending-fee-student-search"
+            type="search"
+            name="student_search"
+            value={filters.student_search}
+            onChange={handleChange}
+            placeholder="Name, roll no, mobile, email..."
+            maxLength={100}
+            autoComplete="off"
+          />
+
+          <small>
+            Search by student name, father's name, roll number,
+            mobile, alternate mobile, email, address or pincode.
+          </small>
         </div>
 
         <div className="filter-field">
