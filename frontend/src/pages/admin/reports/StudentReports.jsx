@@ -11,6 +11,7 @@ import notification, {
   getApiErrorMessage,
 } from "../../../utils/notification";
 
+import { fetchAllReportPages } from "../../../utils/fetchAllReportPages";
 import { IoIosCall } from "react-icons/io";
 import { MdOutgoingMail, MdDateRange } from "react-icons/md";
 import { FaUserFriends, FaFilePdf } from "react-icons/fa";
@@ -72,6 +73,7 @@ const getInitials = (name) =>
 const StudentReports = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
 
+  const [exporting, setExporting] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [searchTerm, setSearchTerm] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -262,14 +264,37 @@ const StudentReports = () => {
   const summary = report.summary || {};
   const pagination = report.pagination || DEFAULT_PAGINATION;
 
-  const exportExcel = () => {
-    if (!students.length) {
+
+
+const getAllStudentsForExport = async () => {
+  return fetchAllReportPages({
+    fetchPage: getStudentReport,
+    filters: {
+      ...filters,
+      q: appliedSearch.trim(),
+    },
+    recordsKey: "students",
+  });
+};
+
+const exportExcel = async () => {
+  if (exporting || loading) return;
+
+  setExporting(true);
+
+  try {
+    notification.info("Preparing complete student report...");
+
+    const { rows: allStudents, summary: exportSummary, total } =
+      await getAllStudentsForExport();
+
+    if (!allStudents.length) {
       notification.warning("No student records available to export.");
       return;
     }
 
-    const rows = students.map((student, index) => ({
-      "S.No": (pagination.page - 1) * pagination.limit + index + 1,
+    const rows = allStudents.map((student, index) => ({
+      "S.No": index + 1,
       "Student Name": getStudentName(student),
       "Father Name": student.fatherName || "-",
       "Roll No": student.rollNo || "-",
@@ -285,13 +310,30 @@ const StudentReports = () => {
     }));
 
     const summaryRows = [
-      { Metric: "Total Students", Value: Number(summary.totalStudents || 0) },
-      { Metric: "Active Students", Value: Number(summary.activeStudents || 0) },
-      { Metric: "Inactive Students", Value: Number(summary.inactiveStudents || 0) },
-      { Metric: "Students in Selected Period", Value: Number(summary.newStudents || 0) },
-      { Metric: "Records on Exported Page", Value: students.length },
-      { Metric: "Current Page", Value: pagination.page },
-      { Metric: "Records Per Page", Value: pagination.limit },
+      {
+        Metric: "Total Students",
+        Value: Number(exportSummary.totalStudents || 0),
+      },
+      {
+        Metric: "Active Students",
+        Value: Number(exportSummary.activeStudents || 0),
+      },
+      {
+        Metric: "Inactive Students",
+        Value: Number(exportSummary.inactiveStudents || 0),
+      },
+      {
+        Metric: "Students in Selected Period",
+        Value: Number(exportSummary.newStudents || 0),
+      },
+      {
+        Metric: "Total Records Exported",
+        Value: total,
+      },
+      {
+        Metric: "Export Date",
+        Value: new Date().toLocaleString("en-IN"),
+      },
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -299,31 +341,77 @@ const StudentReports = () => {
     const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
 
     reportSheet["!cols"] = [
-      { wch: 8 }, { wch: 26 }, { wch: 25 }, { wch: 18 },
-      { wch: 12 }, { wch: 18 }, { wch: 30 }, { wch: 28 },
-      { wch: 25 }, { wch: 16 }, { wch: 18 }, { wch: 14 },
+      { wch: 8 },
+      { wch: 26 },
+      { wch: 25 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 30 },
+      { wch: 28 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 14 },
       { wch: 18 },
     ];
-    summarySheet["!cols"] = [{ wch: 34 }, { wch: 20 }];
-    reportSheet["!freeze"] = { xSplit: 0, ySplit: 1 };
+
+    summarySheet["!cols"] = [
+      { wch: 34 },
+      { wch: 25 },
+    ];
+
+    reportSheet["!freeze"] = {
+      xSplit: 0,
+      ySplit: 1,
+    };
 
     if (reportSheet["!ref"]) {
-      reportSheet["!autofilter"] = { ref: reportSheet["!ref"] };
+      reportSheet["!autofilter"] = {
+        ref: reportSheet["!ref"],
+      };
     }
 
-    XLSX.utils.book_append_sheet(workbook, reportSheet, "Student Report");
-    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      reportSheet,
+      "Student Report"
+    );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      summarySheet,
+      "Summary"
+    );
 
     XLSX.writeFile(
       workbook,
       `student-report-${new Date().toISOString().slice(0, 10)}.xlsx`
     );
 
-    notification.success("Student report Excel exported.");
-  };
+    notification.success(
+      `Student Excel exported successfully (${total} records).`
+    );
+  } catch (error) {
+    console.error("Student Excel export error:", error);
+    notification.error(getApiErrorMessage(error));
+  } finally {
+    setExporting(false);
+  }
+};
 
-  const exportPDF = () => {
-    if (!students.length) {
+const exportPDF = async () => {
+  if (exporting || loading) return;
+
+  setExporting(true);
+
+  try {
+    notification.info("Preparing complete student PDF...");
+
+    const { rows: allStudents, summary: exportSummary, total } =
+      await getAllStudentsForExport();
+
+    if (!allStudents.length) {
       notification.warning("No student records available to export.");
       return;
     }
@@ -336,57 +424,116 @@ const StudentReports = () => {
 
     doc.setFontSize(18);
     doc.text("IT Learning Institute", 14, 15);
+
     doc.setFontSize(14);
     doc.text("Student Report", 14, 23);
+
     doc.setFontSize(9);
-    doc.text(`Generated: ${new Date().toLocaleString("en-IN")}`, 14, 30);
+    doc.text(
+      `Generated: ${new Date().toLocaleString("en-IN")}`,
+      14,
+      30
+    );
 
     let currentY = 37;
     const appliedFilters = [];
 
-    if (filters.date_from) appliedFilters.push(`From: ${filters.date_from}`);
-    if (filters.date_to) appliedFilters.push(`To: ${filters.date_to}`);
+    if (filters.date_from) {
+      appliedFilters.push(`From: ${filters.date_from}`);
+    }
+
+    if (filters.date_to) {
+      appliedFilters.push(`To: ${filters.date_to}`);
+    }
 
     if (filters.course_id) {
       const course = filterData.courses.find(
         (item) => String(item._id) === String(filters.course_id)
       );
-      if (course) appliedFilters.push(`Course: ${course.courseTitle}`);
+
+      if (course) {
+        appliedFilters.push(`Course: ${course.courseTitle}`);
+      }
     }
 
     if (filters.batch_id) {
       const batch = filterData.batches.find(
         (item) => String(item._id) === String(filters.batch_id)
       );
-      if (batch) appliedFilters.push(`Batch: ${batch.batch_name}`);
+
+      if (batch) {
+        appliedFilters.push(`Batch: ${batch.batch_name}`);
+      }
     }
 
     if (filters.status) {
-      appliedFilters.push(`Status: ${getStatusLabel(filters.status)}`);
+      appliedFilters.push(
+        `Status: ${getStatusLabel(filters.status)}`
+      );
     }
 
-    if (appliedSearch) appliedFilters.push(`Search: ${appliedSearch}`);
+    if (appliedSearch) {
+      appliedFilters.push(`Search: ${appliedSearch}`);
+    }
 
     if (appliedFilters.length) {
-      doc.text(`Filters: ${appliedFilters.join(" | ")}`, 14, currentY);
+      doc.text(
+        `Filters: ${appliedFilters.join(" | ")}`,
+        14,
+        currentY
+      );
       currentY += 7;
     }
 
-    doc.text(`Total Students: ${Number(summary.totalStudents || 0)}`, 14, currentY);
-    doc.text(`Active: ${Number(summary.activeStudents || 0)}`, 65, currentY);
-    doc.text(`Inactive: ${Number(summary.inactiveStudents || 0)}`, 105, currentY);
-    doc.text(`Page Records: ${students.length}`, 155, currentY);
-    doc.text(`Period Students: ${Number(summary.newStudents || 0)}`, 215, currentY);
+    doc.text(
+      `Total Students: ${Number(exportSummary.totalStudents || 0)}`,
+      14,
+      currentY
+    );
+
+    doc.text(
+      `Active: ${Number(exportSummary.activeStudents || 0)}`,
+      75,
+      currentY
+    );
+
+    doc.text(
+      `Inactive: ${Number(exportSummary.inactiveStudents || 0)}`,
+      115,
+      currentY
+    );
+
+    doc.text(
+      `Exported Records: ${total}`,
+      165,
+      currentY
+    );
+
+    doc.text(
+      `Period Students: ${Number(exportSummary.newStudents || 0)}`,
+      220,
+      currentY
+    );
+
     currentY += 7;
 
     autoTable(doc, {
       startY: currentY,
       head: [[
-        "S.No", "Student", "Father Name", "Roll No", "Gender",
-        "Mobile", "Email", "Course", "Batch", "Admission Date", "Status",
+        "S.No",
+        "Student",
+        "Father Name",
+        "Roll No",
+        "Gender",
+        "Mobile",
+        "Email",
+        "Course",
+        "Batch",
+        "Admission Date",
+        "Status",
       ]],
-      body: students.map((student, index) => [
-        (pagination.page - 1) * pagination.limit + index + 1,
+      body: allStudents.map((student, index) => [
+        index + 1,
         getStudentName(student),
         student.fatherName || "-",
         student.rollNo || "-",
@@ -398,14 +545,37 @@ const StudentReports = () => {
         formatDate(student.admissionDate),
         getStatusLabel(student.status),
       ]),
-      styles: { fontSize: 7, cellPadding: 2, overflow: "linebreak" },
-      headStyles: { fontSize: 7 },
-      margin: { left: 10, right: 10 },
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        overflow: "linebreak",
+      },
+      headStyles: {
+        fontSize: 7,
+      },
+      margin: {
+        left: 10,
+        right: 10,
+      },
+      showHead: "everyPage",
     });
 
-    doc.save(`student-report-${new Date().toISOString().slice(0, 10)}.pdf`);
-    notification.success("Student report PDF exported.");
-  };
+    doc.save(
+      `student-report-${new Date().toISOString().slice(0, 10)}.pdf`
+    );
+
+    notification.success(
+      `Student PDF exported successfully (${total} records).`
+    );
+  } catch (error) {
+    console.error("Student PDF export error:", error);
+    notification.error(getApiErrorMessage(error));
+  } finally {
+    setExporting(false);
+  }
+};
+
+
 
   return (
     <div className="student-reports-page">
@@ -419,18 +589,20 @@ const StudentReports = () => {
             type="button"
             className="themebtn exceldownload"
             onClick={exportExcel}
-            disabled={!students.length || loading}
+            disabled={!students.length || loading || exporting}
           >
-            <RiFileExcel2Line /> Excel
+            <RiFileExcel2Line />
+            {exporting ? "Preparing..." : "Excel"}
           </button>
 
           <button
             type="button"
             className="themebtn pdfdownload"
             onClick={exportPDF}
-            disabled={!students.length || loading}
+            disabled={!students.length || loading || exporting}
           >
-            <FaFilePdf /> PDF
+            <FaFilePdf />
+            {exporting ? "Preparing..." : "PDF"}
           </button>
         </div>
       </div>

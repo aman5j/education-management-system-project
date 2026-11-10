@@ -7,6 +7,7 @@ import { IoIosCall } from "react-icons/io";
 import { MdOutgoingMail, MdDateRange, MdCurrencyRupee } from "react-icons/md";
 import { FaFilePdf, FaUserFriends } from "react-icons/fa";
 import { RiFileExcel2Line } from "react-icons/ri";
+import { fetchAllReportPages } from "../../../utils/fetchAllReportPages";
 
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -75,6 +76,7 @@ const getInitials = (name) =>
 
 const AdmissionReports = () => {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [exporting, setExporting] = useState(false);
 
   const [filterData, setFilterData] = useState({
     courses: [],
@@ -254,14 +256,35 @@ const AdmissionReports = () => {
   const admissions = report.admissions || [];
   const pagination = report.pagination || DEFAULT_PAGINATION;
 
-  const exportExcel = () => {
-    if (!admissions.length) {
+
+const getAllAdmissionsForExport = async () => {
+  return fetchAllReportPages({
+    fetchPage: getAdmissionReport,
+    filters: {
+      ...filters,
+    },
+    recordsKey: "admissions",
+  });
+};
+
+const exportExcel = async () => {
+  if (exporting || loading) return;
+
+  setExporting(true);
+
+  try {
+    notification.info("Preparing complete admission report...");
+
+    const { rows: allAdmissions, summary: exportSummary, total } =
+      await getAllAdmissionsForExport();
+
+    if (!allAdmissions.length) {
       notification.warning("No admission records available to export.");
       return;
     }
 
-    const rows = admissions.map((admission, index) => ({
-      "S.No": (pagination.page - 1) * pagination.limit + index + 1,
+    const rows = allAdmissions.map((admission, index) => ({
+      "S.No": index + 1,
       "Student Name": admission.student?.name || "-",
       "Roll No": admission.student?.rollNo || "-",
       Mobile: admission.student?.mobile || "-",
@@ -282,18 +305,50 @@ const AdmissionReports = () => {
     }));
 
     const summaryRows = [
-      { Metric: "Total Admissions", Value: Number(summary.totalAdmissions || 0) },
-      { Metric: "Active Admissions", Value: Number(summary.activeAdmissions || 0) },
-      { Metric: "Completed Admissions", Value: Number(summary.completedAdmissions || 0) },
-      { Metric: "Dropped Admissions", Value: Number(summary.droppedAdmissions || 0) },
-      { Metric: "Total Course Fees", Value: Number(summary.totalCourseFees || 0) },
-      { Metric: "Total Final Amount", Value: Number(summary.totalFinalAmount || 0) },
-      { Metric: "Total Admission Fees", Value: Number(summary.totalAdmissionFees || 0) },
-      { Metric: "Total Paid Amount", Value: Number(summary.totalPaidAmount || 0) },
-      { Metric: "Total Remaining Amount", Value: Number(summary.totalRemainingAmount || 0) },
-      { Metric: "Records on Exported Page", Value: admissions.length },
-      { Metric: "Current Page", Value: pagination.page },
-      { Metric: "Records Per Page", Value: pagination.limit },
+      {
+        Metric: "Total Admissions",
+        Value: Number(exportSummary.totalAdmissions || 0),
+      },
+      {
+        Metric: "Active Admissions",
+        Value: Number(exportSummary.activeAdmissions || 0),
+      },
+      {
+        Metric: "Completed Admissions",
+        Value: Number(exportSummary.completedAdmissions || 0),
+      },
+      {
+        Metric: "Dropped Admissions",
+        Value: Number(exportSummary.droppedAdmissions || 0),
+      },
+      {
+        Metric: "Total Course Fees",
+        Value: Number(exportSummary.totalCourseFees || 0),
+      },
+      {
+        Metric: "Total Final Amount",
+        Value: Number(exportSummary.totalFinalAmount || 0),
+      },
+      {
+        Metric: "Total Admission Fees",
+        Value: Number(exportSummary.totalAdmissionFees || 0),
+      },
+      {
+        Metric: "Total Paid Amount",
+        Value: Number(exportSummary.totalPaidAmount || 0),
+      },
+      {
+        Metric: "Total Remaining Amount",
+        Value: Number(exportSummary.totalRemainingAmount || 0),
+      },
+      {
+        Metric: "Total Records Exported",
+        Value: total,
+      },
+      {
+        Metric: "Export Date",
+        Value: new Date().toLocaleString("en-IN"),
+      },
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -312,31 +367,71 @@ const AdmissionReports = () => {
     }
 
     reportSheet["!cols"] = [
-      { wch: 8 }, { wch: 25 }, { wch: 16 }, { wch: 18 },
-      { wch: 30 }, { wch: 30 }, { wch: 25 }, { wch: 16 },
-      { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 18 },
-      { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
-      { wch: 20 }, { wch: 16 },
+      { wch: 8 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 30 },
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 16 },
     ];
 
     summarySheet["!cols"] = [
       { wch: 34 },
-      { wch: 22 },
+      { wch: 25 },
     ];
 
-    XLSX.utils.book_append_sheet(workbook, reportSheet, "Admission Report");
-    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      reportSheet,
+      "Admission Report"
+    );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      summarySheet,
+      "Summary"
+    );
 
     XLSX.writeFile(
       workbook,
       `admission-report-${new Date().toISOString().slice(0, 10)}.xlsx`
     );
 
-    notification.success("Admission report Excel exported.");
-  };
+    notification.success(
+      `Admission Excel exported successfully (${total} records).`
+    );
+  } catch (error) {
+    console.error("Admission Excel export error:", error);
+    notification.error(getApiErrorMessage(error));
+  } finally {
+    setExporting(false);
+  }
+};
 
-  const exportPDF = () => {
-    if (!admissions.length) {
+const exportPDF = async () => {
+  if (exporting || loading) return;
+
+  setExporting(true);
+
+  try {
+    notification.info("Preparing complete admission PDF...");
+
+    const { rows: allAdmissions, summary: exportSummary, total } =
+      await getAllAdmissionsForExport();
+
+    if (!allAdmissions.length) {
       notification.warning("No admission records available to export.");
       return;
     }
@@ -349,42 +444,85 @@ const AdmissionReports = () => {
 
     doc.setFontSize(18);
     doc.text("IT Learning Institute", 14, 15);
+
     doc.setFontSize(14);
     doc.text("Admission Report", 14, 23);
+
     doc.setFontSize(9);
-    doc.text(`Generated: ${new Date().toLocaleString("en-IN")}`, 14, 30);
+    doc.text(
+      `Generated: ${new Date().toLocaleString("en-IN")}`,
+      14,
+      30
+    );
 
     let currentY = 37;
     const appliedFilters = [];
 
-    if (filters.date_from) appliedFilters.push(`From: ${filters.date_from}`);
-    if (filters.date_to) appliedFilters.push(`To: ${filters.date_to}`);
+    if (filters.date_from) {
+      appliedFilters.push(`From: ${filters.date_from}`);
+    }
+
+    if (filters.date_to) {
+      appliedFilters.push(`To: ${filters.date_to}`);
+    }
 
     if (filters.course_id) {
       const course = filterData.courses.find(
         (item) => String(item._id) === String(filters.course_id)
       );
-      if (course) appliedFilters.push(`Course: ${course.courseTitle}`);
+
+      if (course) {
+        appliedFilters.push(`Course: ${course.courseTitle}`);
+      }
     }
 
     if (filters.batch_id) {
       const batch = filterData.batches.find(
         (item) => String(item._id) === String(filters.batch_id)
       );
-      if (batch) appliedFilters.push(`Batch: ${batch.batch_name}`);
+
+      if (batch) {
+        appliedFilters.push(`Batch: ${batch.batch_name}`);
+      }
     }
 
-    if (filters.status) appliedFilters.push(`Status: ${filters.status}`);
+    if (filters.status) {
+      appliedFilters.push(`Status: ${filters.status}`);
+    }
 
     if (appliedFilters.length) {
-      doc.text(`Filters: ${appliedFilters.join(" | ")}`, 14, currentY);
+      doc.text(
+        `Filters: ${appliedFilters.join(" | ")}`,
+        14,
+        currentY
+      );
       currentY += 7;
     }
 
-    doc.text(`Total Admissions: ${Number(summary.totalAdmissions || 0)}`, 14, currentY);
-    doc.text(`Active: ${Number(summary.activeAdmissions || 0)}`, 75, currentY);
-    doc.text(`Completed: ${Number(summary.completedAdmissions || 0)}`, 125, currentY);
-    doc.text(`Dropped: ${Number(summary.droppedAdmissions || 0)}`, 195, currentY);
+    doc.text(
+      `Total Admissions: ${Number(exportSummary.totalAdmissions || 0)}`,
+      14,
+      currentY
+    );
+
+    doc.text(
+      `Active: ${Number(exportSummary.activeAdmissions || 0)}`,
+      75,
+      currentY
+    );
+
+    doc.text(
+      `Completed: ${Number(exportSummary.completedAdmissions || 0)}`,
+      125,
+      currentY
+    );
+
+    doc.text(
+      `Dropped: ${Number(exportSummary.droppedAdmissions || 0)}`,
+      195,
+      currentY
+    );
+
     currentY += 8;
 
     autoTable(doc, {
@@ -402,8 +540,8 @@ const AdmissionReports = () => {
         "Remaining",
         "Status",
       ]],
-      body: admissions.map((admission, index) => [
-        (pagination.page - 1) * pagination.limit + index + 1,
+      body: allAdmissions.map((admission, index) => [
+        index + 1,
         admission.student?.name || "-",
         admission.student?.rollNo || "-",
         admission.course?.courseTitle || "-",
@@ -427,33 +565,60 @@ const AdmissionReports = () => {
         left: 10,
         right: 10,
       },
+      showHead: "everyPage",
     });
 
     const finalY = doc.lastAutoTable?.finalY || currentY + 10;
 
+    // Put totals on a new page if there is not enough room.
+    if (finalY > 175) {
+      doc.addPage();
+      currentY = 20;
+    } else {
+      currentY = finalY + 8;
+    }
+
     doc.setFontSize(8);
+
     doc.text(
-      `Total Final Amount: ${formatPdfCurrency(summary.totalFinalAmount)}`,
+      `Total Records Exported: ${total}`,
       14,
-      finalY + 8
+      currentY
     );
+
     doc.text(
-      `Total Paid: ${formatPdfCurrency(summary.totalPaidAmount)}`,
+      `Total Final Amount: ${formatPdfCurrency(exportSummary.totalFinalAmount)}`,
+      14,
+      currentY + 7
+    );
+
+    doc.text(
+      `Total Paid: ${formatPdfCurrency(exportSummary.totalPaidAmount)}`,
       90,
-      finalY + 8
+      currentY + 7
     );
+
     doc.text(
-      `Total Remaining: ${formatPdfCurrency(summary.totalRemainingAmount)}`,
+      `Total Remaining: ${formatPdfCurrency(exportSummary.totalRemainingAmount)}`,
       165,
-      finalY + 8
+      currentY + 7
     );
 
     doc.save(
       `admission-report-${new Date().toISOString().slice(0, 10)}.pdf`
     );
 
-    notification.success("Admission report PDF exported.");
-  };
+    notification.success(
+      `Admission PDF exported successfully (${total} records).`
+    );
+  } catch (error) {
+    console.error("Admission PDF export error:", error);
+    notification.error(getApiErrorMessage(error));
+  } finally {
+    setExporting(false);
+  }
+};
+
 
   return (
     <div className="admission-reports-page">
@@ -467,18 +632,20 @@ const AdmissionReports = () => {
             type="button"
             className="themebtn exceldownload"
             onClick={exportExcel}
-            disabled={!admissions.length || loading}
+            disabled={!admissions.length || loading || exporting}
           >
-            <RiFileExcel2Line /> Excel
+            <RiFileExcel2Line />
+            {exporting ? "Preparing..." : "Excel"}
           </button>
 
           <button
             type="button"
             className="themebtn pdfdownload"
             onClick={exportPDF}
-            disabled={!admissions.length || loading}
+            disabled={!admissions.length || loading || exporting}
           >
-            <FaFilePdf /> PDF
+            <FaFilePdf />
+            {exporting ? "Preparing..." : "PDF"}
           </button>
         </div>
       </div>
