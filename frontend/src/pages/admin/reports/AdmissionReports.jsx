@@ -1,25 +1,14 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  FiDownload,
-  FiFileText,
   FiRefreshCw,
-  FiSearch,
 } from "react-icons/fi";
 import { IoIosCall } from "react-icons/io";
-
-import { MdOutgoingMail } from "react-icons/md";
-import { MdDateRange } from "react-icons/md";
+import { MdOutgoingMail, MdDateRange, MdCurrencyRupee } from "react-icons/md";
 import { FaFilePdf, FaUserFriends } from "react-icons/fa";
 import { RiFileExcel2Line } from "react-icons/ri";
-import { MdCurrencyRupee } from "react-icons/md";
 
 import * as XLSX from "xlsx";
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -29,482 +18,326 @@ import {
 } from "../../../services/admissionReportService";
 
 import { getAssetUrl } from "../../../utils/assetUrl";
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import "../../../styles/AdmissionReports.css";
 
-const getResponseData = (response) => {
-  return (
-    response?.data?.data ??
-    response?.data ??
-    {}
-  );
+const EMPTY_FILTERS = {
+  date_from: "",
+  date_to: "",
+  course_id: "",
+  batch_id: "",
+  status: "",
 };
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+};
+
+const getResponseData = (response) =>
+  response?.data?.data ?? response?.data ?? {};
 
 const formatDate = (value) => {
   if (!value) return "-";
 
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleDateString("en-IN");
+  return Number.isNaN(date.getTime())
+    ? "-"
+    : date.toLocaleDateString("en-IN");
 };
 
-const formatCurrency = (value) => {
-  return `₹${Number(value || 0).toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
-};
+const formatCurrency = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
-const formatPdfCurrency = (value) => {
-  return `Rs. ${Number(value || 0).toLocaleString(
-    "en-IN",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }
-  )}`;
-};
+const formatPdfCurrency = (value) =>
+  `Rs. ${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const getInitials = (name) =>
+  String(name || "Student")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "S";
 
 const AdmissionReports = () => {
-  const [filters, setFilters] =
-    useState({
-      date_from: "",
-      date_to: "",
-      course_id: "",
-      batch_id: "",
-      status: "",
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+
+  const [filterData, setFilterData] = useState({
+    courses: [],
+    batches: [],
+  });
+
+  const [report, setReport] = useState({
+    summary: {},
+    admissions: [],
+    pagination: DEFAULT_PAGINATION,
+  });
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(false);
+
+  const requestId = useRef(0);
+  const initialLoadStarted = useRef(false);
+
+  const availableBatches = useMemo(() => {
+    if (!filters.course_id) return filterData.batches;
+
+    return filterData.batches.filter((batch) => {
+      const courseId = batch?.course_id?._id || batch?.course_id;
+      return String(courseId || "") === String(filters.course_id);
     });
+  }, [filters.course_id, filterData.batches]);
 
-  const [filterData, setFilterData] =
-    useState({
-      courses: [],
-      batches: [],
-    });
-
-  const [report, setReport] =
-    useState({
-      summary: {},
-      admissions: [],
-    });
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [filtersLoading, setFiltersLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const loadFilters = async () => {
+  const loadFilters = useCallback(async () => {
     try {
       setFiltersLoading(true);
 
-      const response =
-        await getAdmissionReportFilters();
-
-      const data =
-        getResponseData(response);
+      const response = await getAdmissionReportFilters();
+      const data = getResponseData(response);
 
       setFilterData({
-        courses:
-          Array.isArray(data.courses)
-            ? data.courses
-            : [],
-
-        batches:
-          Array.isArray(data.batches)
-            ? data.batches
-            : [],
+        courses: Array.isArray(data.courses) ? data.courses : [],
+        batches: Array.isArray(data.batches) ? data.batches : [],
       });
     } catch (error) {
-      console.error(
-        "Admission report filters error:",
-        error
-      );
+      console.error("Admission report filters error:", error);
+      notification.error(getApiErrorMessage(error));
     } finally {
       setFiltersLoading(false);
     }
-  };
-
-  const loadReport = async (
-    customFilters = filters
-  ) => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const params = {};
-
-      Object.entries(
-        customFilters
-      ).forEach(
-        ([key, value]) => {
-          if (value) {
-            params[key] = value;
-          }
-        }
-      );
-
-      const response =
-        await getAdmissionReport(
-          params
-        );
-
-      const data =
-        getResponseData(response);
-
-      setReport({
-        summary:
-          data.summary || {},
-
-        admissions:
-          Array.isArray(
-            data.admissions
-          )
-            ? data.admissions
-            : [],
-      });
-    } catch (error) {
-      console.error(
-        "Admission report error:",
-        error
-      );
-
-      setError(
-        error?.response?.data?.message ||
-          "Unable to load admission report."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadFilters();
-    loadReport();
   }, []);
 
-  const handleChange = (
-    event
-  ) => {
-    const {
-      name,
-      value,
-    } = event.target;
+  const loadReport = useCallback(
+    async ({
+      currentFilters = EMPTY_FILTERS,
+      currentPage = 1,
+      currentLimit = 10,
+    } = {}) => {
+      const currentRequestId = ++requestId.current;
 
-    setFilters(
-      (previous) => {
-        const next = {
-          ...previous,
-          [name]: value,
+      try {
+        setLoading(true);
+
+        const params = {
+          ...currentFilters,
+          page: currentPage,
+          limit: currentLimit,
         };
 
-        if (
-          name === "course_id"
-        ) {
-          next.batch_id = "";
-        }
+        const response = await getAdmissionReport(params);
+        const data = getResponseData(response);
 
-        return next;
+        if (currentRequestId !== requestId.current) return;
+
+        setReport({
+          summary: data.summary || {},
+          admissions: Array.isArray(data.admissions)
+            ? data.admissions
+            : [],
+          pagination: data.pagination || {
+            ...DEFAULT_PAGINATION,
+            page: currentPage,
+            limit: currentLimit,
+          },
+        });
+      } catch (error) {
+        if (currentRequestId !== requestId.current) return;
+
+        console.error("Admission report error:", error);
+
+        setReport({
+          summary: {},
+          admissions: [],
+          pagination: {
+            ...DEFAULT_PAGINATION,
+            page: currentPage,
+            limit: currentLimit,
+          },
+        });
+
+        notification.error(getApiErrorMessage(error));
+      } finally {
+        if (currentRequestId === requestId.current) {
+          setLoading(false);
+        }
       }
-    );
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (initialLoadStarted.current) return;
+
+    initialLoadStarted.current = true;
+    void loadFilters();
+    void loadReport();
+  }, [loadFilters, loadReport]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFilters((previous) => ({
+      ...previous,
+      [name]: value,
+      ...(name === "course_id" ? { batch_id: "" } : {}),
+    }));
   };
 
   const handleApply = () => {
-    loadReport(filters);
-  };
-
-  const handleReset = () => {
-    const resetFilters = {
-      date_from: "",
-      date_to: "",
-      course_id: "",
-      batch_id: "",
-      status: "",
-    };
-
-    setFilters(resetFilters);
-
-    loadReport(resetFilters);
-  };
-
-  const availableBatches =
-    useMemo(() => {
-      if (!filters.course_id) {
-        return filterData.batches;
-      }
-
-      return filterData.batches.filter(
-        (batch) =>
-          String(
-            batch.course_id?._id ||
-              batch.course_id
-          ) ===
-          String(filters.course_id)
-      );
-    }, [
-      filters.course_id,
-      filterData.batches,
-    ]);
-
-  const summary =
-    report.summary || {};
-
-  const admissions =
-    report.admissions || [];
-
-  const exportExcel = () => {
-    if (!admissions.length) {
-      alert(
-        "No admission records available to export."
-      );
+    if (
+      filters.date_from &&
+      filters.date_to &&
+      filters.date_from > filters.date_to
+    ) {
+      notification.warning("From Date cannot be later than To Date.");
       return;
     }
 
-    const rows =
-      admissions.map(
-        (admission, index) => ({
-          "S.No": index + 1,
+    setPage(1);
 
-          "Student Name":
-            admission.student?.name ||
-            "-",
+    void loadReport({
+      currentFilters: filters,
+      currentPage: 1,
+      currentLimit: limit,
+    });
+  };
 
-          "Roll No":
-            admission.student?.rollNo ||
-            "-",
+  const handleReset = () => {
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
 
-          Mobile:
-            admission.student?.mobile ||
-            "-",
+    void loadReport({
+      currentFilters: EMPTY_FILTERS,
+      currentPage: 1,
+      currentLimit: limit,
+    });
+  };
 
-          Course:
-            admission.course
-              ?.courseTitle || "-",
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
 
-          Batch:
-            admission.batch
-              ?.batch_name || "-",
+    void loadReport({
+      currentFilters: filters,
+      currentPage: nextPage,
+      currentLimit: limit,
+    });
+  };
 
-          "Course Fee":
-            Number(
-              admission.courseFee || 0
-            ),
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
 
-          "Discount Type":
-            admission.discountType ||
-            "-",
+    void loadReport({
+      currentFilters: filters,
+      currentPage: 1,
+      currentLimit: nextLimit,
+    });
+  };
 
-          "Discount Value":
-            Number(
-              admission.discountValue ||
-                0
-            ),
+  const summary = report.summary || {};
+  const admissions = report.admissions || [];
+  const pagination = report.pagination || DEFAULT_PAGINATION;
 
-          "GST Amount":
-            Number(
-              admission.gstAmount || 0
-            ),
+  const exportExcel = () => {
+    if (!admissions.length) {
+      notification.warning("No admission records available to export.");
+      return;
+    }
 
-          "Final Amount":
-            Number(
-              admission.finalAmount || 0
-            ),
-
-          "Admission Fee":
-            Number(
-              admission.admissionFee || 0
-            ),
-
-          Paid:
-            Number(
-              admission.paidAmount || 0
-            ),
-
-          Remaining:
-            Number(
-              admission.remainingAmount ||
-                0
-            ),
-
-          "Admission Date":
-            formatDate(
-              admission.admissionDate
-            ),
-
-          "Referral Source":
-            admission.referralSource ||
-            "-",
-
-          Status:
-            admission.status || "-",
-        })
-      );
+    const rows = admissions.map((admission, index) => ({
+      "S.No": (pagination.page - 1) * pagination.limit + index + 1,
+      "Student Name": admission.student?.name || "-",
+      "Roll No": admission.student?.rollNo || "-",
+      Mobile: admission.student?.mobile || "-",
+      Email: admission.student?.email || "-",
+      Course: admission.course?.courseTitle || "-",
+      Batch: admission.batch?.batch_name || "-",
+      "Course Fee": Number(admission.courseFee || 0),
+      "Discount Type": admission.discountType || "-",
+      "Discount Value": Number(admission.discountValue || 0),
+      "GST Amount": Number(admission.gstAmount || 0),
+      "Final Amount": Number(admission.finalAmount || 0),
+      "Admission Fee": Number(admission.admissionFee || 0),
+      Paid: Number(admission.paidAmount || 0),
+      Remaining: Number(admission.remainingAmount || 0),
+      "Admission Date": formatDate(admission.admissionDate),
+      "Referral Source": admission.referralSource || "-",
+      Status: admission.status || "-",
+    }));
 
     const summaryRows = [
-      {
-        Metric:
-          "Total Admissions",
-        Value:
-          Number(
-            summary.totalAdmissions ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Active Admissions",
-        Value:
-          Number(
-            summary.activeAdmissions ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Completed Admissions",
-        Value:
-          Number(
-            summary.completedAdmissions ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Dropped Admissions",
-        Value:
-          Number(
-            summary.droppedAdmissions ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Total Course Fees",
-        Value:
-          Number(
-            summary.totalCourseFees ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Total Final Amount",
-        Value:
-          Number(
-            summary.totalFinalAmount ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Total Admission Fees",
-        Value:
-          Number(
-            summary.totalAdmissionFees ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Total Paid Amount",
-        Value:
-          Number(
-            summary.totalPaidAmount ||
-              0
-          ),
-      },
-      {
-        Metric:
-          "Total Remaining Amount",
-        Value:
-          Number(
-            summary.totalRemainingAmount ||
-              0
-          ),
-      },
+      { Metric: "Total Admissions", Value: Number(summary.totalAdmissions || 0) },
+      { Metric: "Active Admissions", Value: Number(summary.activeAdmissions || 0) },
+      { Metric: "Completed Admissions", Value: Number(summary.completedAdmissions || 0) },
+      { Metric: "Dropped Admissions", Value: Number(summary.droppedAdmissions || 0) },
+      { Metric: "Total Course Fees", Value: Number(summary.totalCourseFees || 0) },
+      { Metric: "Total Final Amount", Value: Number(summary.totalFinalAmount || 0) },
+      { Metric: "Total Admission Fees", Value: Number(summary.totalAdmissionFees || 0) },
+      { Metric: "Total Paid Amount", Value: Number(summary.totalPaidAmount || 0) },
+      { Metric: "Total Remaining Amount", Value: Number(summary.totalRemainingAmount || 0) },
+      { Metric: "Records on Exported Page", Value: admissions.length },
+      { Metric: "Current Page", Value: pagination.page },
+      { Metric: "Records Per Page", Value: pagination.limit },
     ];
 
-    const workbook =
-      XLSX.utils.book_new();
-
-    const reportSheet =
-      XLSX.utils.json_to_sheet(
-        rows
-      );
-
-    const summarySheet =
-      XLSX.utils.json_to_sheet(
-        summaryRows
-      );
+    const workbook = XLSX.utils.book_new();
+    const reportSheet = XLSX.utils.json_to_sheet(rows);
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
 
     reportSheet["!freeze"] = {
       xSplit: 0,
       ySplit: 1,
     };
 
-    reportSheet["!autofilter"] = {
-      ref: reportSheet["!ref"],
-    };
+    if (reportSheet["!ref"]) {
+      reportSheet["!autofilter"] = {
+        ref: reportSheet["!ref"],
+      };
+    }
 
     reportSheet["!cols"] = [
-      { wch: 8 },
-      { wch: 25 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 30 },
-      { wch: 25 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 20 },
-      { wch: 16 },
+      { wch: 8 }, { wch: 25 }, { wch: 16 }, { wch: 18 },
+      { wch: 30 }, { wch: 30 }, { wch: 25 }, { wch: 16 },
+      { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 18 },
+      { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
+      { wch: 20 }, { wch: 16 },
     ];
 
     summarySheet["!cols"] = [
-      { wch: 32 },
-      { wch: 20 },
+      { wch: 34 },
+      { wch: 22 },
     ];
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      reportSheet,
-      "Admission Report"
-    );
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      summarySheet,
-      "Summary"
-    );
+    XLSX.utils.book_append_sheet(workbook, reportSheet, "Admission Report");
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
 
     XLSX.writeFile(
       workbook,
-      `admission-report-${new Date()
-        .toISOString()
-        .slice(0, 10)}.xlsx`
+      `admission-report-${new Date().toISOString().slice(0, 10)}.xlsx`
     );
+
+    notification.success("Admission report Excel exported.");
   };
 
   const exportPDF = () => {
     if (!admissions.length) {
-      alert(
-        "No admission records available to export."
-      );
+      notification.warning("No admission records available to export.");
       return;
     }
 
@@ -515,539 +348,282 @@ const AdmissionReports = () => {
     });
 
     doc.setFontSize(18);
-
-    doc.text(
-      "IT Learning Institute",
-      14,
-      15
-    );
-
+    doc.text("IT Learning Institute", 14, 15);
     doc.setFontSize(14);
-
-    doc.text(
-      "Admission Report",
-      14,
-      23
-    );
-
+    doc.text("Admission Report", 14, 23);
     doc.setFontSize(9);
-
-    doc.text(
-      `Generated: ${new Date().toLocaleString(
-        "en-IN"
-      )}`,
-      14,
-      30
-    );
+    doc.text(`Generated: ${new Date().toLocaleString("en-IN")}`, 14, 30);
 
     let currentY = 37;
-
     const appliedFilters = [];
 
-    if (filters.date_from) {
-      appliedFilters.push(
-        `From: ${filters.date_from}`
-      );
-    }
-
-    if (filters.date_to) {
-      appliedFilters.push(
-        `To: ${filters.date_to}`
-      );
-    }
+    if (filters.date_from) appliedFilters.push(`From: ${filters.date_from}`);
+    if (filters.date_to) appliedFilters.push(`To: ${filters.date_to}`);
 
     if (filters.course_id) {
-      const course =
-        filterData.courses.find(
-          (item) =>
-            String(item._id) ===
-            String(
-              filters.course_id
-            )
-        );
-
-      if (course) {
-        appliedFilters.push(
-          `Course: ${course.courseTitle}`
-        );
-      }
+      const course = filterData.courses.find(
+        (item) => String(item._id) === String(filters.course_id)
+      );
+      if (course) appliedFilters.push(`Course: ${course.courseTitle}`);
     }
 
     if (filters.batch_id) {
-      const batch =
-        filterData.batches.find(
-          (item) =>
-            String(item._id) ===
-            String(
-              filters.batch_id
-            )
-        );
-
-      if (batch) {
-        appliedFilters.push(
-          `Batch: ${batch.batch_name}`
-        );
-      }
-    }
-
-    if (filters.status) {
-      appliedFilters.push(
-        `Status: ${filters.status}`
+      const batch = filterData.batches.find(
+        (item) => String(item._id) === String(filters.batch_id)
       );
+      if (batch) appliedFilters.push(`Batch: ${batch.batch_name}`);
     }
+
+    if (filters.status) appliedFilters.push(`Status: ${filters.status}`);
 
     if (appliedFilters.length) {
-      doc.text(
-        `Filters: ${appliedFilters.join(
-          " | "
-        )}`,
-        14,
-        currentY
-      );
-
+      doc.text(`Filters: ${appliedFilters.join(" | ")}`, 14, currentY);
       currentY += 7;
     }
 
-    doc.text(
-      `Total Admissions: ${Number(
-        summary.totalAdmissions || 0
-      )}`,
-      14,
-      currentY
-    );
-
-    doc.text(
-      `Active: ${Number(
-        summary.activeAdmissions || 0
-      )}`,
-      75,
-      currentY
-    );
-
-    doc.text(
-      `Completed: ${Number(
-        summary.completedAdmissions || 0
-      )}`,
-      125,
-      currentY
-    );
-
-    doc.text(
-      `Dropped: ${Number(
-        summary.droppedAdmissions || 0
-      )}`,
-      195,
-      currentY
-    );
-
+    doc.text(`Total Admissions: ${Number(summary.totalAdmissions || 0)}`, 14, currentY);
+    doc.text(`Active: ${Number(summary.activeAdmissions || 0)}`, 75, currentY);
+    doc.text(`Completed: ${Number(summary.completedAdmissions || 0)}`, 125, currentY);
+    doc.text(`Dropped: ${Number(summary.droppedAdmissions || 0)}`, 195, currentY);
     currentY += 8;
 
     autoTable(doc, {
       startY: currentY,
-
-      head: [
-        [
-          "S.No",
-          "Student",
-          "Roll No",
-          "Course",
-          "Batch",
-          "Admission Date",
-          "Course Fee",
-          "Final",
-          "Paid",
-          "Remaining",
-          "Status",
-        ],
-      ],
-
-      body: admissions.map(
-        (admission, index) => [
-          index + 1,
-
-          admission.student?.name ||
-            "-",
-
-          admission.student?.rollNo ||
-            "-",
-
-          admission.course
-            ?.courseTitle || "-",
-
-          admission.batch
-            ?.batch_name || "-",
-
-          formatDate(
-            admission.admissionDate
-          ),
-
-          formatPdfCurrency(
-            admission.courseFee
-          ),
-
-          formatPdfCurrency(
-            admission.finalAmount
-          ),
-
-          formatPdfCurrency(
-            admission.paidAmount
-          ),
-
-          formatPdfCurrency(
-            admission.remainingAmount
-          ),
-
-          admission.status ||
-            "-",
-        ]
-      ),
-
+      head: [[
+        "S.No",
+        "Student",
+        "Roll No",
+        "Course",
+        "Batch",
+        "Admission Date",
+        "Course Fee",
+        "Final",
+        "Paid",
+        "Remaining",
+        "Status",
+      ]],
+      body: admissions.map((admission, index) => [
+        (pagination.page - 1) * pagination.limit + index + 1,
+        admission.student?.name || "-",
+        admission.student?.rollNo || "-",
+        admission.course?.courseTitle || "-",
+        admission.batch?.batch_name || "-",
+        formatDate(admission.admissionDate),
+        formatPdfCurrency(admission.courseFee),
+        formatPdfCurrency(admission.finalAmount),
+        formatPdfCurrency(admission.paidAmount),
+        formatPdfCurrency(admission.remainingAmount),
+        admission.status || "-",
+      ]),
       styles: {
         fontSize: 7,
         cellPadding: 2,
+        overflow: "linebreak",
       },
-
       headStyles: {
         fontSize: 7,
       },
-
       margin: {
         left: 10,
         right: 10,
       },
     });
 
-    const finalY =
-      doc.lastAutoTable?.finalY ||
-      currentY + 10;
+    const finalY = doc.lastAutoTable?.finalY || currentY + 10;
 
     doc.setFontSize(8);
-
     doc.text(
-      `Total Final Amount: ${formatPdfCurrency(
-        summary.totalFinalAmount
-      )}`,
+      `Total Final Amount: ${formatPdfCurrency(summary.totalFinalAmount)}`,
       14,
       finalY + 8
     );
-
     doc.text(
-      `Total Paid: ${formatPdfCurrency(
-        summary.totalPaidAmount
-      )}`,
+      `Total Paid: ${formatPdfCurrency(summary.totalPaidAmount)}`,
       90,
       finalY + 8
     );
-
     doc.text(
-      `Total Remaining: ${formatPdfCurrency(
-        summary.totalRemainingAmount
-      )}`,
+      `Total Remaining: ${formatPdfCurrency(summary.totalRemainingAmount)}`,
       165,
       finalY + 8
     );
 
     doc.save(
-      `admission-report-${new Date()
-        .toISOString()
-        .slice(0, 10)}.pdf`
+      `admission-report-${new Date().toISOString().slice(0, 10)}.pdf`
     );
+
+    notification.success("Admission report PDF exported.");
   };
 
   return (
     <div className="admission-reports-page">
-      
-  <div class="page-header"><div><h1> Admission Reports</h1></div>
+      <div className="page-header">
+        <div>
+          <h1>Admission Reports</h1>
+        </div>
 
-   <div className="admission-report-actions">
-        
-
+        <div className="admission-report-actions">
           <button
             type="button"
             className="themebtn exceldownload"
             onClick={exportExcel}
-            disabled={
-              !admissions.length
-            }
+            disabled={!admissions.length || loading}
           >
-            <RiFileExcel2Line />
-            Excel
+            <RiFileExcel2Line /> Excel
           </button>
 
           <button
             type="button"
             className="themebtn pdfdownload"
             onClick={exportPDF}
-            disabled={
-              !admissions.length
-            }
+            disabled={!admissions.length || loading}
           >
-           <FaFilePdf />
-            PDF
+            <FaFilePdf /> PDF
           </button>
         </div>
-
-      
       </div>
 
-
-      {error && (
-        <div className="admission-report-error">
-          {error}
-        </div>
-      )}
-
       <div className="admission-report-summary">
-       
         <div className="dashboard-stat-card card-success">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-success">
-           <FaUserFriends /> 
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title">Total Admissions</span>
-             
-               <strong class="stat-card-value">
-            {Number(
-              summary.totalAdmissions ||
-                0
-            )}
-          </strong>
-            </div>
-         
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-success"><FaUserFriends /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Total Admissions</span>
+            <strong className="stat-card-value">
+              {Number(summary.totalAdmissions || 0)}
+            </strong>
+          </div>
         </div>
 
-  <div className="dashboard-stat-card card-purple">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-purple">
-           <FaUserFriends /> 
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title">Active Admissions</span>
-             
-               <strong class="stat-card-value">
-            {Number(
-              summary.totalAdmissions ||
-                0
-            )}
-          </strong>
-            </div>
-         
+        <div className="dashboard-stat-card card-purple">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-purple"><FaUserFriends /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Active Admissions</span>
+            <strong className="stat-card-value">
+              {Number(summary.activeAdmissions || 0)}
+            </strong>
+          </div>
         </div>
 
-          <div className="dashboard-stat-card card-danger">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-danger">
-          <MdCurrencyRupee />
-
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title"> Remaining Fees</span>
-             
-               <strong class="stat-card-value">
-            {formatCurrency(
-              summary.totalRemainingAmount
-            )}
-          </strong>
-            </div>
-         
+        <div className="dashboard-stat-card card-danger">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-danger"><MdCurrencyRupee /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Remaining Fees</span>
+            <strong className="stat-card-value">
+              {formatCurrency(summary.totalRemainingAmount)}
+            </strong>
+          </div>
         </div>
 
- <div className="dashboard-stat-card card-success">
-          <div class="stat-card-top">
-            <div class="stat-icon stat-icon-success">
-           <FaUserFriends /> 
-           </div> 
-           </div>
-
-            <div className="stat-card-body">
-              <span class="stat-card-title">Completed</span>
-               <strong class="stat-card-value">
-            {Number(
-              summary.completedAdmissions ||
-                0
-            )}
-          </strong>
-            </div>
-         
+        <div className="dashboard-stat-card card-success">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-success"><FaUserFriends /></div>
+          </div>
+          <div className="stat-card-body">
+            <span className="stat-card-title">Completed</span>
+            <strong className="stat-card-value">
+              {Number(summary.completedAdmissions || 0)}
+            </strong>
+          </div>
         </div>
-       
       </div>
 
       <div className="common-card-filters">
         <div className="input-search noicon">
-          <label>
-            From Date
-          </label>
-
+          <label htmlFor="admission-report-date-from">From Date</label>
           <input
+            id="admission-report-date-from"
             type="date"
             name="date_from"
-            value={
-              filters.date_from
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.date_from}
+            onChange={handleChange}
           />
         </div>
 
         <div className="input-search noicon">
-          <label>
-            To Date
-          </label>
-
+          <label htmlFor="admission-report-date-to">To Date</label>
           <input
+            id="admission-report-date-to"
             type="date"
             name="date_to"
-            value={
-              filters.date_to
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.date_to}
+            onChange={handleChange}
           />
         </div>
 
         <div className="input-search">
-          <label>
-            Course
-          </label>
-
+          <label htmlFor="admission-report-course">Course</label>
           <select
+            id="admission-report-course"
             name="course_id"
-            value={
-              filters.course_id
-            }
-            onChange={
-              handleChange
-            }
-            disabled={
-              filtersLoading
-            }
+            value={filters.course_id}
+            onChange={handleChange}
+            disabled={filtersLoading}
           >
-            <option value="">
-              All Courses
-            </option>
-
-            {filterData.courses.map(
-              (course) => (
-                <option
-                  key={
-                    course._id
-                  }
-                  value={
-                    course._id
-                  }
-                >
-                  {
-                    course.courseTitle
-                  }
-                </option>
-              )
-            )}
+            <option value="">All Courses</option>
+            {filterData.courses.map((course) => (
+              <option key={course._id} value={course._id}>
+                {course.courseTitle}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="input-search">
-          <label>
-            Batch
-          </label>
-
+          <label htmlFor="admission-report-batch">Batch</label>
           <select
+            id="admission-report-batch"
             name="batch_id"
-            value={
-              filters.batch_id
-            }
-            onChange={
-              handleChange
-            }
-            disabled={
-              filtersLoading ||
-              !availableBatches.length
-            }
+            value={filters.batch_id}
+            onChange={handleChange}
+            disabled={filtersLoading || !availableBatches.length}
           >
-            <option value="">
-              All Batches
-            </option>
-
-            {availableBatches.map(
-              (batch) => (
-                <option
-                  key={
-                    batch._id
-                  }
-                  value={
-                    batch._id
-                  }
-                >
-                  {
-                    batch.batch_name
-                  }
-                </option>
-              )
-            )}
+            <option value="">All Batches</option>
+            {availableBatches.map((batch) => (
+              <option key={batch._id} value={batch._id}>
+                {batch.batch_name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="input-search">
-          <label>
-            Status
-          </label>
-
+          <label htmlFor="admission-report-status">Status</label>
           <select
+            id="admission-report-status"
             name="status"
-            value={
-              filters.status
-            }
-            onChange={
-              handleChange
-            }
+            value={filters.status}
+            onChange={handleChange}
           >
-            <option value="">
-              All Status
-            </option>
-
-            <option value="Active">
-              Active
-            </option>
-
-            <option value="Completed">
-              Completed
-            </option>
-
-            <option value="Dropped">
-              Dropped
-            </option>
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Dropped">Dropped</option>
           </select>
         </div>
 
-       
-         <div className="student-filter-actions" >
-          <button className="themebtn"
+        <div className="student-filter-actions">
+          <button
             type="button"
-            onClick={
-              handleApply
-            }
+            className="themebtn"
+            onClick={handleApply}
+            disabled={loading}
           >
-          
             Apply Filter
           </button>
 
-          <button className="themebtn themebtnline"
+          <button
             type="button"
-            onClick={
-              handleReset
-            }
+            className="themebtn themebtnline"
+            onClick={handleReset}
+            disabled={loading}
           >
-             <FiRefreshCw />
-            Reset
+            <FiRefreshCw /> Reset
           </button>
         </div>
       </div>
@@ -1063,83 +639,29 @@ const AdmissionReports = () => {
           </div>
         ) : (
           <div className="common-table-wrapper">
-          <table className="common-table">
-            <thead>
-              <tr>
-                <th>
-                  S.No
-                </th>
+            <table className="common-table">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Student</th>
+                  <th>Roll No</th>
+                  <th>Course / Batch</th>
+                  <th>Contact</th>
+                  <th>Admission Date</th>
+                  <th>Final Amount</th>
+                  <th>Paid</th>
+                  <th>Remaining</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
 
-                <th>
-                  Student
-                </th>
-
-                <th>
-                  Roll No
-                </th>
-
-                <th>
-                  Course / Batch
-                </th>
-
-                <th>
-                  Contact
-                </th>
-
-                <th>
-                  Admission Date
-                </th>
-
-                <th>
-                  Final Amount
-                </th>
-
-                <th>
-                  Paid
-                </th>
-
-                <th>
-                  Remaining
-                </th>
-
-                <th>
-                  Status
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {admissions.map(
-                (
-                  admission,
-                  index
-                ) => (
-                  <tr
-                    key={
-                      admission._id
-                    }
-                  >
+              <tbody>
+                {admissions.map((admission, index) => (
+                  <tr key={admission._id}>
                     <td>
-                      {index + 1}
+                      {(pagination.page - 1) * pagination.limit + index + 1}
                     </td>
 
-                    {/* <td>
-                      <div className="admission-report-student">
-
-                        <div class="student-name-cell">
-  <div class="student-avatar-wrapper">
-    <img alt="Rahul Lodhi" class="student-avatar" src="http://localhost:5000/uploads/students/1791094170853-711uU2sdLaL-_SY741_.jpg" /></div><div><strong>{
-                            admission
-                              .student
-                              ?.name ||
-                            "-"
-                          }</strong>father name<img alt="Student Signature" height="20px" class="student-signature" src="http://localhost:5000/uploads/students/1792320152276-images.png" /></div></div>
-
-                       
-                      </div>
-                    </td> */}
-
-                    
                     <td>
                       <div className="admission-report-student">
                         <div className="student-name-cell">
@@ -1152,15 +674,11 @@ const AdmissionReports = () => {
                                 loading="lazy"
                                 onError={(event) => {
                                   event.currentTarget.style.display = "none";
-
                                   const fallback =
                                     event.currentTarget.parentElement?.querySelector(
                                       ".admission-report-avatar-fallback"
                                     );
-
-                                  if (fallback) {
-                                    fallback.style.display = "flex";
-                                  }
+                                  if (fallback) fallback.style.display = "flex";
                                 }}
                               />
                             ) : null}
@@ -1168,22 +686,17 @@ const AdmissionReports = () => {
                             <div
                               className="student-avatar admission-report-avatar-fallback"
                               style={{
-                                display: admission.student?.profileImage ? "none" : "flex",
+                                display: admission.student?.profileImage
+                                  ? "none"
+                                  : "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 fontWeight: 700,
                                 background: "#eaf0ff",
                                 color: "#2457c5",
                               }}
-                              aria-label={`${admission.student?.name || "Student"} initials`}
                             >
-                              {admission.student?.name
-                                ?.split(/\s+/)
-                                .filter(Boolean)
-                                .slice(0, 2)
-                                .map((part) => part[0])
-                                .join("")
-                                .toUpperCase() || "S"}
+                              {getInitials(admission.student?.name)}
                             </div>
                           </div>
 
@@ -1191,9 +704,7 @@ const AdmissionReports = () => {
                             <strong>{admission.student?.name || "—"}</strong>
 
                             {admission.student?.fatherName && (
-                              <small>
-                                {admission.student.fatherName}
-                              </small>
+                              <small>{admission.student.fatherName}</small>
                             )}
 
                             {admission.student?.signature && (
@@ -1212,110 +723,87 @@ const AdmissionReports = () => {
                       </div>
                     </td>
 
-
                     <td>
-                      <span className="student-roll">{
-                        admission
-                          .student
-                          ?.rollNo ||
-                        "-"
-                      }</span>
+                      <span className="student-roll">
+                        {admission.student?.rollNo || "-"}
+                      </span>
                     </td>
 
                     <td>
-                      {
-                        admission
-                          .course
-                          ?.courseTitle ||
-                        "-"
-                      }
-
-                      <br></br>
-
-                          <span className="batchtag">
-                           {
-                        admission
-                          .batch
-                          ?.batch_name ||
-                        "-"
-                      }
-                          </span>
-
+                      {admission.course?.courseTitle || "-"}
+                      <br />
+                      <span className="batchtag">
+                        {admission.batch?.batch_name || "-"}
+                      </span>
                     </td>
 
                     <td>
-                     
-                        <div className="contact-details">
-                     <div className="contact-li"> <IoIosCall />  <span> {
-                            admission
-                              .student
-                              ?.mobile ||
-                            "-"
-                          }</span></div>
-                    <div className="contact-li"> <MdOutgoingMail /> <span> {
-                            admission
-                              .student
-                              ?.email ||
-                            "-"
-                          }</span></div>
-                    </div>
+                      <div className="contact-details">
+                        <div className="contact-li">
+                          <IoIosCall />
+                          <span>{admission.student?.mobile || "-"}</span>
+                        </div>
+                        <div className="contact-li">
+                          <MdOutgoingMail />
+                          <span>{admission.student?.email || "-"}</span>
+                        </div>
+                      </div>
                     </td>
 
                     <td>
-                     
-
-                            <div className="contact-details">
-                                           <div className="contact-li"> <MdDateRange />  <span>  {formatDate(
-                        admission.admissionDate
-                      )}</span></div>
-                                          </div>
-
+                      <div className="contact-details">
+                        <div className="contact-li">
+                          <MdDateRange />
+                          <span>{formatDate(admission.admissionDate)}</span>
+                        </div>
+                      </div>
                     </td>
 
                     <td>
-
-<strong className="tag-purple"> {formatCurrency(
-                        admission.finalAmount
-                      )}</strong>
-
-                     
+                      <strong className="tag-purple">
+                        {formatCurrency(admission.finalAmount)}
+                      </strong>
                     </td>
 
                     <td>
                       <strong className="tag-success">
-                      {formatCurrency(
-                        admission.paidAmount
-                      )}
+                        {formatCurrency(admission.paidAmount)}
                       </strong>
-                      
                     </td>
 
                     <td>
                       <strong className="tag-danger">
-                        {formatCurrency(
-                          admission.remainingAmount
-                        )}
+                        {formatCurrency(admission.remainingAmount)}
                       </strong>
                     </td>
 
                     <td>
                       <span
                         className={`admission-report-status admission-report-status-${String(
-                          admission.status
+                          admission.status || ""
                         ).toLowerCase()}`}
                       >
-                        {
-                          admission.status
-                        }
+                        {admission.status || "-"}
                       </span>
                     </td>
                   </tr>
-                )
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
+
+        <Pagination
+          page={pagination.page || page}
+          totalPages={pagination.totalPages || 0}
+          total={pagination.total || 0}
+          itemCount={admissions.length}
+          itemLabel="admissions"
+          limit={pagination.limit || limit}
+          loading={loading}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+        />
       </div>
     </div>
   );

@@ -1,18 +1,18 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "../../../context/AuthContext";
-import { getStudentReport, getStudentReportFilters } from "../../../services/studentReportService";
+import {
+  getStudentReport,
+  getStudentReportFilters,
+} from "../../../services/studentReportService";
 import { getAssetUrl } from "../../../utils/assetUrl";
+import Pagination from "../../../components/common/Pagination";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
 
 import { IoIosCall } from "react-icons/io";
-import { MdOutgoingMail } from "react-icons/md";
-import { MdDateRange } from "react-icons/md";
+import { MdOutgoingMail, MdDateRange } from "react-icons/md";
 import { FaUserFriends, FaFilePdf } from "react-icons/fa";
 import { FiRefreshCw } from "react-icons/fi";
 import { RiFileExcel2Line } from "react-icons/ri";
@@ -31,14 +31,23 @@ const EMPTY_FILTERS = {
   status: "",
 };
 
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+};
+
 const getResponseData = (response) =>
   response?.data?.data ?? response?.data ?? {};
 
 const formatDate = (value) => {
   if (!value) return "-";
+
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("en-IN");
+  return Number.isNaN(date.getTime())
+    ? "-"
+    : date.toLocaleDateString("en-IN");
 };
 
 const getStatusLabel = (status) => {
@@ -51,33 +60,54 @@ const getStudentName = (student) =>
   [student?.firstName, student?.surname].filter(Boolean).join(" ").trim() ||
   "-";
 
+const getInitials = (name) =>
+  String(name || "Student")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "S";
+
 const StudentReports = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterData, setFilterData] = useState({ courses: [], batches: [] });
-  const [report, setReport] = useState({ summary: {}, students: [] });
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  const [filterData, setFilterData] = useState({
+    courses: [],
+    batches: [],
+  });
+
+  const [report, setReport] = useState({
+    summary: {},
+    students: [],
+    pagination: DEFAULT_PAGINATION,
+  });
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [filtersLoading, setFiltersLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // StrictMode may replay effects in development. This guard prevents duplicate
-  // initial requests from the same mounted component.
+  const requestId = useRef(0);
   const initialLoadStarted = useRef(false);
 
   const availableBatches = useMemo(() => {
     if (!filters.course_id) return filterData.batches;
 
     return filterData.batches.filter((batch) => {
-      const batchCourseId = batch?.course_id?._id || batch?.course_id;
-      return String(batchCourseId || "") === String(filters.course_id);
+      const courseId = batch?.course_id?._id || batch?.course_id;
+      return String(courseId || "") === String(filters.course_id);
     });
   }, [filters.course_id, filterData.batches]);
 
   const loadFilters = useCallback(async () => {
     try {
       setFiltersLoading(true);
+
       const response = await getStudentReportFilters();
       const data = getResponseData(response);
 
@@ -85,40 +115,70 @@ const StudentReports = () => {
         courses: Array.isArray(data.courses) ? data.courses : [],
         batches: Array.isArray(data.batches) ? data.batches : [],
       });
-    } catch (err) {
-      console.error("Student report filters error:", err);
-      setError(
-        err?.response?.data?.message ||
-          "Unable to load student report filters."
-      );
+    } catch (error) {
+      console.error("Student report filters error:", error);
+      notification.error(getApiErrorMessage(error));
     } finally {
       setFiltersLoading(false);
     }
   }, []);
 
-  const loadReport = useCallback(async (currentFilters = EMPTY_FILTERS) => {
-    try {
-      setLoading(true);
-      setError("");
+  const loadReport = useCallback(
+    async ({
+      currentFilters = EMPTY_FILTERS,
+      currentSearch = "",
+      currentPage = 1,
+      currentLimit = 10,
+    } = {}) => {
+      const currentRequestId = ++requestId.current;
 
-      const response = await getStudentReport(currentFilters);
-      const data = getResponseData(response);
+      try {
+        setLoading(true);
 
-      setReport({
-        summary: data.summary || {},
-        students: Array.isArray(data.students) ? data.students : [],
-      });
-    } catch (err) {
-      console.error("Student report error:", err);
-      setReport({ summary: {}, students: [] });
-      setError(
-        err?.response?.data?.message ||
-          "Unable to generate student report."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const params = {
+          ...currentFilters,
+          q: currentSearch.trim(),
+          page: currentPage,
+          limit: currentLimit,
+        };
+
+        const response = await getStudentReport(params);
+        const data = getResponseData(response);
+
+        if (currentRequestId !== requestId.current) return;
+
+        setReport({
+          summary: data.summary || {},
+          students: Array.isArray(data.students) ? data.students : [],
+          pagination: data.pagination || {
+            ...DEFAULT_PAGINATION,
+            page: currentPage,
+            limit: currentLimit,
+          },
+        });
+      } catch (error) {
+        if (currentRequestId !== requestId.current) return;
+
+        console.error("Student report error:", error);
+        setReport({
+          summary: {},
+          students: [],
+          pagination: {
+            ...DEFAULT_PAGINATION,
+            page: currentPage,
+            limit: currentLimit,
+          },
+        });
+
+        notification.error(getApiErrorMessage(error));
+      } finally {
+        if (currentRequestId === requestId.current) {
+          setLoading(false);
+        }
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (authLoading || !isAuthenticated || initialLoadStarted.current) {
@@ -127,7 +187,7 @@ const StudentReports = () => {
 
     initialLoadStarted.current = true;
     void loadFilters();
-    void loadReport(EMPTY_FILTERS);
+    void loadReport();
   }, [authLoading, isAuthenticated, loadFilters, loadReport]);
 
   const handleChange = (event) => {
@@ -141,51 +201,75 @@ const StudentReports = () => {
   };
 
   const handleApply = () => {
-    if (filters.date_from && filters.date_to && filters.date_from > filters.date_to) {
-      setError("From Date cannot be later than To Date.");
+    if (
+      filters.date_from &&
+      filters.date_to &&
+      filters.date_from > filters.date_to
+    ) {
+      notification.warning("From Date cannot be later than To Date.");
       return;
     }
 
-    void loadReport(filters);
+    setPage(1);
+    setAppliedSearch(searchTerm.trim());
+
+    void loadReport({
+      currentFilters: filters,
+      currentSearch: searchTerm,
+      currentPage: 1,
+      currentLimit: limit,
+    });
   };
 
   const handleReset = () => {
     setFilters(EMPTY_FILTERS);
     setSearchTerm("");
-    void loadReport(EMPTY_FILTERS);
+    setAppliedSearch("");
+    setPage(1);
+
+    void loadReport({
+      currentFilters: EMPTY_FILTERS,
+      currentSearch: "",
+      currentPage: 1,
+      currentLimit: limit,
+    });
   };
 
-  const allStudents = report.students || [];
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
 
-  // Search is client-side, so typing does not call the API repeatedly.
-  const students = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    if (!query) return allStudents;
-
-    return allStudents.filter((student) => {
-      const values = [
-        getStudentName(student),
-        student.rollNo,
-        student.email,
-        student.mobile,
-        student.fatherName,
-      ];
-
-      return values.some((value) =>
-        String(value || "").toLowerCase().includes(query)
-      );
+    void loadReport({
+      currentFilters: filters,
+      currentSearch: appliedSearch,
+      currentPage: nextPage,
+      currentLimit: limit,
     });
-  }, [allStudents, searchTerm]);
+  };
+
+  const handleLimitChange = (nextLimit) => {
+    setLimit(nextLimit);
+    setPage(1);
+
+    void loadReport({
+      currentFilters: filters,
+      currentSearch: appliedSearch,
+      currentPage: 1,
+      currentLimit: nextLimit,
+    });
+  };
+
+  const students = report.students || [];
+  const summary = report.summary || {};
+  const pagination = report.pagination || DEFAULT_PAGINATION;
 
   const exportExcel = () => {
     if (!students.length) {
-      window.alert("No student records available to export.");
+      notification.warning("No student records available to export.");
       return;
     }
 
-    const summary = report.summary || {};
     const rows = students.map((student, index) => ({
-      "S.No": index + 1,
+      "S.No": (pagination.page - 1) * pagination.limit + index + 1,
       "Student Name": getStudentName(student),
       "Father Name": student.fatherName || "-",
       "Roll No": student.rollNo || "-",
@@ -205,7 +289,9 @@ const StudentReports = () => {
       { Metric: "Active Students", Value: Number(summary.activeStudents || 0) },
       { Metric: "Inactive Students", Value: Number(summary.inactiveStudents || 0) },
       { Metric: "Students in Selected Period", Value: Number(summary.newStudents || 0) },
-      { Metric: "Rows in Current Search", Value: students.length },
+      { Metric: "Records on Exported Page", Value: students.length },
+      { Metric: "Current Page", Value: pagination.page },
+      { Metric: "Records Per Page", Value: pagination.limit },
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -227,20 +313,26 @@ const StudentReports = () => {
 
     XLSX.utils.book_append_sheet(workbook, reportSheet, "Student Report");
     XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
     XLSX.writeFile(
       workbook,
       `student-report-${new Date().toISOString().slice(0, 10)}.xlsx`
     );
+
+    notification.success("Student report Excel exported.");
   };
 
   const exportPDF = () => {
     if (!students.length) {
-      window.alert("No student records available to export.");
+      notification.warning("No student records available to export.");
       return;
     }
 
-    const summary = report.summary || {};
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
 
     doc.setFontSize(18);
     doc.text("IT Learning Institute", 14, 15);
@@ -272,7 +364,8 @@ const StudentReports = () => {
     if (filters.status) {
       appliedFilters.push(`Status: ${getStatusLabel(filters.status)}`);
     }
-    if (searchTerm.trim()) appliedFilters.push(`Search: ${searchTerm.trim()}`);
+
+    if (appliedSearch) appliedFilters.push(`Search: ${appliedSearch}`);
 
     if (appliedFilters.length) {
       doc.text(`Filters: ${appliedFilters.join(" | ")}`, 14, currentY);
@@ -282,7 +375,7 @@ const StudentReports = () => {
     doc.text(`Total Students: ${Number(summary.totalStudents || 0)}`, 14, currentY);
     doc.text(`Active: ${Number(summary.activeStudents || 0)}`, 65, currentY);
     doc.text(`Inactive: ${Number(summary.inactiveStudents || 0)}`, 105, currentY);
-    doc.text(`Rows in Search: ${students.length}`, 155, currentY);
+    doc.text(`Page Records: ${students.length}`, 155, currentY);
     doc.text(`Period Students: ${Number(summary.newStudents || 0)}`, 215, currentY);
     currentY += 7;
 
@@ -293,7 +386,7 @@ const StudentReports = () => {
         "Mobile", "Email", "Course", "Batch", "Admission Date", "Status",
       ]],
       body: students.map((student, index) => [
-        index + 1,
+        (pagination.page - 1) * pagination.limit + index + 1,
         getStudentName(student),
         student.fatherName || "-",
         student.rollNo || "-",
@@ -311,9 +404,8 @@ const StudentReports = () => {
     });
 
     doc.save(`student-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+    notification.success("Student report PDF exported.");
   };
-
-  const summary = report.summary || {};
 
   return (
     <div className="student-reports-page">
@@ -329,8 +421,7 @@ const StudentReports = () => {
             onClick={exportExcel}
             disabled={!students.length || loading}
           >
-            <RiFileExcel2Line />
-            Excel
+            <RiFileExcel2Line /> Excel
           </button>
 
           <button
@@ -339,17 +430,10 @@ const StudentReports = () => {
             onClick={exportPDF}
             disabled={!students.length || loading}
           >
-            <FaFilePdf />
-            PDF
+            <FaFilePdf /> PDF
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="student-report-error" role="alert">
-          {error}
-        </div>
-      )}
 
       <div className="student-report-summary">
         <div className="dashboard-stat-card card-success">
@@ -402,6 +486,9 @@ const StudentReports = () => {
             placeholder="Name, roll no, email, mobile..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") handleApply();
+            }}
           />
         </div>
 
@@ -493,8 +580,7 @@ const StudentReports = () => {
             onClick={handleReset}
             disabled={loading}
           >
-            <FiRefreshCw />
-            Reset
+            <FiRefreshCw /> Reset
           </button>
         </div>
       </div>
@@ -504,7 +590,7 @@ const StudentReports = () => {
           <div className="student-report-empty">Loading student report...</div>
         ) : students.length === 0 ? (
           <div className="student-report-empty">
-            {searchTerm.trim()
+            {appliedSearch
               ? "No students match your search."
               : "No student records found for the selected filters."}
           </div>
@@ -528,7 +614,7 @@ const StudentReports = () => {
                   <tr key={student._id}>
                     <td>
                       <div className="student-name-cell">
-                        {/* <div className="student-avatar-wrapper">
+                        <div className="student-avatar-wrapper">
                           {student.profileImage ? (
                             <img
                               alt={`${getStudentName(student)} profile`}
@@ -537,68 +623,35 @@ const StudentReports = () => {
                               loading="lazy"
                               onError={(event) => {
                                 event.currentTarget.style.display = "none";
+                                const fallback =
+                                  event.currentTarget.parentElement?.querySelector(
+                                    ".student-avatar-fallback"
+                                  );
+                                if (fallback) fallback.style.display = "flex";
                               }}
                             />
-                          ) : (
-                            <div className="student-avatar-fallback">
-                              {getStudentName(student).charAt(0).toUpperCase() || "S"}
-                            </div>
-                          )}
-                        </div> */}
+                          ) : null}
 
-                        
-                      <div className="student-avatar-wrapper">
-                        {student.profileImage ? (
-                          <img
-                            alt={`${getStudentName(student)} profile`}
-                            className="student-avatar"
-                            src={getAssetUrl(student.profileImage)}
-                            loading="lazy"
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
-                              const fallback = event.currentTarget.parentElement?.querySelector(
-                                ".student-avatar-fallback"
-                              );
-                              if (fallback) fallback.style.display = "flex";
+                          <div
+                            className="student-avatar-fallback"
+                            style={{
+                              display: student.profileImage ? "none" : "flex",
                             }}
-                          />
-                        ) : null}
-
-                        <div
-                          className="student-avatar-fallback"
-                          style={{
-                            display: student.profileImage ? "none" : "flex",
-                          }}
-                          aria-label={`${getStudentName(student)} initials`}
-                        >
-                          {[
-                            student.firstName?.trim()?.[0],
-                            student.surname?.trim()?.[0],
-                          ]
-                            .filter(Boolean)
-                            .join("")
-                            .toUpperCase() ||
-                            getStudentName(student)
-                              .split(/\s+/)
-                              .filter(Boolean)
-                              .slice(0, 2)
-                              .map((part) => part[0])
-                              .join("")
-                              .toUpperCase() ||
-                            "S"}
+                          >
+                            {getInitials(getStudentName(student))}
+                          </div>
                         </div>
-                      </div>
-
 
                         <div className="student-report-identity">
                           <strong>{getStudentName(student)}</strong>
                           <span>Father: {student.fatherName || "-"}</span>
+
                           {student.signature && (
                             <div className="student-report-signature">
                               <img
                                 className="student-signature"
                                 src={getAssetUrl(student.signature)}
-                                alt={`${student.studentName || "Student"} signature`}
+                                alt={`${getStudentName(student)} signature`}
                                 loading="lazy"
                                 onError={(event) => {
                                   event.currentTarget.style.display = "none";
@@ -659,6 +712,18 @@ const StudentReports = () => {
             </table>
           </div>
         )}
+
+        <Pagination
+          page={pagination.page || page}
+          totalPages={pagination.totalPages || 0}
+          total={pagination.total || 0}
+          itemCount={students.length}
+          itemLabel="students"
+          limit={pagination.limit || limit}
+          loading={loading}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+        />
       </div>
     </div>
   );
