@@ -245,3 +245,83 @@
     width: 100%;
   }
 }
+
+
+
+
+
+
+
+
+
+.pending-fee-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.report-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.pending-fee-filter-actions .report-btn,
+.pending-fee-filter-actions .reset-filter-btn {
+  min-height: 40px;
+}
+
+.pending-fee-filter-actions .reset-filter-btn {
+  padding: 0 15px;
+}
+
+.pending-fee-table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 17px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pending-fee-table-heading h2 {
+  margin: 0 0 5px;
+  font-size: 17px;
+  color: #111827;
+}
+
+.pending-fee-table-heading span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.pending-fee-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.pending-fee-table-wrapper .ems-pagination-footer {
+  padding: 14px 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pending-fee-filter-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .pending-fee-filter-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .pending-fee-filter-actions button {
+    flex: 1;
+  }
+
+  .pending-fee-table-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
