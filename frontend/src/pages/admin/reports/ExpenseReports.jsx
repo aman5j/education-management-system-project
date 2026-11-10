@@ -12,6 +12,13 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { getExpenseReport } from "../../../services/expenseService";
+import {
+  fetchAllReportPages,
+} from "../../../utils/fetchAllReportPages";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
 import "../../../styles/ExpenseReports.css";
 
 const CATEGORIES = [
@@ -28,6 +35,32 @@ const CATEGORIES = [
   "Utilities",
   "Other",
 ];
+
+const INITIAL_FILTERS = {
+  from: "",
+  to: "",
+  category: "",
+  status: "",
+};
+
+const INITIAL_REPORT = {
+  summary: {
+    totalAmount: 0,
+    totalRecords: 0,
+    paidAmount: 0,
+    pendingAmount: 0,
+  },
+  statusBreakdown: [],
+  categoryBreakdown: [],
+  monthlyTrend: [],
+  records: [],
+  pagination: {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  },
+};
 
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -54,60 +87,53 @@ const formatDate = (value) => {
 const getResponseData = (response) =>
   response?.data?.data ?? response?.data ?? {};
 
+const cleanFilters = (filters = {}) =>
+  Object.fromEntries(
+    Object.entries(filters).filter(
+      ([, value]) =>
+        value !== "" &&
+        value !== null &&
+        value !== undefined
+    )
+  );
+
 const ExpenseReports = () => {
-  const [filters, setFilters] = useState({
-    from: "",
-    to: "",
-    category: "",
-    status: "",
-  });
+  // Draft filters are changed by the user.
+  // They do not trigger a report request until Apply is clicked.
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
 
-  const [report, setReport] = useState({
-    summary: {},
-    statusBreakdown: [],
-    categoryBreakdown: [],
-    monthlyTrend: [],
-    records: [],
-    pagination: {
-      page: 1,
-      limit: 10,
-      total: 0,
-      totalPages: 0,
-    },
-  });
+  // Only applied filters are used for report requests and exports.
+  const [appliedFilters, setAppliedFilters] = useState(
+    INITIAL_FILTERS
+  );
 
+  const [report, setReport] = useState(INITIAL_REPORT);
   const [page, setPage] = useState(1);
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [error, setError] = useState("");
 
   const loadReport = useCallback(
-    async (currentFilters = filters, currentPage = page) => {
+    async (currentFilters, currentPage) => {
       setLoading(true);
       setError("");
 
-      const params = {
-        ...currentFilters,
-        page: currentPage,
-        limit: 10,
-      };
-
-      Object.keys(params).forEach((key) => {
-        if (
-          params[key] === "" ||
-          params[key] === null ||
-          params[key] === undefined
-        ) {
-          delete params[key];
-        }
-      });
-
       try {
-        const response = await getExpenseReport(params);
+        const response = await getExpenseReport({
+          ...cleanFilters(currentFilters),
+          page: currentPage,
+          limit: 10,
+        });
+
         const data = getResponseData(response);
 
         setReport({
-          summary: data?.summary || {},
+          summary: {
+            ...INITIAL_REPORT.summary,
+            ...(data?.summary || {}),
+          },
           statusBreakdown: Array.isArray(data?.statusBreakdown)
             ? data.statusBreakdown
             : [],
@@ -120,30 +146,30 @@ const ExpenseReports = () => {
           records: Array.isArray(data?.records)
             ? data.records
             : [],
-          pagination: data?.pagination || {
-            page: currentPage,
-            limit: 10,
-            total: 0,
-            totalPages: 0,
+          pagination: {
+            ...INITIAL_REPORT.pagination,
+            ...(data?.pagination || {}),
           },
         });
 
         setHasLoaded(true);
       } catch (err) {
-        setError(
-          err?.response?.data?.message ||
-            "Unable to load Expense Reports. Check the report API and try again."
-        );
+        const message = getApiErrorMessage(err);
+
+        setError(message);
+        notification.error(message);
       } finally {
         setLoading(false);
       }
     },
-    [filters, page]
+    []
   );
 
+  // Initial load and subsequent applied-filter/page changes.
+  // Draft filter changes do not cause requests.
   useEffect(() => {
-    loadReport(filters, page);
-  }, [loadReport, filters, page]);
+    loadReport(appliedFilters, page);
+  }, [loadReport, appliedFilters, page]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -152,49 +178,69 @@ const ExpenseReports = () => {
       ...previous,
       [name]: value,
     }));
-
-    setPage(1);
   };
 
   const handleApply = () => {
-    if (filters.from && filters.to && filters.from > filters.to) {
-      setError("'From' date cannot be after 'To' date.");
+    if (
+      filters.from &&
+      filters.to &&
+      filters.from > filters.to
+    ) {
+      notification.warning(
+        "'From' date cannot be after 'To' date."
+      );
       return;
     }
 
+    const nextFilters = {
+      ...filters,
+    };
+
+    setError("");
     setPage(1);
-    loadReport(filters, 1);
+    setAppliedFilters(nextFilters);
   };
 
   const handleReset = () => {
-    const reset = {
-      from: "",
-      to: "",
-      category: "",
-      status: "",
-    };
-
-    setFilters(reset);
+    setFilters(INITIAL_FILTERS);
+    setAppliedFilters(INITIAL_FILTERS);
     setPage(1);
-    loadReport(reset, 1);
+    setError("");
   };
 
   const handleRefresh = () => {
-    loadReport(filters, page);
+    loadReport(appliedFilters, page);
   };
 
-  const summary = report.summary || {};
+  const summary = report.summary || INITIAL_REPORT.summary;
   const records = report.records || [];
-  const pagination = report.pagination || {};
+  const pagination = report.pagination || INITIAL_REPORT.pagination;
 
-  const exportExcel = () => {
-    if (!records.length) {
-      window.alert("No expense records available on this page to export.");
-      return;
+  const getAppliedFilterLabels = () => {
+    const labels = [];
+
+    if (appliedFilters.from) {
+      labels.push(`From: ${appliedFilters.from}`);
     }
 
-    const expenseRows = records.map((expense, index) => ({
-      "S.No.": (pagination.page - 1) * pagination.limit + index + 1,
+    if (appliedFilters.to) {
+      labels.push(`To: ${appliedFilters.to}`);
+    }
+
+    if (appliedFilters.category) {
+      labels.push(`Category: ${appliedFilters.category}`);
+    }
+
+    if (appliedFilters.status) {
+      labels.push(`Status: ${appliedFilters.status}`);
+    }
+
+    return labels;
+  };
+
+  const buildExpenseRows = (allRecords) =>
+    allRecords.map((expense, index) => ({
+      "S.No.": index + 1,
       Title: expense.title || "-",
       Category: expense.category || "-",
       Amount: Number(expense.amount || 0),
@@ -206,134 +252,263 @@ const ExpenseReports = () => {
       "Receipt Uploaded": expense.receiptUrl ? "Yes" : "No",
     }));
 
-    const summaryRows = [
-      { Metric: "Total Expenses", Value: Number(summary.totalAmount || 0) },
-      { Metric: "Total Records", Value: Number(summary.totalRecords || 0) },
-      { Metric: "Paid Amount", Value: Number(summary.paidAmount || 0) },
-      { Metric: "Pending Amount", Value: Number(summary.pendingAmount || 0) },
-    ];
+  const fetchCompleteExpenseReport = async () => {
+    return fetchAllReportPages({
+      fetchPage: getExpenseReport,
+      filters: cleanFilters(appliedFilters),
+      recordsKey: "records",
+    });
+  };
 
-    const workbook = XLSX.utils.book_new();
+  const exportExcel = async () => {
+    if (exporting || loading) return;
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(expenseRows),
-      "Expense Records"
+    setExporting(true);
+    const toastId = notification.loading(
+      "Preparing complete expense Excel report..."
     );
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(summaryRows),
-      "Summary"
-    );
+    try {
+      const result = await fetchCompleteExpenseReport();
+      const allRecords = result.rows;
+      const exportSummary = {
+        ...INITIAL_REPORT.summary,
+        ...(result.summary || {}),
+      };
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(
-        report.categoryBreakdown.map((item) => ({
+      if (!allRecords.length) {
+        notification.dismiss(toastId);
+        notification.info("No expense records match the applied filters.");
+        return;
+      }
+
+      const workbook = XLSX.utils.book_new();
+
+      const expenseRows = buildExpenseRows(allRecords);
+
+      const summaryRows = [
+        {
+          Metric: "Total Expenses",
+          Value: Number(exportSummary.totalAmount || 0),
+        },
+        {
+          Metric: "Total Records",
+          Value: Number(exportSummary.totalRecords || 0),
+        },
+        {
+          Metric: "Paid Amount",
+          Value: Number(exportSummary.paidAmount || 0),
+        },
+        {
+          Metric: "Pending Amount",
+          Value: Number(exportSummary.pendingAmount || 0),
+        },
+        {
+          Metric: "Exported Records",
+          Value: allRecords.length,
+        },
+      ];
+
+      const statusRows = (report.statusBreakdown || []).map((item) => ({
+        Status: item._id || "-",
+        "Number of Records": Number(item.count || 0),
+        "Total Amount": Number(item.amount || 0),
+      }));
+
+      const categoryRows = (report.categoryBreakdown || []).map(
+        (item) => ({
           Category: item._id || "Other",
           "Number of Records": Number(item.count || 0),
           "Total Amount": Number(item.amount || 0),
-        }))
-      ),
-      "Category Breakdown"
-    );
+        })
+      );
 
-    XLSX.writeFile(
-      workbook,
-      `expense-report-${new Date().toISOString().slice(0, 10)}.xlsx`
-    );
+      const monthlyRows = (report.monthlyTrend || []).map((item) => ({
+        Year: item._id?.year || "",
+        Month: item._id?.month || "",
+        "Number of Records": Number(item.count || 0),
+        "Total Amount": Number(item.amount || 0),
+      }));
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(expenseRows),
+        "Expense Records"
+      );
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(summaryRows),
+        "Summary"
+      );
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(categoryRows),
+        "Category Breakdown"
+      );
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(statusRows),
+        "Status Breakdown"
+      );
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(monthlyRows),
+        "Monthly Trend"
+      );
+
+      XLSX.writeFile(
+        workbook,
+        `expense-report-${new Date().toISOString().slice(0, 10)}.xlsx`
+      );
+
+      notification.dismiss(toastId);
+      notification.success(
+        `Excel report exported successfully (${allRecords.length} records).`
+      );
+    } catch (err) {
+      notification.dismiss(toastId);
+      notification.error(
+        err?.message || getApiErrorMessage(err)
+      );
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const exportPDF = () => {
-    if (!records.length) {
-      window.alert("No expense records available on this page to export.");
-      return;
+  const exportPDF = async () => {
+    if (exporting || loading) return;
+
+    setExporting(true);
+    const toastId = notification.loading(
+      "Preparing complete expense PDF report..."
+    );
+
+    try {
+      const result = await fetchCompleteExpenseReport();
+      const allRecords = result.rows;
+      const exportSummary = {
+        ...INITIAL_REPORT.summary,
+        ...(result.summary || {}),
+      };
+
+      if (!allRecords.length) {
+        notification.dismiss(toastId);
+        notification.info("No expense records match the applied filters.");
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+
+      doc.setFontSize(16);
+      doc.text("Expense Report", 14, 15);
+
+      doc.setFontSize(9);
+      doc.text(
+        `Generated: ${new Date().toLocaleString("en-IN")}`,
+        14,
+        22
+      );
+
+      const filterText = getAppliedFilterLabels().join(" | ");
+
+      if (filterText) {
+        doc.text(filterText, 14, 28);
+      }
+
+      autoTable(doc, {
+        startY: filterText ? 34 : 29,
+        head: [[
+          "Title",
+          "Category",
+          "Amount",
+          "Date",
+          "Payment Method",
+          "Vendor",
+          "Status",
+          "Receipt",
+        ]],
+        body: allRecords.map((expense) => [
+          expense.title || "-",
+          expense.category || "-",
+          formatPdfCurrency(expense.amount),
+          formatDate(expense.expenseDate),
+          expense.paymentMethod || "-",
+          expense.vendor || "-",
+          expense.status || "-",
+          expense.receiptUrl ? "Uploaded" : "No receipt",
+        ]),
+        styles: {
+          fontSize: 8,
+          cellPadding: 2.5,
+          overflow: "linebreak",
+        },
+        headStyles: {
+          fontSize: 8,
+        },
+        margin: {
+          left: 10,
+          right: 10,
+        },
+      });
+
+      const finalY = (doc.lastAutoTable?.finalY || 40) + 9;
+
+      // If the table ends near the bottom of a page,
+      // put the summary on a fresh page.
+      const summaryY =
+        finalY > 180 ? (doc.addPage(), 20) : finalY;
+
+      doc.setFontSize(10);
+      doc.text(
+        `Total Expenses: ${formatPdfCurrency(exportSummary.totalAmount)}`,
+        14,
+        summaryY
+      );
+      doc.text(
+        `Paid: ${formatPdfCurrency(exportSummary.paidAmount)}`,
+        105,
+        summaryY
+      );
+      doc.text(
+        `Pending: ${formatPdfCurrency(exportSummary.pendingAmount)}`,
+        185,
+        summaryY
+      );
+      doc.text(
+        `Total Records: ${Number(exportSummary.totalRecords || 0)}`,
+        14,
+        summaryY + 7
+      );
+      doc.text(
+        `Exported Records: ${allRecords.length}`,
+        105,
+        summaryY + 7
+      );
+
+      doc.save(
+        `expense-report-${new Date().toISOString().slice(0, 10)}.pdf`
+      );
+
+      notification.dismiss(toastId);
+      notification.success(
+        `PDF report exported successfully (${allRecords.length} records).`
+      );
+    } catch (err) {
+      notification.dismiss(toastId);
+      notification.error(
+        err?.message || getApiErrorMessage(err)
+      );
+    } finally {
+      setExporting(false);
     }
-
-    const doc = new jsPDF("landscape");
-
-    doc.setFontSize(16);
-    doc.text("Expense Report", 14, 15);
-
-    doc.setFontSize(9);
-    doc.text(
-      `Generated: ${new Date().toLocaleString("en-IN")}`,
-      14,
-      22
-    );
-
-    const filterText = [
-      filters.from ? `From: ${filters.from}` : "",
-      filters.to ? `To: ${filters.to}` : "",
-      filters.category ? `Category: ${filters.category}` : "",
-      filters.status ? `Status: ${filters.status}` : "",
-    ]
-      .filter(Boolean)
-      .join(" | ");
-
-    if (filterText) {
-      doc.text(filterText, 14, 28);
-    }
-
-    autoTable(doc, {
-      startY: filterText ? 34 : 29,
-      head: [[
-        "Title",
-        "Category",
-        "Amount",
-        "Date",
-        "Payment Method",
-        "Vendor",
-        "Status",
-        "Receipt",
-      ]],
-      body: records.map((expense) => [
-        expense.title || "-",
-        expense.category || "-",
-        formatPdfCurrency(expense.amount),
-        formatDate(expense.expenseDate),
-        expense.paymentMethod || "-",
-        expense.vendor || "-",
-        expense.status || "-",
-        expense.receiptUrl ? "Uploaded" : "No receipt",
-      ]),
-      styles: {
-        fontSize: 8,
-        cellPadding: 2.5,
-        overflow: "linebreak",
-      },
-      headStyles: {
-        fontSize: 8,
-      },
-      margin: {
-        left: 10,
-        right: 10,
-      },
-    });
-
-    const finalY = (doc.lastAutoTable?.finalY || 40) + 9;
-
-    doc.setFontSize(10);
-    doc.text(
-      `Total Expenses: ${formatPdfCurrency(summary.totalAmount)}`,
-      14,
-      finalY
-    );
-    doc.text(
-      `Paid: ${formatPdfCurrency(summary.paidAmount)}`,
-      105,
-      finalY
-    );
-    doc.text(
-      `Pending: ${formatPdfCurrency(summary.pendingAmount)}`,
-      185,
-      finalY
-    );
-
-    doc.save(
-      `expense-report-${new Date().toISOString().slice(0, 10)}.pdf`
-    );
   };
 
   return (
@@ -354,7 +529,7 @@ const ExpenseReports = () => {
           type="button"
           className="expense-report-secondary-button"
           onClick={handleRefresh}
-          disabled={loading}
+          disabled={loading || exporting}
         >
           <FiRefreshCw /> Refresh
         </button>
@@ -370,7 +545,9 @@ const ExpenseReports = () => {
         <div className="expense-report-section-heading">
           <div>
             <h2>Filter Report</h2>
-            <p>Choose the date range and expense details.</p>
+            <p>
+              Choose the date range and expense details, then apply.
+            </p>
           </div>
         </div>
 
@@ -431,7 +608,7 @@ const ExpenseReports = () => {
               type="button"
               className="expense-report-primary-button"
               onClick={handleApply}
-              disabled={loading}
+              disabled={loading || exporting}
             >
               <FiSearch /> Apply
             </button>
@@ -440,7 +617,7 @@ const ExpenseReports = () => {
               type="button"
               className="expense-report-secondary-button"
               onClick={handleReset}
-              disabled={loading}
+              disabled={loading || exporting}
             >
               Reset
             </button>
@@ -485,24 +662,35 @@ const ExpenseReports = () => {
               type="button"
               className="expense-report-secondary-button"
               onClick={exportExcel}
-              disabled={!records.length}
+              disabled={
+                loading ||
+                exporting ||
+                !pagination.total
+              }
             >
-              <FiDownload /> Excel
+              <FiDownload />
+              {exporting ? "Preparing..." : "Excel"}
             </button>
 
             <button
               type="button"
               className="expense-report-secondary-button"
               onClick={exportPDF}
-              disabled={!records.length}
+              disabled={
+                loading ||
+                exporting ||
+                !pagination.total
+              }
             >
-              <FiFileText /> PDF
+              <FiFileText />
+              {exporting ? "Preparing..." : "PDF"}
             </button>
 
             <button
               type="button"
               className="expense-report-secondary-button"
               onClick={() => window.print()}
+              disabled={loading || exporting}
             >
               <FiPrinter /> Print
             </button>
@@ -516,7 +704,7 @@ const ExpenseReports = () => {
         ) : !records.length ? (
           <div className="expense-report-state">
             {hasLoaded
-              ? "No expense records match the selected filters."
+              ? "No expense records match the applied filters."
               : "No expense records found."}
           </div>
         ) : (
@@ -546,13 +734,17 @@ const ExpenseReports = () => {
                         </small>
                       )}
                     </td>
+
                     <td>{expense.category || "-"}</td>
+
                     <td className="expense-report-amount">
                       {formatCurrency(expense.amount)}
                     </td>
+
                     <td>{formatDate(expense.expenseDate)}</td>
                     <td>{expense.paymentMethod || "-"}</td>
                     <td>{expense.vendor || "-"}</td>
+
                     <td>
                       <span
                         className={`expense-report-status ${
@@ -564,6 +756,7 @@ const ExpenseReports = () => {
                         {expense.status || "-"}
                       </span>
                     </td>
+
                     <td>
                       {expense.receiptUrl ? (
                         <span className="expense-report-receipt">
@@ -584,7 +777,10 @@ const ExpenseReports = () => {
 
         <div className="expense-report-pagination">
           <span>
-            Showing {records.length ? (pagination.page - 1) * pagination.limit + 1 : 0}
+            Showing{" "}
+            {records.length
+              ? (pagination.page - 1) * pagination.limit + 1
+              : 0}
             {"–"}
             {(pagination.page - 1) * pagination.limit + records.length}
             {" of "}
@@ -595,8 +791,14 @@ const ExpenseReports = () => {
             <button
               type="button"
               className="expense-report-secondary-button"
-              disabled={loading || (pagination.page || 1) <= 1}
-              onClick={() => setPage((current) => Math.max(current - 1, 1))}
+              disabled={
+                loading ||
+                exporting ||
+                (pagination.page || 1) <= 1
+              }
+              onClick={() =>
+                setPage((current) => Math.max(current - 1, 1))
+              }
             >
               Previous
             </button>
@@ -606,11 +808,16 @@ const ExpenseReports = () => {
               className="expense-report-secondary-button"
               disabled={
                 loading ||
-                (pagination.page || 1) >= (pagination.totalPages || 1)
+                exporting ||
+                (pagination.page || 1) >=
+                  (pagination.totalPages || 1)
               }
               onClick={() =>
                 setPage((current) =>
-                  Math.min(current + 1, pagination.totalPages || 1)
+                  Math.min(
+                    current + 1,
+                    pagination.totalPages || 1
+                  )
                 )
               }
             >
@@ -624,7 +831,10 @@ const ExpenseReports = () => {
         <div className="expense-report-section-heading">
           <div>
             <h2>Category Breakdown</h2>
-            <p>Total spending grouped by expense category for the selected filters.</p>
+            <p>
+              Total spending grouped by expense category for the
+              applied filters.
+            </p>
           </div>
         </div>
 
@@ -643,6 +853,7 @@ const ExpenseReports = () => {
                   <strong>{item._id || "Other"}</strong>
                   <small>{item.count || 0} records</small>
                 </div>
+
                 <strong>{formatCurrency(item.amount)}</strong>
               </div>
             ))}
