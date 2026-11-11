@@ -653,3 +653,22 @@
     gap: 7px;
   }
 }
+
+
+
+
+
+
+
+/* Attendance report student details search */
+.common-card-filters .input-search input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.common-card-filters .input-search input[type="text"]:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}

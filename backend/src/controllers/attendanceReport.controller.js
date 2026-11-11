@@ -1,8 +1,12 @@
 
 import mongoose from "mongoose";
 import Attendance from "../models/Attendance.js";
+import Student from "../models/Student.js";
 
 const validStatuses = ["Present", "Absent", "Leave", "Late"];
+
+const escapeRegex = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const parseDate = (value) => {
   if (!value) return null;
@@ -40,6 +44,7 @@ export const getAttendanceReport = async (req, res, next) => {
       course_id,
       batch_id,
       student_id,
+      student_search = "",
       status,
     } = req.query;
 
@@ -89,6 +94,66 @@ export const getAttendanceReport = async (req, res, next) => {
         }
 
         filter[key] = new mongoose.Types.ObjectId(value);
+      }
+    }
+
+    // Search students by their personal and contact details.
+    const searchText =
+      typeof student_search === "string"
+        ? student_search.trim()
+        : "";
+
+    if (searchText.length > 100) {
+      return sendError(
+        res,
+        400,
+        "Student search cannot exceed 100 characters."
+      );
+    }
+
+    if (searchText) {
+      const searchRegex = new RegExp(
+        escapeRegex(searchText),
+        "i"
+      );
+
+      const matchingStudents = await Student.find({
+        $or: [
+          { firstName: searchRegex },
+          { surname: searchRegex },
+          { fatherName: searchRegex },
+          { motherName: searchRegex },
+          { rollNo: searchRegex },
+          { mobile: searchRegex },
+          { alternateMobile: searchRegex },
+          { email: searchRegex },
+          { address: searchRegex },
+          { pincode: searchRegex },
+        ],
+      })
+        .select("_id")
+        .lean();
+
+      const matchingStudentIds = matchingStudents.map(
+        (student) => student._id
+      );
+
+      // Combine text search with an exact student_id filter
+      // if another client still sends student_id.
+      if (student_id) {
+        const exactId = String(student_id);
+
+        const isMatch = matchingStudentIds.some(
+          (id) => String(id) === exactId
+        );
+
+        filter.student_id = isMatch
+          ? new mongoose.Types.ObjectId(exactId)
+          : { $in: [] };
+      } else {
+        filter.student_id = {
+          $in: matchingStudentIds,
+        };
       }
     }
 

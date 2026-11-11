@@ -7,6 +7,8 @@ import {
   FiRefreshCw,
   FiSearch,
 } from "react-icons/fi";
+
+
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -20,7 +22,16 @@ import { RiFileExcel2Line } from "react-icons/ri";
 import { getAttendanceReport } from "../../../services/attendanceReportService";
 import { getCourses } from "../../../services/courseService";
 import { getBatches } from "../../../services/batchService";
-import { getStudents } from "../../../services/studentService";
+// import { getStudents } from "../../../services/studentService";
+import notification, {
+  getApiErrorMessage,
+} from "../../../utils/notification";
+
+import {
+  fetchAllReportPages,
+} from "../../../utils/fetchAllReportPages";
+
+
 import { FaUserFriends, FaUserTimes } from "react-icons/fa";
 import { FaUserCheck } from "react-icons/fa6";
 import { getAssetUrl } from "../../../utils/assetUrl";
