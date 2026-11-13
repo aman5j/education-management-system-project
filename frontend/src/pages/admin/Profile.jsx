@@ -248,17 +248,23 @@ const CheckField = ({
 //   );
 // };
 
+
+
 const ImageUploader = ({
   title,
   previewTitle,
   value,
   uploading,
   onChange,
+  fallback = "",
 }) => {
   const [previewError, setPreviewError] = useState(false);
 
   const imageUrl = getAssetUrl(value);
-  const showUploadedImage = Boolean(imageUrl) && !previewError;
+  const displayUrl =
+    imageUrl && !previewError
+      ? imageUrl
+      : fallback;
 
   useEffect(() => {
     setPreviewError(false);
@@ -279,7 +285,6 @@ const ImageUploader = ({
 
         <label className="admin-profile-browse-button">
           Browse files
-
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -294,31 +299,27 @@ const ImageUploader = ({
         <span>{previewTitle}</span>
 
         <div className="admin-profile-preview-canvas">
-          <img
-            key={
-              showUploadedImage
-                ? imageUrl
-                : DEFAULT_INSTITUTE_LOGO
-            }
-            src={
-              showUploadedImage
-                ? imageUrl
-                : DEFAULT_INSTITUTE_LOGO
-            }
-            alt={previewTitle}
-            onError={
-              showUploadedImage
-                ? () => setPreviewError(true)
-                : undefined
-            }
-          />
+          {displayUrl ? (
+            <img
+              key={displayUrl}
+              src={displayUrl}
+              alt={previewTitle}
+              onError={
+                imageUrl && !previewError
+                  ? () => setPreviewError(true)
+                  : undefined
+              }
+            />
+          ) : (
+            <small>No image uploaded</small>
+          )}
 
-          {!showUploadedImage && (
-            <small>Default India Tech Samadhaan logo</small>
+          {fallback && (!imageUrl || previewError) && (
+            <small>Default institute branding</small>
           )}
         </div>
 
-        {showUploadedImage && (
+        {imageUrl && !previewError && (
           <a
             className="preview-image tooltip"
             data-tooltip="View Full Image"
@@ -334,6 +335,8 @@ const ImageUploader = ({
     </div>
   );
 };
+
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -527,10 +530,14 @@ const Profile = () => {
         previewTitle={previewTitle}
         value={settings[fieldName]}
         uploading={Boolean(uploading[assetType])}
-        onChange={(event) =>
-          handleImageUpload(event, assetType)
+        onChange={(event) => handleImageUpload(event, assetType)}
+        fallback={
+          assetType === "logo"
+            ? DEFAULT_INSTITUTE_LOGO
+            : ""
         }
       />
+
     </div>
   );
 
@@ -763,13 +770,6 @@ const Profile = () => {
                   : DEFAULT_INSTITUTE_LOGO
               }
               alt={`${settings.instituteName || "Institute"} logo`}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                padding: "8px",
-                background: "#ffffff",
-              }}
               onError={() => setProfileLogoFailed(true)}
             />
           </div>

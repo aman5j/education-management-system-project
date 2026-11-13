@@ -1,5 +1,8 @@
 
 import InstituteSettings from "../models/InstituteSettings.js";
+import crypto from "crypto";
+import InstituteLogo from "../models/InstituteLogo.js";
+
 
 const DEFAULT_SETTINGS = {
   key: "default",
@@ -226,14 +229,166 @@ const saveImageUrl = async (req, res, fieldName, label) => {
   });
 };
 
+const detectLogoMimeType = (buffer) => {
+  if (!Buffer.isBuffer(buffer)) return null;
 
-export const uploadInstituteLogo = async (req, res, next) => {
+  // PNG
+  if (
+    buffer.length >= 8 &&
+    buffer.subarray(0, 8).equals(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    )
+  ) {
+    return "image/png";
+  }
+
+  // JPEG
+  if (
+    buffer.length >= 3 &&
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff
+  ) {
+    return "image/jpeg";
+  }
+
+  // WEBP
+  if (
+    buffer.length >= 12 &&
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "image/webp";
+  }
+
+  return null;
+};
+
+
+
+export const getInstituteLogo = async (req, res, next) => {
   try {
-    return await saveImageUrl(req, res, "logoUrl", "Institute logo");
+    const logo = await InstituteLogo.findOne({
+      version: req.params.version,
+    }).lean();
+
+    if (!logo) {
+      return res.status(404).json({
+        success: false,
+        message: "Institute logo not found.",
+      });
+    }
+
+    const etag = `"${logo.version}"`;
+
+    res.set({
+      "Content-Type": logo.contentType,
+      "Content-Length": String(logo.size),
+      "Cache-Control": "public, max-age=31536000, immutable",
+      ETag: etag,
+      "X-Content-Type-Options": "nosniff",
+    });
+
+    if (req.headers["if-none-match"] === etag) {
+      return res.status(304).end();
+    }
+
+    return res.status(200).send(logo.data);
   } catch (error) {
     next(error);
   }
 };
+
+
+
+
+// export const uploadInstituteLogo = async (req, res, next) => {
+//   try {
+//     return await saveImageUrl(req, res, "logoUrl", "Institute logo");
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+export const uploadInstituteLogo = async (req, res, next) => {
+  try {
+    if (!req.file?.buffer) {
+      return sendError(res, 400, "Please select an institute logo.");
+    }
+
+    const detectedMimeType = detectLogoMimeType(req.file.buffer);
+
+    if (
+      !detectedMimeType ||
+      detectedMimeType !== req.file.mimetype
+    ) {
+      return sendError(
+        res,
+        400,
+        "The selected file is not a valid JPG, PNG, or WEBP image."
+      );
+    }
+
+    const version = crypto.randomUUID();
+
+    // Persist the actual image in MongoDB Atlas.
+    await InstituteLogo.create({
+      version,
+      contentType: detectedMimeType,
+      data: req.file.buffer,
+      size: req.file.size,
+      updatedBy: req.user._id,
+    });
+
+    // Store a versioned, permanent URL in institute settings.
+    const logoUrl = `/api/institute-settings/logo/${version}`;
+
+    const settings = await InstituteSettings.findOneAndUpdate(
+      { key: "default" },
+      {
+        $set: {
+          logoUrl,
+          updatedBy: req.user._id,
+        },
+        $setOnInsert: {
+          key: "default",
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      }
+    );
+
+    // Retain the latest five logo versions for safe cache transitions.
+    const olderLogos = await InstituteLogo.find({
+      version: { $ne: version },
+    })
+      .sort({ createdAt: -1 })
+      .skip(4)
+      .select("_id")
+      .lean();
+
+    if (olderLogos.length) {
+      await InstituteLogo.deleteMany({
+        _id: { $in: olderLogos.map((item) => item._id) },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Institute logo uploaded successfully.",
+      data: { settings },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 export const uploadInstituteSettingsAsset = async (req, res, next) => {
   try {

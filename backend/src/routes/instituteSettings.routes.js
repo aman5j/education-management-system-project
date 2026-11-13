@@ -4,6 +4,7 @@ import express from "express";
 import {
   getInstituteSettings,
   getPublicInstituteBranding,
+  getInstituteLogo,
   updateInstituteSettings,
   uploadInstituteLogo as saveInstituteLogo,
   uploadInstituteSettingsAsset,
@@ -23,6 +24,8 @@ const router = express.Router();
 
 // Public, read-only branding for login and other public pages.
 router.get("/public-branding", getPublicInstituteBranding);
+
+router.get("/logo/:version", getInstituteLogo);
 
 
 // --- Protected Routes ---

@@ -34,15 +34,17 @@ import {
 } from "react-router-dom";
 
 import "./AdminLayout.css";
-import logo from "../assets/logo.png";
+// import defaultLogo from "../assets/logo.png";
+// import logo from "../assets/logo.png";
 
 import { useEffect, useState } from "react";
 // import { useAuth } from "../context/AuthContext";
 import instituteSettingsService from "../services/instituteSettingsService";
 import { getAssetUrl } from "../utils/assetUrl";
-import defaultLogo from "../assets/logo.png";
 
-
+const DEFAULT_INSTITUTE_LOGO =
+  // "/india-tech-samadhaan-logo.png";
+  "/default-institute-logo.png";
 
 const menuItems = [
   {
@@ -542,9 +544,9 @@ const Sidebar = ({
   }, []);
 
   const displayedLogo =
-    instituteLogo && !logoLoadFailed
-      ? getAssetUrl(instituteLogo)
-      : defaultLogo;
+  instituteLogo && !logoLoadFailed
+    ? getAssetUrl(instituteLogo)
+    : DEFAULT_INSTITUTE_LOGO;
 
 
   // 1. Add auth and visible menu calculation here
