@@ -52,9 +52,12 @@ const EMPTY_SETTINGS = {
   showOwnerOnCertificate: false,
 };
 
+// const DEFAULT_INSTITUTE_LOGO =
+//   // "/india-tech-samadhaan-logo.png";
+//   "/Default Institute logo.png";
+
 const DEFAULT_INSTITUTE_LOGO =
-  // "/india-tech-samadhaan-logo.png";
-  "/Default Institute logo.png";
+  "/Default%20Institute%20logo.png";
 
 
 

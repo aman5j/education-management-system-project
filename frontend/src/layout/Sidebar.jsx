@@ -42,9 +42,12 @@ import { useEffect, useState } from "react";
 import instituteSettingsService from "../services/instituteSettingsService";
 import { getAssetUrl } from "../utils/assetUrl";
 
+// const DEFAULT_INSTITUTE_LOGO =
+//   // "/india-tech-samadhaan-logo.png";
+//   "/default-institute-logo.png";
+
 const DEFAULT_INSTITUTE_LOGO =
-  // "/india-tech-samadhaan-logo.png";
-  "/default-institute-logo.png";
+  "/Default%20Institute%20logo.png";
 
 const menuItems = [
   {
@@ -511,10 +514,18 @@ const Sidebar = ({
 
     const loadInstituteLogo = async () => {
       try {
-        const settings = await instituteSettingsService.getSettings();
+        // const settings = await instituteSettingsService.getSettings();
+
+        // if (mounted) {
+        //   setInstituteLogo(settings?.logoUrl || "");
+        //   setLogoLoadFailed(false);
+        // }
+
+        const branding =
+          await instituteSettingsService.getPublicBranding();
 
         if (mounted) {
-          setInstituteLogo(settings?.logoUrl || "");
+          setInstituteLogo(branding?.logoUrl || "");
           setLogoLoadFailed(false);
         }
       } catch (error) {
@@ -603,11 +614,24 @@ const visibleMenuItems =
             onClick={onCloseMobile}
           >
             {/* <img src={logo}  alt="Logo" className="sidebar-logo"/> */}
+            {/* <img
+              src={displayedLogo}
+              alt="Institute Logo"
+              className="sidebar-logo"
+              onError={() => setLogoLoadFailed(true)}
+            /> */}
             <img
               src={displayedLogo}
               alt="Institute Logo"
               className="sidebar-logo"
               onError={() => setLogoLoadFailed(true)}
+              style={{
+                display: "block",
+                width: "100%",
+                maxWidth: "190px",
+                height: "48px",
+                objectFit: "contain",
+              }}
             />
           </NavLink>
 
