@@ -36,6 +36,7 @@ import feeReportRoutes from "./routes/feeReport.routes.js";
 import pendingFeeReportRoutes from "./routes/pendingFeeReport.routes.js";
 import expenseReportRoutes from "./routes/expenseReport.routes.js";
 import attendanceReportRoutes from "./routes/attendanceReport.routes.js";
+import alertNoticeRoutes from "./routes/alertNotice.routes.js";
 
 
 import notificationRoutes from "./routes/notification.routes.js";
@@ -269,6 +270,12 @@ app.use(
   "/api/notifications",
   notificationRoutes
 );
+
+app.use(
+  "/api/alert-notices",
+  alertNoticeRoutes
+);
+
 
 app.use("/api/subjects", subjectRoutes);
 

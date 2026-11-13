@@ -1,0 +1,133 @@
+
+.student-alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(10, 18, 32, 0.76);
+  backdrop-filter: blur(3px);
+  animation: studentAlertFadeIn 180ms ease;
+}
+
+.student-alert-modal {
+  position: relative;
+  width: min(590px, 92vw);
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: studentAlertScaleIn 200ms ease;
+}
+
+.student-alert-image {
+  display: block;
+  max-width: 100%;
+  max-height: 86vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.student-alert-close {
+  position: absolute;
+  z-index: 2;
+  top: -17px;
+  right: -17px;
+  display: grid;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.25);
+  font-size: 23px;
+  cursor: pointer;
+}
+
+.student-alert-close:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.student-alert-counter {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 12px;
+}
+
+.student-alert-image-error {
+  width: 100%;
+  padding: 35px;
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+}
+
+.student-alert-image-error p {
+  color: #64748b;
+}
+
+.student-alert-image-error button {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #1557d5;
+  color: #fff;
+  cursor: pointer;
+}
+
+@keyframes studentAlertFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes studentAlertScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .student-alert-overlay {
+    padding: 18px;
+  }
+
+  .student-alert-modal {
+    width: 100%;
+  }
+
+  .student-alert-image {
+    max-width: 100%;
+    max-height: 82vh;
+  }
+
+  .student-alert-close {
+    top: -13px;
+    right: -10px;
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-alert-overlay,
+  .student-alert-modal {
+    animation: none;
+  }
+}

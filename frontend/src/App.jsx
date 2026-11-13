@@ -63,6 +63,10 @@ import AddStudent from "./pages/admin/students/AddStudent";
 import EditStudent from "./pages/admin/students/EditStudent";
 import StudentDetails from "./pages/admin/students/StudentDetails";
 
+
+import AlertNoticeManagement from "./pages/admin/alertNotices/AlertNoticeManagement";
+
+
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
 import EditAdmission from "./pages/admin/admissions/EditAdmission";
@@ -337,6 +341,14 @@ const App = () => {
 
         {/* Notifications */}
         <Route path="notifications" element={<Notifications />} />
+
+
+        {/* Alert Notice Management */}
+        <Route
+          path="alert-notices"
+          element={<AlertNoticeManagement />}
+        />
+        
 
         {/* Attendance */}
         {/* <Route path="attendance" element={<Attendance />} /> */}

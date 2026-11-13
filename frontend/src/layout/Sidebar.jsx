@@ -21,6 +21,7 @@ import {
   FiHelpCircle,
   FiX,
   FiBook,
+  FiBell,
   // FiClipboard,
 } from "react-icons/fi";
 import { HiOutlineBars3 } from "react-icons/hi2";
@@ -137,6 +138,13 @@ const menuItems = [
     label: "HelpDesk & Support",
     path: "/admin/support",
     icon: FiHelpCircle,
+  },
+
+  {
+    label: "Alert Notice",
+    path: "/admin/alert-notices",
+    icon: FiBell,
+    adminOnly: true,
   },
 
   {
@@ -339,6 +347,7 @@ const PATH_PERMISSION_MAP = {
   "/admin/assignments": "assignments.view",
 
   "/admin/support": "settings.manage",
+  "/admin/alert-notices": "settings.manage",
 
   "/admin/website-editor": "website.view",
   "/admin/pages": "website.view",
@@ -423,6 +432,14 @@ const filterMenuItemsByPermission = (
 
   return items
     .map((item) => {
+      
+      if (
+        dashboardPath === "/staff/dashboard" &&
+        item.adminOnly
+      ) {
+        return null;
+      }
+
       if (item.label === "Dashboard") {
         return {
           ...item,

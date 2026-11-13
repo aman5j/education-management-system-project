@@ -6,6 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import defaultLogo from "../assets/logo.png";
 import instituteSettingsService from "../services/instituteSettingsService";
 import { getAssetUrl } from "../utils/assetUrl";
+import StudentAlertNoticePopup from "../components/student/StudentAlertNoticePopup";
+
 
 import StudentSidebar from "./StudentSidebar";
 import StudentTopbar from "./StudentTopbar";
@@ -107,6 +109,8 @@ export default function StudentLayout() {
           onLogout={handleLogout}
           onProfile={() => navigate("/student/profile")}
         />
+
+        <StudentAlertNoticePopup />
 
         {notice && (
           <div className="student-layout__notice" role="status">
