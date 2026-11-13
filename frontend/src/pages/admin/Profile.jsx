@@ -52,6 +52,12 @@ const EMPTY_SETTINGS = {
   showOwnerOnCertificate: false,
 };
 
+const DEFAULT_INSTITUTE_LOGO =
+  // "/india-tech-samadhaan-logo.png";
+  "/Default Institute logo.png";
+
+
+
 const EMPTY_ADMIN = {
   name: "",
   email: "",
@@ -164,6 +170,84 @@ const CheckField = ({
   </label>
 );
 
+// const ImageUploader = ({
+//   title,
+//   previewTitle,
+//   value,
+//   uploading,
+//   onChange,
+// }) => {
+//   const [previewError, setPreviewError] = useState(false);
+
+//   const imageUrl = getAssetUrl(value);
+
+//   useEffect(() => {
+//     setPreviewError(false);
+//   }, [imageUrl]);
+
+//   return (
+//     <div className="admin-profile-upload-row">
+//       <div className="admin-profile-upload-box">
+//         <span className="admin-profile-upload-icon">
+//           <FiUpload />
+//         </span>
+
+//         <strong>
+//           {uploading ? "Uploading..." : `Upload ${title}`}
+//         </strong>
+
+//         <small>JPG, PNG or WEBP · Maximum 2 MB</small>
+
+//         <label className="admin-profile-browse-button">
+//           Browse files
+
+//           <input
+//             type="file"
+//             accept="image/jpeg,image/png,image/webp"
+//             hidden
+//             disabled={uploading}
+//             onChange={onChange}
+//           />
+//         </label>
+//       </div>
+
+//       <div className="admin-profile-preview-box">
+//         <span>{previewTitle}</span>
+
+//         <div className="admin-profile-preview-canvas">
+//           {imageUrl && !previewError ? (
+//             <img
+//               key={imageUrl}
+//               src={imageUrl}
+//               alt={previewTitle}
+//               onError={() => setPreviewError(true)}
+//             />
+//           ) : (
+//             <small>
+//               {previewError
+//                 ? "Image could not be loaded. Check the backend URL."
+//                 : "No image uploaded"}
+//             </small>
+//           )}
+//         </div>
+
+//         {imageUrl && !previewError && (
+//           <a
+//             className="preview-image tooltip"
+//             data-tooltip="View Full Image"
+//             href={imageUrl}
+//             target="_blank"
+//             rel="noreferrer"
+//             aria-label={`View ${previewTitle}`}
+//           >
+//             <FiEye />
+//           </a>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
 const ImageUploader = ({
   title,
   previewTitle,
@@ -174,6 +258,7 @@ const ImageUploader = ({
   const [previewError, setPreviewError] = useState(false);
 
   const imageUrl = getAssetUrl(value);
+  const showUploadedImage = Boolean(imageUrl) && !previewError;
 
   useEffect(() => {
     setPreviewError(false);
@@ -209,23 +294,31 @@ const ImageUploader = ({
         <span>{previewTitle}</span>
 
         <div className="admin-profile-preview-canvas">
-          {imageUrl && !previewError ? (
-            <img
-              key={imageUrl}
-              src={imageUrl}
-              alt={previewTitle}
-              onError={() => setPreviewError(true)}
-            />
-          ) : (
-            <small>
-              {previewError
-                ? "Image could not be loaded. Check the backend URL."
-                : "No image uploaded"}
-            </small>
+          <img
+            key={
+              showUploadedImage
+                ? imageUrl
+                : DEFAULT_INSTITUTE_LOGO
+            }
+            src={
+              showUploadedImage
+                ? imageUrl
+                : DEFAULT_INSTITUTE_LOGO
+            }
+            alt={previewTitle}
+            onError={
+              showUploadedImage
+                ? () => setPreviewError(true)
+                : undefined
+            }
+          />
+
+          {!showUploadedImage && (
+            <small>Default India Tech Samadhaan logo</small>
           )}
         </div>
 
-        {imageUrl && !previewError && (
+        {showUploadedImage && (
           <a
             className="preview-image tooltip"
             data-tooltip="View Full Image"
@@ -269,6 +362,12 @@ const Profile = () => {
   const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD);
 
   const hasUploadingImage = Object.values(uploading).some(Boolean);
+
+  const [profileLogoFailed, setProfileLogoFailed] = useState(false);
+
+  useEffect(() => {
+    setProfileLogoFailed(false);
+  }, [settings.logoUrl]);
 
   useEffect(() => {
     let mounted = true;
@@ -635,7 +734,7 @@ const Profile = () => {
             {user?.status || "active"}
           </span>
 
-          <div className="admin-profile-avatar">
+          {/* <div className="admin-profile-avatar">
             {settings.logoUrl ? (
               <img
                 src={getAssetUrl(settings.logoUrl)}
@@ -654,6 +753,25 @@ const Profile = () => {
             ) : (
               getInitials(settings.instituteName || "Institute")
             )}
+          </div> */}
+
+          <div className="admin-profile-avatar">
+            <img
+              src={
+                settings.logoUrl && !profileLogoFailed
+                  ? getAssetUrl(settings.logoUrl)
+                  : DEFAULT_INSTITUTE_LOGO
+              }
+              alt={`${settings.instituteName || "Institute"} logo`}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                padding: "8px",
+                background: "#ffffff",
+              }}
+              onError={() => setProfileLogoFailed(true)}
+            />
           </div>
 
           <div className="admin-profile-identity">
