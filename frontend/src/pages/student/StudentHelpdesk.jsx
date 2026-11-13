@@ -83,6 +83,47 @@ const timeAgo = (value) => {
 const statusClass = (status = "Open") =>
   status.toLowerCase().replace(/\s+/g, "-");
 
+
+const getStudentImageUrl = (imagePath) => {
+  if (!imagePath || typeof imagePath !== "string") return "";
+
+  const image = imagePath.trim();
+
+  // Keep absolute image URLs unchanged.
+  if (/^(https?:|data:|blob:)/i.test(image)) {
+    return image;
+  }
+
+  const apiUrl =
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+  const serverOrigin = apiUrl
+    .replace(/\/api\/?$/i, "")
+    .replace(/\/+$/, "");
+
+  return `${serverOrigin}/${image.replace(/^\/+/, "")}`;
+};
+
+const getStudentName = (student) => {
+  if (!student) return "Student";
+
+  return [student.firstName, student.surname]
+    .filter(Boolean)
+    .join(" ") || "Student";
+};
+
+const getStudentInitials = (student) => {
+  const name = getStudentName(student);
+
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+};
+
+
 export default function StudentHelpdesk() {
   const [stats, setStats] = useState({
     total: 0,
@@ -463,6 +504,11 @@ export default function StudentHelpdesk() {
 
                       <div className="sh-message__author">
                         <strong>{isStudent ? "You" : "Support Team"}</strong>
+                        {/* <strong>
+                          {isStudent
+                            ? getStudentName(selectedTicket.student_id)
+                            : "Support Team"}
+                        </strong> */}
                         <time>{formatDate(message.createdAt)}</time>
                       </div>
 
@@ -472,12 +518,34 @@ export default function StudentHelpdesk() {
 
                     </div>
 
-                    {isStudent && (
+                    {/* {isStudent && (
                       <div className="sh-message__avatar sh-message__avatar--student">
                                               <img src="http://localhost:5000/uploads/students/1793941567490-portrait-business-woman-with-enthusiastic-face-expression-smiling-looking-confident-standing-s_1258-88087.png" alt="profile " />
 
                       </div>
+                    )} */}
+
+                    
+                    {isStudent && (
+                      <div className="sh-message__avatar sh-message__avatar--student">
+                        {getStudentInitials(selectedTicket.student_id)}
+
+                        {getStudentImageUrl(
+                          selectedTicket.student_id?.profileImage
+                        ) && (
+                          <img
+                            src={getStudentImageUrl(
+                              selectedTicket.student_id?.profileImage
+                            )}
+                            alt={getStudentName(selectedTicket.student_id)}
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
+                      </div>
                     )}
+
 
                   </div>
                 );
