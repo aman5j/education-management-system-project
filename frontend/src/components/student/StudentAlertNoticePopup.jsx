@@ -4,7 +4,6 @@ import { FiX } from "react-icons/fi";
 
 import {
   getStudentAlertNotices,
-  dismissStudentAlertNotice,
 } from "../../services/alertNoticeService";
 
 import { getAssetUrl } from "../../utils/assetUrl";
@@ -49,19 +48,10 @@ export default function StudentAlertNoticePopup() {
     setImageFailed(false);
   }, [currentIndex]);
 
-  const handleClose = async () => {
-    const currentNotice = notices[currentIndex];
-
-    if (!currentNotice) return;
-
-    // Close immediately for a smooth student experience.
+  // Close only for the current page session.
+  // Do not save dismissal in the database.
+  const handleClose = () => {
     setCurrentIndex((previous) => previous + 1);
-
-    try {
-      await dismissStudentAlertNotice(currentNotice._id);
-    } catch (error) {
-      console.error("Unable to save notice dismissal:", error);
-    }
   };
 
   const currentNotice = notices[currentIndex];

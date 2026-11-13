@@ -252,30 +252,60 @@ export const deleteAlertNotice = async (req, res, next) => {
 };
 
 // STUDENT: GET ACTIVE, NOT-YET-DISMISSED NOTICES
+// export const getStudentAlertNotices = async (req, res, next) => {
+//   try {
+//     const now = new Date();
+
+//     const dismissed = await AlertNoticeDismissal.find({
+//       studentUser: req.user._id,
+//     }).select("notice").lean();
+
+//     const dismissedIds = dismissed.map((item) => item.notice);
+
+//     const notices = await AlertNotice.find({
+//       status: "Active",
+//       audience: "all",
+//       startAt: { $lte: now },
+//       $and: [
+//         {
+//           $or: [
+//             { endAt: null },
+//             { endAt: { $gte: now } },
+//           ],
+//         },
+//         {
+//           _id: { $nin: dismissedIds },
+//         },
+//       ],
+//     })
+//       .sort({ createdAt: -1 })
+//       .limit(10)
+//       .select("title image startAt endAt createdAt")
+//       .lean();
+
+//     return res.json({
+//       success: true,
+//       data: notices,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+// STUDENT: GET ALL CURRENTLY ACTIVE NOTICES
+// Previously dismissed notices must also appear after refresh/login.
 export const getStudentAlertNotices = async (req, res, next) => {
   try {
     const now = new Date();
-
-    const dismissed = await AlertNoticeDismissal.find({
-      studentUser: req.user._id,
-    }).select("notice").lean();
-
-    const dismissedIds = dismissed.map((item) => item.notice);
 
     const notices = await AlertNotice.find({
       status: "Active",
       audience: "all",
       startAt: { $lte: now },
-      $and: [
-        {
-          $or: [
-            { endAt: null },
-            { endAt: { $gte: now } },
-          ],
-        },
-        {
-          _id: { $nin: dismissedIds },
-        },
+      $or: [
+        { endAt: null },
+        { endAt: { $gte: now } },
       ],
     })
       .sort({ createdAt: -1 })
@@ -291,6 +321,7 @@ export const getStudentAlertNotices = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // STUDENT: DISMISS NOTICE
 export const dismissStudentAlertNotice = async (req, res, next) => {
