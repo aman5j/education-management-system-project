@@ -266,38 +266,40 @@ const detectLogoMimeType = (buffer) => {
 
 
 
-export const getInstituteLogo = async (req, res, next) => {
-  try {
-    const logo = await InstituteLogo.findOne({
-      version: req.params.version,
-    }).lean();
+// export const getInstituteLogo = async (req, res, next) => {
+//   try {
+//     const logo = await InstituteLogo.findOne({
+//       version: req.params.version,
+//     }).lean();
 
-    if (!logo) {
-      return res.status(404).json({
-        success: false,
-        message: "Institute logo not found.",
-      });
-    }
+//     if (!logo) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Institute logo not found.",
+//       });
+//     }
 
-    const etag = `"${logo.version}"`;
+//     const etag = `"${logo.version}"`;
 
-    res.set({
-      "Content-Type": logo.contentType,
-      "Content-Length": String(logo.size),
-      "Cache-Control": "public, max-age=31536000, immutable",
-      ETag: etag,
-      "X-Content-Type-Options": "nosniff",
-    });
+//     res.set({
+//       "Content-Type": logo.contentType,
+//       "Content-Length": String(logo.size),
+//       "Cache-Control": "public, max-age=31536000, immutable",
+//       ETag: etag,
+//       "X-Content-Type-Options": "nosniff",
+//     });
 
-    if (req.headers["if-none-match"] === etag) {
-      return res.status(304).end();
-    }
+//     if (req.headers["if-none-match"] === etag) {
+//       return res.status(304).end();
+//     }
 
-    return res.status(200).send(logo.data);
-  } catch (error) {
-    next(error);
-  }
-};
+//     return res.status(200).send(logo.data);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
 
 
 
@@ -309,6 +311,72 @@ export const getInstituteLogo = async (req, res, next) => {
 //     next(error);
 //   }
 // };
+
+
+
+export const getInstituteLogo = async (req, res, next) => {
+  try {
+    // IMPORTANT: Do not use .lean() here.
+    // Mongoose should hydrate the MongoDB binary field.
+    const logo = await InstituteLogo.findOne({
+      version: req.params.version,
+    }).select("version contentType data size");
+
+    if (!logo) {
+      return res.status(404).json({
+        success: false,
+        message: "Institute logo not found.",
+      });
+    }
+
+    // Normalize MongoDB binary data into a Node.js Buffer.
+    const rawData = logo.data;
+
+    let imageBuffer;
+
+    if (Buffer.isBuffer(rawData)) {
+      imageBuffer = rawData;
+    } else if (rawData?.buffer) {
+      const binaryBuffer = Buffer.from(rawData.buffer);
+
+      const actualLength = Number.isInteger(rawData.position)
+        ? rawData.position
+        : binaryBuffer.length;
+
+      imageBuffer = binaryBuffer.subarray(0, actualLength);
+    } else if (rawData && typeof rawData.value === "function") {
+      imageBuffer = Buffer.from(rawData.value(true));
+    } else {
+      imageBuffer = Buffer.from(rawData || []);
+    }
+
+    if (!imageBuffer.length) {
+      return res.status(500).json({
+        success: false,
+        message: "Institute logo data is empty or invalid.",
+      });
+    }
+
+    const etag = `"${logo.version}"`;
+
+    res.set({
+      "Content-Type": logo.contentType,
+      "Content-Length": String(imageBuffer.length),
+      "Cache-Control": "public, max-age=31536000, immutable",
+      ETag: etag,
+      "X-Content-Type-Options": "nosniff",
+    });
+
+    if (req.headers["if-none-match"] === etag) {
+      return res.status(304).end();
+    }
+
+    return res.status(200).end(imageBuffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 
 export const uploadInstituteLogo = async (req, res, next) => {
