@@ -8,21 +8,22 @@ import {
   FiCamera,
   FiSave,
   FiRefreshCw,
-  FiAlertCircle,
-  FiCheckCircle,
   FiEye,
   FiEyeOff,
 } from "react-icons/fi";
 import { FaIdCard } from "react-icons/fa";
 import { IoMdInformationCircle } from "react-icons/io";
-
+import { MdOutgoingMail } from "react-icons/md";
+import { IoIosCall } from "react-icons/io";
 
 import { useAuth } from "../../context/AuthContext";
 import studentPortalService from "../../services/studentPortalService";
 import { getAssetUrl } from "../../utils/assetUrl";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
+
 import "./StudentProfile.css";
-import { MdOutgoingMail } from "react-icons/md";
-import { IoIosCall } from "react-icons/io";
 
 const initialForm = {
   firstName: "",
@@ -47,8 +48,7 @@ const getDateInput = (value) => {
 };
 
 const errorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
+  getApiErrorMessage(error) ||
   "Something went wrong. Please try again.";
 
 export default function StudentProfile() {
@@ -60,11 +60,11 @@ export default function StudentProfile() {
   const [form, setForm] = useState(initialForm);
   const [student, setStudent] = useState(null);
   const [loginEmail, setLoginEmail] = useState(user?.email || "");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -80,17 +80,19 @@ export default function StudentProfile() {
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
       const response = await studentPortalService.getMyProfile();
+
       const data = response?.data || {};
       const profile = data.student || {};
       const account = data.account || {};
 
       setStudent(profile);
-      setLoginEmail(account.email || user?.email || profile.email || "");
+
+      setLoginEmail(
+        account.email || user?.email || profile.email || ""
+      );
 
       setForm({
         firstName: profile.firstName || "",
@@ -109,7 +111,7 @@ export default function StudentProfile() {
         updateUser({ name: account.name });
       }
     } catch (err) {
-      setError(errorMessage(err));
+      notification.error(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -130,11 +132,11 @@ export default function StudentProfile() {
 
   const handleSaveProfile = async (event) => {
     event.preventDefault();
-    setError("");
-    setSuccess("");
 
     if (form.firstName.trim().length < 2) {
-      setError("First name must contain at least 2 characters.");
+      notification.warning(
+        "First name must contain at least 2 characters."
+      );
       return;
     }
 
@@ -162,19 +164,20 @@ export default function StudentProfile() {
       }
 
       if (response?.data?.account?.name) {
-        updateUser({ name: response.data.account.name });
+        updateUser({
+          name: response.data.account.name,
+        });
       }
 
-      // Keep the account email displayed as the login email.
       if (response?.data?.account?.email) {
         setLoginEmail(response.data.account.email);
       }
 
-      setSuccess(
+      notification.success(
         response?.message || "Profile updated successfully."
       );
     } catch (err) {
-      setError(errorMessage(err));
+      notification.error(errorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -186,21 +189,27 @@ export default function StudentProfile() {
 
     if (!file) return;
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
 
     if (!allowedTypes.includes(file.type)) {
-      setError("Choose a JPG, PNG or WEBP image.");
+      notification.warning(
+        "Choose a JPG, PNG or WEBP image."
+      );
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("Profile photo must be 5 MB or smaller.");
+      notification.warning(
+        "Profile photo must be 5 MB or smaller."
+      );
       return;
     }
 
     setPhotoUploading(true);
-    setError("");
-    setSuccess("");
 
     try {
       const response =
@@ -211,9 +220,11 @@ export default function StudentProfile() {
         profileImage: response?.data?.profileImage || "",
       }));
 
-      setSuccess(response?.message || "Profile photo updated.");
+      notification.success(
+        response?.message || "Profile photo updated."
+      );
     } catch (err) {
-      setError(errorMessage(err));
+      notification.error(errorMessage(err));
     } finally {
       setPhotoUploading(false);
     }
@@ -221,25 +232,46 @@ export default function StudentProfile() {
 
   const handlePasswordChange = async (event) => {
     event.preventDefault();
-    setError("");
-    setSuccess("");
 
     if (passwordForm.newPassword.length < 8) {
-      setError("New password must contain at least 8 characters.");
+      notification.warning(
+        "New password must contain at least 8 characters."
+      );
       return;
     }
 
     if (
       passwordForm.newPassword !== passwordForm.confirmPassword
     ) {
-      setError("New password and confirmation do not match.");
+      notification.warning(
+        "New password and confirmation do not match."
+      );
       return;
     }
+
+    const confirmed = await notification.confirm({
+      title: "Change Account Password?",
+      text:
+        "Your current session will end after the password is changed. You will need to sign in again using your new password.",
+      icon: "warning",
+      confirmText: "Yes, Change Password",
+      cancelText: "Go Back",
+      confirmButtonColor: "#2563eb",
+    });
+
+    if (!confirmed) return;
+
+    setPasswordSaving(true);
 
     try {
       await changePassword(
         passwordForm.currentPassword,
-        passwordForm.newPassword
+        passwordForm.newPassword,
+        { silent: true }
+      );
+
+      notification.success(
+        "Password changed successfully. Please sign in again."
       );
 
       navigate("/login", {
@@ -250,7 +282,9 @@ export default function StudentProfile() {
         },
       });
     } catch (err) {
-      setError(errorMessage(err));
+      notification.error(errorMessage(err));
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -280,48 +314,29 @@ export default function StudentProfile() {
 
   return (
     <div className="student-profile">
-      {error && (
-        <div className="student-profile__alert student-profile__alert--error">
-          <FiAlertCircle />
-          <span>{error}</span>
-          <button type="button" onClick={() => setError("")}>
-            Dismiss
-          </button>
-        </div>
-      )}
+      <section className="common-card">
+        <div className="profile-header__banner"></div>
 
-      {success && (
-        <div className="student-profile__alert student-profile__alert--success">
-          <FiCheckCircle />
-          <span>{success}</span>
-          <button type="button" onClick={() => setSuccess("")}>
-            Dismiss
-          </button>
-        </div>
-      )}
+        <div className="profile-header__content">
+          <div className="profile-header__image">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={displayName}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                  event.currentTarget.parentElement.dataset.imageError =
+                    "true";
+                }}
+              />
+            ) : (
+              <span>
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+            )}
 
-
-<section className="common-card">
-  <div className="profile-header__banner"></div>
-
-  <div className="profile-header__content">
-    <div className="profile-header__image">
-     {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={displayName}
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-            event.currentTarget.parentElement.dataset.imageError = "true";
-          }}
-        />
-      ) : (
-        <span>
-          {displayName.charAt(0).toUpperCase()}
-        </span>
-      )}
-
-                <div className="uploadicon"> <input
+            <div className="uploadicon">
+              <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
@@ -341,50 +356,46 @@ export default function StudentProfile() {
                   <FiCamera />
                 )}
                 {photoUploading ? "Uploading..." : "Edit"}
-              </button></div>
+              </button>
+            </div>
+          </div>
 
-    </div>
+          <div className="profile-header__details">
+            <h1>{displayName}</h1>
 
-    <div className="profile-header__details">
-             <h1>{displayName}</h1>
+            {signatureUrl && (
+              <img
+                key={signatureUrl}
+                className="student-sign"
+                src={signatureUrl}
+                alt={`${displayName} signature`}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            )}
 
-        {signatureUrl && (
-          <img
-            key={signatureUrl}
-            className="student-sign"
-            src={signatureUrl}
-            alt={`${displayName} signature`}
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-            }}
-          />
-        )}
-              
+            <div className="profile-header__meta">
+              <div className="profile-header__item">
+                <FaIdCard />
+                <span>
+                  Roll No: {student?.rollNo || "—"}
+                </span>
+              </div>
 
-      <div className="profile-header__meta">
-        <div className="profile-header__item">
-          <FaIdCard />
+              <div className="profile-header__item">
+                <MdOutgoingMail />
+                <span>{student?.email || "—"}</span>
+              </div>
 
-          <span>Roll No: {student?.rollNo || "—"}</span>
+              <div className="profile-header__item">
+                <IoIosCall />
+                <span>{student?.mobile || "—"}</span>
+              </div>
+            </div>
+          </div>
         </div>
-
-     
-
-        <div className="profile-header__item">
-         <MdOutgoingMail />
-          <span>{student?.email || "—"}</span>
-        </div>
-
-         <div className="profile-header__item">
-          <IoIosCall />
-          <span> {student?.mobile || "—"}</span>
-        </div>
-       
-      </div>
-    </div>
-  </div>
-</section>
-
+      </section>
 
       <div className="student-profile__tabs" role="tablist">
         <button
@@ -423,157 +434,142 @@ export default function StudentProfile() {
           className="common-card"
           onSubmit={handleSaveProfile}
         >
-          <div class="panel-header"><div><h3>Personal Information
-</h3> 
-<p>Update your personal and contact details.</p>
-</div></div>
-         
-            
-           
-              <div className="cardbody">
-                <div className="student-profile__fields">
-                <div className="input-felid">
+          <div className="panel-header">
+            <div>
+              <h3>Personal Information</h3>
+              <p>Update your personal and contact details.</p>
+            </div>
+          </div>
+
+          <div className="cardbody">
+            <div className="student-profile__fields">
+              <div className="input-felid">
                 <label>
                   First Name <span className="required">*</span>
-                  </label>
-                  <input
-                    name="firstName"
-                    value={form.firstName}
-                    onChange={handleChange}
-                    required
-                    maxLength={80}
-                  />
-                
-                </div>
-<div className="input-felid">
-                <label>
-                  Surname
-                  </label>
-                  <input
-                    name="surname"
-                    value={form.surname}
-                    onChange={handleChange}
-                    maxLength={80}
-                  />
-                
-                </div>
+                </label>
+                <input
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handleChange}
+                  required
+                  maxLength={80}
+                />
+              </div>
 
-<div className="input-felid">
+              <div className="input-felid">
+                <label>Surname</label>
+                <input
+                  name="surname"
+                  value={form.surname}
+                  onChange={handleChange}
+                  maxLength={80}
+                />
+              </div>
+
+              <div className="input-felid">
                 <label>
                   Mobile Number <span className="required">*</span>
-                  </label>
-                  <input
-                    name="mobile"
-                    value={form.mobile}
-                    onChange={handleChange}
-                    required
-                    maxLength={20}
-                  />
-            
-
-                </div>
-<div className="input-felid">
-                <label>
-                  Alternate Mobile
-                  </label>
-                  <input
-                    name="alternateMobile"
-                    value={form.alternateMobile}
-                    onChange={handleChange}
-                    maxLength={20}
-                  />
-             
-               </div>
-
-<div className="input-felid">
-                <label  >
-                  Login Email Address  <span className="infoicon tooltip" data-tooltip=" This email is your student login ID. Contact your
-                    institute administrator if it needs to be changed." classNameinfoicon><IoMdInformationCircle />
-</span>
-                  </label>
-                  <input 
-                    type="email"
-                    value={loginEmail}
-                    readOnly
-                    aria-readonly="true"
-                    title="Your login email can only be managed by the institute administrator."
-                  />
-                 
-              
-              </div>
-
-<div className="input-felid">
-                <label>
-                  Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    name="dob"
-                    value={form.dob}
-                    onChange={handleChange}
-                  />
-                </div>
-
-<div className="input-felid">
-                <label>
-                  Gender
                 </label>
-                  <select
-                    name="gender"
-                    value={form.gender}
-                    onChange={handleChange}
+                <input
+                  name="mobile"
+                  value={form.mobile}
+                  onChange={handleChange}
+                  required
+                  maxLength={20}
+                />
+              </div>
+
+              <div className="input-felid">
+                <label>Alternate Mobile</label>
+                <input
+                  name="alternateMobile"
+                  value={form.alternateMobile}
+                  onChange={handleChange}
+                  maxLength={20}
+                />
+              </div>
+
+              <div className="input-felid">
+                <label>
+                  Login Email Address
+                  <span
+                    className="infoicon tooltip"
+                    data-tooltip="This email is your student login ID. Contact your institute administrator if it needs to be changed."
                   >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  </div>
-            
+                    <IoMdInformationCircle />
+                  </span>
+                </label>
 
-<div className="input-felid">
-                <label>
-                  Pincode
-                      </label>
-                  <input
-                    name="pincode"
-                    value={form.pincode}
-                    onChange={handleChange}
-                    maxLength={10}
-                  />
-            
-
-                </div>
-                  <div className="input-felid student-form-full">
-
-                <label>
-                  Address
-                  </label>
-                  <textarea
-
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    rows={3}
-                    maxLength={500}
-                  />
-               
-               </div>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  readOnly
+                  aria-readonly="true"
+                  title="Your login email can only be managed by the institute administrator."
+                />
               </div>
 
-              <div className="student-profile__actions">
-                <button className="themebtn" type="submit" disabled={saving}>
-                  {saving ? (
-                    <FiRefreshCw className="student-profile__spin" />
-                  ) : (
-                    <FiSave />
-                  )}
-                  {saving ? "Saving..." : "Update Profile"}
-                </button>
+              <div className="input-felid">
+                <label>Date of Birth</label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={form.dob}
+                  onChange={handleChange}
+                />
               </div>
+
+              <div className="input-felid">
+                <label>Gender</label>
+                <select
+                  name="gender"
+                  value={form.gender}
+                  onChange={handleChange}
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
-           
-         
+
+              <div className="input-felid">
+                <label>Pincode</label>
+                <input
+                  name="pincode"
+                  value={form.pincode}
+                  onChange={handleChange}
+                  maxLength={10}
+                />
+              </div>
+
+              <div className="input-felid student-form-full">
+                <label>Address</label>
+                <textarea
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  rows={3}
+                  maxLength={500}
+                />
+              </div>
+            </div>
+
+            <div className="student-profile__actions">
+              <button
+                className="themebtn"
+                type="submit"
+                disabled={saving}
+              >
+                {saving ? (
+                  <FiRefreshCw className="student-profile__spin" />
+                ) : (
+                  <FiSave />
+                )}
+                {saving ? "Saving..." : "Update Profile"}
+              </button>
+            </div>
+          </div>
         </form>
       )}
 
@@ -582,52 +578,55 @@ export default function StudentProfile() {
           className="common-card"
           onSubmit={handleSaveProfile}
         >
-
-           <div class="panel-header"><div><h3>Guardian Information
-</h3> 
-<p>Manage the parent or guardian details associated with
-              your student record.</p>
-</div></div>
-
+          <div className="panel-header">
+            <div>
+              <h3>Guardian Information</h3>
+              <p>
+                Manage the parent or guardian details associated
+                with your student record.
+              </p>
+            </div>
+          </div>
 
           <div className="cardbody">
-             <div className="student-profile__fields student-profile__guardian-fields">
-           <div className="input-felid">
-            <label>
-              Father's Name
-             </label>
-              <input
-                name="fatherName"
-                value={form.fatherName}
-                onChange={handleChange}
-                maxLength={100}
-              />
-       </div>
-
-<div className="input-felid">
-            <label>
-              Mother's Name
-              </label>
-              <input
-                name="motherName"
-                value={form.motherName}
-                onChange={handleChange}
-                maxLength={100}
-              />
+            <div className="student-profile__fields student-profile__guardian-fields">
+              <div className="input-felid">
+                <label>Father's Name</label>
+                <input
+                  name="fatherName"
+                  value={form.fatherName}
+                  onChange={handleChange}
+                  maxLength={100}
+                />
               </div>
-            
-          </div>
 
-          <div className="student-profile__actions">
-            <button className="themebtn" type="submit" disabled={saving}>
-              {saving ? (
-                <FiRefreshCw className="student-profile__spin" />
-              ) : (
-                <FiSave />
-              )}
-              {saving ? "Saving..." : "Update Guardian Details"}
-            </button>
-          </div>
+              <div className="input-felid">
+                <label>Mother's Name</label>
+                <input
+                  name="motherName"
+                  value={form.motherName}
+                  onChange={handleChange}
+                  maxLength={100}
+                />
+              </div>
+            </div>
+
+            <div className="student-profile__actions">
+              <button
+                className="themebtn"
+                type="submit"
+                disabled={saving}
+              >
+                {saving ? (
+                  <FiRefreshCw className="student-profile__spin" />
+                ) : (
+                  <FiSave />
+                )}
+                {saving
+                  ? "Saving..."
+                  : "Update Guardian Details"}
+              </button>
+            </div>
           </div>
         </form>
       )}
@@ -637,8 +636,6 @@ export default function StudentProfile() {
           className="common-card"
           onSubmit={handlePasswordChange}
         >
-         
-
           <div className="student-profile__password-fields cardbody">
             {[
               {
@@ -657,71 +654,87 @@ export default function StudentProfile() {
                 autoComplete: "new-password",
               },
             ].map((field) => (
-             
-                <div className="student-profile__password-input-wrap input-felid"  key={field.name}>
-                  <label>{field.label}</label>  
-                  <input
-                    type={
-                      passwordVisibility[field.name] ? "text" : "password"
-                    }
-                    autoComplete={field.autoComplete}
-                    minLength={
-                      field.name === "currentPassword" ? undefined : 8
-                    }
-                    value={passwordForm[field.name]}
-                    onChange={(event) =>
-                      setPasswordForm((current) => ({
-                        ...current,
-                        [field.name]: event.target.value,
-                      }))
-                    }
-                    required
-                  />
+              <div
+                className="student-profile__password-input-wrap input-felid"
+                key={field.name}
+              >
+                <label>{field.label}</label>
 
-                  <button
-                    type="button"
-                    className="student-profile__password-toggle"
-                    aria-label={
-                      passwordVisibility[field.name]
-                        ? "Hide password"
-                        : "Show password"
-                    }
-                    title={
-                      passwordVisibility[field.name]
-                        ? "Hide password"
-                        : "Show password"
-                    }
-                    onClick={() =>
-                      setPasswordVisibility((current) => ({
-                        ...current,
-                        [field.name]: !current[field.name],
-                      }))
-                    }
-                  >
-                    {passwordVisibility[field.name] ? (
-                      <FiEyeOff />
-                    ) : (
-                      <FiEye />
-                    )}
-                  </button>
-                </div>
-            
+                <input
+                  type={
+                    passwordVisibility[field.name]
+                      ? "text"
+                      : "password"
+                  }
+                  autoComplete={field.autoComplete}
+                  minLength={
+                    field.name === "currentPassword"
+                      ? undefined
+                      : 8
+                  }
+                  value={passwordForm[field.name]}
+                  onChange={(event) =>
+                    setPasswordForm((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
+                  }
+                  required
+                />
+
+                <button
+                  type="button"
+                  className="student-profile__password-toggle"
+                  aria-label={
+                    passwordVisibility[field.name]
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  title={
+                    passwordVisibility[field.name]
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  onClick={() =>
+                    setPasswordVisibility((current) => ({
+                      ...current,
+                      [field.name]: !current[field.name],
+                    }))
+                  }
+                >
+                  {passwordVisibility[field.name] ? (
+                    <FiEyeOff />
+                  ) : (
+                    <FiEye />
+                  )}
+                </button>
+              </div>
             ))}
           </div>
 
-            <div className="cardbody">
-              <div className="student-profile__password-note">
-            Your account will be signed out after the password is changed.
-            Sign in again using your new password.
-          </div>
-
-          <div className="student-profile__actions">
-            <button type="submit" className="themebtn">
-              <FiLock /> Change Password
-            </button>
-          </div>
+          <div className="cardbody">
+            <div className="student-profile__password-note">
+              Your account will be signed out after the password
+              is changed. Sign in again using your new password.
             </div>
 
+            <div className="student-profile__actions">
+              <button
+                type="submit"
+                className="themebtn"
+                disabled={passwordSaving}
+              >
+                {passwordSaving ? (
+                  <FiRefreshCw className="student-profile__spin" />
+                ) : (
+                  <FiLock />
+                )}
+                {passwordSaving
+                  ? "Changing Password..."
+                  : "Change Password"}
+              </button>
+            </div>
+          </div>
         </form>
       )}
     </div>

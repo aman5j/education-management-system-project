@@ -172,11 +172,13 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   }, []);
 
+  
   const changePassword = useCallback(
-    async (currentPassword, newPassword) => {
+    async (currentPassword, newPassword, options = {}) => {
       const response = await api.put(
         "/auth/change-password",
-        { currentPassword, newPassword }
+        { currentPassword, newPassword },
+        { silent: Boolean(options.silent) }
       );
 
       clearAccessToken();
@@ -186,6 +188,7 @@ export const AuthProvider = ({ children }) => {
     },
     []
   );
+
 
   const value = useMemo(
     () => ({

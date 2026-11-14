@@ -149,15 +149,19 @@ const studentPortalService = {
 
 
 
+
   async getMyProfile() {
-    const response = await api.get("/student-portal/profile");
+    const response = await api.get("/student-portal/profile", {
+      silent: true,
+    });
     return response.data;
   },
 
   async updateMyProfile(payload) {
     const response = await api.put(
       "/student-portal/profile",
-      payload
+      payload,
+      { silent: true }
     );
     return response.data;
   },
@@ -173,6 +177,7 @@ const studentPortalService = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        silent: true,
       }
     );
 
