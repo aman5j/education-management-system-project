@@ -179,26 +179,39 @@ const studentPortalService = {
     return response.data;
   },
 
-  /* Leave Service apis  */
-  
+
+  /* Leave Service APIs */
+
   async getMyLeaveAdmissions() {
-    const response = await api.get("/student-portal/leave/admissions");
+    const response = await api.get(
+      "/student-portal/leave/admissions",
+      { silent: true }
+    );
     return response.data;
   },
 
   async applyForLeave(payload) {
-    const response = await api.post("/student-portal/leave", payload);
+    const response = await api.post(
+      "/student-portal/leave",
+      payload,
+      { silent: true }
+    );
     return response.data;
   },
 
   async getMyLeaveRequests() {
-    const response = await api.get("/student-portal/leave");
+    const response = await api.get(
+      "/student-portal/leave",
+      { silent: true }
+    );
     return response.data;
   },
 
   async cancelMyLeaveRequest(requestId) {
     const response = await api.patch(
-      `/student-portal/leave/${requestId}/cancel`
+      `/student-portal/leave/${requestId}/cancel`,
+      {},
+      { silent: true }
     );
     return response.data;
   },

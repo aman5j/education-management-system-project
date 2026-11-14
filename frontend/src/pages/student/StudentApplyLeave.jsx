@@ -2,32 +2,30 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   FiCalendar,
-  FiClock,
   FiRefreshCw,
-  FiAlertCircle,
-  FiCheckCircle,
-  FiXCircle,
   FiFileText,
 } from "react-icons/fi";
+import { IoMdInformationCircle } from "react-icons/io";
+import { MdDateRange } from "react-icons/md";
 
 import studentPortalService from "../../services/studentPortalService";
-import "./StudentApplyLeave.css";
-import { IoIosCall, IoMdInformationCircle } from "react-icons/io";
-import { MdDateRange, MdOutgoingMail } from "react-icons/md";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
 
-const today = () => {
-  const parts = new Intl.DateTimeFormat("en-CA", {
+import "./StudentApplyLeave.css";
+
+const today = () =>
+  new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
 
-  return parts;
-};
-
 const formatDate = (value) => {
   if (!value) return "—";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
 
@@ -55,12 +53,9 @@ const formatAppliedDate = (value) => {
   });
 };
 
-const getId = (value) =>
-  typeof value === "object" ? value?._id : value;
-
-const getError = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
+const getError = (error, fallback) =>
+  getApiErrorMessage(error) ||
+  fallback ||
   "Something went wrong. Please try again.";
 
 const statusClass = (status) =>
@@ -82,36 +77,36 @@ export default function StudentApplyLeave() {
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [cancellingId, setCancellingId] = useState("");
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [activeTab, setActiveTab] = useState("apply");
 
   const loadPage = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
     else setLoading(true);
 
-    setError("");
-
     try {
-      const [admissionResponse, requestResponse] = await Promise.all([
-        studentPortalService.getMyLeaveAdmissions(),
-        studentPortalService.getMyLeaveRequests(),
-      ]);
+      const [admissionResponse, requestResponse] =
+        await Promise.all([
+          studentPortalService.getMyLeaveAdmissions(),
+          studentPortalService.getMyLeaveRequests(),
+        ]);
 
       if (!admissionResponse?.success) {
         throw new Error(
-          admissionResponse?.message || "Unable to load active admissions."
+          admissionResponse?.message ||
+            "Unable to load active admissions."
         );
       }
 
       if (!requestResponse?.success) {
         throw new Error(
-          requestResponse?.message || "Unable to load leave requests."
+          requestResponse?.message ||
+            "Unable to load leave requests."
         );
       }
 
-      const admissionList = Array.isArray(admissionResponse.data)
+      const admissionList = Array.isArray(
+        admissionResponse.data
+      )
         ? admissionResponse.data
         : [];
 
@@ -129,8 +124,16 @@ export default function StudentApplyLeave() {
           admissionList[0]?.admissionId ||
           "",
       }));
+
+      return true;
     } catch (err) {
-      setError(getError(err));
+      notification.error(
+        getError(
+          err,
+          "Unable to load your leave information."
+        )
+      );
+      return false;
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -147,7 +150,9 @@ export default function StudentApplyLeave() {
     setForm((previous) => ({
       ...previous,
       [name]: value,
-      ...(name === "from_date" && previous.to_date && value > previous.to_date
+      ...(name === "from_date" &&
+      previous.to_date &&
+      value > previous.to_date
         ? { to_date: value }
         : {}),
     }));
@@ -156,47 +161,60 @@ export default function StudentApplyLeave() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    setError("");
-    setSuccess("");
-
     if (!form.admission_id) {
-      setError("Please select an active course and batch.");
+      notification.warning(
+        "Please select an active course and batch."
+      );
       return;
     }
 
     if (!form.from_date || !form.to_date) {
-      setError("Please select both leave dates.");
+      notification.warning(
+        "Please select both leave dates."
+      );
       return;
     }
 
     if (form.from_date > form.to_date) {
-      setError("From date cannot be after To date.");
+      notification.warning(
+        "From date cannot be after To date."
+      );
       return;
     }
 
     if (form.from_date < today()) {
-      setError("You cannot apply for leave for past dates.");
+      notification.warning(
+        "You cannot apply for leave for past dates."
+      );
       return;
     }
 
     if (!form.reason.trim()) {
-      setError("Please enter the reason for leave.");
+      notification.warning(
+        "Please enter the reason for leave."
+      );
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const response = await studentPortalService.applyForLeave({
-        ...form,
-        reason: form.reason.trim(),
-      });
+      const response =
+        await studentPortalService.applyForLeave({
+          ...form,
+          reason: form.reason.trim(),
+        });
 
       if (!response?.success) {
-        throw new Error(response?.message || "Unable to submit leave request.");
+        throw new Error(
+          response?.message ||
+            "Unable to submit leave request."
+        );
       }
 
-      setSuccess("Your leave request has been submitted successfully.");
+      notification.success(
+        "Your leave request has been submitted successfully."
+      );
 
       setForm((previous) => ({
         ...previous,
@@ -208,35 +226,76 @@ export default function StudentApplyLeave() {
 
       await loadPage(true);
     } catch (err) {
-      setError(getError(err));
+      notification.error(
+        getError(
+          err,
+          "Unable to submit your leave request."
+        )
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleCancel = async (requestId) => {
-    if (!window.confirm("Are you sure you want to cancel this leave request?")) {
-      return;
-    }
+    if (!requestId || cancellingId) return;
 
-    setError("");
-    setSuccess("");
+    const confirmed = await notification.confirm({
+      title: "Cancel Leave Request?",
+      text:
+        "Are you sure you want to cancel this leave request? This action cannot be undone.",
+      icon: "warning",
+      confirmText: "Yes, Cancel Request",
+      cancelText: "Keep Request",
+      confirmButtonColor: "#dc2626",
+    });
+
+    if (!confirmed) return;
+
     setCancellingId(requestId);
 
     try {
       const response =
-        await studentPortalService.cancelMyLeaveRequest(requestId);
+        await studentPortalService.cancelMyLeaveRequest(
+          requestId
+        );
 
       if (!response?.success) {
-        throw new Error(response?.message || "Unable to cancel request.");
+        throw new Error(
+          response?.message || "Unable to cancel request."
+        );
       }
 
-      setSuccess("Leave request cancelled successfully.");
+      notification.success(
+        "Leave request cancelled successfully."
+      );
+
       await loadPage(true);
     } catch (err) {
-      setError(getError(err));
+      notification.error(
+        getError(
+          err,
+          "Unable to cancel this leave request."
+        )
+      );
     } finally {
       setCancellingId("");
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+
+    const loaded = await loadPage(true);
+
+    if (loaded) {
+      notification.success(
+        "Leave information refreshed.",
+        {
+          id: "student-leave-refresh",
+          duration: 1800,
+        }
+      );
     }
   };
 
@@ -245,47 +304,34 @@ export default function StudentApplyLeave() {
       <div className="page-header">
         <div>
           <h1>My Leave Request</h1>
-         
         </div>
 
         <button
           type="button"
           className="themebtn sl-refresh"
-          onClick={() => loadPage(true)}
+          onClick={handleRefresh}
           disabled={refreshing}
         >
-          <FiRefreshCw className={refreshing ? "sl-spin" : ""} />
+          <FiRefreshCw
+            className={refreshing ? "sl-spin" : ""}
+          />
           {refreshing ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      {error && (
-        <div className="sl-alert sl-alert--error" role="alert">
-          <FiAlertCircle />
-          <span>{error}</span>
-          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">
-            ×
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div className="sl-alert sl-alert--success" role="status">
-          <FiCheckCircle />
-          <span>{success}</span>
-          <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss message">
-            ×
-          </button>
-        </div>
-      )}
-
       <div className="sl-tabs-wrapper">
-        <div className="student-profile__tabs" role="tablist" aria-label="Leave request sections">
+        <div
+          className="student-profile__tabs"
+          role="tablist"
+          aria-label="Leave request sections"
+        >
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === "apply"}
-            className={`sl-tab ${activeTab === "apply" ? "active" : ""}`}
+            className={`sl-tab ${
+              activeTab === "apply" ? "active" : ""
+            }`}
             onClick={() => setActiveTab("apply")}
           >
             <FiFileText />
@@ -296,7 +342,9 @@ export default function StudentApplyLeave() {
             type="button"
             role="tab"
             aria-selected={activeTab === "history"}
-            className={`sl-tab ${activeTab === "history" ? "active" : ""}`}
+            className={`sl-tab ${
+              activeTab === "history" ? "active" : ""
+            }`}
             onClick={() => setActiveTab("history")}
           >
             <FiCalendar />
@@ -307,28 +355,43 @@ export default function StudentApplyLeave() {
       </div>
 
       {activeTab === "apply" && (
-        <section className="common-card sl-tab-content" role="tabpanel">
+        <section
+          className="common-card sl-tab-content"
+          role="tabpanel"
+        >
           <div className="panel-header">
             <div>
               <h3>Apply for Leave</h3>
-              <p>Fill in the details to submit your leave application.</p>
+              <p>
+                Fill in the details to submit your leave
+                application.
+              </p>
             </div>
           </div>
 
           {loading ? (
-            <div className="sl-state">Loading your active admissions...</div>
+            <div className="sl-state">
+              Loading your active admissions...
+            </div>
           ) : admissions.length === 0 ? (
             <div className="sl-state">
               <FiFileText />
               <strong>No active admission found</strong>
-              <span>You need an active course admission to apply for leave.</span>
+              <span>
+                You need an active course admission to apply
+                for leave.
+              </span>
             </div>
           ) : (
-            <form className="cardbody" onSubmit={handleSubmit}>
+            <form
+              className="cardbody"
+              onSubmit={handleSubmit}
+            >
               <div className="gird-form-leave">
                 <div className="input-felid">
                   <label>
-                    Course / Batch <span className="required">*</span>
+                    Course / Batch{" "}
+                    <span className="required">*</span>
                     <span
                       className="infoicon tooltip"
                       data-tooltip="Select the admission for which you need leave."
@@ -343,9 +406,15 @@ export default function StudentApplyLeave() {
                     onChange={updateField}
                     required
                   >
-                    <option value="">Select your course and batch</option>
+                    <option value="">
+                      Select your course and batch
+                    </option>
+
                     {admissions.map((item) => (
-                      <option key={item.admissionId} value={item.admissionId}>
+                      <option
+                        key={item.admissionId}
+                        value={item.admissionId}
+                      >
                         {item.course} — {item.batch}
                       </option>
                     ))}
@@ -354,25 +423,35 @@ export default function StudentApplyLeave() {
 
                 <div className="input-felid">
                   <label>
-                    Leave Type <span className="required">*</span>
+                    Leave Type{" "}
+                    <span className="required">*</span>
                   </label>
+
                   <select
                     name="leave_type"
                     value={form.leave_type}
                     onChange={updateField}
                     required
                   >
-                    <option value="Sick Leave">Sick Leave</option>
-                    <option value="Casual Leave">Casual Leave</option>
-                    <option value="Emergency Leave">Emergency Leave</option>
+                    <option value="Sick Leave">
+                      Sick Leave
+                    </option>
+                    <option value="Casual Leave">
+                      Casual Leave
+                    </option>
+                    <option value="Emergency Leave">
+                      Emergency Leave
+                    </option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
 
                 <div className="input-felid">
                   <label>
-                    From Date <span className="required">*</span>
+                    From Date{" "}
+                    <span className="required">*</span>
                   </label>
+
                   <input
                     type="date"
                     name="from_date"
@@ -385,8 +464,10 @@ export default function StudentApplyLeave() {
 
                 <div className="input-felid">
                   <label>
-                    To Date <span className="required">*</span>
+                    To Date{" "}
+                    <span className="required">*</span>
                   </label>
+
                   <input
                     type="date"
                     name="to_date"
@@ -399,8 +480,10 @@ export default function StudentApplyLeave() {
 
                 <div className="input-felid student-form-full">
                   <label>
-                    Reason for Leave <span className="required">*</span>
+                    Reason for Leave{" "}
+                    <span className="required">*</span>
                   </label>
+
                   <textarea
                     name="reason"
                     rows="4"
@@ -410,6 +493,7 @@ export default function StudentApplyLeave() {
                     onChange={updateField}
                     required
                   />
+
                   <small className="infotext">
                     {form.reason.length}/1000 characters
                   </small>
@@ -422,7 +506,9 @@ export default function StudentApplyLeave() {
                   className="themebtn"
                   disabled={submitting}
                 >
-                  {submitting ? "Submitting..." : "Submit Leave Request"}
+                  {submitting
+                    ? "Submitting..."
+                    : "Submit Leave Request"}
                 </button>
               </div>
             </form>
@@ -431,24 +517,36 @@ export default function StudentApplyLeave() {
       )}
 
       {activeTab === "history" && (
-        <section className="common-card sl-tab-content" role="tabpanel">
+        <section
+          className="common-card sl-tab-content"
+          role="tabpanel"
+        >
           <div className="panel-header">
             <div>
               <h3>Leave History</h3>
-              <p>Track all your submitted leave applications.</p>
+              <p>
+                Track all your submitted leave applications.
+              </p>
             </div>
+
             <span className="sc-recommendations__count">
               {requests.length} Requests
             </span>
           </div>
 
           {loading ? (
-            <div className="sl-state">Loading leave history...</div>
+            <div className="sl-state">
+              Loading leave history...
+            </div>
           ) : requests.length === 0 ? (
             <div className="sl-state">
               <FiCalendar />
               <strong>No leave requests yet</strong>
-              <span>Your submitted leave applications will appear here.</span>
+              <span>
+                Your submitted leave applications will appear
+                here.
+              </span>
+
               <button
                 type="button"
                 className="themebtn"
@@ -472,58 +570,91 @@ export default function StudentApplyLeave() {
                     <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {requests.map((request) => {
-                    const course = request.course_id?.courseTitle || "—";
-                    const batch = request.batch_id?.batch_name || "—";
+                    const course =
+                      request.course_id?.courseTitle || "—";
 
                     return (
                       <tr key={request._id}>
                         <td>
-                            <div className="contact-details">
-                     <div className="contact-li"> <MdDateRange />  <span>  {formatAppliedDate(request.createdAt)}</span></div>
-                    </div>
-                        
+                          <div className="contact-details">
+                            <div className="contact-li">
+                              <MdDateRange />
+                              <span>
+                                {formatAppliedDate(
+                                  request.createdAt
+                                )}
+                              </span>
+                            </div>
+                          </div>
                         </td>
+
                         <td>
-                           <div className="contact-details">
-                     <div className="contact-li"> <MdDateRange />  <span> {formatDate(request.from_date)}</span></div> To
-                    <div className="contact-li"> <MdDateRange /> <span>{formatDate(request.to_date)}</span></div>
-                    </div>
-                        
+                          <div className="contact-details">
+                            <div className="contact-li">
+                              <MdDateRange />
+                              <span>
+                                {formatDate(request.from_date)}
+                              </span>
+                            </div>
+
+                            To
+
+                            <div className="contact-li">
+                              <MdDateRange />
+                              <span>
+                                {formatDate(request.to_date)}
+                              </span>
+                            </div>
+                          </div>
                         </td>
-                        <td>
-                          {course}
-                         
-                        </td>
+
+                        <td>{course}</td>
                         <td>{request.leave_type}</td>
-                        <td className="sl-reason">{request.reason}</td>
+
+                        <td className="sl-reason">
+                          {request.reason}
+                        </td>
+
                         <td>
                           <span
-                            className={`status ${statusClass(request.status)}`}
+                            className={`status ${statusClass(
+                              request.status
+                            )}`}
                           >
                             {request.status}
                           </span>
                         </td>
+
                         <td className="sl-admin-remark">
                           {request.status === "Rejected"
-                            ? request.admin_remark || "No remark provided."
+                            ? request.admin_remark ||
+                              "No remark provided."
                             : "—"}
                         </td>
+
                         <td>
                           {request.status === "Pending" ? (
                             <button
                               type="button"
                               className="tablebtn cancle"
-                              onClick={() => handleCancel(request._id)}
-                              disabled={cancellingId === request._id}
+                              onClick={() =>
+                                handleCancel(request._id)
+                              }
+                              disabled={
+                                cancellingId === request._id
+                              }
                             >
                               {cancellingId === request._id
                                 ? "Cancelling..."
                                 : "Cancel Request"}
                             </button>
                           ) : (
-                            <span className="sl-muted">—</span>
+                            <span className="sl-muted">
+                              —
+                            </span>
                           )}
                         </td>
                       </tr>
