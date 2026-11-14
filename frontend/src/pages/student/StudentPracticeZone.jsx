@@ -20,6 +20,10 @@ import {
 } from "react-icons/fi";
 
 import practiceStudentService from "../../services/practiceStudentService";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
+
 import "./StudentPracticeZone.css";
 
 const ACTIVE_ATTEMPT_KEY = "ems_student_practice_active_attempt_v1";
@@ -174,23 +178,24 @@ export default function StudentPracticeZone() {
   activeAttemptRef.current = activeAttempt;
   answersRef.current = answers;
 
-  const loadTests = useCallback(async () => {
-    setLoading(true);
-    setError("");
+const loadTests = useCallback(async () => {
+  setLoading(true);
+  setError("");
 
-    try {
-      const response =
-        await practiceStudentService.getAvailableTests();
+  try {
+    const response =
+      await practiceStudentService.getAvailableTests();
 
-      const data = getData(response);
-      setTests(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(getError(err));
-      setTests([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    const data = getData(response);
+    setTests(Array.isArray(data) ? data : []);
+  } catch (err) {
+    setError(getApiErrorMessage(err));
+    setTests([]);
+    notification.error(getApiErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     loadTests();
@@ -339,13 +344,15 @@ export default function StudentPracticeZone() {
             }
           } catch (submitErr) {
             if (!cancelled) {
-              setError(getError(submitErr));
+              setError(getApiErrorMessage(submitErr));
+              notification.error(getApiErrorMessage(submitErr));
               clearStoredAttempt();
             }
           }
         } else if (!cancelled) {
-          setError(
-            `Could not resume your previous attempt: ${getError(err)}`
+          setError(getApiErrorMessage(err));
+          notification.error(
+            `Could not resume your previous attempt: ${getApiErrorMessage(err)}`
           );
         }
       } finally {
@@ -442,7 +449,8 @@ export default function StudentPracticeZone() {
 
       setInstructions(getData(response));
     } catch (err) {
-      setDetailError(getError(err));
+      setDetailError(getApiErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setDetailLoading(false);
     }
@@ -487,8 +495,11 @@ export default function StudentPracticeZone() {
         data.title || selectedTest.title,
         selectedTest._id
       );
+
+      notification.success("Practice test started successfully.");
     } catch (err) {
-      setDetailError(getError(err));
+      setDetailError(getApiErrorMessage(err));
+      notification.error(getApiErrorMessage(err));
     } finally {
       setStarting(false);
     }
@@ -562,12 +573,31 @@ export default function StudentPracticeZone() {
           !answersRef.current[getQuestionId(question)]
       ).length;
 
-      const message =
-        unanswered > 0
-          ? `You have ${unanswered} unanswered question(s). Submit the test anyway?`
-          : "Are you sure you want to submit this practice test?";
+      const confirmed = await notification.confirm({
+        title: unanswered > 0
+          ? "Unanswered Questions"
+          : "Submit Practice Test?",
+        text: unanswered > 0
+          ? `You have ${unanswered} unanswered question(s). Are you sure you want to submit this test?`
+          : "Are you sure you want to submit your practice test? You cannot change your answers after submission.",
+        icon: "warning",
+        confirmText: "Yes, Submit Test",
+        cancelText: "Continue Test",
+        confirmButtonColor: "#2563eb",
+      });
 
-      if (!window.confirm(message)) return;
+      if (!confirmed) return;
+    }
+
+    // Recheck the attempt after the confirmation dialog.
+    const latestAttempt = activeAttemptRef.current;
+
+    if (
+      !latestAttempt?.attemptId ||
+      latestAttempt.attemptId !== current.attemptId ||
+      submittingRef.current
+    ) {
+      return;
     }
 
     submittingRef.current = true;
@@ -579,7 +609,9 @@ export default function StudentPracticeZone() {
     }
 
     setSaveStatus(
-      isAutomatic ? "Time expired — submitting..." : "Submitting..."
+      isAutomatic
+        ? "Time expired — submitting..."
+        : "Submitting..."
     );
 
     const payload = getAnswerPayload(
@@ -588,25 +620,33 @@ export default function StudentPracticeZone() {
     );
 
     try {
-        // Finish any already queued autosave before final submission.
-        await saveQueueRef.current.catch(() => undefined);
+      // Finish any already queued autosave before final submission.
+      await saveQueueRef.current.catch(() => undefined);
 
-        const response = await practiceStudentService.submitTest(
-            current.attemptId,
-            payload
-        );
+      const response = await practiceStudentService.submitTest(
+        current.attemptId,
+        payload
+      );
 
-        showSubmittedResult(
-            getData(response),
-            current.title
-        );
-        } catch (err) {
-        setSubmitError(getError(err));
-        setSaveStatus("Submission failed — please retry");
-        } finally {
-        submittingRef.current = false;
-        setSubmitting(false);
-        }
+      const submittedResult = getData(response);
+
+      showSubmittedResult(submittedResult, current.title);
+
+      notification.success(
+        isAutomatic
+          ? "Time expired. Your practice test was submitted automatically."
+          : "Practice test submitted successfully."
+      );
+    } catch (err) {
+      const message = getApiErrorMessage(err);
+
+      setSubmitError(message);
+      setSaveStatus("Submission failed — please retry");
+      notification.error(message);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   }, [showSubmittedResult]);
 
   // Keep the timer callback current without restarting the interval.

@@ -3,7 +3,9 @@ import api from "./api";
 
 const practiceStudentService = {
   async getAvailableTests() {
-    const response = await api.get("/practice/student/tests");
+    const response = await api.get("/practice/student/tests", {
+      silent: true,
+    });
     return response.data;
   },
 
@@ -13,7 +15,8 @@ const practiceStudentService = {
     }
 
     const response = await api.get(
-      `/practice/student/tests/${testId}`
+      `/practice/student/tests/${testId}`,
+      { silent: true }
     );
 
     return response.data;
@@ -25,14 +28,18 @@ const practiceStudentService = {
     }
 
     const response = await api.post(
-      `/practice/student/tests/${testId}/start`
+      `/practice/student/tests/${testId}/start`,
+      {},
+      { silent: true }
     );
 
     return response.data;
   },
 
   async getAttemptHistory() {
-    const response = await api.get("/practice/student/attempts");
+    const response = await api.get("/practice/student/attempts", {
+      silent: true,
+    });
     return response.data;
   },
 
@@ -42,7 +49,8 @@ const practiceStudentService = {
     }
 
     const response = await api.get(
-      `/practice/student/attempts/${attemptId}`
+      `/practice/student/attempts/${attemptId}`,
+      { silent: true }
     );
 
     return response.data;
@@ -51,7 +59,8 @@ const practiceStudentService = {
   async saveAnswers(attemptId, answers) {
     const response = await api.patch(
       `/practice/student/attempts/${attemptId}/answers`,
-      { answers }
+      { answers },
+      { silent: true }
     );
 
     return response.data;
@@ -60,7 +69,8 @@ const practiceStudentService = {
   async submitTest(attemptId, answers) {
     const response = await api.post(
       `/practice/student/attempts/${attemptId}/submit`,
-      { answers }
+      { answers },
+      { silent: true }
     );
 
     return response.data;
