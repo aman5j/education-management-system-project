@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -199,9 +198,9 @@ export default function StudentExams() {
       setExams(examResponse?.data?.exams || []);
       setResults(resultResponse?.data?.results || []);
     } catch (err) {
-      setError(
-        getErrorMessage(err, "Unable to load your exams.")
-      );
+      const message = getErrorMessage(err, "Unable to load your exams.");
+      setError(message);
+      notification.error(message);
     } finally {
       setLoading(false);
     }
@@ -223,12 +222,12 @@ export default function StudentExams() {
 
       setExamInfo(response?.data || null);
     } catch (err) {
-      setError(
-        getErrorMessage(
-          err,
-          "Unable to load the exam instructions."
-        )
+      const message = getErrorMessage(
+        err,
+        "Unable to load the exam instructions."
       );
+      setError(message);
+      notification.error(message);
     } finally {
       setLoading(false);
     }
@@ -271,12 +270,12 @@ export default function StudentExams() {
           : 0
       );
     } catch (err) {
-      setError(
-        getErrorMessage(
-          err,
-          "Unable to start this exam. Check your hall ticket and schedule."
-        )
+      const message = getErrorMessage(
+        err,
+        "Unable to start this exam. Check your hall ticket and schedule."
       );
+      setError(message);
+      notification.error(message);
     } finally {
       setLoading(false);
     }
@@ -298,12 +297,9 @@ export default function StudentExams() {
 
       setResultDetail(response?.data || null);
     } catch (err) {
-      setError(
-        getErrorMessage(
-          err,
-          "This result is not available."
-        )
-      );
+      const message = getErrorMessage(err, "This result is not available.");
+      setError(message);
+      notification.error(message);
     } finally {
       setLoading(false);
     }
@@ -341,10 +337,11 @@ export default function StudentExams() {
     if (busy || !ticketId) return;
 
     if (examInfo?.feeClearance?.eligible === false) {
-      setError(
+      const message =
         examInfo.feeClearance.message ||
-          "Your fee is due. Please complete your fee payment before starting the exam."
-      );
+        "Your fee is due. Please complete your fee payment before starting the exam.";
+      setError(message);
+      notification.warning(message);
       return;
     }
 
@@ -380,6 +377,7 @@ export default function StudentExams() {
 
         reason =
           submitted?.data?.rejectionReason || "";
+        notification.success("Exam access request sent to your administrator.");
       }
 
       // If already approved, start immediately.
@@ -388,10 +386,11 @@ export default function StudentExams() {
           await studentPortalService.getExamInstructions(ticketId);
 
         if (!instructions?.data?.canStart) {
-          setError(
+          const message =
             instructions?.data?.feeClearance?.message ||
-              "The exam cannot be started at this time."
-          );
+            "The exam cannot be started at this time.";
+          setError(message);
+          notification.warning(message);
           return;
         }
 
@@ -405,12 +404,12 @@ export default function StudentExams() {
       setApprovalReason(reason);
       setApprovalModalOpen(true);
     } catch (err) {
-      setError(
-        getErrorMessage(
-          err,
-          "Unable to request exam access. Please try again."
-        )
+      const message = getErrorMessage(
+        err,
+        "Unable to request exam access. Please try again."
       );
+      setError(message);
+      notification.error(message);
     } finally {
       setBusy(false);
     }
@@ -459,10 +458,11 @@ export default function StudentExams() {
           if (!active) return;
 
           if (!instructionResponse?.data?.canStart) {
-            setError(
+            const message =
               instructionResponse?.data?.feeClearance?.message ||
-                "Your request is approved, but the exam is not currently available."
-            );
+              "Your request is approved, but the exam is not currently available.";
+            setError(message);
+            notification.warning(message, { id: "student-exam-approval-status" });
             return;
           }
 
@@ -474,27 +474,28 @@ export default function StudentExams() {
             if (!active) return;
 
             setApprovalModalOpen(false);
+            notification.success("Your exam access has been approved.");
 
             navigate(`/student/exams/${ticketId}/take`);
           } catch (err) {
-            setError(
-              getErrorMessage(
-                err,
-                "Approval received, but the exam could not be started."
-              )
+            const message = getErrorMessage(
+              err,
+              "Approval received, but the exam could not be started."
             );
+            setError(message);
+            notification.error(message, { id: "student-exam-approval-error" });
           } finally {
             if (active) setBusy(false);
           }
         }
       } catch (err) {
         if (active) {
-          setError(
-            getErrorMessage(
-              err,
-              "Unable to check your approval status."
-            )
+          const message = getErrorMessage(
+            err,
+            "Unable to check your approval status."
           );
+          setError(message);
+          notification.error(message, { id: "student-exam-approval-error" });
         }
       } finally {
         checking = false;
@@ -529,10 +530,11 @@ export default function StudentExams() {
         await studentPortalService.getExamInstructions(ticketId);
 
       if (!response?.data?.canStart) {
-        setError(
+        const message =
           response?.data?.feeClearance?.message ||
-            "The exam schedule is not currently available."
-        );
+          "The exam schedule is not currently available.";
+        setError(message);
+        notification.warning(message);
         return;
       }
 
@@ -542,9 +544,9 @@ export default function StudentExams() {
 
       navigate(`/student/exams/${ticketId}/take`);
     } catch (err) {
-      setError(
-        getErrorMessage(err, "Unable to start the exam.")
-      );
+      const message = getErrorMessage(err, "Unable to start the exam.");
+      setError(message);
+      notification.error(message);
     } finally {
       setBusy(false);
     }
@@ -558,13 +560,17 @@ export default function StudentExams() {
     async (automatic = false) => {
       if (busy) return;
 
-      if (
-        !automatic &&
-        !window.confirm(
-          "Submit your exam now? You cannot restart this attempt."
-        )
-      ) {
-        return;
+      if (!automatic) {
+        const confirmed = await notification.confirm({
+          title: "Submit Exam?",
+          text: "Are you sure you want to submit your exam? You cannot restart this attempt after submission.",
+          icon: "warning",
+          confirmText: "Yes, Submit Exam",
+          cancelText: "Continue Exam",
+          confirmButtonColor: "#2563eb",
+        });
+
+        if (!confirmed) return;
       }
 
       setBusy(true);
@@ -590,17 +596,23 @@ export default function StudentExams() {
           );
         }
 
+        notification.success(
+          automatic
+            ? "Your exam time has ended. Your exam was submitted automatically."
+            : "Exam submitted successfully."
+        );
+
         navigate(
           `/student/exams/results/${submittedResultId}`,
           { replace: true }
         );
       } catch (err) {
-        setError(
-          getErrorMessage(
-            err,
-            "Unable to submit the exam. Please contact your institute administrator."
-          )
+        const message = getErrorMessage(
+          err,
+          "Unable to submit the exam. Please contact your institute administrator."
         );
+        setError(message);
+        notification.error(message);
       } finally {
         setBusy(false);
       }
@@ -853,13 +865,6 @@ export default function StudentExams() {
               </div>
             )}
 
-            {error && (
-              <div className="se-error" role="alert">
-                <FiAlertCircle />
-                {error}
-              </div>
-            )}
-
             <button
               type="button"
               className="se-button se-button--primary se-button--wide"
@@ -1013,12 +1018,6 @@ export default function StudentExams() {
             <strong>{clockText(remainingMs)}</strong>
           </div>
         </header>
-
-        {error && (
-          <div className="se-error" role="alert">
-            {error}
-          </div>
-        )}
 
         <div className="se-take-layout">
           <aside className="se-panel se-question-nav">
@@ -1541,7 +1540,7 @@ export default function StudentExams() {
         </div>
 
       <section className="se-panel se-list-panel">
-        
+
 
         {tab === "results" ? (
           results.length ? (
@@ -1624,7 +1623,7 @@ export default function StudentExams() {
                     exam.resultStatus !== "Published";
 
                   return (
-                   
+
 <div className="common-card se-exam-card" key={exam.ticketId}>
   <div className="cardbody se-exam-card__body ">
 
@@ -1747,7 +1746,7 @@ export default function StudentExams() {
             exam.resultStatus === "Published" ? (
               <Link
                 className="themebtn"
-                to={`/student/exams/${exam.ticketId}/result`}
+                to={`/student/exams/results/${exam.resultId}`}
               >
                 <FiEye />
                 View Result
