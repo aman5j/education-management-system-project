@@ -13,11 +13,11 @@ import {
 } from "react-icons/fi";
 
 import studentAssignmentService from "../../services/studentAssignmentService";
-import "./StudentAssignments.css";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
 
-const getError = (error) =>
-  error?.response?.data?.message ||
-  "Unable to load assignments. Please try again.";
+import "./StudentAssignments.css";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -52,17 +52,20 @@ export default function StudentAssignments() {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const [hasLoadError, setHasLoadError] = useState(false);
 
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const loadAssignments = useCallback(async (refresh = false) => {
-    if (refresh) setRefreshing(true);
-    else setLoading(true);
+    if (refresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
-    setError("");
+    setHasLoadError(false);
 
     try {
       const response =
@@ -72,7 +75,8 @@ export default function StudentAssignments() {
       setAssignments(Array.isArray(list) ? list : []);
     } catch (err) {
       setAssignments([]);
-      setError(getError(err));
+      setHasLoadError(true);
+      notification.error(getApiErrorMessage(err));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -88,11 +92,17 @@ export default function StudentAssignments() {
 
     assignments.forEach((item) => {
       if (item.course?.id) {
-        map.set(String(item.course.id), item.course.title || "Course");
+        map.set(
+          String(item.course.id),
+          item.course.title || "Course"
+        );
       }
     });
 
-    return [...map.entries()].map(([id, title]) => ({ id, title }));
+    return [...map.entries()].map(([id, title]) => ({
+      id,
+      title,
+    }));
   }, [assignments]);
 
   const filteredAssignments = useMemo(() => {
@@ -120,10 +130,22 @@ export default function StudentAssignments() {
 
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "submitted" && item.submission?.submissionCount > 0) ||
-        (statusFilter === "pending" && !item.submission?.submissionCount) ||
-        (statusFilter === "upcoming" && dueState === "Upcoming") ||
-        (statusFilter === "overdue" && dueState === "Overdue");
+        (
+          statusFilter === "submitted" &&
+          Number(item.submission?.submissionCount) > 0
+        ) ||
+        (
+          statusFilter === "pending" &&
+          !Number(item.submission?.submissionCount)
+        ) ||
+        (
+          statusFilter === "upcoming" &&
+          dueState === "Upcoming"
+        ) ||
+        (
+          statusFilter === "overdue" &&
+          dueState === "Overdue"
+        );
 
       return matchesSearch && matchesCourse && matchesStatus;
     });
@@ -195,6 +217,7 @@ export default function StudentAssignments() {
             <h2>Assignment list</h2>
             <p>Assignments published for your active course admissions.</p>
           </div>
+
           <span className="sa-count">
             {filteredAssignments.length} found
           </span>
@@ -217,6 +240,7 @@ export default function StudentAssignments() {
             aria-label="Filter by course"
           >
             <option value="all">All courses</option>
+
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
@@ -243,22 +267,28 @@ export default function StudentAssignments() {
             <h3>Loading assignments</h3>
             <p>Please wait while we load your assignments.</p>
           </div>
-        ) : error ? (
+        ) : hasLoadError ? (
           <div className="sa-state sa-state-error">
-            <h3>Unable to load assignments</h3>
-            <p>{error}</p>
-            <button onClick={() => loadAssignments()} type="button">
+            <h3>Assignments could not be loaded</h3>
+            <p>Please try loading your assignments again.</p>
+
+            <button
+              onClick={() => loadAssignments()}
+              type="button"
+            >
               Try again
             </button>
           </div>
         ) : filteredAssignments.length === 0 ? (
           <div className="sa-state">
             <FiBookOpen />
+
             <h3>
               {assignments.length
                 ? "No matching assignments"
                 : "No assignments available"}
             </h3>
+
             <p>
               {assignments.length
                 ? "Try changing your search or filters."
@@ -274,7 +304,10 @@ export default function StudentAssignments() {
               const dueState = getDueState(item);
 
               return (
-                <article className="sa-assignment-card" key={item.id}>
+                <article
+                  className="sa-assignment-card"
+                  key={item.id}
+                >
                   <div className="sa-card-main">
                     <div className="sa-card-icon">
                       <FiFileText />
