@@ -12,6 +12,10 @@ import {
 } from "react-icons/fi";
 
 import studentPortalService from "../../services/studentPortalService";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
+
 import "./StudentDocuments.css";
 
 const getExtension = (name = "") => {
@@ -51,10 +55,8 @@ const formatSize = (bytes) => {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-const getErrorMessage = (error) =>
-  error?.response?.data?.message ||
-  error?.message ||
-  "Unable to load your documents.";
+const getErrorMessage = (error, fallback) =>
+  getApiErrorMessage(error) || fallback || "Something went wrong.";
 
 const getDocumentId = (doc) => String(doc?.id || doc?._id || "");
 
@@ -87,10 +89,18 @@ export default function StudentDocuments() {
         Array.isArray(data.documents) ? data.documents : []
       );
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(
+        err,
+        "Unable to load your documents."
+      );
+
+      setError(message);
+      notification.error(message);
+
       setDocuments([]);
       setStudent(null);
-    } finally {
+    } 
+    finally {
       setLoading(false);
       setRefreshing(false);
     }
@@ -175,8 +185,15 @@ export default function StudentDocuments() {
 
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
+      const message = getErrorMessage(
+        err,
+        "Unable to open this document."
+      );
+
+      setError(message);
+      notification.error(message);
+    }
+    finally {
       setActionId("");
     }
   };
@@ -204,11 +221,19 @@ export default function StudentDocuments() {
       window.document.body.appendChild(link);
       link.click();
       link.remove();
+      notification.success("Document downloaded successfully.");
 
       window.setTimeout(() => URL.revokeObjectURL(url), 1500);
     } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
+      const message = getErrorMessage(
+        err,
+        "Unable to download this document."
+      );
+
+      setError(message);
+      notification.error(message);
+    } 
+    finally {
       setActionId("");
     }
   };
