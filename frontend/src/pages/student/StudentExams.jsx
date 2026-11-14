@@ -24,6 +24,10 @@ import {
 } from "react-icons/fi";
 
 import studentPortalService from "../../services/studentPortalService";
+import notification, {
+  getApiErrorMessage,
+} from "../../utils/notification";
+
 import "./StudentExams.css";
 
 const dateText = (value) => {
@@ -88,8 +92,9 @@ const durationText = (milliseconds) => {
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message ||
-  error?.message ||
-  fallback;
+  getApiErrorMessage(error) ||
+  fallback ||
+  "Something went wrong. Please try again.";
 
 function ExamStat({ icon: Icon, title, value, note, tone }) {
   return (

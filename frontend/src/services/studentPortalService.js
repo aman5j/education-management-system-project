@@ -40,37 +40,44 @@ const studentPortalService = {
     return response.data;
   },
 
+
   async getMyExams() {
-    const response = await api.get("/student-portal/exams");
+    const response = await api.get("/student-portal/exams", {
+      silent: true,
+    });
     return response.data;
   },
 
   async getExamInstructions(ticketId) {
     const response = await api.get(
-      `/student-portal/exams/${ticketId}/instructions`
+      `/student-portal/exams/${ticketId}/instructions`,
+      { silent: true }
     );
     return response.data;
   },
 
   async getMyExamAccessRequest(ticketId) {
     const response = await api.get(
-      `/student-portal/exams/${ticketId}/access-request`
+      `/student-portal/exams/${ticketId}/access-request`,
+      { silent: true }
     );
-
     return response.data;
   },
 
   async requestMyExamAccess(ticketId) {
     const response = await api.post(
-      `/student-portal/exams/${ticketId}/access-request`
+      `/student-portal/exams/${ticketId}/access-request`,
+      {},
+      { silent: true }
     );
-
     return response.data;
   },
 
   async startMyExam(ticketId) {
     const response = await api.post(
-      `/student-portal/exams/${ticketId}/start`
+      `/student-portal/exams/${ticketId}/start`,
+      {},
+      { silent: true }
     );
     return response.data;
   },
@@ -78,19 +85,24 @@ const studentPortalService = {
   async submitMyExam(ticketId, answers) {
     const response = await api.post(
       `/student-portal/exams/${ticketId}/submit`,
-      { answers }
+      { answers },
+      { silent: true }
     );
     return response.data;
   },
 
   async getMyExamResults() {
-    const response = await api.get("/student-portal/exams/results");
+    const response = await api.get(
+      "/student-portal/exams/results",
+      { silent: true }
+    );
     return response.data;
   },
 
   async getMyExamResult(resultId) {
     const response = await api.get(
-      `/student-portal/exams/results/${resultId}`
+      `/student-portal/exams/results/${resultId}`,
+      { silent: true }
     );
     return response.data;
   },
