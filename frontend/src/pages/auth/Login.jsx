@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import defaultLogo from "../../assets/logo.png";
+// import defaultLogo from "../../assets/logo.png";
 import bgImage from "../../assets/loginback.png";
 import instituteSettingsService from "../../services/instituteSettingsService";
 import { getAssetUrl } from "../../utils/assetUrl";
+const DEFAULT_INSTITUTE_LOGO =
+  "/Default%20Institute%20logo.png";
 
 import {
   Link,
@@ -65,9 +67,9 @@ const Login = () => {
   }, []);
 
   const displayedLogo =
-    instituteLogo && !logoLoadFailed
-      ? getAssetUrl(instituteLogo)
-      : defaultLogo;
+  instituteLogo && !logoLoadFailed
+    ? getAssetUrl(instituteLogo)
+    : DEFAULT_INSTITUTE_LOGO;
 
   const {
     login,
