@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
@@ -15,6 +14,10 @@ const AdminLayout = () => {
 
   const isStaffPortal = location.pathname.startsWith("/staff");
 
+  // Website Editor uses its own full-screen workspace.
+  const isWebsiteEditor =
+    location.pathname === "/admin/website-editor";
+
   const dashboardPath = isStaffPortal
     ? "/staff/dashboard"
     : "/admin/dashboard";
@@ -28,7 +31,10 @@ const AdminLayout = () => {
   const [openMenus, setOpenMenus] = useState({});
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
+    localStorage.setItem(
+      SIDEBAR_STORAGE_KEY,
+      String(collapsed)
+    );
   }, [collapsed]);
 
   useEffect(() => {
@@ -40,11 +46,14 @@ const AdminLayout = () => {
 
     window.addEventListener("resize", handleResize);
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () =>
+      window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = mobileSidebarOpen ? "hidden" : "";
+    document.body.style.overflow = mobileSidebarOpen
+      ? "hidden"
+      : "";
 
     return () => {
       document.body.style.overflow = "";
@@ -62,6 +71,12 @@ const AdminLayout = () => {
     }));
   };
 
+  // Do not render the normal Admin Sidebar, Topbar or Footer
+  // while the dedicated Website Editor route is active.
+  if (isWebsiteEditor) {
+    return <Outlet />;
+  }
+
   return (
     <div
       className={`admin-layout ${
@@ -71,7 +86,9 @@ const AdminLayout = () => {
       <Sidebar
         collapsed={collapsed}
         mobileOpen={mobileSidebarOpen}
-        onToggle={() => setCollapsed((previous) => !previous)}
+        onToggle={() =>
+          setCollapsed((previous) => !previous)
+        }
         onCloseMobile={() => setMobileSidebarOpen(false)}
         openMenus={openMenus}
         onToggleMenu={handleToggleMenu}
@@ -80,7 +97,9 @@ const AdminLayout = () => {
 
       <div className="admin-main">
         <Topbar
-          onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+          onOpenMobileSidebar={() =>
+            setMobileSidebarOpen(true)
+          }
           dashboardPath={dashboardPath}
         />
 

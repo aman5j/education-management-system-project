@@ -66,6 +66,9 @@ import StudentDetails from "./pages/admin/students/StudentDetails";
 
 import AlertNoticeManagement from "./pages/admin/alertNotices/AlertNoticeManagement";
 
+// WEBSITE Editor Routes
+import WebsiteEditor from "./pages/admin/website-editor/WebsiteEditor";
+
 
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
@@ -256,6 +259,16 @@ const App = () => {
         {/* Dashboard */}
         <Route path="dashboard" element={<Dashboard />} />
 
+        {/* Website Editor */}
+        <Route
+          path="website-editor"
+          element={
+            <PermissionRoute permission="website.view">
+              <WebsiteEditor />
+            </PermissionRoute>
+          }
+        />
+
 
         {/* Keep all your existing routes here. */}
         <Route path="roles" element={<RoleManagement />} />
@@ -265,6 +278,7 @@ const App = () => {
         {/* Staff Mangement */}
         <Route path="staff" element={<StaffManagement />} />
 
+        
 
         {/* Student management */}
         <Route path="students" element={<Students />} />
@@ -348,7 +362,7 @@ const App = () => {
           path="alert-notices"
           element={<AlertNoticeManagement />}
         />
-        
+
 
         {/* Attendance */}
         {/* <Route path="attendance" element={<Attendance />} /> */}
