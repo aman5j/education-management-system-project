@@ -68,6 +68,9 @@ import practiceRoutes from "./routes/practice.routes.js";
 import notesRoutes from "./routes/notes.routes.js";
 import assignmentRoutes from "./routes/assignment.routes.js";
 
+/* Website Editor routes */
+import websiteHeaderRoutes from "./routes/websiteHeader.routes.js";
+
 
 // import receiptUploadRoutes from
 //   "./routes/receiptUpload.routes.js";
@@ -360,6 +363,13 @@ app.use(
   "/api/institute-settings",
   instituteSettingsRoutes
 );
+
+/* Website Editor routes */
+app.use(
+  "/api/website-editor",
+  websiteHeaderRoutes
+);
+
 
 
 app.use("/api/student-portal", studentPortalRoutes);
