@@ -70,6 +70,7 @@ import assignmentRoutes from "./routes/assignment.routes.js";
 
 /* Website Editor routes */
 import websiteHeaderRoutes from "./routes/websiteHeader.routes.js";
+import websiteMenuRoutes from "./routes/websiteMenu.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -370,6 +371,10 @@ app.use(
   websiteHeaderRoutes
 );
 
+app.use(
+  "/api/website-editor",
+  websiteMenuRoutes
+);
 
 
 app.use("/api/student-portal", studentPortalRoutes);
