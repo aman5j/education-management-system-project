@@ -33,6 +33,8 @@ import websiteEditorService from "../../../services/websiteEditorService";
 import instituteSettingsService from "../../../services/instituteSettingsService";
 import MenuControls from "./components/MenuControls";
 import BannerControls from "./components/BannerControls";
+import CategoryHighlightsControls from "./components/CategoryHighlightsControls";
+
 
 import { getAssetUrl } from "../../../utils/assetUrl";
 import notification, {
@@ -79,6 +81,10 @@ const initialInstitute = {
 
 const initialBanner = {
   slides: [],
+};
+
+const initialCategoryHighlights = {
+  items: [],
 };
 
 
@@ -129,6 +135,15 @@ const WebsiteEditor = () => {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   // !!!!! INSERTION END: BANNER STATE VARIABLES !!!!!
 
+  // !!!!! INSERTION START: CATEGORY HIGHLIGHTS STATE !!!!!
+  const [categoryHighlights, setCategoryHighlights] = useState(
+    initialCategoryHighlights
+  );
+  const [savedCategoryHighlights, setSavedCategoryHighlights] = useState(
+    initialCategoryHighlights
+  );
+  // !!!!! INSERTION END: CATEGORY HIGHLIGHTS STATE !!!!!
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -151,7 +166,9 @@ const WebsiteEditor = () => {
   const hasUnsavedChanges =
     JSON.stringify(header) !== JSON.stringify(savedHeader) ||
     JSON.stringify(institute) !== JSON.stringify(savedInstitute) ||
-    JSON.stringify(menu) !== JSON.stringify(savedMenu);
+    JSON.stringify(menu) !== JSON.stringify(savedMenu) ||
+    JSON.stringify(categoryHighlights) !==
+      JSON.stringify(savedCategoryHighlights);
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -164,11 +181,13 @@ const WebsiteEditor = () => {
         instituteData,
         menuData,
         bannerData,
+        categoryData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
         websiteEditorService.getMenuSettings(),
         websiteEditorService.getBannerSettings(),
+        websiteEditorService.getCategoryHighlights(),
       ]);
 
       const nextHeader = {
@@ -205,6 +224,17 @@ const WebsiteEditor = () => {
 
       setBanner(nextBanner);
 
+      // !!!!! INSERTION START: LOAD CATEGORY HIGHLIGHTS !!!!!
+      const nextCategoryHighlights = {
+        items: Array.isArray(categoryData?.items)
+          ? categoryData.items
+          : [],
+      };
+
+      setCategoryHighlights(nextCategoryHighlights);
+      setSavedCategoryHighlights(nextCategoryHighlights);
+      // !!!!! INSERTION END: LOAD CATEGORY HIGHLIGHTS !!!!!
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -240,6 +270,17 @@ const WebsiteEditor = () => {
     setMenu({ items });
   };
   // !!!!! INSERTION END: UPDATE MENU SETTINGS !!!!!
+
+
+  // !!!!! INSERTION START: CATEGORY HIGHLIGHTS HANDLERS !!!!!
+  const updateCategoryHighlights = (items) => {
+    setCategoryHighlights({ items });
+  };
+
+  const uploadCategoryHighlightIcon = async (file) => {
+    return websiteEditorService.uploadCategoryHighlightIcon(file);
+  };
+  // !!!!! INSERTION END: CATEGORY HIGHLIGHTS HANDLERS !!!!!
 
   const handleBannerUpload = async (file, slideKey = "") => {
     if (!file) return;
@@ -508,6 +549,25 @@ const WebsiteEditor = () => {
       return;
     }
 
+    // !!!!! INSERTION START: VALIDATE CATEGORY HIGHLIGHTS !!!!!
+    const invalidCategoryHighlight = (
+      categoryHighlights.items || []
+    ).some(
+      (item) =>
+        !item.title?.trim() ||
+        !item.description?.trim()
+    );
+
+    if (invalidCategoryHighlight) {
+      notification.warning(
+        "Complete the title and description of every highlight, or remove the incomplete item."
+      );
+      setActiveSection("categories");
+      setExpandedSection("categories");
+      return;
+    }
+    // !!!!! INSERTION END: VALIDATE CATEGORY HIGHLIGHTS !!!!!
+
     setSaving(true);
 
     try {
@@ -524,10 +584,12 @@ const WebsiteEditor = () => {
         savedHeaderData,
         savedInstituteData,
         savedMenuData,
+        savedCategoryData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
         websiteEditorService.updateMenuSettings(menu),
+        websiteEditorService.updateCategoryHighlights(categoryHighlights),
       ]);
 
       const nextHeader = {
@@ -554,6 +616,17 @@ const WebsiteEditor = () => {
 
       setMenu(nextMenu);
       setSavedMenu(nextMenu);
+
+      // !!!!! INSERTION START: SAVE CATEGORY HIGHLIGHTS STATE !!!!!
+      const nextCategoryHighlights = {
+        items: Array.isArray(savedCategoryData?.items)
+          ? savedCategoryData.items
+          : categoryHighlights.items,
+      };
+
+      setCategoryHighlights(nextCategoryHighlights);
+      setSavedCategoryHighlights(nextCategoryHighlights);
+      // !!!!! INSERTION END: SAVE CATEGORY HIGHLIGHTS STATE !!!!!
 
       notification.success(
         "Website editor settings saved successfully."
@@ -592,6 +665,10 @@ const WebsiteEditor = () => {
     // !!!!! INSERTION START: RESTORE SAVED MENU SETTINGS !!!!!
     setMenu(savedMenu);
     // !!!!! INSERTION END: RESTORE SAVED MENU SETTINGS !!!!!
+
+    // !!!!! INSERTION START: RESTORE CATEGORY HIGHLIGHTS !!!!!
+    setCategoryHighlights(savedCategoryHighlights);
+    // !!!!! INSERTION END: RESTORE CATEGORY HIGHLIGHTS !!!!!
   };
 
   const openPreviewInNewTab = () => {
@@ -699,6 +776,12 @@ const WebsiteEditor = () => {
                         onUpload={handleBannerUpload}
                         onDelete={handleBannerDelete}
                         onReorder={handleBannerReorder}
+                      />
+                    ) : section.id === "categories" ? (
+                      <CategoryHighlightsControls
+                        items={categoryHighlights.items}
+                        onChange={updateCategoryHighlights}
+                        onUploadIcon={uploadCategoryHighlightIcon}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -829,6 +912,10 @@ const WebsiteEditor = () => {
               logoUrl={logoUrl}
               menu={menu}
               banner={bannerSlides}
+              categoryHighlights={categoryHighlights.items.map((item) => ({
+                ...item,
+                iconUrl: item.iconUrl ? getAssetUrl(item.iconUrl) : "",
+              }))}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
           </div>

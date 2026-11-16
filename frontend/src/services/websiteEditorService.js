@@ -92,6 +92,46 @@ const websiteEditorService = {
 
     return response.data?.data?.settings || { slides: [] };
   },
+
+  
+  // Category Highlights Services
+  async getCategoryHighlights() {
+    const response = await api.get(
+      "/website-editor/category-highlights",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || { items: [] };
+  },
+
+  async updateCategoryHighlights(payload) {
+    const response = await api.put(
+      "/website-editor/category-highlights",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || { items: [] };
+  },
+
+  async uploadCategoryHighlightIcon(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/category-highlights/icons",
+      formData,
+      {
+        headers: {
+          "Content-Type": undefined,
+        },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
 };
 
 export default websiteEditorService;

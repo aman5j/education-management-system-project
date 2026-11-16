@@ -16,6 +16,7 @@ export default function WebsitePreview({
   logoUrl,
   menu,
   banner = [],
+  categoryHighlights = [],
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -24,6 +25,12 @@ export default function WebsitePreview({
     : [];
 
   const bannerSlides = Array.isArray(banner) ? banner : [];
+
+  const visibleHighlights = Array.isArray(categoryHighlights)
+    ? categoryHighlights.filter(
+        (item) => item.isVisible !== false
+      )
+    : [];
 
   const safeBannerIndex = Math.min(
     activeBannerIndex,
@@ -178,16 +185,16 @@ export default function WebsitePreview({
         {activeBanner?.imageUrl ? (
           <>
             <img
-            className="we-preview-banner-image"
-            src={activeBanner.imageUrl}
-            alt={`Homepage banner slide ${safeBannerIndex + 1}`}
-            onError={(event) => {
+              className="we-preview-banner-image"
+              src={activeBanner.imageUrl}
+              alt={`Homepage banner slide ${safeBannerIndex + 1}`}
+              onError={(event) => {
                 console.error("Website preview banner failed:", {
-                slide: safeBannerIndex + 1,
-                imageUrl: event.currentTarget.src,
-                version: activeBanner.imageVersion,
+                  slide: safeBannerIndex + 1,
+                  imageUrl: event.currentTarget.src,
+                  version: activeBanner.imageVersion,
                 });
-            }}
+              }}
             />
 
             {bannerSlides.length > 1 && (
@@ -236,6 +243,38 @@ export default function WebsitePreview({
           </div>
         )}
       </section>
+
+      {/* Phase 5: Category Highlights */}
+      {visibleHighlights.length > 0 && (
+        <section
+          className="we-preview-category-highlights"
+          aria-label="Category highlights"
+        >
+          <div className="we-preview-category-inner">
+            {visibleHighlights.map((item, index) => (
+              <div
+                className="we-preview-category-item"
+                key={item.key}
+              >
+                {item.iconUrl ? (
+                  <img
+                    className="we-preview-category-icon"
+                    src={item.iconUrl}
+                    alt=""
+                  />
+                ) : (
+                  <div className="we-preview-category-icon-empty">
+                    <FiImage />
+                  </div>
+                )}
+
+                <strong>{item.title}</strong>
+                <span>{item.description}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="we-public-page-placeholder">
         <div className="we-preview-hero-content">
