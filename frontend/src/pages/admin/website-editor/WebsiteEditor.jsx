@@ -41,6 +41,7 @@ import WebsitePreview from "./components/WebsitePreview";
 
 import "./WebsiteEditor.css";
 
+
 const initialHeader = {
   topbarEnabled: true,
   announcementText: "",
@@ -50,13 +51,18 @@ const initialHeader = {
   socialLinks: [],
   showInstituteLogo: true,
   showInstituteName: true,
+
+  // ===== START: DEFAULT HEADER BUTTON LABELS =====
   showLoginButton: true,
-  loginButtonLabel: "Login",
+  loginButtonLabel: "Login/Register",
   loginButtonUrl: "/login",
+
   showEnquiryButton: true,
-  enquiryButtonLabel: "Enquire Now",
+  enquiryButtonLabel: "Book Free Demo",
   enquiryButtonUrl: "/contact",
+  // ===== END: DEFAULT HEADER BUTTON LABELS =====
 };
+
 
 const initialInstitute = {
   instituteName: "",

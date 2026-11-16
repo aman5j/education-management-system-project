@@ -1034,3 +1034,322 @@
     width: 100%;
   }
 }
+
+
+
+
+
+
+
+/* =========================================================
+   Phase 2 - Reference Header Design
+   Two-row header: Navy topbar + white logo/navigation row
+   ========================================================= */
+
+.we-reference-header {
+  width: 100%;
+  min-height: 0;
+  background: #ffffff;
+  color: #102b50;
+}
+
+/* Topbar */
+
+.we-reference-header .we-public-topbar {
+  width: 100%;
+  min-height: 29px;
+  padding: 0;
+  display: block;
+  background: #063366;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.we-public-topbar-inner {
+  width: 100%;
+  max-width: 1200px;
+  min-height: 29px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.we-reference-header .we-public-topbar-contact {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.we-reference-header .we-topbar-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffffff;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.we-reference-header .we-topbar-contact-item svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.we-reference-header .we-public-announcement {
+  max-width: 260px;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.we-reference-header .we-public-topbar-actions {
+  min-height: 29px;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.we-reference-header .we-public-topbar-actions a {
+  min-height: 29px;
+  padding: 0 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.we-reference-header .we-public-topbar-actions .we-topbar-login {
+  background: #063366;
+}
+
+.we-reference-header .we-public-topbar-actions .we-topbar-demo,
+.we-reference-header .we-public-topbar-actions .we-topbar-quick-link {
+  background: #f26722;
+}
+
+.we-reference-header .we-public-topbar-actions a:hover {
+  filter: brightness(1.08);
+}
+
+/* Main white header row */
+
+.we-reference-header .we-public-main-header {
+  width: 100%;
+  min-height: 70px;
+  padding: 0;
+  display: block;
+  border-bottom: 1px solid #eeeeee;
+  background: #ffffff;
+}
+
+.we-public-main-header-inner {
+  width: 100%;
+  max-width: 1200px;
+  min-height: 70px;
+  margin: 0 auto;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+}
+
+.we-reference-header .we-public-brand {
+  width: 200px;
+  min-width: 200px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-decoration: none;
+}
+
+/* Logo only: institute name is intentionally not rendered */
+
+.we-reference-header .we-public-brand img {
+  display: block;
+  width: 200px;
+  height: 50px;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+/* Navigation appearance - links are placeholders until Phase 3 */
+
+.we-reference-header .we-public-menu-placeholder {
+  min-width: 0;
+  min-height: 50px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 21px;
+  border: 0;
+  background: transparent;
+}
+
+.we-reference-header .we-public-menu-placeholder a {
+  position: relative;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #12345d;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.we-reference-header .we-public-menu-placeholder a svg {
+  width: 13px;
+  height: 13px;
+}
+
+.we-reference-header .we-public-menu-placeholder a.active {
+  color: #ed5b22;
+}
+
+.we-reference-header .we-public-menu-placeholder a.active::after {
+  position: absolute;
+  right: 0;
+  bottom: 7px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: #ed5b22;
+  content: "";
+}
+
+/* Homepage placeholder */
+
+.we-reference-header .we-public-page-placeholder {
+  min-height: 290px;
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+  .we-public-topbar-inner {
+    padding: 0 12px;
+  }
+
+  .we-reference-header .we-public-topbar-contact {
+    gap: 12px;
+  }
+
+  .we-reference-header .we-public-topbar-actions a {
+    padding: 0 10px;
+  }
+
+  .we-public-main-header-inner {
+    gap: 12px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .we-reference-header .we-public-brand {
+    width: 165px;
+    min-width: 165px;
+  }
+
+  .we-reference-header .we-public-brand img {
+    width: 165px;
+  }
+
+  .we-reference-header .we-public-menu-placeholder {
+    gap: 12px;
+  }
+
+  .we-reference-header .we-public-menu-placeholder a {
+    font-size: 10px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 650px) {
+  .we-public-topbar-inner {
+    padding: 0;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .we-reference-header .we-public-topbar {
+    min-height: 0;
+  }
+
+  .we-reference-header .we-public-topbar-contact {
+    min-height: 30px;
+    padding: 0 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 5px 15px;
+  }
+
+  .we-reference-header .we-public-topbar-actions {
+    width: 100%;
+    min-height: 32px;
+    justify-content: center;
+  }
+
+  .we-reference-header .we-public-topbar-actions a {
+    flex: 1;
+    min-height: 32px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .we-reference-header .we-public-main-header {
+    min-height: 0;
+  }
+
+  .we-public-main-header-inner {
+    min-height: 0;
+    padding: 10px 12px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .we-reference-header .we-public-brand {
+    width: 200px;
+    min-width: 0;
+    height: 50px;
+  }
+
+  .we-reference-header .we-public-menu-placeholder {
+    width: 100%;
+    min-height: 38px;
+    justify-content: flex-start;
+    gap: 18px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .we-reference-header .we-public-menu-placeholder a {
+    min-height: 38px;
+    font-size: 11px;
+  }
+
+  .we-reference-header .we-public-menu-placeholder a.active::after {
+    bottom: 2px;
+  }
+}

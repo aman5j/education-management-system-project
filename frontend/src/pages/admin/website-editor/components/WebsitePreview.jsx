@@ -2,6 +2,7 @@
 import {
   FiPhone,
   FiMail,
+  FiChevronDown,
 } from "react-icons/fi";
 
 export default function WebsitePreview({
@@ -9,93 +10,120 @@ export default function WebsitePreview({
   institute,
   logoUrl,
 }) {
+  const navigationItems = [
+    { label: "Home" },
+    { label: "About us", dropdown: true },
+    { label: "Courses" },
+    { label: "Placements" },
+    { label: "Verification" },
+    { label: "Contact" },
+    { label: "Resources", dropdown: true },
+  ];
+
   return (
-    <div className="we-public-site">
+    <div className="we-public-site we-reference-header">
+      {/* Top contact and action bar */}
       {header.topbarEnabled && (
         <div className="we-public-topbar">
-          <div className="we-public-topbar-contact">
-            {header.showTopbarPhone && institute.phone && (
-              <span>
-                <FiPhone /> {institute.phone}
-              </span>
-            )}
+          <div className="we-public-topbar-inner">
+            <div className="we-public-topbar-contact">
+              {header.showTopbarEmail && institute.email && (
+                <span className="we-topbar-contact-item">
+                  <FiMail />
+                  {institute.email}
+                </span>
+              )}
 
-            {header.announcementText && (
-              <span className="we-public-announcement">
-                {header.announcementText}
-              </span>
-            )}
+              {header.showTopbarPhone && institute.phone && (
+                <span className="we-topbar-contact-item">
+                  <FiPhone />
+                  {institute.phone}
+                </span>
+              )}
 
-            {header.showTopbarEmail && institute.email && (
-              <span>
-                <FiMail /> {institute.email}
-              </span>
-            )}
-          </div>
+              {header.announcementText && (
+                <span className="we-public-announcement">
+                  {header.announcementText}
+                </span>
+              )}
+            </div>
 
-          <div className="we-public-topbar-links">
-            {header.quickLinks.map((link, index) => (
-              <a href={link.url} key={index}>
-                {link.label}
-              </a>
-            ))}
+            <div className="we-public-topbar-actions">
+              {header.showLoginButton && (
+                <a
+                  className="we-topbar-login"
+                  href={header.loginButtonUrl || "/login"}
+                >
+                  {header.loginButtonLabel || "Login/Register"}
+                </a>
+              )}
 
-            {header.socialLinks.map((link) => (
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noreferrer"
-                key={link.platform}
-              >
-                {link.platform}
-              </a>
-            ))}
+              {header.showEnquiryButton && (
+                <a
+                  className="we-topbar-demo"
+                  href={header.enquiryButtonUrl || "/contact"}
+                >
+                  {header.enquiryButtonLabel || "Book Free Demo"}
+                </a>
+              )}
+
+              {header.quickLinks.map((link, index) => (
+                <a
+                  className="we-topbar-quick-link"
+                  href={link.url}
+                  key={`${link.label}-${index}`}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="we-public-main-header">
-        <div className="we-public-brand">
-          {header.showInstituteLogo && logoUrl && (
-            <img src={logoUrl} alt="Institute logo" />
-          )}
+      {/* Main logo and navigation row */}
+      <header className="we-public-main-header">
+        <div className="we-public-main-header-inner">
+          <a
+            className="we-public-brand"
+            href="/"
+            aria-label="Institute home"
+          >
+            {header.showInstituteLogo && logoUrl && (
+              <img
+                src={logoUrl}
+                alt="Institute logo"
+              />
+            )}
+          </a>
 
-          {header.showInstituteName && (
-            <strong>
-              {institute.instituteName || "Institute Name"}
-            </strong>
-          )}
+          {/* Navigation is a visual placeholder until Phase 3 */}
+          <nav
+            className="we-public-menu-placeholder"
+            aria-label="Main navigation preview"
+          >
+            {navigationItems.map((item, index) => (
+              <a
+                href="#"
+                key={item.label}
+                className={index === 0 ? "active" : ""}
+                onClick={(event) => event.preventDefault()}
+              >
+                <span>{item.label}</span>
+                {item.dropdown && <FiChevronDown />}
+              </a>
+            ))}
+          </nav>
         </div>
+      </header>
 
-        <div className="we-public-header-actions">
-          {header.showLoginButton && (
-            <a
-              className="we-public-login"
-              href={header.loginButtonUrl}
-            >
-              {header.loginButtonLabel}
-            </a>
-          )}
-
-          {header.showEnquiryButton && (
-            <a
-              className="we-public-enquiry"
-              href={header.enquiryButtonUrl}
-            >
-              {header.enquiryButtonLabel}
-            </a>
-          )}
-        </div>
-      </div>
-
-      <div className="we-public-menu-placeholder">
-        Navigation Menu — will be configured in Phase 3
-      </div>
-
+      {/* Homepage placeholder - future website phases will replace this */}
       <div className="we-public-page-placeholder">
         <div className="we-preview-hero-content">
           <span>WEBSITE PREVIEW</span>
-          <h2>{institute.instituteName || "Your Institute Website"}</h2>
+          <h2>
+            {institute.instituteName || "Your Institute Website"}
+          </h2>
           <p>
             Homepage sections will be connected in their respective phases.
           </p>
