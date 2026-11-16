@@ -31,6 +31,7 @@ import {
 
 import websiteEditorService from "../../../services/websiteEditorService";
 import instituteSettingsService from "../../../services/instituteSettingsService";
+import MenuControls from "./components/MenuControls";
 import { getAssetUrl } from "../../../utils/assetUrl";
 import notification, {
   getApiErrorMessage,
@@ -109,6 +110,11 @@ const WebsiteEditor = () => {
   const [institute, setInstitute] = useState(initialInstitute);
   const [savedInstitute, setSavedInstitute] = useState(initialInstitute);
 
+  const initialMenu = { items: [] };
+
+  const [menu, setMenu] = useState(initialMenu);
+  const [savedMenu, setSavedMenu] = useState(initialMenu);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -125,15 +131,19 @@ const WebsiteEditor = () => {
 
   const hasUnsavedChanges =
     JSON.stringify(header) !== JSON.stringify(savedHeader) ||
-    JSON.stringify(institute) !== JSON.stringify(savedInstitute);
+    JSON.stringify(institute) !== JSON.stringify(savedInstitute) ||
+    JSON.stringify(menu) !== JSON.stringify(savedMenu);
 
+
+  // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
   const loadSettings = useCallback(async () => {
     setLoading(true);
 
     try {
-      const [headerData, instituteData] = await Promise.all([
+      const [headerData, instituteData, menuData] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
+        websiteEditorService.getMenuSettings(),
       ]);
 
       const nextHeader = {
@@ -150,6 +160,18 @@ const WebsiteEditor = () => {
       setSavedHeader(nextHeader);
       setInstitute(nextInstitute);
       setSavedInstitute(nextInstitute);
+
+      // !!!!! INSERTION START: INITIALIZE MENU SETTINGS !!!!!
+      const nextMenu = {
+        items: Array.isArray(menuData?.items)
+          ? menuData.items
+          : [],
+      };
+
+      setMenu(nextMenu);
+      setSavedMenu(nextMenu);
+      // !!!!! INSERTION END: INITIALIZE MENU SETTINGS !!!!!
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -159,6 +181,8 @@ const WebsiteEditor = () => {
       setLoading(false);
     }
   }, []);
+  // !!!!! INSERTION END: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
+
 
   useEffect(() => {
     loadSettings();
@@ -177,6 +201,12 @@ const WebsiteEditor = () => {
       [field]: value,
     }));
   };
+
+  // !!!!! INSERTION START: UPDATE MENU SETTINGS !!!!!
+  const updateMenu = (items) => {
+    setMenu({ items });
+  };
+  // !!!!! INSERTION END: UPDATE MENU SETTINGS !!!!!
 
   const handleSectionClick = (section) => {
     setActiveSection(section.id);
@@ -341,8 +371,27 @@ const WebsiteEditor = () => {
     return true;
   };
 
+  // !!!!! INSERTION START: SAVE HEADER, INSTITUTE AND MENU SETTINGS !!!!!
   const handleSaveDraft = async () => {
     if (!validateHeader()) return;
+
+    const invalidMenuItem = (menu.items || []).some((item) =>
+      !item.label?.trim() ||
+      !item.url?.trim() ||
+      (item.children || []).some(
+        (child) =>
+          !child.label?.trim() || !child.url?.trim()
+      )
+    );
+
+    if (invalidMenuItem) {
+      notification.warning(
+        "Complete or remove every empty menu and submenu item."
+      );
+      setActiveSection("menu");
+      setExpandedSection("menu");
+      return;
+    }
 
     setSaving(true);
 
@@ -356,11 +405,15 @@ const WebsiteEditor = () => {
         address: institute.address,
       };
 
-      const [savedHeaderData, savedInstituteData] =
-        await Promise.all([
-          websiteEditorService.updateHeaderSettings(header),
-          instituteSettingsService.updateSettings(institutePayload),
-        ]);
+      const [
+        savedHeaderData,
+        savedInstituteData,
+        savedMenuData,
+      ] = await Promise.all([
+        websiteEditorService.updateHeaderSettings(header),
+        instituteSettingsService.updateSettings(institutePayload),
+        websiteEditorService.updateMenuSettings(menu),
+      ]);
 
       const nextHeader = {
         ...initialHeader,
@@ -372,21 +425,34 @@ const WebsiteEditor = () => {
         ...(savedInstituteData || {}),
       };
 
+      const nextMenu = {
+        items: Array.isArray(savedMenuData?.items)
+          ? savedMenuData.items
+          : menu.items,
+      };
+
       setHeader(nextHeader);
       setSavedHeader(nextHeader);
+
       setInstitute(nextInstitute);
       setSavedInstitute(nextInstitute);
 
-      notification.success("Header settings saved successfully.");
+      setMenu(nextMenu);
+      setSavedMenu(nextMenu);
+
+      notification.success(
+        "Website editor settings saved successfully."
+      );
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
-          "Unable to save header settings."
+          "Unable to save website editor settings."
       );
     } finally {
       setSaving(false);
     }
   };
+  // !!!!! INSERTION END: SAVE HEADER, INSTITUTE AND MENU SETTINGS !!!!!
 
   const handleDiscard = async () => {
     if (!hasUnsavedChanges) {
@@ -396,7 +462,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header and Topbar changes will be discarded.",
+      text: "Your unsaved Header, Topbar and Menu changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -407,6 +473,10 @@ const WebsiteEditor = () => {
 
     setHeader(savedHeader);
     setInstitute(savedInstitute);
+
+    // !!!!! INSERTION START: RESTORE SAVED MENU SETTINGS !!!!!
+    setMenu(savedMenu);
+    // !!!!! INSERTION END: RESTORE SAVED MENU SETTINGS !!!!!
   };
 
   const openPreviewInNewTab = () => {
@@ -484,6 +554,7 @@ const WebsiteEditor = () => {
 
                 {isExpanded && (
                   <div className="website-editor-accordion-content">
+                    {/* !!!!! INSERTION START: RENDER HEADER AND MENU CONTROLS !!!!! */}
                     {section.id === "header" ? (
                       <HeaderControls
                         header={header}
@@ -501,6 +572,11 @@ const WebsiteEditor = () => {
                         onUpdateSocialLink={updateSocialLink}
                         onRemoveSocialLink={removeSocialLink}
                       />
+                    ) : section.id === "menu" ? (
+                      <MenuControls
+                        menu={menu}
+                        onChange={updateMenu}
+                      />
                     ) : (
                       <div className="we-coming-soon">
                         <span>Phase {section.phase}</span>
@@ -510,6 +586,7 @@ const WebsiteEditor = () => {
                         </p>
                       </div>
                     )}
+                    {/* !!!!! INSERTION END: RENDER HEADER AND MENU CONTROLS !!!!! */}
                   </div>
                 )}
               </div>
@@ -622,18 +699,21 @@ const WebsiteEditor = () => {
               </div>
             </div>
 
+            {/* !!!!! INSERTION START: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             <WebsitePreview
               header={header}
               institute={institute}
               logoUrl={logoUrl}
+              menu={menu}
             />
+            {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
           </div>
         </div>
 
         <div className="website-editor-preview-footer">
           <span className="we-preview-status-dot" />
           <span>
-            Live editor preview · Not published to the public website
+            Live editor preview Â· Not published to the public website
           </span>
 
           {hasUnsavedChanges && (

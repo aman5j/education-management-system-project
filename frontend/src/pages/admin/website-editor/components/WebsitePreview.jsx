@@ -9,20 +9,20 @@ export default function WebsitePreview({
   header,
   institute,
   logoUrl,
+  menu,
 }) {
-  const navigationItems = [
-    { label: "Home" },
-    { label: "About us", dropdown: true },
-    { label: "Courses" },
-    { label: "Placements" },
-    { label: "Verification" },
-    { label: "Contact" },
-    { label: "Resources", dropdown: true },
-  ];
+  const navigationItems = Array.isArray(menu?.items)
+    ? menu.items.filter((item) => item.isVisible !== false)
+    : [];
+
+  const getLinkProps = (item) => ({
+    href: item.url || "#",
+    target: item.openInNewTab ? "_blank" : undefined,
+    rel: item.openInNewTab ? "noopener noreferrer" : undefined,
+  });
 
   return (
     <div className="we-public-site we-reference-header">
-      {/* Top contact and action bar */}
       {header.topbarEnabled && (
         <div className="we-public-topbar">
           <div className="we-public-topbar-inner">
@@ -81,7 +81,6 @@ export default function WebsitePreview({
         </div>
       )}
 
-      {/* Main logo and navigation row */}
       <header className="we-public-main-header">
         <div className="we-public-main-header-inner">
           <a
@@ -90,34 +89,61 @@ export default function WebsitePreview({
             aria-label="Institute home"
           >
             {header.showInstituteLogo && logoUrl && (
-              <img
-                src={logoUrl}
-                alt="Institute logo"
-              />
+              <img src={logoUrl} alt="Institute logo" />
             )}
           </a>
 
-          {/* Navigation is a visual placeholder until Phase 3 */}
           <nav
             className="we-public-menu-placeholder"
             aria-label="Main navigation preview"
           >
-            {navigationItems.map((item, index) => (
-              <a
-                href="#"
-                key={item.label}
-                className={index === 0 ? "active" : ""}
-                onClick={(event) => event.preventDefault()}
-              >
-                <span>{item.label}</span>
-                {item.dropdown && <FiChevronDown />}
-              </a>
-            ))}
+            {navigationItems.map((item) => {
+              const children = Array.isArray(item.children)
+                ? item.children.filter(
+                    (child) => child.isVisible !== false
+                  )
+                : [];
+
+              return (
+                <div
+                  className={`we-preview-menu-item ${
+                    children.length ? "has-dropdown" : ""
+                  }`}
+                  key={item.key}
+                >
+                  <a
+                    className="we-preview-menu-link"
+                    {...getLinkProps(item)}
+                  >
+                    <span>{item.label}</span>
+                    {children.length > 0 && <FiChevronDown />}
+                  </a>
+
+                  {children.length > 0 && (
+                    <div className="we-preview-dropdown">
+                      {children.map((child) => (
+                        <a
+                          key={child.key}
+                          {...getLinkProps(child)}
+                        >
+                          {child.label}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {navigationItems.length === 0 && (
+              <span className="we-preview-no-menu">
+                Add menu items from the Menu editor
+              </span>
+            )}
           </nav>
         </div>
       </header>
 
-      {/* Homepage placeholder - future website phases will replace this */}
       <div className="we-public-page-placeholder">
         <div className="we-preview-hero-content">
           <span>WEBSITE PREVIEW</span>
