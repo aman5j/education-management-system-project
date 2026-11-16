@@ -243,6 +243,15 @@ const App = () => {
         element={<VerifyCertificate />}
       />
 
+      <Route
+          path="/website-preview"
+          element={
+            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
+              <WebsitePreviewPage />
+            </RoleRoute>
+          }
+      />
+
       {/* Admin portal */}
       <Route
         path="/admin"
@@ -270,14 +279,7 @@ const App = () => {
           }
         />
 
-        <Route
-          path="/website-preview"
-          element={
-            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
-              <WebsitePreviewPage />
-            </RoleRoute>
-          }
-        />
+        
 
 
         {/* Keep all your existing routes here. */}
