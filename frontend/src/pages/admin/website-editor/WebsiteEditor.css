@@ -963,3 +963,71 @@
     font-size: 8px;
   }
 }
+
+
+
+
+/* Phase 2: Header preview toolbar */
+
+.we-preview-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.we-open-preview-button {
+  min-height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #cbdaf2;
+  border-radius: 6px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.we-open-preview-button:hover {
+  background: #eff6ff;
+}
+
+.we-open-preview-button svg {
+  font-size: 13px;
+}
+
+/* Header logo display size */
+
+.we-public-brand img {
+  width: 200px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.we-public-login,
+.we-public-enquiry {
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .we-preview-toolbar-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .we-preview-toolbar-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .we-open-preview-button {
+    width: 100%;
+  }
+}

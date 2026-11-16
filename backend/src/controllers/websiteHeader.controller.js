@@ -26,14 +26,12 @@ const BOOLEAN_FIELDS = [
   "showTopbarPhone",
   "showInstituteLogo",
   "showInstituteName",
-  "headerSticky",
   "showLoginButton",
   "showEnquiryButton",
 ];
 
 const STRING_FIELDS = [
   "announcementText",
-  "logoAlignment",
   "loginButtonLabel",
   "loginButtonUrl",
   "enquiryButtonLabel",
@@ -119,13 +117,6 @@ export const updateWebsiteHeaderSettings = async (
       if (typeof body[field] === "string") {
         updates[field] = body[field].trim();
       }
-    }
-
-    if (
-      updates.logoAlignment &&
-      !["left", "center"].includes(updates.logoAlignment)
-    ) {
-      return sendError(res, 400, "Invalid logo alignment.");
     }
 
     for (const field of [
@@ -253,6 +244,10 @@ export const updateWebsiteHeaderSettings = async (
       { key: "default" },
       {
         $set: updates,
+        $unset: {
+          logoAlignment: "",
+          headerSticky: "",
+        },
         $setOnInsert: { key: "default" },
       },
       {

@@ -74,12 +74,6 @@ const websiteHeaderSettingsSchema = new mongoose.Schema(
 
     showInstituteLogo: { type: Boolean, default: true },
     showInstituteName: { type: Boolean, default: true },
-    logoAlignment: {
-      type: String,
-      enum: ["left", "center"],
-      default: "left",
-    },
-    headerSticky: { type: Boolean, default: true },
 
     showLoginButton: { type: Boolean, default: true },
     loginButtonLabel: {

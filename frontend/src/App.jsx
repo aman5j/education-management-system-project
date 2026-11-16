@@ -68,6 +68,7 @@ import AlertNoticeManagement from "./pages/admin/alertNotices/AlertNoticeManagem
 
 // WEBSITE Editor Routes
 import WebsiteEditor from "./pages/admin/website-editor/WebsiteEditor";
+import WebsitePreviewPage from "./pages/admin/website-editor/components/WebsitePreviewPage";
 
 
 import Admissions from "./pages/admin/admissions/Admissions";
@@ -266,6 +267,15 @@ const App = () => {
             <PermissionRoute permission="website.view">
               <WebsiteEditor />
             </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="/website-preview"
+          element={
+            <RoleRoute allowedRoles={[ROLES.ADMIN]}>
+              <WebsitePreviewPage />
+            </RoleRoute>
           }
         />
 
