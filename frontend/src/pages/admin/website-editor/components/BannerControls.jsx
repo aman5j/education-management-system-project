@@ -144,9 +144,16 @@ export default function BannerControls({
           <div className="we-banner-image-preview">
             {slide.imageUrl ? (
               <img
-                src={slide.imageUrl}
-                alt={`Banner slide ${index + 1}`}
-              />
+            src={slide.imageUrl}
+            alt={`Banner slide ${index + 1}`}
+            onError={(event) => {
+                console.error("Sidebar banner failed:", {
+                slide: index + 1,
+                imageUrl: event.currentTarget.src,
+                version: slide.imageVersion,
+                });
+            }}
+            />
             // <img
             // src={getAssetUrl(slide.imageUrl)}
             // alt={`Banner slide ${index + 1}`}

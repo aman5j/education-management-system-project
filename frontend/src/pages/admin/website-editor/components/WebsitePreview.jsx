@@ -178,9 +178,16 @@ export default function WebsitePreview({
         {activeBanner?.imageUrl ? (
           <>
             <img
-              className="we-preview-banner-image"
-              src={activeBanner.imageUrl}
-              alt={`Homepage banner slide ${safeBannerIndex + 1}`}
+            className="we-preview-banner-image"
+            src={activeBanner.imageUrl}
+            alt={`Homepage banner slide ${safeBannerIndex + 1}`}
+            onError={(event) => {
+                console.error("Website preview banner failed:", {
+                slide: safeBannerIndex + 1,
+                imageUrl: event.currentTarget.src,
+                version: activeBanner.imageVersion,
+                });
+            }}
             />
 
             {bannerSlides.length > 1 && (
