@@ -2,6 +2,7 @@
 import { useRef } from "react";
 
 import notification from "../../../../utils/notification";
+// import { getAssetUrl } from "../../../../utils/assetUrl";
 
 import {
   FiPlus,
@@ -146,6 +147,16 @@ export default function BannerControls({
                 src={slide.imageUrl}
                 alt={`Banner slide ${index + 1}`}
               />
+            // <img
+            // src={getAssetUrl(slide.imageUrl)}
+            // alt={`Banner slide ${index + 1}`}
+            // onError={(event) => {
+            //     console.error("Banner image failed:", {
+            //     url: event.currentTarget.src,
+            //     slideKey: slide.key,
+            //     });
+            // }}
+            // />
             ) : (
               <div className="we-banner-image-empty">
                 <FiImage />
