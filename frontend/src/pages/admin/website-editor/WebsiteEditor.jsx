@@ -78,7 +78,7 @@ const initialInstitute = {
 const editorSections = [
   { id: "header", label: "Header", phase: 2, icon: FiLayout },
   { id: "menu", label: "Menu", phase: 3, icon: FiMenu },
-  { id: "banner", label: "Banner 1", phase: 4, icon: FiImage },
+  { id: "banner", label: "Banner", phase: 4, icon: FiImage },
   { id: "categories", label: "Category Banner", phase: 5, icon: FiGrid },
   { id: "pinned", label: "Pinned Banner", phase: 6, icon: FiImage },
   { id: "courses", label: "Trending Courses", phase: 7, icon: FiBookOpen },
