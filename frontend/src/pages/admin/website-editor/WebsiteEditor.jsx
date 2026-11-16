@@ -952,12 +952,20 @@ const WebsiteEditor = () => {
               <img src={logoUrl} alt="Institute logo" />
             )}
 
-            {header.showInstituteName && (
+            {/* {header.showInstituteName && (
               <strong>
                 {institute.instituteName || "Institute Name"}
               </strong>
-            )}
+            )} */}
           </div>
+
+           <div className="we-public-menu-placeholder">
+          <span>Home</span>
+          <span>About</span>
+          <span>Courses</span>
+          <span>Admissions</span>
+          <span>Contact</span>
+        </div>
 
           <div className="we-public-header-actions">
             {header.showLoginButton && (
@@ -974,13 +982,7 @@ const WebsiteEditor = () => {
           </div>
         </div>
 
-        <div className="we-public-menu-placeholder">
-          <span>Home</span>
-          <span>About</span>
-          <span>Courses</span>
-          <span>Admissions</span>
-          <span>Contact</span>
-        </div>
+       
 
         <div className="we-public-page-placeholder">
           <div className="we-preview-hero-content">
