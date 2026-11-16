@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -12,10 +13,19 @@ import {
 
 const router = express.Router();
 
-router.use(authenticate);
-router.use(authorizeRoles("admin"));
+// Authentication applies ONLY to Header endpoints.
+router.get(
+  "/header",
+  authenticate,
+  authorizeRoles("admin"),
+  getWebsiteHeaderSettings
+);
 
-router.get("/header", getWebsiteHeaderSettings);
-router.put("/header", updateWebsiteHeaderSettings);
+router.put(
+  "/header",
+  authenticate,
+  authorizeRoles("admin"),
+  updateWebsiteHeaderSettings
+);
 
 export default router;

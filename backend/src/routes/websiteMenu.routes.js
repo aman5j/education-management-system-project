@@ -13,10 +13,19 @@ import {
 
 const router = express.Router();
 
-router.use(authenticate);
-router.use(authorizeRoles("admin"));
+// Authentication applies ONLY to Menu endpoints.
+router.get(
+  "/menu",
+  authenticate,
+  authorizeRoles("admin"),
+  getWebsiteMenuSettings
+);
 
-router.get("/menu", getWebsiteMenuSettings);
-router.put("/menu", updateWebsiteMenuSettings);
+router.put(
+  "/menu",
+  authenticate,
+  authorizeRoles("admin"),
+  updateWebsiteMenuSettings
+);
 
 export default router;
