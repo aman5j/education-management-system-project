@@ -1,8 +1,13 @@
 
+import { useState } from "react";
+
 import {
   FiPhone,
   FiMail,
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiImage,
 } from "react-icons/fi";
 
 export default function WebsitePreview({
@@ -10,16 +15,40 @@ export default function WebsitePreview({
   institute,
   logoUrl,
   menu,
+  banner = [],
 }) {
+  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+
   const navigationItems = Array.isArray(menu?.items)
     ? menu.items.filter((item) => item.isVisible !== false)
     : [];
+
+  const bannerSlides = Array.isArray(banner) ? banner : [];
+
+  const safeBannerIndex = Math.min(
+    activeBannerIndex,
+    Math.max(bannerSlides.length - 1, 0)
+  );
+
+  const activeBanner = bannerSlides[safeBannerIndex];
 
   const getLinkProps = (item) => ({
     href: item.url || "#",
     target: item.openInNewTab ? "_blank" : undefined,
     rel: item.openInNewTab ? "noopener noreferrer" : undefined,
   });
+
+  const showPreviousBanner = () => {
+    setActiveBannerIndex((current) =>
+      current === 0 ? bannerSlides.length - 1 : current - 1
+    );
+  };
+
+  const showNextBanner = () => {
+    setActiveBannerIndex((current) =>
+      current === bannerSlides.length - 1 ? 0 : current + 1
+    );
+  };
 
   return (
     <div className="we-public-site we-reference-header">
@@ -67,7 +96,7 @@ export default function WebsitePreview({
                 </a>
               )}
 
-              {header.quickLinks.map((link, index) => (
+              {(header.quickLinks || []).map((link, index) => (
                 <a
                   className="we-topbar-quick-link"
                   href={link.url}
@@ -143,6 +172,63 @@ export default function WebsitePreview({
           </nav>
         </div>
       </header>
+
+      {/* Homepage Banner Preview */}
+      <section className="we-preview-banner">
+        {activeBanner?.imageUrl ? (
+          <>
+            <img
+              className="we-preview-banner-image"
+              src={activeBanner.imageUrl}
+              alt={`Homepage banner slide ${safeBannerIndex + 1}`}
+            />
+
+            {bannerSlides.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="we-preview-banner-arrow previous"
+                  onClick={showPreviousBanner}
+                  aria-label="Previous banner slide"
+                >
+                  <FiChevronLeft />
+                </button>
+
+                <button
+                  type="button"
+                  className="we-preview-banner-arrow next"
+                  onClick={showNextBanner}
+                  aria-label="Next banner slide"
+                >
+                  <FiChevronRight />
+                </button>
+
+                <div className="we-preview-banner-dots">
+                  {bannerSlides.map((slide, index) => (
+                    <button
+                      type="button"
+                      key={slide.key}
+                      className={
+                        index === safeBannerIndex ? "active" : ""
+                      }
+                      aria-label={`Show banner slide ${index + 1}`}
+                      onClick={() => setActiveBannerIndex(index)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="we-preview-banner-empty">
+            <FiImage />
+            <strong>Homepage Banner Preview</strong>
+            <span>
+              Upload banner slides from the Banner section.
+            </span>
+          </div>
+        )}
+      </section>
 
       <div className="we-public-page-placeholder">
         <div className="we-preview-hero-content">

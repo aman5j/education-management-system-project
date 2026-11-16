@@ -1784,3 +1784,381 @@
     min-width: 165px;
   }
 }
+
+
+
+
+
+
+
+
+/* =========================================
+   PHASE 4 - BANNER CONTROLS
+========================================= */
+
+.we-banner-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.we-banner-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.we-banner-heading h4 {
+  margin: 0 0 5px;
+  color: #27364a;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.we-banner-heading p {
+  margin: 0;
+  color: #8993a2;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.we-banner-count {
+  flex-shrink: 0;
+  padding: 4px 7px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.we-banner-note {
+  margin-top: 10px;
+  padding: 9px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  border-radius: 6px;
+  background: #f0f9ff;
+  color: #42677e;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.we-banner-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.we-banner-slide-card {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #e0e5eb;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.we-banner-slide-top {
+  min-height: 27px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.we-banner-slide-top > strong {
+  color: #344054;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.we-banner-slide-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.we-banner-slide-actions button {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e5e9ef;
+  border-radius: 5px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.we-banner-slide-actions button:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+.we-banner-slide-actions button.danger {
+  color: #dc2626;
+}
+
+.we-banner-slide-actions button.danger:hover:not(:disabled) {
+  background: #fff1f2;
+}
+
+.we-banner-slide-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.we-banner-image-preview {
+  width: 100%;
+  min-height: 95px;
+  max-height: 145px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #d6dce5;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.we-banner-image-preview img {
+  display: block;
+  width: 100%;
+  max-height: 145px;
+  object-fit: contain;
+}
+
+.we-banner-image-empty {
+  min-height: 95px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #9aa4b2;
+  font-size: 9px;
+}
+
+.we-banner-image-empty svg {
+  font-size: 22px;
+}
+
+.we-banner-upload-button {
+  min-height: 32px;
+  margin-top: 8px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dce7f7;
+  border-radius: 5px;
+  background: #f8fbff;
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.we-banner-upload-button:hover {
+  background: #eff6ff;
+}
+
+.we-banner-upload-button input {
+  display: none;
+}
+
+.we-banner-upload-button:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.we-banner-add-button {
+  width: 100%;
+  min-height: 39px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #d5e9ec;
+  border-radius: 6px;
+  background: #e5f4f5;
+  color: #269ca5;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.we-banner-add-button:hover:not(:disabled) {
+  background: #d6eef0;
+}
+
+.we-banner-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.we-banner-empty {
+  min-height: 115px;
+  padding: 15px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px dashed #d9e0e8;
+  border-radius: 7px;
+  background: #fafbfd;
+  text-align: center;
+}
+
+.we-banner-empty svg {
+  color: #9aa4b2;
+  font-size: 23px;
+}
+
+.we-banner-empty strong {
+  color: #475467;
+  font-size: 10px;
+}
+
+.we-banner-empty span,
+.we-banner-footer-note {
+  color: #929cac;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.we-banner-footer-note {
+  margin: 0;
+  text-align: center;
+}
+
+/* =========================================
+   PHASE 4 - BANNER PREVIEW
+========================================= */
+
+.we-preview-banner {
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+  aspect-ratio: 16 / 5;
+  overflow: hidden;
+  background: #f1f4f8;
+}
+
+.we-preview-banner-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  max-height: 440px;
+  object-fit: cover;
+}
+
+.we-preview-banner-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #8792a2;
+  text-align: center;
+}
+
+.we-preview-banner-empty svg {
+  font-size: 28px;
+}
+
+.we-preview-banner-empty strong {
+  color: #536174;
+  font-size: 13px;
+}
+
+.we-preview-banner-empty span {
+  font-size: 10px;
+}
+
+.we-preview-banner-arrow {
+  position: absolute;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.we-preview-banner-arrow:hover {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.we-preview-banner-arrow.previous {
+  left: 13px;
+}
+
+.we-preview-banner-arrow.next {
+  right: 13px;
+}
+
+.we-preview-banner-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.we-preview-banner-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.we-preview-banner-dots button.active {
+  width: 19px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+@media (max-width: 760px) {
+  .we-preview-banner {
+    aspect-ratio: 4 / 3;
+    min-height: 150px;
+  }
+
+  .we-preview-banner-image {
+    min-height: 150px;
+  }
+
+  .we-preview-banner-arrow {
+    width: 29px;
+    height: 29px;
+    font-size: 14px;
+  }
+
+  .we-preview-banner-arrow.previous {
+    left: 8px;
+  }
+
+  .we-preview-banner-arrow.next {
+    right: 8px;
+  }
+}

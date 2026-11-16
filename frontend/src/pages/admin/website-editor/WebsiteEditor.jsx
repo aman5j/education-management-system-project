@@ -32,6 +32,8 @@ import {
 import websiteEditorService from "../../../services/websiteEditorService";
 import instituteSettingsService from "../../../services/instituteSettingsService";
 import MenuControls from "./components/MenuControls";
+import BannerControls from "./components/BannerControls";
+
 import { getAssetUrl } from "../../../utils/assetUrl";
 import notification, {
   getApiErrorMessage,
@@ -75,6 +77,11 @@ const initialInstitute = {
   address: "",
 };
 
+const initialBanner = {
+  slides: [],
+};
+
+
 const editorSections = [
   { id: "header", label: "Header", phase: 2, icon: FiLayout },
   { id: "menu", label: "Menu", phase: 3, icon: FiMenu },
@@ -110,10 +117,17 @@ const WebsiteEditor = () => {
   const [institute, setInstitute] = useState(initialInstitute);
   const [savedInstitute, setSavedInstitute] = useState(initialInstitute);
 
+  // !!!!! INSERTION START: MENU STATE VARIABLES !!!!!
   const initialMenu = { items: [] };
 
   const [menu, setMenu] = useState(initialMenu);
   const [savedMenu, setSavedMenu] = useState(initialMenu);
+  // !!!!! INSERTION END: MENU STATE VARIABLES !!!!!
+
+  // !!!!! INSERTION START: BANNER STATE VARIABLES !!!!!
+  const [banner, setBanner] = useState(initialBanner);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  // !!!!! INSERTION END: BANNER STATE VARIABLES !!!!!
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -129,6 +143,11 @@ const WebsiteEditor = () => {
     ? getAssetUrl(institute.logoUrl)
     : "";
 
+  const bannerSlides = (banner.slides || []).map((slide) => ({
+    ...slide,
+    imageUrl: getAssetUrl(slide.imageUrl),
+  }));
+
   const hasUnsavedChanges =
     JSON.stringify(header) !== JSON.stringify(savedHeader) ||
     JSON.stringify(institute) !== JSON.stringify(savedInstitute) ||
@@ -140,10 +159,16 @@ const WebsiteEditor = () => {
     setLoading(true);
 
     try {
-      const [headerData, instituteData, menuData] = await Promise.all([
+      const [
+        headerData,
+        instituteData,
+        menuData,
+        bannerData,
+      ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
         websiteEditorService.getMenuSettings(),
+        websiteEditorService.getBannerSettings(),
       ]);
 
       const nextHeader = {
@@ -171,6 +196,14 @@ const WebsiteEditor = () => {
       setMenu(nextMenu);
       setSavedMenu(nextMenu);
       // !!!!! INSERTION END: INITIALIZE MENU SETTINGS !!!!!
+
+      const nextBanner = {
+        slides: Array.isArray(bannerData?.slides)
+          ? bannerData.slides
+          : [],
+      };
+
+      setBanner(nextBanner);
 
     } catch (error) {
       notification.error(
@@ -207,6 +240,88 @@ const WebsiteEditor = () => {
     setMenu({ items });
   };
   // !!!!! INSERTION END: UPDATE MENU SETTINGS !!!!!
+
+  const handleBannerUpload = async (file, slideKey = "") => {
+    if (!file) return;
+
+    setUploadingBanner(true);
+
+    try {
+      const updated = await websiteEditorService.uploadBannerSlide(
+        file,
+        slideKey
+      );
+
+      setBanner({
+        slides: Array.isArray(updated?.slides)
+          ? updated.slides
+          : [],
+      });
+
+      notification.success(
+        slideKey
+          ? "Banner image replaced successfully."
+          : "Banner slide added successfully."
+      );
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) || "Unable to upload banner image."
+      );
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const handleBannerDelete = async (slideKey) => {
+    const confirmed = await notification.confirm({
+      title: "Delete banner slide?",
+      text: "This will permanently delete the selected banner image.",
+      icon: "warning",
+      confirmText: "Delete Slide",
+      cancelText: "Cancel",
+      confirmButtonColor: "#dc2626",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const updated = await websiteEditorService.deleteBannerSlide(
+        slideKey
+      );
+
+      setBanner({
+        slides: Array.isArray(updated?.slides)
+          ? updated.slides
+          : [],
+      });
+
+      notification.success("Banner slide deleted successfully.");
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) || "Unable to delete banner slide."
+      );
+    }
+  };
+
+  const handleBannerReorder = async (slideKeys) => {
+    try {
+      const updated = await websiteEditorService.reorderBannerSlides(
+        slideKeys
+      );
+
+      setBanner({
+        slides: Array.isArray(updated?.slides)
+          ? updated.slides
+          : [],
+      });
+
+      notification.success("Banner slide order updated.");
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) || "Unable to reorder banner slides."
+      );
+    }
+  };
 
   const handleSectionClick = (section) => {
     setActiveSection(section.id);
@@ -577,6 +692,14 @@ const WebsiteEditor = () => {
                         menu={menu}
                         onChange={updateMenu}
                       />
+                    ) : section.id === "banner" ? (
+                      <BannerControls
+                        slides={bannerSlides}
+                        uploading={uploadingBanner}
+                        onUpload={handleBannerUpload}
+                        onDelete={handleBannerDelete}
+                        onReorder={handleBannerReorder}
+                      />
                     ) : (
                       <div className="we-coming-soon">
                         <span>Phase {section.phase}</span>
@@ -705,6 +828,7 @@ const WebsiteEditor = () => {
               institute={institute}
               logoUrl={logoUrl}
               menu={menu}
+              banner={bannerSlides}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
           </div>

@@ -2,7 +2,6 @@
 import api from "./api";
 
 const websiteEditorService = {
-
   // Header Services
   async getHeaderSettings() {
     const response = await api.get(
@@ -23,8 +22,7 @@ const websiteEditorService = {
     return response.data?.data?.settings || {};
   },
 
-  // Menus services
-
+  // Menu Services
   async getMenuSettings() {
     const response = await api.get(
       "/website-editor/menu",
@@ -42,6 +40,57 @@ const websiteEditorService = {
     );
 
     return response.data?.data?.settings || {};
+  },
+
+  // Banner Services
+  async getBannerSettings() {
+    const response = await api.get(
+      "/website-editor/banner",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || { slides: [] };
+  },
+
+  async uploadBannerSlide(file, slideKey = "") {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    if (slideKey) {
+      formData.append("slideKey", slideKey);
+    }
+
+    const response = await api.post(
+      "/website-editor/banner/slides",
+      formData,
+      {
+        headers: {
+          "Content-Type": undefined,
+        },
+        silent: true,
+      }
+    );
+
+    return response.data?.data?.settings || { slides: [] };
+  },
+
+  async deleteBannerSlide(slideKey) {
+    const response = await api.delete(
+      `/website-editor/banner/slides/${encodeURIComponent(slideKey)}`,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || { slides: [] };
+  },
+
+  async reorderBannerSlides(slideKeys) {
+    const response = await api.put(
+      "/website-editor/banner/reorder",
+      { slideKeys },
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || { slides: [] };
   },
 };
 
