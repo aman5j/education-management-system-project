@@ -1549,3 +1549,127 @@
 }
 
 /* !!!!! INSERTION END: SEARCHABLE ADMISSION SELECTOR !!!!! */
+
+
+
+
+
+
+
+
+/* !!!!! INSERTION START: PAYMENT SELECTED STUDENT PROFILE IMAGE !!!!! */
+
+.payment-selected-admission {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.payment-selected-admission-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 100px;
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  border: 3px solid #dbeafe;
+  border-radius: 50%;
+  background: #eaf0ff;
+}
+
+.payment-selected-admission-avatar img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.payment-student-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #2457c5;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.payment-student-avatar-fallback-hidden {
+  display: none;
+}
+
+.payment-selected-admission-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.payment-selected-admission-details strong {
+  margin-bottom: 4px;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.payment-selected-admission-details span {
+  color: #64748b;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.payment-admission-selected-label {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .payment-selected-admission {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .payment-selected-admission-avatar {
+    flex-basis: 72px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .payment-selected-admission-details {
+    flex-basis: calc(100% - 90px);
+  }
+
+  .payment-selected-admission-details strong {
+    font-size: 15px;
+  }
+
+  .payment-admission-selected-label {
+    margin-left: 84px;
+  }
+}
+
+/* !!!!! INSERTION END: PAYMENT SELECTED STUDENT PROFILE IMAGE !!!!! */
