@@ -1375,3 +1375,177 @@
   background: #ecfdf3;
   color: #15803d;
 }
+
+
+
+
+
+
+
+
+/* !!!!! INSERTION START: SEARCHABLE ADMISSION SELECTOR !!!!! */
+
+.payment-admission-search {
+  position: relative;
+  width: 100%;
+}
+
+.payment-admission-search > input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 110px 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  outline: none;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.payment-admission-search > input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.payment-admission-search > input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.payment-admission-search-loader {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.payment-admission-results {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+
+.payment-admission-option {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.payment-admission-option:last-child {
+  border-bottom: 0;
+}
+
+.payment-admission-option:hover {
+  background: #eff6ff;
+}
+
+.payment-admission-option > strong {
+  color: #2563eb;
+  font-size: 12px;
+}
+
+.payment-admission-option > span {
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.payment-admission-option > small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.payment-admission-option-details {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.payment-admission-option-details strong {
+  color: #0f172a;
+}
+
+.payment-admission-message {
+  padding: 14px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.payment-selected-admission {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.payment-selected-admission-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.payment-selected-admission-details strong {
+  margin-bottom: 3px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.payment-selected-admission-details span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.payment-admission-selected-label {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .payment-admission-option {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .payment-admission-option-details {
+    grid-column: auto;
+  }
+
+  .payment-selected-admission {
+    flex-direction: column;
+  }
+}
+
+/* !!!!! INSERTION END: SEARCHABLE ADMISSION SELECTOR !!!!! */
