@@ -123,8 +123,19 @@ const menuItems = [
 
   {
     label: "Attendance",
-    path: "/admin/attendance",
+    // path: "/admin/attendance",
     icon: FiUserCheck,
+    children: [
+     
+      {
+        label: "Attendance",
+        path: "/admin/attendance",
+      },
+      {
+        label: "Attendance Reports",
+        path: "/admin/reports/attendance",
+      },
+    ],
   },
 
   {
