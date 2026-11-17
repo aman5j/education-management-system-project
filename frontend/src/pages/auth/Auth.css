@@ -420,7 +420,10 @@ input:-webkit-autofill:active {
     white-space: nowrap;
     background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%);;
 }
-
+.themebtn:disabled{
+  opacity: 0.5;
+    cursor: no-drop;
+}
 .exceldownload{
   background: green;
   color: white;
