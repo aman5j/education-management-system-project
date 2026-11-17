@@ -339,9 +339,9 @@ export default function StudentDocuments() {
                     </div>
                   )}
 
-                  <span className="student-document-card__view">
+                  {/* <span className="student-document-card__view">
                     <FiEye /> Open
-                  </span>
+                  </span> */}
                 </div>
 
                 <div className="student-document-card__footer">
