@@ -38,14 +38,43 @@ const AddStudent = () => {
     setSubmitting(true);
 
     try {
-      const documents = formData.getAll("documents");
+      // !!!!! INSERTION START: EXTRACT DOCUMENT FILES AND NAMES !!!!!
+      const documentFiles = formData.getAll("documents");
+
+      let documentNames = [];
+
+      try {
+        documentNames = JSON.parse(
+          formData.get("documentNames") || "[]"
+        );
+      } catch {
+        throw new Error("Invalid document names.");
+      }
+
+      if (documentFiles.length !== documentNames.length) {
+        throw new Error("Please provide a name for every document.");
+      }
+
+      const documents = documentFiles.map((file, index) => ({
+        file,
+        displayName: String(documentNames[index] || "").trim(),
+      }));
+
+      if (documents.some((document) => !document.displayName)) {
+        throw new Error("Please enter a name for every document.");
+      }
+
       const studentFormData = new FormData();
 
       for (const [key, value] of formData.entries()) {
-        if (key !== "documents") {
+        if (
+          key !== "documents" &&
+          key !== "documentNames"
+        ) {
           studentFormData.append(key, value);
         }
       }
+      // !!!!! INSERTION END: EXTRACT DOCUMENT FILES AND NAMES !!!!!
 
       const response = await api.post("/students", studentFormData, {
         headers: {
@@ -62,6 +91,7 @@ const AddStudent = () => {
         );
       }
 
+      // !!!!! INSERTION START: UPLOAD NAMED STUDENT DOCUMENTS !!!!!
       if (documents.length > 0) {
         try {
           await uploadStudentDocuments(student._id, documents);
@@ -71,21 +101,20 @@ const AddStudent = () => {
           });
 
           throw new Error(
-            "Student was created, but document upload failed. You have been redirected to Edit Student to retry."
+            error?.response?.data?.message ||
+              "Student was created, but document upload failed. You have been redirected to Edit Student to retry."
           );
         }
       }
+      // !!!!! INSERTION END: UPLOAD NAMED STUDENT DOCUMENTS !!!!!
 
-      // Show success once from the submit event.
       notification.success("Student created successfully.");
-
-      // Do not send a notification through navigation state.
       navigate(studentsPath, { replace: true });
     } catch (requestError) {
       throw new Error(
         requestError?.response?.data?.message ||
-        requestError?.message ||
-        "Unable to create student."
+          requestError?.message ||
+          "Unable to create student."
       );
     } finally {
       setSubmitting(false);
