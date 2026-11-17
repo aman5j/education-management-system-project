@@ -6,8 +6,10 @@ import {
   useParams,
 } from "react-router-dom";
 import { getAssetUrl } from "../../utils/assetUrl";
+import { GoDotFill } from "react-icons/go";
 
 import {
+   FiXCircle,
   FiAlertCircle,
   FiArrowLeft,
   FiArrowRight,
@@ -19,7 +21,10 @@ import {
   FiRefreshCw,
   FiShield,
   FiTarget,
-    FiEye
+    FiEye,
+     FiBarChart2,
+FiLayers,
+FiPlay,
 } from "react-icons/fi";
 
 import studentPortalService from "../../services/studentPortalService";
@@ -760,216 +765,295 @@ export default function StudentExams() {
       Boolean(examInfo.alreadyStarted);
 
     return (
-      <main className="student-exams">
+     <main className="student-exams student-exam-instructions">
+
+<div class="page-header"><div><h1>Exam Instructions</h1>
+<p>Review your schedule and instructions before starting.</p>
+</div>
+ <button
+    type="button"
+    className="themebtn"
+    onClick={() => navigate("/student/exams")}
+  >
+    <FiArrowLeft /> Back to Exams
+  </button>
+  </div>
+
+ 
+
+  {/* Hero Banner */}
+  {/* <section className="se-instruction-hero">
+    <div className="se-hero-content">
+      <span className="se-hero-label">
+        <FiAward /> EXAM / BEFORE YOU BEGIN
+      </span>
+
+      <h1>Exam Instructions</h1>
+      <p>Review your schedule and instructions before starting.</p>
+    </div>
+
+    <div className="se-hero-art" aria-hidden="true">
+      <div className="se-hero-books">📚</div>
+      <div className="se-hero-paper">
+        <FiFileText />
+        <strong>EXAM</strong>
+        <span><FiCheckCircle /> Ready</span>
+        <span><FiCheckCircle /> Focus</span>
+      </div>
+      <div className="se-hero-hourglass">⌛</div>
+      <div className="se-hero-student">🎓</div>
+    </div>
+  </section> */}
+
+  {/* Main Two Column Layout */}
+  <section className="se-instruction-layout">
+
+    {/* Left Column */}
+    <div className="se-instruction-left">
+
+      {/* Hall Ticket */}
+      <article className="se-hall-ticket common-card">
+        {/* <div className="se-hall-icon">
+          <FiAward />
+        </div> */}
+
+        <div className="se-hall-content">
+          <span>HALL TICKET</span>
+          <h2>{exam.hallTicketNo}</h2>
+          <p>{exam.course}</p>
+        </div>
+
+        <span
+          className={`se-badge se-badge--${String(
+            exam.scheduleStatus
+          ).toLowerCase().replace(/\s+/g, "-")}`}
+        >
+          {exam.scheduleStatus}
+        </span>
+      </article>
+
+      {/* Exam Schedule */}
+      <div className="se-schedule-heading">
+       
+        <h2>Exam Schedule &amp; Details</h2>
+        <span />
+      </div>
+
+      <div className="se-detail-grid">
+
+        <article className="se-detail-card common-card se-detail-card--purple">
+          <div className="se-detail-icon">
+            <FiCalendar />
+          </div>
+          <span>Exam Date</span>
+          <strong>{dateText(exam.examDate)}</strong>
+        </article>
+
+        <article className="se-detail-card common-card se-detail-card--blue">
+          <div className="se-detail-icon">
+            <FiClock />
+          </div>
+          <span>Reporting Time</span>
+          <strong>{timeText(exam.reportingTime)}</strong>
+        </article>
+
+        <article className="se-detail-card common-card se-detail-card--green">
+          <div className="se-detail-icon">
+            <FiPlay />
+          </div>
+          <span>Start Time</span>
+          <strong>{timeText(exam.startTime)}</strong>
+        </article>
+
+        <article className="se-detail-card common-card se-detail-card--red">
+          <div className="se-detail-icon">
+            <FiClock />
+          </div>
+          <span>End Time</span>
+          <strong>{timeText(exam.endTime)}</strong>
+        </article>
+
+        <article className="se-detail-card common-card se-detail-card--violet">
+          <div className="se-detail-icon">
+            <FiFileText />
+          </div>
+          <span>Total Questions</span>
+          <strong>{exam.totalQuestions}</strong>
+        </article>
+
+        <article className="se-detail-card common-card se-detail-card--orange">
+          <div className="se-detail-icon">
+            <FiAward />
+          </div>
+          <span>Total Marks</span>
+          <strong>{exam.totalMarks}</strong>
+        </article>
+
+      </div>
+    </div>
+
+    {/* Right Column */}
+
+    
+    <article className="se-instructions-panel  nospace" >
+
+      <div className="common-card">
+        <div class="panel-header"><div><h3>EXAM ACCESS</h3>
+      </div><div class="sc-recommendations__heading"></div></div>
+        <div className="cardbody">
+           <button
+        type="button"
+        className="themebtn"
+        disabled={!canStart || busy}
+        onClick={handleStartExam}
+      >
+        <span className="se-start-icon">
+          <FiPlay />
+        </span>
+
+        {busy
+          ? "Processing..."
+          : examInfo.alreadyStarted
+            ? "Resume Exam"
+            : "Start Exam"}
+
+       
+      </button>
+
+       {examInfo.feeClearance?.eligible === false && (
+        <div className="se-fee-warning" role="alert">
+          <div className="se-fee-warning-icon">
+            <FiAlertCircle />
+          </div>
+
+          <div>
+            <strong>
+              Your course fee is due. Outstanding amount:{" "}
+              {examInfo.feeClearance.message || "Please clear your pending fees."}
+            </strong>
+            
+          </div>
+        </div>
+      )}
+
+     
+
+      {!canStart && (
+        <p className="se-start-help">
+          <FiAlertCircle />
+          {examInfo.feeClearance?.eligible === false
+            ? "Please clear your outstanding course fees before requesting exam access."
+            : "This exam cannot be started right now. Confirm the schedule and hall-ticket status with your institute."}
+        </p>
+      )}
+      </div>
+    </div>
+
+        <div className="common-card">
+          <div class="panel-header"><div><h3>Important Instructions </h3>
+      </div><div class="sc-recommendations__heading"></div></div>
+
+
+          <div className="cardbody">
+            <ul className="se-instruction-list">
+        {(examInfo.instructions || []).map((item, index) => (
+          <li key={`${index}-${item}`}>
+            <span className="se-instruction-number"> <GoDotFill />
+</span>
+            <p>{item}</p>
+          </li>
+        ))}
+      </ul>
+
+     
+          </div>
+        </div>
+
+    </article>
+  </section>
+
+  {/* Approval Modal */}
+  {approvalModalOpen && (
+    <div className="se-approval-backdrop">
+      <section
+        className="se-approval-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="se-approval-title"
+      >
+        <div className="se-approval-icon">
+          {approvalStatus === "Approved" ? (
+            <FiCheckCircle />
+          ) : approvalStatus === "Rejected" ? (
+            <FiAlertCircle />
+          ) : (
+            <FiClock />
+          )}
+        </div>
+
+        <h2 id="se-approval-title">
+          {approvalStatus === "Approved"
+            ? "Exam Access Approved"
+            : approvalStatus === "Rejected"
+              ? "Request Rejected"
+              : "Awaiting Admin Approval"}
+        </h2>
+
+        <p>
+          {approvalStatus === "Approved"
+            ? "Your exam access has been approved."
+            : approvalStatus === "Rejected"
+              ? approvalReason ||
+                "Please contact your institute administrator."
+              : "Your request has been sent to the institute administrator. This screen will update automatically after approval."}
+        </p>
+
+        {approvalStatus === "Pending" && (
+          <div className="se-approval-wait">
+            <span />
+            Waiting for administrator...
+          </div>
+        )}
+
+        {approvalStatus === "Approved" && (
+          <button
+            type="button"
+            className="se-button se-button--primary"
+            onClick={startApprovedExam}
+            disabled={busy}
+          >
+            {busy ? "Starting..." : "Start Exam"}
+            <FiArrowRight />
+          </button>
+        )}
+
+        {approvalStatus === "Rejected" && (
+          <button
+            type="button"
+            className="se-button se-button--primary"
+            onClick={() => {
+              setApprovalModalOpen(false);
+              setApprovalStatus("Pending");
+              handleStartExam();
+            }}
+            disabled={busy}
+          >
+            Request Again
+          </button>
+        )}
+
         <button
           type="button"
-          className="se-back"
-          onClick={() => navigate("/student/exams")}
+          className="se-approval-close"
+          onClick={() => setApprovalModalOpen(false)}
         >
-          <FiArrowLeft /> Back to Exams
+          Close
         </button>
+      </section>
+    </div>
+  )}
 
-        <header className="se-heading">
-          <span className="se-eyebrow">
-            EXAM / BEFORE YOU BEGIN
-          </span>
-
-          <h1>Exam Instructions</h1>
-
-          <p>
-            Review your schedule and instructions before starting.
-          </p>
-        </header>
-
-        <section className="se-instruction-layout">
-          <article className="se-panel se-exam-info">
-            <div className="se-panel-heading">
-              <div>
-                <span className="se-eyebrow">
-                  HALL TICKET {exam.hallTicketNo}
-                </span>
-
-                <h2>{exam.course}</h2>
-              </div>
-
-              <span
-                className={`se-badge se-badge--${String(
-                  exam.scheduleStatus
-                )
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-              >
-                {exam.scheduleStatus}
-              </span>
-            </div>
-
-            <div className="se-detail-grid">
-              <div>
-                <span>Exam date</span>
-                <strong>{dateText(exam.examDate)}</strong>
-              </div>
-
-              <div>
-                <span>Reporting time</span>
-                <strong>{timeText(exam.reportingTime)}</strong>
-              </div>
-
-              <div>
-                <span>Start time</span>
-                <strong>{timeText(exam.startTime)}</strong>
-              </div>
-
-              <div>
-                <span>End time</span>
-                <strong>{timeText(exam.endTime)}</strong>
-              </div>
-
-              <div>
-                <span>Total questions</span>
-                <strong>{exam.totalQuestions}</strong>
-              </div>
-
-              <div>
-                <span>Total marks</span>
-                <strong>{exam.totalMarks}</strong>
-              </div>
-            </div>
-          </article>
-
-          <article className="se-panel se-instructions-panel">
-            <div className="se-panel-heading">
-              <div>
-                <span className="se-eyebrow">PLEASE READ</span>
-                <h2>Important instructions</h2>
-              </div>
-
-              <FiShield />
-            </div>
-
-            <ul className="se-instruction-list">
-              {(examInfo.instructions || []).map((item, index) => (
-                <li key={`${index}-${item}`}>
-                  <span>{index + 1}</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            {examInfo.feeClearance?.eligible === false && (
-              <div className="se-error" role="alert">
-                <FiAlertCircle />
-                <span>
-                  {examInfo.feeClearance.message ||
-                    "Your fee is due. Please complete your fee payment before starting the exam."}
-                </span>
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="se-button se-button--primary se-button--wide"
-              disabled={!canStart || busy}
-              onClick={handleStartExam}
-            >
-              {busy
-                ? "Processing..."
-                : examInfo.alreadyStarted
-                  ? "Resume Exam"
-                  : "Start Exam"}
-
-              <FiArrowRight />
-            </button>
-
-            {!canStart && (
-              <p className="se-help">
-                {examInfo.feeClearance?.eligible === false
-                  ? "Please clear your outstanding course fees before requesting exam access."
-                  : "This exam cannot be started right now. Confirm the schedule and hall-ticket status with your institute."}
-              </p>
-            )}
-
-            {approvalModalOpen && (
-              <div className="se-approval-backdrop">
-                <section
-                  className="se-approval-modal"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="se-approval-title"
-                >
-                  <div className="se-approval-icon">
-                    {approvalStatus === "Approved" ? (
-                      <FiCheckCircle />
-                    ) : approvalStatus === "Rejected" ? (
-                      <FiAlertCircle />
-                    ) : (
-                      <FiClock />
-                    )}
-                  </div>
-
-                  <h2 id="se-approval-title">
-                    {approvalStatus === "Approved"
-                      ? "Exam Access Approved"
-                      : approvalStatus === "Rejected"
-                        ? "Request Rejected"
-                        : "Awaiting Admin Approval"}
-                  </h2>
-
-                  <p>
-                    {approvalStatus === "Approved"
-                      ? "Your exam access has been approved."
-                      : approvalStatus === "Rejected"
-                        ? approvalReason ||
-                          "Please contact your institute administrator."
-                        : "Your request has been sent to the institute administrator. This screen will update automatically after approval."}
-                  </p>
-
-                  {approvalStatus === "Pending" && (
-                    <div className="se-approval-wait">
-                      <span />
-                      Waiting for administrator...
-                    </div>
-                  )}
-
-                  {approvalStatus === "Approved" && (
-                    <button
-                      type="button"
-                      className="se-button se-button--primary"
-                      onClick={startApprovedExam}
-                      disabled={busy}
-                    >
-                      {busy ? "Starting..." : "Start Exam"}
-                      <FiArrowRight />
-                    </button>
-                  )}
-
-                  {approvalStatus === "Rejected" && (
-                    <button
-                      type="button"
-                      className="se-button se-button--primary"
-                      onClick={() => {
-                        setApprovalModalOpen(false);
-                        setApprovalStatus("Pending");
-                        handleStartExam();
-                      }}
-                      disabled={busy}
-                    >
-                      Request Again
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    className="se-approval-close"
-                    onClick={() => setApprovalModalOpen(false)}
-                  >
-                    Close
-                  </button>
-                </section>
-              </div>
-            )}
-          </article>
-        </section>
-      </main>
+</main>
     );
   }
 
@@ -998,214 +1082,286 @@ export default function StudentExams() {
     ).length;
 
     return (
-      <main className="student-exams">
-        <header className="se-take-header">
-          <div>
-            <span className="se-eyebrow">ONLINE EXAM</span>
-            <h1>{exam.course || "Exam"}</h1>
-            <p>Hall ticket: {exam.hallTicketNo}</p>
+      
+<main className="student-exams se-exam-page">
+
+  {/* Exam Hero */}
+  {/* <section className="se-exam-hero">
+    <div className="se-exam-hero-content">
+      <span className="se-exam-label">
+        <FiMonitor /> ONLINE EXAM
+      </span>
+
+      <h1>{exam.course || "Exam"}</h1>
+      <p>Hall ticket: {exam.hallTicketNo}</p>
+    </div>
+
+    <div className="se-exam-hero-art">
+      <div className="se-laptop-art">
+        <div className="se-laptop-screen">
+          <FiMonitor />
+          <strong>EXAM</strong>
+          <span>Focus. Learn. Achieve.</span>
+        </div>
+        <div className="se-laptop-base" />
+      </div>
+      <div className="se-hero-orb se-hero-orb--one" />
+      <div className="se-hero-orb se-hero-orb--two" />
+    </div>
+  </section> */}
+
+  {/* Exam Overview */}
+  <section className="se-exam-overview common-card">
+
+    <article className="se-overview-item">
+      <div className="se-overview-icon se-overview-icon--purple">
+        <FiFileText />
+      </div>
+      <div className="se-overview-info">
+        <span>Total Questions</span>
+        <strong>{questions.length}</strong>
+      </div>
+    </article>
+
+    <article className="se-overview-item">
+      <div className="se-overview-icon se-overview-icon--blue">
+        <FiLayers />
+      </div>
+      <div className="se-overview-info">
+        <span>Total Marks</span>
+        <strong>{exam.totalMarks}</strong>
+      </div>
+    </article>
+
+    <article className="se-overview-item se-overview-timer">
+      <div className="se-overview-icon se-overview-icon--pink">
+        <FiClock />
+      </div>
+      <div className="se-overview-info">
+        <span>Time Left</span>
+        <strong
+          className={
+            remainingMs < 5 * 60 * 1000
+              ? "se-time-warning"
+              : ""
+          }
+        >
+          {clockText(remainingMs)}
+        </strong>
+      </div>
+    </article>
+
+    <article className="se-overview-progress">
+      <div className="se-overview-progress-heading">
+        <strong>Overall Progress</strong>
+        <span>
+          Question {currentQuestion + 1} of {questions.length}
+        </span>
+      </div>
+      <div className="se-progress se-progress--overview">
+        <span
+          style={{
+            width: `${
+              questions.length
+                ? ((currentQuestion + 1) / questions.length) * 100
+                : 0
+            }%`,
+          }}
+        />
+      </div>
+    </article>
+
+  </section>
+
+  {/* Main Exam Layout */}
+  <div className="se-take-layout">
+
+    {/* Question Navigator */}
+    <aside className="se-panel se-question-nav common-card">
+
+      {/* <div className="se-panel-heading">
+        <div className="se-nav-title">
+          <FiGrid />
+          <h2>Question Navigator</h2>
+        </div>
+        <span>
+          {answeredCount}/{questions.length}
+        </span>
+      </div> */}
+
+      <div class="panel-header">
+        <div>
+          <h3>Question Navigator </h3>
+          </div>
+         <span>
+          {answeredCount}/{questions.length}
+        </span>
           </div>
 
-          <div
-            className={`se-timer ${
-              remainingMs < 5 * 60 * 1000
-                ? "se-timer--warning"
+
+
+        <div className="cardbody">
+           <div className="se-question-grid">
+        {questions.map((item, index) => {
+          const isAnswered = Boolean(answers[item.questionId]);
+          const isMarked = marked.includes(item.questionId);
+
+          return (
+            <button
+              type="button"
+              key={item.questionId}
+              className={[
+                "se-question-number",
+                index === currentQuestion ? "is-current" : "",
+                isAnswered ? "is-answered" : "",
+                isMarked ? "is-marked" : "",
+              ].filter(Boolean).join(" ")}
+              onClick={() => setCurrentQuestion(index)}
+              aria-label={`Question ${index + 1}${
+                isAnswered ? ", answered" : ", unanswered"
+              }`}
+            >
+              {index + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="se-legend">
+        <span><i className="is-current" /> Current</span>
+        <span><i className="is-answered" /> Answered</span>
+        <span><i className="is-marked" /> Review</span>
+        <span><i /> Unanswered</span>
+      </div>
+
+     
+        </div>
+
+    </aside>
+
+    {/* Question Panel */}
+    <section className="se-panel se-question-panel common-card">
+
+     
+        <div className="cardbody">
+           <div className="se-question-content">
+        <h2 className="se-question-text">
+          {question.questionText}
+        </h2>
+      </div>
+
+      <div className="se-options">
+        {(question.options || []).map((option) => (
+          <label
+            key={option.key}
+            className={`se-option ${
+              answers[question.questionId] === option.key
+                ? "is-selected"
                 : ""
             }`}
           >
-            <FiClock />
-            <span>Time left</span>
-            <strong>{clockText(remainingMs)}</strong>
-          </div>
-        </header>
+            <input
+              type="radio"
+              name={question.questionId}
+              value={option.key}
+              checked={
+                answers[question.questionId] === option.key
+              }
+              onChange={() =>
+                setAnswers((previous) => ({
+                  ...previous,
+                  [question.questionId]: option.key,
+                }))
+              }
+            />
 
-        <div className="se-take-layout">
-          <aside className="se-panel se-question-nav">
-            <div className="se-panel-heading">
-              <h2>Question navigator</h2>
-              <span>
-                {answeredCount}/{questions.length}
-              </span>
-            </div>
+            <span className="se-option__radio" />
+            <span className="se-option__key">{option.key}</span>
+            <span className="se-option__text">{option.text}</span>
+          </label>
+        ))}
+      </div>
 
-            <div className="se-question-grid">
-              {questions.map((item, index) => {
-                const isAnswered = Boolean(
-                  answers[item.questionId]
-                );
-
-                const isMarked = marked.includes(
-                  item.questionId
-                );
-
-                return (
-                  <button
-                    type="button"
-                    key={item.questionId}
-                    className={[
-                      "se-question-number",
-                      index === currentQuestion ? "is-current" : "",
-                      isAnswered ? "is-answered" : "",
-                      isMarked ? "is-marked" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={() => setCurrentQuestion(index)}
-                    aria-label={`Question ${index + 1}${
-                      isAnswered ? ", answered" : ", unanswered"
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="se-legend">
-              <span><i className="is-current" /> Current</span>
-              <span><i className="is-answered" /> Answered</span>
-              <span><i className="is-marked" /> Review</span>
-              <span><i /> Unanswered</span>
-            </div>
-
-            <p className="se-help">
-              Your attempt is submitted to the server for evaluation.
-            </p>
-          </aside>
-
-          <section className="se-panel se-question-panel">
-            <div className="se-question-meta">
-              <span>
-                Question {currentQuestion + 1} of {questions.length}
-              </span>
-
-              <span>{exam.totalMarks} total marks</span>
-            </div>
-
-            <div className="se-progress">
-              <span
-                style={{
-                  width: `${
-                    ((currentQuestion + 1) / questions.length) * 100
-                  }%`,
-                }}
-              />
-            </div>
-
-            <span className="se-subject-label">
-              {question.subjectName}
-            </span>
-
-            <h2 className="se-question-text">
-              {question.questionText}
-            </h2>
-
-            <div className="se-options">
-              {(question.options || []).map((option) => (
-                <label
-                  key={option.key}
-                  className={`se-option ${
-                    answers[question.questionId] === option.key
-                      ? "is-selected"
-                      : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name={question.questionId}
-                    value={option.key}
-                    checked={
-                      answers[question.questionId] === option.key
-                    }
-                    onChange={() =>
-                      setAnswers((previous) => ({
-                        ...previous,
-                        [question.questionId]: option.key,
-                      }))
-                    }
-                  />
-
-                  <span className="se-option__key">
-                    {option.key}
-                  </span>
-
-                  <span>{option.text}</span>
-                </label>
-              ))}
-            </div>
-
-            <div className="se-question-actions">
-              <button
-                type="button"
-                className="se-button se-button--secondary"
-                onClick={() =>
-                  setMarked((previous) =>
-                    previous.includes(question.questionId)
-                      ? previous.filter(
-                          (id) => id !== question.questionId
-                        )
-                      : [...previous, question.questionId]
-                  )
-                }
-              >
-                <FiTarget />
-                {marked.includes(question.questionId)
-                  ? "Remove review mark"
-                  : "Mark for review"}
-              </button>
-
-              <button
-                type="button"
-                className="se-button se-button--secondary"
-                onClick={() =>
-                  setAnswers((previous) => ({
-                    ...previous,
-                    [question.questionId]: "",
-                  }))
-                }
-              >
-                Clear answer
-              </button>
-            </div>
-
-            <div className="se-exam-footer">
-              <button
-                type="button"
-                className="se-button se-button--secondary"
-                disabled={currentQuestion === 0 || busy}
-                onClick={() =>
-                  setCurrentQuestion((value) => value - 1)
-                }
-              >
-                <FiArrowLeft /> Previous
-              </button>
-
-              {currentQuestion < questions.length - 1 ? (
-                <button
-                  type="button"
-                  className="se-button se-button--primary"
-                  disabled={busy}
-                  onClick={() =>
-                    setCurrentQuestion((value) => value + 1)
-                  }
-                >
-                  Next <FiArrowRight />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="se-button se-button--primary"
-                  disabled={busy}
-                  onClick={() => submitAttempt(false)}
-                >
-                  {busy ? "Submitting…" : "Submit Exam"}
-                  <FiCheckCircle />
-                </button>
-              )}
-            </div>
-          </section>
+     
         </div>
-      </main>
+
+      <div className="se-exam-footer">
+ <button
+          type="button"
+          className="themebtn themebtnline" 
+          onClick={() =>
+            setAnswers((previous) => ({
+              ...previous,
+              [question.questionId]: "",
+            }))
+          }
+        >
+          <FiRefreshCw /> 
+          Clear answer
+        </button> 
+
+<button
+          type="button" 
+          className={`themebtn themebtnline se-button--secondary ${
+            marked.includes(question.questionId)
+              ? "is-review-active"
+              : ""
+          }`}
+          onClick={() =>
+            setMarked((previous) =>
+              previous.includes(question.questionId)
+                ? previous.filter(
+                    (id) => id !== question.questionId
+                  )
+                : [...previous, question.questionId]
+            )
+          }
+        >
+          <FiTarget />
+          {marked.includes(question.questionId)
+            ? "Remove review mark"
+            : "Mark for review"}
+        </button>
+        <button
+          type="button"
+          className="themebtn"
+          disabled={currentQuestion === 0 || busy}
+          onClick={() =>
+            setCurrentQuestion((value) => value - 1)
+          }
+        >
+          Previous
+        </button>
+
+        {currentQuestion < questions.length - 1 ? (
+          <button
+            type="button"
+            className="themebtn"
+            disabled={busy}
+            onClick={() =>
+              setCurrentQuestion((value) => value + 1)
+            }
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="themebtn"
+            disabled={busy}
+            onClick={() => submitAttempt(false)}
+          >
+            {busy ? "Submitting…" : "Submit Exam"}
+            <FiCheckCircle />
+          </button>
+        )}
+      </div>
+
+    </section>
+  </div>
+
+</main>
+
     );
   }
 
@@ -1219,200 +1375,274 @@ export default function StudentExams() {
     const passed = resultDetail.passStatus === "Pass";
 
     return (
-      <main className="student-exams se-completion-page">
-        <section className="se-completion-hero">
-          <div className="se-completion-trophy">
-            <FiAward />
-          </div>
+     
+<main className="student-exams se-completion-page">
 
-          <span className="se-eyebrow">EXAM COMPLETION</span>
+  {/* Page Heading */}
+  {/* <div className="se-result-page-heading">
+    <div>
+      <span className="se-result-eyebrow">STUDENT PERFORMANCE REPORT</span>
+      <h1>Exam Result Details</h1>
+    </div>
+    <div className="se-result-heading-icon">
+      <FiAward />
+    </div>
+  </div> */}
 
-          <h1>Exam Completed!</h1>
 
-          <p>Your exam has been successfully submitted.</p>
+<div class="page-header"><div><h1>Exam Result Details</h1>
+      <p>Your complete exam performance report with detailed analysis.</p>
 
-          <span
-            className={`se-badge ${
-              provisional
-                ? "se-badge--upcoming"
-                : passed
-                  ? "se-badge--pass"
-                  : "se-badge--fail"
-            }`}
+</div>
+  <button
+      type="button"
+      className="themebtn"
+      onClick={() => navigate("/student/exams")}
+    >
+      <FiArrowLeft /> Back to Results
+    </button>
+</div>
+
+
+  {/* Result Hero */}
+  {/* <section className="se-completion-hero">
+    <div className="se-completion-hero-content">
+      <div className="se-completion-trophy">
+        <FiAward />
+      </div>
+
+      <div className="se-completion-hero-text">
+        <span className="se-eyebrow">EXAM COMPLETION</span>
+        <h1>Exam Completed!</h1>
+        <p>Your exam has been successfully submitted.</p>
+
+        <span
+          className={`se-badge ${
+            provisional
+              ? "se-badge--upcoming"
+              : passed
+                ? "se-badge--pass"
+                : "se-badge--fail"
+          }`}
+        >
+          {provisional
+            ? "Provisional Result"
+            : resultDetail.passStatus}
+        </span>
+      </div>
+    </div>
+
+    <div className="se-hero-decoration">
+      <div className="se-hero-circle se-hero-circle--one"></div>
+      <div className="se-hero-circle se-hero-circle--two"></div>
+      <FiAward />
+    </div>
+  </section> */}
+
+  {/* Performance Stats */}
+  <section className="se-completion-stats">
+    <article className="se-completion-stat">
+      <div className="se-stat-icon se-stat-icon--blue">
+        <FiFileText />
+      </div>
+      <div>
+        <span>Total Questions</span>
+        <strong>{resultDetail.totalQuestions}</strong>
+      </div>
+    </article>
+
+    <article className="se-completion-stat">
+      <div className="se-stat-icon se-stat-icon--green">
+        <FiCheckCircle />
+      </div>
+      <div>
+        <span>Answered</span>
+        <strong>{resultDetail.answeredCount}</strong>
+      </div>
+    </article>
+
+    <article className="se-completion-stat">
+      <div className="se-stat-icon se-stat-icon--red">
+        <FiXCircle />
+      </div>
+      <div>
+        <span>Skipped</span>
+        <strong>{resultDetail.skippedCount}</strong>
+      </div>
+    </article>
+
+    <article className="se-completion-stat">
+      <div className="se-stat-icon se-stat-icon--orange">
+        <FiClock />
+      </div>
+      <div>
+        <span>Time Taken</span>
+        <strong>{durationText(resultDetail.timeTakenMs)}</strong>
+      </div>
+    </article>
+  </section>
+
+  {/* Score Summary */}
+  <section className="se-completion-score-grid">
+    <article className="se-completion-score se-score-blue">
+      <div className="se-score-icon"><FiAward /></div>
+      <div>
+        <span>Your Score</span>
+        <strong>
+          {money(resultDetail.obtainedMarks)} / {money(resultDetail.totalMarks)}
+        </strong>
+        <small>{provisional ? "Provisional marks" : "Official marks"}</small>
+      </div>
+    </article>
+
+    <article className="se-completion-score se-score-green">
+      <div className="se-score-icon"><FiBarChart2 /></div>
+      <div>
+        <span>Percentage</span>
+        <strong>{percentage.toFixed(2)}%</strong>
+        <small>Overall performance</small>
+      </div>
+    </article>
+
+    <article className="se-completion-score se-score-orange">
+      <div className="se-score-icon"><FiAward /></div>
+      <div>
+        <span>Grade</span>
+        <strong>{resultDetail.grade || "—"}</strong>
+        <small>{resultDetail.passStatus || "Result pending"}</small>
+      </div>
+    </article>
+
+    <article className="se-completion-score se-score-purple">
+      <div className="se-score-icon"><FiCheckCircle /></div>
+      <div>
+        <span>Result Status</span>
+        <strong>{provisional ? "Pending" : resultDetail.passStatus || "—"}</strong>
+        <small>{provisional ? "Awaiting verification" : "Final result"}</small>
+      </div>
+    </article>
+  </section>
+
+  {/* Completion Message */}
+  <section className="se-completion-message">
+    <div className="se-message-icon">
+      {provisional ? <FiClock /> : <FiCheckCircle />}
+    </div>
+
+    <div>
+      <strong>
+        {provisional
+          ? "Your exam has been submitted successfully!"
+          : passed
+            ? "Great effort!"
+            : "Keep learning and improving!"}
+      </strong>
+
+      <p>
+        {provisional
+          ? "Your marks and percentage are available now. The institute may verify or correct marks before publishing the official result."
+          : "Your official exam result is available."}
+      </p>
+    </div>
+  </section>
+
+  {provisional ? (
+    <section className="se-provisional-note">
+      <FiShield />
+      <div>
+        <strong>Awaiting institute verification</strong>
+        <p>
+          Your current score is provisional. The institute can review
+          your answer sheet and update marks before publishing the final result.
+        </p>
+      </div>
+    </section>
+  ) : (
+    <section className=" common-card">
+
+      
+
+      <div class="panel-header">
+        <div><h3>Question-wise Review</h3><p>Review your submitted answers and correct options.</p>
+        </div>
+        <span className="se-question-count">
+          {resultDetail.answers?.length || 0} Questions
+        </span>
+      </div>
+
+
+     <div className="cardbody">
+       <div className="se-review-list">
+        {(resultDetail.answers || []).map((answer) => (
+          <article
+            className="se-review-question"
+            key={`${answer.number}-${answer.questionText}`}
           >
-            {provisional
-              ? "Provisional Result"
-              : resultDetail.passStatus}
-          </span>
-        </section>
-
-        <section className="se-completion-stats">
-          <article className="se-completion-stat">
-            <span>Total Questions</span>
-            <strong>{resultDetail.totalQuestions}</strong>
-          </article>
-
-          <article className="se-completion-stat">
-            <span>Answered</span>
-            <strong>{resultDetail.answeredCount}</strong>
-          </article>
-
-          <article className="se-completion-stat">
-            <span>Skipped</span>
-            <strong>{resultDetail.skippedCount}</strong>
-          </article>
-
-          <article className="se-completion-stat">
-            <span>Time Taken</span>
-            <strong>
-              {durationText(resultDetail.timeTakenMs)}
-            </strong>
-          </article>
-        </section>
-
-        <section className="se-completion-score-grid">
-          <article className="se-completion-score se-score-blue">
-            <span>Your Score</span>
-
-            <strong>
-              {money(resultDetail.obtainedMarks)} /{" "}
-              {money(resultDetail.totalMarks)}
-            </strong>
-
-            <small>
-              {provisional ? "Provisional marks" : "Official marks"}
-            </small>
-          </article>
-
-          <article className="se-completion-score se-score-green">
-            <span>Percentage</span>
-            <strong>{percentage.toFixed(2)}%</strong>
-            <small>Overall performance</small>
-          </article>
-
-          <article className="se-completion-score se-score-orange">
-            <span>Grade</span>
-            <strong>{resultDetail.grade || "—"}</strong>
-            <small>{resultDetail.passStatus || "Result pending"}</small>
-          </article>
-        </section>
-
-        <section className="se-completion-message">
-          <FiCheckCircle />
-
-          <div>
-            <strong>
-              {provisional
-                ? "Your exam has been submitted successfully!"
-                : passed
-                  ? "Great effort!"
-                  : "Keep learning and improving!"}
-            </strong>
-
-            <p>
-              {provisional
-                ? "Your marks and percentage are available now. The institute may verify or correct marks before publishing the official result."
-                : "Your official exam result is available."}
-            </p>
-          </div>
-        </section>
-
-        {provisional ? (
-          <section className="se-provisional-note">
-            <FiShield />
-
-            <div>
-              <strong>Awaiting institute verification</strong>
-
-              <p>
-                Your current score is provisional. The institute can
-                review your answer sheet and update marks before
-                publishing the final result.
-              </p>
-            </div>
-          </section>
-        ) : (
-          <section className="se-panel se-answer-sheet">
-            <div className="se-panel-heading">
-              <div>
-                <h2>Answer sheet</h2>
-                <p>
-                  Review your submitted answers and correct options.
-                </p>
+            <div className="se-review-heading">
+              <div className="se-question-title">
+                <span className="se-question-number">
+                  Q{answer.number}
+                </span>
+                <strong>{answer.questionText}</strong>
               </div>
 
-              <span>
-                {resultDetail.answers?.length || 0} questions
+              <span
+                className={`se-badge ${
+                  answer.isCorrect
+                    ? "se-badge--pass"
+                    : "se-badge--fail"
+                }`}
+              >
+                {answer.isCorrect ? <FiCheckCircle /> : <FiXCircle />}
+                {answer.isCorrect ? "Correct" : "Incorrect"}
               </span>
             </div>
 
-            {(resultDetail.answers || []).map((answer) => (
-              <article
-                className="se-review-question"
-                key={`${answer.number}-${answer.questionText}`}
-              >
-                <div className="se-review-heading">
-                  <strong>
-                    Q{answer.number}. {answer.questionText}
-                  </strong>
+            <div className="se-review-options">
+              {(answer.options || []).map((option) => (
+                <div
+                  key={option.key}
+                  className={[
+                    "se-review-option",
+                    option.key === answer.correctAnswer
+                      ? "is-correct"
+                      : "",
+                    option.key === answer.selectedAnswer &&
+                    !answer.isCorrect
+                      ? "is-wrong"
+                      : "",
+                  ].filter(Boolean).join(" ")}
+                >
+                  <strong>{option.key}</strong>
+                  <span>{option.text}</span>
 
-                  <span
-                    className={`se-badge ${
-                      answer.isCorrect
-                        ? "se-badge--pass"
-                        : "se-badge--fail"
-                    }`}
-                  >
-                    {answer.isCorrect ? "Correct" : "Incorrect"}
-                  </span>
+                  {/* {option.key === answer.correctAnswer && (
+                    <small>Correct Answer</small>
+                  )} */}
+
+                  {option.key === answer.selectedAnswer && (
+                    <small>Your Answer</small>
+                  )}
                 </div>
+              ))}
+            </div>
 
-                <div className="se-review-options">
-                  {(answer.options || []).map((option) => (
-                    <div
-                      key={option.key}
-                      className={[
-                        "se-review-option",
-                        option.key === answer.correctAnswer
-                          ? "is-correct"
-                          : "",
-                        option.key === answer.selectedAnswer &&
-                        !answer.isCorrect
-                          ? "is-wrong"
-                          : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    >
-                      <strong>{option.key}</strong> {option.text}
+            <div className="se-question-marks">
+              <span>Marks awarded</span>
+              <strong>{money(answer.marksAwarded)}</strong>
+            </div>
+          </article>
+        ))}
+      </div>
+     </div>
 
-                      {option.key === answer.correctAnswer &&
-                        " — Correct answer"}
+    </section>
+  )}
 
-                      {option.key === answer.selectedAnswer &&
-                        " — Your answer"}
-                    </div>
-                  ))}
-                </div>
+  
 
-                <small>
-                  Marks awarded: {money(answer.marksAwarded)}
-                </small>
-              </article>
-            ))}
-          </section>
-        )}
+</main>
 
-        <div className="se-completion-actions">
-          <button
-            type="button"
-            className="se-button se-button--primary"
-            onClick={() => navigate("/student/exams")}
-          >
-            <FiArrowLeft /> Return to Exams &amp; Results
-          </button>
-        </div>
-      </main>
     );
   }
 
@@ -1544,63 +1774,137 @@ export default function StudentExams() {
 
         {tab === "results" ? (
           results.length ? (
-            <div className="se-result-list">
-              {results.map((result) => (
-                <article
-                  className="se-result-row"
-                  key={result.id}
-                >
-                  {/* <div className="se-list-icon se-list-icon--purple">
-                    <FiAward />
-                  </div> */}
+           
+<div className="se-result-list">
+  {results.map((result) => {
+    const passStatus = String(result.passStatus || "Pending").toLowerCase();
 
-                  <div className="se-list-icon se-list-icon--purple">
-                    {result.courseImage ? (
-                      <img
-                        src={getAssetUrl(result.courseImage)}
-                        alt={result.course}
-                        loading="lazy"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <FiAward />
-                    )}
-                  </div>
+    const isPass = passStatus === "pass";
+    const isFail = passStatus === "fail";
 
-                  <div className="se-row-main">
-                    <strong>{result.course}</strong>
+    return (
+      <article
+        className="se-result-row common-card"
+        key={result.id}
+      >
+        {/* Course Image */}
+        <div className="se-result-image">
+          {result.courseImage ? (
+            <img
+              src={getAssetUrl(result.courseImage)}
+              alt={result.course}
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <FiAward />
+          )}
+        </div>
 
-                    <span>
-                      {result.isProvisional
-                        ? `Submitted ${dateText(result.submittedAt)} · Provisional`
-                        : `Published ${dateText(result.publishedAt)} · Official`}
-                      {" · "}Grade {result.grade || "—"}
-                    </span>
-                  </div>
+        {/* Course Details */}
+        <div className="se-result-info">
+          <strong>{result.course}</strong>
 
-                  <div className="se-row-score">
-                    <strong>
-                      {money(result.obtainedMarks)} /{" "}
-                      {money(result.totalMarks)}
-                    </strong>
+          <span className="se-result-label">
+            {result.isProvisional
+              ? `Provisional Result · Submitted ${dateText(result.submittedAt)}`
+              : `Official Result · Published ${dateText(result.publishedAt)}`}
+          </span>
 
-                    <span>
-                      {Number(result.percentage || 0).toFixed(2)}% ·{" "}
-                      {result.passStatus || "Pending"}
-                    </span>
-                  </div>
+          {/* <div className="se-result-meta">
+            <span>
+              <FiCalendar />
+              {dateText(
+                result.isProvisional
+                  ? result.submittedAt
+                  : result.publishedAt
+              )}
+            </span>
 
-                  <Link
-                    className="se-button se-button--secondary"
-                    to={`/student/exams/results/${result.id}`}
-                  >
-                    View Result <FiArrowRight />
-                  </Link>
-                </article>
-              ))}
-            </div>
+            <span className="se-result-divider">|</span>
+
+            <span>
+              <FiFileText />
+              {money(result.totalMarks)} Marks
+            </span>
+          </div> */}
+           <div className="se-result-action">
+          <Link
+            className="themebtn smalllbtn"
+            to={`/student/exams/results/${result.id}`}
+          >
+            
+            View Detailed
+           
+          </Link>
+        </div>
+        </div>
+
+        {/* Obtained Marks */}
+        <div className="se-result-marks">
+          <FiAward className="se-result-marks__icon" />
+
+          <strong>
+            {money(result.obtainedMarks)} / {money(result.totalMarks)}
+          </strong>
+
+          <span>Total Marks</span>
+        </div>
+
+        {/* Percentage */}
+        <div className="se-result-percentage">
+          <FiBarChart2 className="se-result-percentage__icon" />
+
+          <strong>
+            {Number(result.percentage || 0).toFixed(2)}%
+          </strong>
+
+          <span>Percentage</span>
+        </div>
+
+        {/* Grade and Pass Status */}
+        <div className="se-result-grade">
+          <div className={`se-grade-badge ${
+            isPass ? "se-grade-badge--pass" :
+            isFail ? "se-grade-badge--fail" :
+            "se-grade-badge--pending"
+          }`}>
+            <FiAward />
+            Grade {result.grade || "—"}
+          </div>
+
+          <div className={`se-pass-status ${
+            isPass ? "se-pass-status--pass" :
+            isFail ? "se-pass-status--fail" :
+            "se-pass-status--pending"
+          }`}>
+            {isPass ? <FiCheckCircle /> :
+             isFail ? <FiXCircle /> :
+             <FiClock />}
+
+            {result.passStatus || "Pending"}
+          </div>
+        </div>
+
+        {/* View Result */}
+        {/* <div className="se-result-action">
+          <Link
+            className="themebtn"
+            to={`/student/exams/results/${result.id}`}
+          >
+            
+            View Detailed
+           
+          </Link>
+        </div> */}
+
+      </article>
+    );
+  })}
+</div>
+
           ) : (
             <div className="se-empty">
               <FiAward />
