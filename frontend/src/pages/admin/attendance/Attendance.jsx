@@ -14,7 +14,6 @@ import {
   updateAttendance,
 } from "../../../services/attendanceService";
 
-import Pagination from "../../../components/common/Pagination";
 import AttendanceQRScanner from "../../../components/attendance/AttendanceQRScanner";
 
 import notification, {
@@ -74,24 +73,7 @@ const Attendance = () => {
   const [saving, setSaving] = useState(false);
   const [optionsLoading, setOptionsLoading] = useState(true);
 
-  const [historyStudentId, setHistoryStudentId] = useState("");
-  const [historyFrom, setHistoryFrom] = useState("");
-  const [historyTo, setHistoryTo] = useState("");
-  const [historyRequested, setHistoryRequested] = useState(false);
 
-  const [historyRecords, setHistoryRecords] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [historyLimit, setHistoryLimit] = useState(PAGE_SIZE);
-
-  const [historyPagination, setHistoryPagination] = useState({
-    page: 1,
-    limit: PAGE_SIZE,
-    total: 0,
-    totalPages: 0,
-  });
-
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [attendanceRefreshKey, setAttendanceRefreshKey] = useState(0);
 
   // Load course and batch options.
@@ -218,9 +200,6 @@ const Attendance = () => {
     setStatuses({});
     setRemarks({});
 
-    setHistoryStudentId("");
-    setHistoryRequested(false);
-    setHistoryRecords([]);
   };
 
   const markAll = (status) => {
@@ -323,9 +302,6 @@ const Attendance = () => {
 
       await loadAttendance();
 
-      if (historyRequested && historyStudentId) {
-        setHistoryRefreshKey((previous) => previous + 1);
-      }
     } catch (error) {
       // Reload the roster after a partial save so the UI reflects
       // records that were successfully saved before the failure.
@@ -351,118 +327,6 @@ const Attendance = () => {
     ).length;
 
   // Load one page of history directly from the backend.
-  const loadStudentHistory = useCallback(async () => {
-    if (!historyStudentId) {
-      notification.warning("Please select a student.");
-      return;
-    }
-
-    if (historyFrom && historyTo && historyFrom > historyTo) {
-      notification.warning(
-        "Start date cannot be after end date."
-      );
-      return;
-    }
-
-    setHistoryLoading(true);
-
-    try {
-      const params = {
-        student_id: historyStudentId,
-        page: historyPage,
-        limit: historyLimit,
-      };
-
-      if (historyFrom) params.from = historyFrom;
-      if (historyTo) params.to = historyTo;
-
-      const response = await getAttendance(params);
-
-      const payload =
-        response?.data?.data ??
-        response?.data ??
-        {};
-
-      const list = Array.isArray(payload.records)
-        ? payload.records
-        : [];
-
-      const pageData = payload.pagination || {};
-
-      const total = Number(pageData.total) || 0;
-      const totalPages =
-        Number(pageData.totalPages) ||
-        Math.ceil(total / historyLimit);
-
-      setHistoryRecords(list);
-
-      setHistoryPagination({
-        page: Number(pageData.page) || historyPage,
-        limit: Number(pageData.limit) || historyLimit,
-        total,
-        totalPages,
-      });
-
-      if (totalPages > 0 && historyPage > totalPages) {
-        setHistoryPage(totalPages);
-      }
-    } catch (error) {
-      setHistoryRecords([]);
-      notification.error(getApiErrorMessage(error));
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, [
-    historyStudentId,
-    historyFrom,
-    historyTo,
-    historyPage,
-    historyLimit,
-  ]);
-
-  useEffect(() => {
-    if (!historyRequested || !historyStudentId) return;
-
-    loadStudentHistory();
-  }, [
-    historyRequested,
-    historyStudentId,
-    historyPage,
-    historyLimit,
-    historyRefreshKey,
-    loadStudentHistory,
-  ]);
-
-  const handleHistorySearch = () => {
-    if (!historyStudentId) {
-      notification.warning("Please select a student.");
-      return;
-    }
-
-    if (historyFrom && historyTo && historyFrom > historyTo) {
-      notification.warning(
-        "Start date cannot be after end date."
-      );
-      return;
-    }
-
-    setHistoryPage(1);
-    setHistoryRequested(true);
-    setHistoryRecords([]);
-    setHistoryRefreshKey((previous) => previous + 1);
-  };
-
-  const handleHistoryStudentChange = (value) => {
-    setHistoryStudentId(value);
-    setHistoryRequested(false);
-    setHistoryRecords([]);
-    setHistoryPage(1);
-  };
-
-  const handleHistoryLimitChange = (value) => {
-    setHistoryLimit(value);
-    setHistoryPage(1);
-  };
 
   return (
     <div className="attendance-page">
@@ -709,166 +573,11 @@ const Attendance = () => {
           onSuccess={async () => {
             await loadAttendance();
 
-            if (historyRequested && historyStudentId) {
-              setHistoryRefreshKey((previous) => previous + 1);
-            }
+            
           }}
         />
       )}
 
-      <section className="attendance-card attendance-history-card">
-        <div className="attendance-history-heading">
-          <div>
-            <h2>Student Attendance History</h2>
-            <p>
-              View saved attendance records for an individual student.
-            </p>
-          </div>
-        </div>
-
-        <div className="attendance-filters attendance-history-filters">
-          <label>
-            Student
-            <select
-              value={historyStudentId}
-              onChange={(event) =>
-                handleHistoryStudentChange(event.target.value)
-              }
-            >
-              <option value="">Select student</option>
-
-              {students.map((student) => (
-                <option key={student._id} value={student._id}>
-                  {student.rollNo || "No Roll No"} —{" "}
-                  {`${student.firstName || ""} ${student.surname || ""}`.trim()}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            From date
-            <input
-              type="date"
-              value={historyFrom}
-              onChange={(event) => setHistoryFrom(event.target.value)}
-              max={historyTo || today()}
-            />
-          </label>
-
-          <label>
-            To date
-            <input
-              type="date"
-              value={historyTo}
-              onChange={(event) => setHistoryTo(event.target.value)}
-              min={historyFrom || undefined}
-              max={today()}
-            />
-          </label>
-
-          <button
-            type="button"
-            className="attendance-primary-button"
-            onClick={handleHistorySearch}
-            disabled={historyLoading}
-          >
-            {historyLoading ? "Loading..." : "View History"}
-          </button>
-        </div>
-
-        {historyLoading ? (
-          <div className="attendance-empty">
-            Loading attendance history...
-          </div>
-        ) : historyRecords.length === 0 ? (
-          <div className="attendance-empty">
-            {historyRequested
-              ? "No attendance history found for the selected filters."
-              : "Select a student and click View History to see records."}
-          </div>
-        ) : (
-          <>
-            <div className="attendance-table-wrapper">
-              <table className="attendance-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Student</th>
-                    <th>Course</th>
-                    <th>Batch</th>
-                    <th>Status</th>
-                    <th>Remarks</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {historyRecords.map((record) => {
-                    const student =
-                      typeof record.student_id === "object"
-                        ? record.student_id
-                        : null;
-
-                    const course =
-                      typeof record.course_id === "object"
-                        ? record.course_id
-                        : null;
-
-                    const batch =
-                      typeof record.batch_id === "object"
-                        ? record.batch_id
-                        : null;
-
-                    return (
-                      <tr key={record._id}>
-                        <td>
-                          {record.attendance_date
-                            ? String(record.attendance_date).slice(0, 10)
-                            : "—"}
-                        </td>
-
-                        <td>
-                          {student
-                            ? `${student.rollNo || ""} ${student.firstName || ""} ${student.surname || ""}`.trim()
-                            : "Student"}
-                        </td>
-
-                        <td>{course?.courseTitle || "—"}</td>
-                        <td>{batch?.batch_name || "—"}</td>
-
-                        <td>
-                          <span
-                            className={`attendance-history-status ${(record.status || "").toLowerCase()}`}
-                          >
-                            {record.status || "—"}
-                          </span>
-                        </td>
-
-                        <td>{record.remarks || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <Pagination
-              page={historyPagination.page}
-              totalPages={historyPagination.totalPages}
-              total={historyPagination.total}
-              itemCount={historyRecords.length}
-              itemLabel="attendance records"
-              limit={historyLimit}
-              loading={historyLoading}
-              onPageChange={setHistoryPage}
-              onLimitChange={(value) => {
-                setHistoryLimit(value);
-                setHistoryPage(1);
-              }}
-            />
-          </>
-        )}
-      </section>
     </div>
   );
 };
