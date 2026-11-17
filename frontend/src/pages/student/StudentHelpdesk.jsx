@@ -849,19 +849,26 @@ export default function StudentHelpdesk() {
             </article>
           </section>
 
-          <div className="student-profile__tabs">
-            {FILTERS.map((item) => (
-              <button
-                key={item}
-                className={filter === item ? "active" : ""}
-                onClick={() => setFilter(item)}
-              >
-                {item}
-                {item === "All" && (
-                  <span>{stats.total || 0}</span>
-                )}
-              </button>
-            ))}
+          <div className="student-profile__tabs">            
+            {/* !!!!! INSERTION START: DISPLAY COUNTS ON ALL STATUS FILTERS !!!!! */}
+            {FILTERS.map((item) => {
+              const count =
+                item === "All"
+                  ? stats.total || 0
+                  : stats[item] || 0;
+
+              return (
+                <button
+                  key={item}
+                  className={filter === item ? "active" : ""}
+                  onClick={() => setFilter(item)}
+                >
+                  {item}
+                  <span>{count}</span>
+                </button>
+              );
+            })}
+            {/* !!!!! INSERTION END: DISPLAY COUNTS ON ALL STATUS FILTERS !!!!! */}
           </div>
 
           <section className="common-card">
@@ -962,14 +969,17 @@ export default function StudentHelpdesk() {
                             <small>Created Date</small>
                           </div>
                         </div>
-
+                        
+                        {/* !!!!! INSERTION START: DYNAMIC TICKET REPLY COUNT !!!!! */}
                         <div className="sh-ticket-card__bottom">
                           <FaCommentDots />
                           <div>
-                            <span>03</span>
-                            <small>Replay</small>
+                            <span>{ticket.replyCount ?? 0}</span>
+                            <small>Replies</small>
                           </div>
                         </div>
+                        {/* !!!!! INSERTION END: DYNAMIC TICKET REPLY COUNT !!!!! */}
+
                       </div>
                     </div>
                   ))}

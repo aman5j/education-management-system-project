@@ -191,6 +191,8 @@ export const createStudentTicket = async (req, res, next) => {
 /**
  * GET /api/support/tickets/my
  */
+
+// !!!!! INSERTION START: STUDENT TICKETS WITH DYNAMIC REPLY COUNTS !!!!!
 export const getMySupportTickets = async (req, res, next) => {
   try {
     const student = await getStudent(req);
@@ -218,10 +220,43 @@ export const getMySupportTickets = async (req, res, next) => {
       SupportTicket.countDocuments(filter),
     ]);
 
+    // !!!!! INSERTION START: FETCH PUBLIC REPLY COUNTS !!!!!
+    const ticketIds = tickets.map((ticket) => ticket._id);
+
+    const replyCounts = ticketIds.length
+      ? await SupportMessage.aggregate([
+          {
+            $match: {
+              ticket_id: { $in: ticketIds },
+              isInternal: false,
+            },
+          },
+          {
+            $group: {
+              _id: "$ticket_id",
+              count: { $sum: 1 },
+            },
+          },
+        ])
+      : [];
+
+    const replyCountMap = new Map(
+      replyCounts.map((item) => [
+        String(item._id),
+        item.count,
+      ])
+    );
+
+    const ticketsWithReplyCounts = tickets.map((ticket) => ({
+      ...ticket,
+      replyCount: replyCountMap.get(String(ticket._id)) || 0,
+    }));
+    // !!!!! INSERTION END: FETCH PUBLIC REPLY COUNTS !!!!!
+
     return res.status(200).json({
       success: true,
       data: {
-        tickets,
+        tickets: ticketsWithReplyCounts,
         pagination: {
           page,
           limit,
@@ -234,6 +269,8 @@ export const getMySupportTickets = async (req, res, next) => {
     next(error);
   }
 };
+// !!!!! INSERTION END: STUDENT TICKETS WITH DYNAMIC REPLY COUNTS !!!!!
+
 
 /**
  * GET /api/support/tickets/my/stats
