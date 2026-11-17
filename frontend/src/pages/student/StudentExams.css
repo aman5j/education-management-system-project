@@ -3897,3 +3897,180 @@ article.se-instructions-panel button {
 .nospace{
   padding: 0 !important;
 }
+
+
+
+
+
+
+
+
+
+/* !!!!! INSERTION START: STUDENT EXAM INSTRUCTIONS LIVE COUNTDOWN !!!!! */
+
+.student-exam-instructions .se-countdown-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  min-height: 155px;
+  margin-top: 20px;
+  padding: 24px;
+  border: 1px solid #dbe6f5;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #f4f8ff, #ffffff);
+  box-shadow: 0 5px 18px rgba(30, 64, 175, 0.06);
+}
+
+.student-exam-instructions .se-countdown-card__icon {
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #e5efff;
+  color: #2563eb;
+  font-size: 29px;
+}
+
+.student-exam-instructions .se-countdown-card__content {
+  min-width: 0;
+  flex: 1;
+}
+
+.student-exam-instructions .se-countdown-card__label {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.student-exam-instructions .se-countdown-card__content h3 {
+  margin: 0 0 5px;
+  color: #172554;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.student-exam-instructions .se-countdown-card__timer {
+  display: block;
+  color: #1d4ed8;
+  font-size: 35px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  line-height: 1.3;
+}
+
+.student-exam-instructions .se-countdown-card__content p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Upcoming exam */
+
+.student-exam-instructions
+.se-countdown-card--upcoming {
+  border-color: #bfdbfe;
+  background: linear-gradient(120deg, #eff6ff, #ffffff);
+}
+
+.student-exam-instructions
+.se-countdown-card--upcoming .se-countdown-card__icon {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.student-exam-instructions
+.se-countdown-card--upcoming .se-countdown-card__timer {
+  color: #1d4ed8;
+}
+
+/* Running exam */
+
+.student-exam-instructions
+.se-countdown-card--running {
+  border-color: #bbf7d0;
+  background: linear-gradient(120deg, #f0fdf4, #ffffff);
+}
+
+.student-exam-instructions
+.se-countdown-card--running .se-countdown-card__icon {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.student-exam-instructions
+.se-countdown-card--running .se-countdown-card__timer {
+  color: #15803d;
+}
+
+/* Ended exam */
+
+.student-exam-instructions
+.se-countdown-card--ended {
+  border-color: #fecaca;
+  background: linear-gradient(120deg, #fef2f2, #ffffff);
+}
+
+.student-exam-instructions
+.se-countdown-card--ended .se-countdown-card__icon {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.student-exam-instructions
+.se-countdown-card--ended .se-countdown-card__timer {
+  color: #dc2626;
+}
+
+/* Invalid schedule */
+
+.student-exam-instructions
+.se-countdown-card--unavailable {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.student-exam-instructions
+.se-countdown-card--unavailable .se-countdown-card__timer {
+  color: #64748b;
+}
+
+/* Responsive countdown */
+
+@media (max-width: 600px) {
+  .student-exam-instructions .se-countdown-card {
+    gap: 13px;
+    min-height: 135px;
+    padding: 17px;
+  }
+
+  .student-exam-instructions .se-countdown-card__icon {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 23px;
+  }
+
+  .student-exam-instructions .se-countdown-card__content h3 {
+    font-size: 14px;
+  }
+
+  .student-exam-instructions .se-countdown-card__timer {
+    font-size: 29px;
+    letter-spacing: 1px;
+  }
+
+  .student-exam-instructions .se-countdown-card__content p {
+    font-size: 11px;
+  }
+}
+
+/* !!!!! INSERTION END: STUDENT EXAM INSTRUCTIONS LIVE COUNTDOWN !!!!! */

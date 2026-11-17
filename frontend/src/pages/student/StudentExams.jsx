@@ -167,6 +167,10 @@ export default function StudentExams() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [marked, setMarked] = useState([]);
   const [remainingMs, setRemainingMs] = useState(0);
+  // !!!!! INSERTION START: INSTRUCTIONS LIVE CLOCK STATE !!!!!
+  const [instructionNow, setInstructionNow] = useState(() => Date.now());
+  // !!!!! INSERTION END: INSTRUCTIONS LIVE CLOCK STATE !!!!!
+
 
   // Approval popup
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -333,6 +337,27 @@ export default function StudentExams() {
     loadResult,
     loadList,
   ]);
+
+
+  // !!!!! INSERTION START: LIVE CLOCK FOR EXAM INSTRUCTIONS !!!!!
+  useEffect(() => {
+    if (!isInstructions) {
+      return undefined;
+    }
+
+    // Synchronize immediately whenever the instructions page opens.
+    setInstructionNow(Date.now());
+
+    const timer = window.setInterval(() => {
+      setInstructionNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [isInstructions, ticketId]);
+  // !!!!! INSERTION END: LIVE CLOCK FOR EXAM INSTRUCTIONS !!!!!
+
 
   // --------------------------------------------------
   // Start exam: fee check + Admin approval
@@ -757,12 +782,49 @@ export default function StudentExams() {
   // Exam instructions page
   // --------------------------------------------------
 
+  // if (isInstructions && examInfo) {
+  //   const exam = examInfo.exam || {};
+
+  //   const canStart =
+  //     Boolean(examInfo.canRequestAccess) ||
+  //     Boolean(examInfo.alreadyStarted);
+
+  // !!!!! INSERTION START: EXAM INSTRUCTIONS COUNTDOWN CALCULATION !!!!!
   if (isInstructions && examInfo) {
     const exam = examInfo.exam || {};
 
     const canStart =
       Boolean(examInfo.canRequestAccess) ||
       Boolean(examInfo.alreadyStarted);
+
+    const startsAtMs = examInfo.startsAt
+      ? new Date(examInfo.startsAt).getTime()
+      : NaN;
+
+    const endsAtMs = examInfo.endsAt
+      ? new Date(examInfo.endsAt).getTime()
+      : NaN;
+
+    const validExamSchedule =
+      Number.isFinite(startsAtMs) &&
+      Number.isFinite(endsAtMs) &&
+      endsAtMs > startsAtMs;
+
+    let countdownStatus = "unavailable";
+    let countdownRemainingMs = 0;
+
+    if (validExamSchedule) {
+      if (instructionNow < startsAtMs) {
+        countdownStatus = "upcoming";
+        countdownRemainingMs = startsAtMs - instructionNow;
+      } else if (instructionNow < endsAtMs) {
+        countdownStatus = "running";
+        countdownRemainingMs = endsAtMs - instructionNow;
+      } else {
+        countdownStatus = "ended";
+      }
+    }
+  // !!!!! INSERTION END: EXAM INSTRUCTIONS COUNTDOWN CALCULATION !!!!!
 
     return (
      <main className="student-exams student-exam-instructions">
@@ -889,7 +951,59 @@ export default function StudentExams() {
           <strong>{exam.totalMarks}</strong>
         </article>
 
-      </div>
+            </div>
+
+      {/* !!!!! INSERTION START: LIVE EXAM COUNTDOWN CARD !!!!! */}
+      <article
+        className={`se-countdown-card common-card se-countdown-card--${countdownStatus}`}
+        aria-live="off"
+      >
+        <div className="se-countdown-card__icon">
+          <FiClock />
+        </div>
+
+        <div className="se-countdown-card__content">
+          <span className="se-countdown-card__label">
+            {countdownStatus === "upcoming"
+              ? "EXAM STARTS IN"
+              : countdownStatus === "running"
+                ? "TIME REMAINING"
+                : countdownStatus === "ended"
+                  ? "EXAM WINDOW"
+                  : "EXAM SCHEDULE"}
+          </span>
+
+          <h3>
+            {countdownStatus === "upcoming"
+              ? "Your exam will start soon"
+              : countdownStatus === "running"
+                ? "Your exam is currently running"
+                : countdownStatus === "ended"
+                  ? "Exam time has ended"
+                  : "Schedule unavailable"}
+          </h3>
+
+          <strong className="se-countdown-card__timer">
+            {countdownStatus === "ended"
+              ? "00:00:00"
+              : countdownStatus === "unavailable"
+                ? "--:--:--"
+                : clockText(countdownRemainingMs)}
+          </strong>
+
+          <p>
+            {countdownStatus === "upcoming"
+              ? "The countdown is based on your scheduled exam start time."
+              : countdownStatus === "running"
+                ? "Please complete and submit your exam before the scheduled end time."
+                : countdownStatus === "ended"
+                  ? "The scheduled examination window is over. Contact your institute if you need assistance."
+                  : "Please contact your institute administrator to confirm the exam schedule."}
+          </p>
+        </div>
+      </article>
+      {/* !!!!! INSERTION END: LIVE EXAM COUNTDOWN CARD !!!!! */}
+
     </div>
 
     {/* Right Column */}
