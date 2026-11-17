@@ -550,10 +550,14 @@ const AdmissionForm = ({
         0
       );
 
-    const finalAmount =
+    const calculatedFinalAmount =
       taxableAmount +
       gstAmount +
       admissionFee;
+
+    const finalAmount = Math.floor(
+      Number(calculatedFinalAmount.toFixed(2))
+    );
 
     const paidAmount =
       Math.max(

@@ -115,11 +115,20 @@ const studentAdmissionSchema = new mongoose.Schema(
 |
 */
 
+// studentAdmissionSchema.virtual("remaining_amount").get(function () {
+//   return Math.max(
+//     0,
+//     Number(this.final_amount || 0) -
+//       Number(this.paid_amount || 0)
+//   );
+// });
+
 studentAdmissionSchema.virtual("remaining_amount").get(function () {
-  return Math.max(
-    0,
-    Number(this.final_amount || 0) -
-      Number(this.paid_amount || 0)
+  const finalAmount = Number(this.final_amount || 0);
+  const paidAmount = Number(this.paid_amount || 0);
+
+  return Number(
+    Math.max(finalAmount - paidAmount, 0).toFixed(2)
   );
 });
 
