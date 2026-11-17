@@ -4,6 +4,7 @@ import {
   useState,
 } from "react";
 
+import notification from "../../utils/notification";
 import StudentSearchSelect from "./StudentSearchSelect";
 import { getStudents } from "../../services/studentService";
 import { getCourses } from "../../services/courseService";
@@ -65,8 +66,6 @@ const AdmissionForm = ({
   const [loadingBatches, setLoadingBatches] =
     useState(false);
 
-  const [error, setError] =
-    useState("");
 
   /*
   |--------------------------------------------------------------------------
@@ -432,7 +431,7 @@ const AdmissionForm = ({
         "",
     }));
 
-    setError("");
+
   };
 
   /*
@@ -449,7 +448,7 @@ const AdmissionForm = ({
       batch_id: event.target.value,
     }));
 
-    setError("");
+
   };
 
   /*
@@ -477,7 +476,7 @@ const AdmissionForm = ({
           : value,
     }));
 
-    setError("");
+
   };
 
   /*
@@ -600,124 +599,102 @@ const AdmissionForm = ({
   |--------------------------------------------------------------------------
   */
 
-  const handleSubmit = async (
-    event
-  ) => {
-    event.preventDefault();
 
-    setError("");
 
-    if (!form.student_id) {
-      setError(
-        "Please select a student."
-      );
-      return;
-    }
+const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    if (!form.course_id) {
-      setError(
-        "Please select a course."
-      );
-      return;
-    }
+  if (submitting) return;
 
-    if (!form.batch_id) {
-      setError(
-        "Please select a batch."
-      );
-      return;
-    }
+  if (!form.student_id) {
+    notification.warning("Please select a student.");
+    return;
+  }
 
-    if (
-      Number(form.course_fee) < 0
-    ) {
-      setError(
-        "Course fee cannot be negative."
-      );
-      return;
-    }
+  if (!form.course_id) {
+    notification.warning("Please select a course.");
+    return;
+  }
 
-    if (
-      form.discount_type ===
-        "Percentage" &&
-      Number(
-        form.discount_value
-      ) > 100
-    ) {
-      setError(
-        "Percentage discount cannot exceed 100%."
-      );
-      return;
-    }
+  if (!form.batch_id) {
+    notification.warning("Please select a batch.");
+    return;
+  }
 
-    if (
-      calculations.paidAmount >
-      calculations.finalAmount
-    ) {
-      setError(
-        "Paid amount cannot be greater than final amount."
-      );
-      return;
-    }
+  if (Number(form.course_fee) < 0) {
+    notification.warning(
+      "Course fee cannot be negative."
+    );
+    return;
+  }
 
-    try {
-      await onSubmit({
-        student_id:
-          form.student_id,
+  if (
+    Number(form.discount_value) < 0
+  ) {
+    notification.warning(
+      "Discount value cannot be negative."
+    );
+    return;
+  }
 
-        course_id:
-          form.course_id,
+  if (
+    form.discount_type === "Percentage" &&
+    Number(form.discount_value) > 100
+  ) {
+    notification.warning(
+      "Percentage discount cannot exceed 100%."
+    );
+    return;
+  }
 
-        batch_id:
-          form.batch_id,
+  if (Number(form.gst_rate) < 0) {
+    notification.warning(
+      "GST rate cannot be negative."
+    );
+    return;
+  }
 
-        course_type:
-          form.course_type,
+  if (Number(form.admission_fee) < 0) {
+    notification.warning(
+      "Admission fee cannot be negative."
+    );
+    return;
+  }
 
-        course_fee:
-          calculations.courseFee,
+  if (calculations.paidAmount > calculations.finalAmount) {
+    notification.warning(
+      "Paid amount cannot be greater than final amount."
+    );
+    return;
+  }
 
-        discount_type:
-          form.discount_type,
-
-        discount_value:
-          Number(
-            form.discount_value
-          ) || 0,
-
-        is_gst_taken:
-          form.is_gst_taken,
-
-        gst_amount:
-          calculations.gstAmount,
-
-        admission_fee:
-          calculations.admissionFee,
-
-        paid_amount:
-          calculations.paidAmount,
-
-        admission_date:
-          form.admission_date,
-
-        referral_source:
-          form.referral_source,
-
-        status:
-          form.status,
-
-        remark:
-          form.remark,
-      });
-    } catch (submitError) {
-      setError(
-        submitError?.response
-          ?.data?.message ||
-          submitError?.message ||
-          "Unable to save admission."
-      );
-    }
+  const payload = {
+    student_id: form.student_id,
+    course_id: form.course_id,
+    batch_id: form.batch_id,
+    course_type: form.course_type,
+    course_fee: calculations.courseFee,
+    discount_type: form.discount_type,
+    discount_value: Number(form.discount_value) || 0,
+    is_gst_taken: form.is_gst_taken,
+    gst_amount: calculations.gstAmount,
+    admission_fee: calculations.admissionFee,
+    paid_amount: calculations.paidAmount,
+    admission_date: form.admission_date,
+    referral_source: form.referral_source,
+    status: form.status,
+    remark: form.remark,
   };
+
+  try {
+    await onSubmit(payload);
+  } catch (submitError) {
+    // The parent AddAdmission/EditAdmission page
+    // already displays the API error Toast.
+    // Do not display a duplicate notification here.
+  }
+};
+
 
   return (
     <form
@@ -725,11 +702,7 @@ const AdmissionForm = ({
       onSubmit={handleSubmit} >
       <div className="common-card">
 
-      {error && (
-        <div className="admission-form-error">
-          {error}
-        </div>
-      )}
+      
 
       {/* STUDENT */}
 
