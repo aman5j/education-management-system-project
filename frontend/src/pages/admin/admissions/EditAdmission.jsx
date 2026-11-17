@@ -24,7 +24,10 @@ const EditAdmission = () => {
   const location = useLocation();
 
   const { user, loading: authLoading } = useAuth();
-  const canUpdateAdmission = hasPermission(user, "admissions.update");
+  const canUpdateAdmission = hasPermission(
+    user,
+    "admissions.update"
+  );
 
   const admissionsPath = location.pathname.startsWith("/staff")
     ? "/staff/admissions"
@@ -57,7 +60,9 @@ const EditAdmission = () => {
           setAdmission(null);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
@@ -68,17 +73,25 @@ const EditAdmission = () => {
     };
   }, [id, authLoading, user, canUpdateAdmission]);
 
+  // !!!!! INSERTION START: UPDATE ADMISSION AND RETURN TO MANAGE ADMISSIONS !!!!!
   const handleSubmit = async (formData) => {
     if (!canUpdateAdmission || saving) {
-      throw new Error("You do not have permission to update admissions.");
+      notification.error(
+        "You do not have permission to update admissions."
+      );
+      return;
     }
 
     setSaving(true);
 
     try {
       await updateAdmission(id, formData);
-      notification.success("Admission updated successfully.");
-      navigate(`${admissionsPath}/${id}`);
+
+      notification.success(
+        "Admission updated successfully."
+      );
+
+      navigate(admissionsPath, { replace: true });
     } catch (error) {
       notification.error(getApiErrorMessage(error));
       throw error;
@@ -86,20 +99,38 @@ const EditAdmission = () => {
       setSaving(false);
     }
   };
+  // !!!!! INSERTION END: UPDATE ADMISSION AND RETURN TO MANAGE ADMISSIONS !!!!!
 
   if (authLoading) {
-    return <div className="admission-state">Checking permissions...</div>;
+    return (
+      <div className="admission-state">
+        Checking permissions...
+      </div>
+    );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
-  if (!canUpdateAdmission) return <Navigate to="/unauthorized" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canUpdateAdmission) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   if (loading) {
-    return <div className="admission-state">Loading admission...</div>;
+    return (
+      <div className="admission-state">
+        Loading admission...
+      </div>
+    );
   }
 
   if (!admission) {
-    return <div className="admission-empty">Admission not found.</div>;
+    return (
+      <div className="admission-empty">
+        Admission not found.
+      </div>
+    );
   }
 
   return (

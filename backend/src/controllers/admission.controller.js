@@ -77,10 +77,16 @@ const calculateAdmissionAmounts = ({
     0
   );
 
-  const finalAmount =
+  const calculatedFinalAmount =
     taxableAmount +
     normalizedGstAmount +
     normalizedAdmissionFee;
+
+  // Round to 2 decimal places first to avoid floating-point artifacts,
+  // then round downward to the nearest whole rupee.
+  const finalAmount = Math.floor(
+    Number(calculatedFinalAmount.toFixed(2))
+  );
 
   return {
     courseFee: Number(
@@ -967,9 +973,13 @@ export const updateAdmission = async (
           )
         : admission.paid_amount;
 
+    const paidAmountWasChanged =
+      paid_amount !== undefined &&
+      Number(paid_amount) !== Number(admission.paid_amount || 0);
+
     if (
-      resolvedPaidAmount >
-      calculations.finalAmount
+      paidAmountWasChanged &&
+      resolvedPaidAmount > calculations.finalAmount
     ) {
       return res.status(400).json({
         success: false,

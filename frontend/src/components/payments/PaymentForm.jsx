@@ -9,6 +9,7 @@ import {
 import {
   getAdmissions,
 } from "../../services/admissionService";
+import { getAssetUrl } from "../../utils/assetUrl";
 import notification from "../../utils/notification";
 
 const getToday = () =>
@@ -34,6 +35,18 @@ const getStudentName = (admission) =>
   ]
     .filter(Boolean)
     .join(" ") || "Unknown Student";
+
+const getStudentInitials = (admission) => {
+  const student = admission?.student_id;
+
+  return [
+    student?.firstName?.[0],
+    student?.surname?.[0],
+  ]
+    .filter(Boolean)
+    .join("")
+    .toUpperCase() || "S";
+};
 
 const getAdmissionLabel = (admission) => {
   if (!admission) return "";
@@ -396,8 +409,38 @@ const PaymentForm = ({
                 </div>
               )}
 
+              {/* !!!!! INSERTION START: SELECTED ADMISSION WITH STUDENT PHOTO !!!!! */}
               {selectedAdmission && (
                 <div className="payment-selected-admission">
+
+                  <div className="payment-selected-admission-avatar">
+                    {selectedAdmission.student_id?.profileImage && (
+                      <img
+                        src={getAssetUrl(
+                          selectedAdmission.student_id.profileImage
+                        )}
+                        alt={getStudentName(selectedAdmission)}
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+
+                          event.currentTarget.nextElementSibling?.classList.remove(
+                            "payment-student-avatar-fallback-hidden"
+                          );
+                        }}
+                      />
+                    )}
+
+                    <div
+                      className={`payment-student-avatar-fallback ${
+                        selectedAdmission.student_id?.profileImage
+                          ? "payment-student-avatar-fallback-hidden"
+                          : ""
+                      }`}
+                    >
+                      {getStudentInitials(selectedAdmission)}
+                    </div>
+                  </div>
+
                   <div className="payment-selected-admission-details">
                     <strong>
                       {getStudentName(selectedAdmission)}
@@ -417,15 +460,20 @@ const PaymentForm = ({
 
                     <span>
                       Admission Fee: ₹
-                      {Number(selectedAdmission.final_amount || 0).toLocaleString("en-IN")}
+                      {Number(
+                        selectedAdmission.final_amount || 0
+                      ).toLocaleString("en-IN")}
                     </span>
                   </div>
 
                   <span className="payment-admission-selected-label">
                     Selected
                   </span>
+
                 </div>
               )}
+              {/* !!!!! INSERTION END: SELECTED ADMISSION WITH STUDENT PHOTO !!!!! */}
+
             </div>
             {/* !!!!! INSERTION END: SEARCHABLE ADMISSION SELECTOR !!!!! */}
 
