@@ -17,6 +17,7 @@ export default function WebsitePreview({
   menu,
   banner = [],
   categoryHighlights = [],
+  courseCategories = [],
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -31,6 +32,12 @@ export default function WebsitePreview({
         (item) => item.isVisible !== false
       )
     : [];
+
+  // !!!!! INSERTION START: PHASE 6 VISIBLE COURSE CATEGORIES !!!!!
+const visibleCourseCategories = Array.isArray(courseCategories)
+  ? courseCategories
+  : [];
+// !!!!! INSERTION END: PHASE 6 VISIBLE COURSE CATEGORIES !!!!!
 
   const safeBannerIndex = Math.min(
     activeBannerIndex,
@@ -275,6 +282,51 @@ export default function WebsitePreview({
           </div>
         </section>
       )}
+
+        {/* Phase 6: Course Categories */}
+              {/* !!!!! INSERTION START: PHASE 6 POPULAR COURSE CATEGORIES !!!!! */}
+      {visibleCourseCategories.length > 0 && (
+        <section
+          className="we-preview-course-categories"
+          aria-label="Popular course categories"
+        >
+          <div className="we-preview-course-categories-inner">
+            <div className="we-preview-course-categories-heading">
+              <h2>Popular Category</h2>
+              <span />
+            </div>
+
+            <div className="we-preview-course-categories-grid">
+              {visibleCourseCategories.map((category) => (
+                // <a
+                //   href="/courses"
+                //   className="we-preview-course-category-card"
+                //   key={category._id}
+                // >
+                <div
+                    className="we-preview-course-category-card"
+                    key={category._id}
+                    >
+                  <div className="we-preview-course-category-icon">
+                    {category.categoryIcon ? (
+                      <img
+                        src={category.categoryIcon}
+                        alt={category.categoryName}
+                      />
+                    ) : (
+                      <FiImage />
+                    )}
+                  </div>
+
+                  <strong>{category.categoryName}</strong>
+                {/* </a> */}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {/* !!!!! INSERTION END: PHASE 6 POPULAR COURSE CATEGORIES !!!!! */}
 
       <div className="we-public-page-placeholder">
         <div className="we-preview-hero-content">

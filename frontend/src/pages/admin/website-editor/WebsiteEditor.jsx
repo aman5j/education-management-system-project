@@ -34,6 +34,7 @@ import instituteSettingsService from "../../../services/instituteSettingsService
 import MenuControls from "./components/MenuControls";
 import BannerControls from "./components/BannerControls";
 import CategoryHighlightsControls from "./components/CategoryHighlightsControls";
+import CourseCategoriesControls from "./components/CourseCategoriesControls";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -86,6 +87,12 @@ const initialBanner = {
 const initialCategoryHighlights = {
   items: [],
 };
+
+// !!!!! INSERTION START: PHASE 6 COURSE CATEGORIES INITIAL STATE !!!!!
+const initialCourseCategories = {
+  selectedCategoryIds: [],
+};
+// !!!!! INSERTION END: PHASE 6 COURSE CATEGORIES INITIAL STATE !!!!!
 
 
 const editorSections = [
@@ -144,6 +151,19 @@ const WebsiteEditor = () => {
   );
   // !!!!! INSERTION END: CATEGORY HIGHLIGHTS STATE !!!!!
 
+  // !!!!! INSERTION START: PHASE 6 COURSE CATEGORIES STATE !!!!!
+  const [availableCourseCategories, setAvailableCourseCategories] =
+    useState([]);
+
+  const [courseCategories, setCourseCategories] = useState(
+    initialCourseCategories
+  );
+
+  const [savedCourseCategories, setSavedCourseCategories] = useState(
+    initialCourseCategories
+  );
+  // !!!!! INSERTION END: PHASE 6 COURSE CATEGORIES STATE !!!!!
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -167,8 +187,10 @@ const WebsiteEditor = () => {
     JSON.stringify(header) !== JSON.stringify(savedHeader) ||
     JSON.stringify(institute) !== JSON.stringify(savedInstitute) ||
     JSON.stringify(menu) !== JSON.stringify(savedMenu) ||
+    JSON.stringify(courseCategories) !==
+      JSON.stringify(savedCourseCategories) ||
     JSON.stringify(categoryHighlights) !==
-      JSON.stringify(savedCategoryHighlights);
+      JSON.stringify(savedCategoryHighlights);  
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -182,12 +204,14 @@ const WebsiteEditor = () => {
         menuData,
         bannerData,
         categoryData,
+        courseCategoryData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
         websiteEditorService.getMenuSettings(),
         websiteEditorService.getBannerSettings(),
         websiteEditorService.getCategoryHighlights(),
+        websiteEditorService.getCourseCategorySettings(),
       ]);
 
       const nextHeader = {
@@ -235,6 +259,37 @@ const WebsiteEditor = () => {
       setSavedCategoryHighlights(nextCategoryHighlights);
       // !!!!! INSERTION END: LOAD CATEGORY HIGHLIGHTS !!!!!
 
+
+      // !!!!! INSERTION START: LOAD PHASE 6 COURSE CATEGORIES !!!!!
+      const nextAvailableCategories = Array.isArray(
+        courseCategoryData?.categories
+      )
+        ? courseCategoryData.categories
+        : [];
+
+      setAvailableCourseCategories(nextAvailableCategories);
+
+      // Exclude deleted and inactive categories from saved selections.
+      const activeCategoryIds = new Set(
+        nextAvailableCategories
+          .filter((category) => category.status === "Active")
+          .map((category) => String(category._id))
+      );
+
+      const nextCourseCategories = {
+        selectedCategoryIds: Array.isArray(
+          courseCategoryData?.settings?.selectedCategoryIds
+        )
+          ? courseCategoryData.settings.selectedCategoryIds
+              .map(String)
+              .filter((id) => activeCategoryIds.has(id))
+          : [],
+      };
+
+      setCourseCategories(nextCourseCategories);
+      setSavedCourseCategories(nextCourseCategories);
+      // !!!!! INSERTION END: LOAD PHASE 6 COURSE CATEGORIES !!!!!
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -281,6 +336,15 @@ const WebsiteEditor = () => {
     return websiteEditorService.uploadCategoryHighlightIcon(file);
   };
   // !!!!! INSERTION END: CATEGORY HIGHLIGHTS HANDLERS !!!!!
+
+  // !!!!! INSERTION START: UPDATE PHASE 6 COURSE CATEGORIES !!!!!
+  const updateCourseCategories = (selectedCategoryIds) => {
+    setCourseCategories({
+      selectedCategoryIds,
+    });
+  };
+  // !!!!! INSERTION END: UPDATE PHASE 6 COURSE CATEGORIES !!!!!
+
 
   const handleBannerUpload = async (file, slideKey = "") => {
     if (!file) return;
@@ -585,11 +649,15 @@ const WebsiteEditor = () => {
         savedInstituteData,
         savedMenuData,
         savedCategoryData,
+        savedCourseCategoryData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
         websiteEditorService.updateMenuSettings(menu),
         websiteEditorService.updateCategoryHighlights(categoryHighlights),
+        websiteEditorService.updateCourseCategorySettings(
+          courseCategories
+        ),
       ]);
 
       const nextHeader = {
@@ -628,6 +696,20 @@ const WebsiteEditor = () => {
       setSavedCategoryHighlights(nextCategoryHighlights);
       // !!!!! INSERTION END: SAVE CATEGORY HIGHLIGHTS STATE !!!!!
 
+
+      // !!!!! INSERTION START: SAVE PHASE 6 COURSE CATEGORIES !!!!!
+      const nextCourseCategories = {
+        selectedCategoryIds: Array.isArray(
+          savedCourseCategoryData?.selectedCategoryIds
+        )
+          ? savedCourseCategoryData.selectedCategoryIds.map(String)
+          : courseCategories.selectedCategoryIds,
+      };
+
+      setCourseCategories(nextCourseCategories);
+      setSavedCourseCategories(nextCourseCategories);
+      // !!!!! INSERTION END: SAVE PHASE 6 COURSE CATEGORIES !!!!!
+
       notification.success(
         "Website editor settings saved successfully."
       );
@@ -650,7 +732,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar and Menu changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights and Course Categories changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -669,6 +751,10 @@ const WebsiteEditor = () => {
     // !!!!! INSERTION START: RESTORE CATEGORY HIGHLIGHTS !!!!!
     setCategoryHighlights(savedCategoryHighlights);
     // !!!!! INSERTION END: RESTORE CATEGORY HIGHLIGHTS !!!!!
+
+    // !!!!! INSERTION START: RESTORE PHASE 6 COURSE CATEGORIES !!!!!
+    setCourseCategories(savedCourseCategories);
+    // !!!!! INSERTION END: RESTORE PHASE 6 COURSE CATEGORIES !!!!!
   };
 
   const openPreviewInNewTab = () => {
@@ -782,6 +868,12 @@ const WebsiteEditor = () => {
                         items={categoryHighlights.items}
                         onChange={updateCategoryHighlights}
                         onUploadIcon={uploadCategoryHighlightIcon}
+                      />
+                    ) : section.id === "coursescategory" ? (
+                      <CourseCategoriesControls
+                        categories={availableCourseCategories}
+                        selectedCategoryIds={courseCategories.selectedCategoryIds}
+                        onChange={updateCourseCategories}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -915,6 +1007,21 @@ const WebsiteEditor = () => {
               categoryHighlights={categoryHighlights.items.map((item) => ({
                 ...item,
                 iconUrl: item.iconUrl ? getAssetUrl(item.iconUrl) : "",
+              }))}
+
+              courseCategories={availableCourseCategories
+              .filter(
+                (category) =>
+                  category.status === "Active" &&
+                  courseCategories.selectedCategoryIds.includes(
+                    String(category._id)
+                  )
+              )
+              .map((category) => ({
+                ...category,
+                categoryIcon: category.categoryIcon
+                  ? getAssetUrl(category.categoryIcon)
+                  : "",
               }))}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}

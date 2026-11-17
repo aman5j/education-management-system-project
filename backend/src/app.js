@@ -73,6 +73,7 @@ import websiteHeaderRoutes from "./routes/websiteHeader.routes.js";
 import websiteMenuRoutes from "./routes/websiteMenu.routes.js";
 import websiteBannerRoutes from "./routes/websiteBanner.routes.js";
 import websiteCategoryHighlightRoutes from "./routes/websiteCategoryHighlight.routes.js";
+import websiteCourseCategoryRoutes from "./routes/websiteCourseCategory.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -386,6 +387,11 @@ app.use(
 app.use(
   "/api/website-editor",
   websiteCategoryHighlightRoutes
+);
+
+app.use(
+  "/api/website-editor",
+  websiteCourseCategoryRoutes
 );
 
 

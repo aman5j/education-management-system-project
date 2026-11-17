@@ -132,6 +132,44 @@ const websiteEditorService = {
     return response.data?.data || {};
   },
 
+
+
+  // Phase 6: Course Categories
+
+  async getCourseCategorySettings() {
+    const response = await api.get(
+      "/website-editor/course-categories",
+      { silent: true }
+    );
+
+    return response.data?.data || {
+      settings: { selectedCategoryIds: [] },
+      categories: [],
+    };
+  },
+
+  async updateCourseCategorySettings(payload) {
+    const response = await api.put(
+      "/website-editor/course-categories",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      selectedCategoryIds: [],
+    };
+  },
+
+  async getPublicCourseCategories() {
+    const response = await api.get(
+      "/website-editor/public/course-categories",
+      { silent: true }
+    );
+
+    return response.data?.data?.categories || [];
+  },
+
+
 };
 
 export default websiteEditorService;
