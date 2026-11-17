@@ -10,6 +10,7 @@ import {
   FiRefreshCw,
   FiEye,
   FiEyeOff,
+  FiFileText,
 } from "react-icons/fi";
 import { FaIdCard } from "react-icons/fa";
 import { IoMdInformationCircle } from "react-icons/io";
@@ -18,6 +19,7 @@ import { IoIosCall } from "react-icons/io";
 
 import { useAuth } from "../../context/AuthContext";
 import studentPortalService from "../../services/studentPortalService";
+import StudentDocuments from "./StudentDocuments";
 import { getAssetUrl } from "../../utils/assetUrl";
 import notification, {
   getApiErrorMessage,
@@ -427,6 +429,18 @@ export default function StudentProfile() {
         >
           <FiLock /> Change Password
         </button>
+
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "documents"}
+          className={activeTab === "documents" ? "active" : ""}
+          onClick={() => setActiveTab("documents")}
+        >
+          <FiFileText /> My Documents
+        </button>
+
       </div>
 
       {activeTab === "personal" && (
@@ -736,6 +750,13 @@ export default function StudentProfile() {
             </div>
           </div>
         </form>
+      )}
+
+
+      {activeTab === "documents" && (
+        <div className="student-profile__documents-tab">
+          <StudentDocuments />
+        </div>
       )}
     </div>
   );

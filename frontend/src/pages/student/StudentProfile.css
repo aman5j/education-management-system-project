@@ -502,3 +502,40 @@ width: 210px;
     font-size: 24px;
   }
 }
+
+
+
+
+
+
+
+/* !!!!! INSERTION START: PROFILE DOCUMENTS TAB LAYOUT !!!!! */
+.student-profile__documents-tab {
+  width: 100%;
+  min-width: 0;
+}
+
+.student-profile__documents-tab .student-documents {
+  padding: 0;
+}
+
+.student-profile__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 650px) {
+  .student-profile__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+
+  .student-profile__tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+/* !!!!! INSERTION END: PROFILE DOCUMENTS TAB LAYOUT !!!!! */

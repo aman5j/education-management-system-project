@@ -1,6 +1,5 @@
 
-import { NavLink, useNavigate } from "react-router-dom";
-// import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   FiActivity,
   FiBell,
@@ -17,7 +16,6 @@ import {
   FiUser,
   FiTarget,
   FiAward,
-  // FiFileText
 } from "react-icons/fi";
 
 const navigation = [
@@ -68,11 +66,11 @@ const navigation = [
     icon: FiFileText,
     path: "/student/admission-details",
   },
-  {
-    label: "My Documents",
-    icon: FiFileText,
-    path: "/student/documents",
-  },
+
+  // !!!!! INSERTION START: DOCUMENTS REMOVED FROM SIDEBAR !!!!!
+  // My Documents is now available inside My Profile.
+  // !!!!! INSERTION END: DOCUMENTS REMOVED FROM SIDEBAR !!!!!
+
   { label: "Notifications", icon: FiBell, phase: 10 },
   {
     label: "Helpdesk & Support",
@@ -120,7 +118,8 @@ export default function StudentSidebar({
             alt="Institute logo"
             onError={onLogoError}
             className="student-layout__brand-logo"
-            />
+          />
+
           <button
             type="button"
             className="student-layout__mobile-close"
@@ -131,9 +130,14 @@ export default function StudentSidebar({
           </button>
         </div>
 
-        <div className="student-layout__portal-label">STUDENT PORTAL</div>
+        <div className="student-layout__portal-label">
+          STUDENT PORTAL
+        </div>
 
-        <nav className="student-layout__nav" aria-label="Student navigation">
+        <nav
+          className="student-layout__nav"
+          aria-label="Student navigation"
+        >
           {navigation.map((item) => {
             const Icon = item.icon;
 
@@ -166,7 +170,9 @@ export default function StudentSidebar({
               >
                 <Icon />
                 <span>{item.label}</span>
-                <span className="student-layout__phase-tag">{item.phase}</span>
+                <span className="student-layout__phase-tag">
+                  {item.phase}
+                </span>
               </button>
             );
           })}
@@ -177,7 +183,9 @@ export default function StudentSidebar({
             <FiHelpCircle />
             <div>
               <strong>Need help?</strong>
-              <span>Contact your institute administrator.</span>
+              <span>
+                Contact your institute administrator.
+              </span>
             </div>
           </div>
 
