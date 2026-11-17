@@ -1631,24 +1631,7 @@
   gap: 16px;
 }
 
-.student-document-card {
-    display: flex;
-    align-items: center;
-    gap: 18px;  
-    min-width: 0;
-    min-height: 90px;
-    padding: 10px;
-    background: #fff;
-    border: 1px solid #e0e7f1;
-    border-radius: 6px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
 
-.student-document-card:hover {
-  border-color: #c8d9fa;
-  box-shadow: 0 5px 18px rgba(30, 64, 120, 0.07);
-  transform: translateY(-1px);
-}
 
 /* File icon */
 .student-document-file-icon {

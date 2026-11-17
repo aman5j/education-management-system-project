@@ -247,52 +247,16 @@ export default function StudentDocuments() {
 
   return (
     <main className="student-documents">
-      <header className="student-documents__header">
-        <div className="student-documents__heading">
-          <span className="student-documents__heading-icon">
-            <FiFolder />
-          </span>
-
-          <div>
-            <span className="student-documents__eyebrow">
-              STUDENT PORTAL
-            </span>
-            <h1>My Documents</h1>
-            <p>View and download your uploaded documents.</p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="student-documents__refresh"
-          onClick={() => loadDocuments(true)}
-          disabled={loading || refreshing}
-        >
-          <FiRefreshCw
-            className={refreshing ? "student-documents__spin" : ""}
-          />
-          Refresh
-        </button>
-      </header>
-
-      {student && (
-        <section className="student-documents__student">
-          <div className="student-documents__student-icon">
-            <FiFileText />
-          </div>
-
-          <div className="student-documents__student-info">
-            <span>Student</span>
-            <strong>{student.name || "Student"}</strong>
-            <small>Roll Number: {student.rollNo || "—"}</small>
-          </div>
-
-          <div className="student-documents__total">
+      
+      <div className="common-card">
+        <div class="panel-header"><div><h3>My Documents</h3><p>View and download your uploaded documents.</p></div>
+        <div className="student-documents__total">
             <strong>{documents.length}</strong>
             <span>Documents</span>
           </div>
-        </section>
-      )}
+        </div>
+      <div className="cardbody">
+      
 
       {error && (
         <div className="student-documents__error" role="alert">
@@ -412,6 +376,10 @@ export default function StudentDocuments() {
           })}
         </section>
       )}
+</div>
+      </div>
+
+     
     </main>
   );
 }

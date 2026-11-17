@@ -281,10 +281,6 @@ width: 100%;
     transition:1s;
 }
 
-.common-card:hover img {
-    object-position: bottom;
-   
-}
 
 
 /* Card body */
