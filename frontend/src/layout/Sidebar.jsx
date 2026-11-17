@@ -126,7 +126,6 @@ const menuItems = [
     // path: "/admin/attendance",
     icon: FiUserCheck,
     children: [
-     
       {
         label: "Attendance",
         path: "/admin/attendance",
