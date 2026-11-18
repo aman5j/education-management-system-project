@@ -69,7 +69,7 @@ import AlertNoticeManagement from "./pages/admin/alertNotices/AlertNoticeManagem
 // WEBSITE Editor Routes
 import WebsiteEditor from "./pages/admin/website-editor/WebsiteEditor";
 import WebsitePreviewPage from "./pages/admin/website-editor/components/WebsitePreviewPage";
-
+import StudyResourcesPage from "./pages/public/StudyResourcesPage";
 
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
@@ -250,6 +250,11 @@ const App = () => {
               <WebsitePreviewPage />
             </RoleRoute>
           }
+      />
+
+      <Route
+        path="/resources"
+        element={<StudyResourcesPage />}
       />
 
       {/* Admin portal */}

@@ -11,6 +11,8 @@ import {
 } from "react-icons/fi";
 
 import TrendingCoursesPreview from "./TrendingCoursesPreview";
+import StudyResourcesSection from "./StudyResourcesSection";
+
 
 export default function WebsitePreview({
   header,
@@ -21,6 +23,7 @@ export default function WebsitePreview({
   categoryHighlights = [],
   courseCategories = [],
   trendingCourses = [],
+  studyResources = [],
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -333,6 +336,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
         {/* Phase 7: Trending Courses */}
         <TrendingCoursesPreview courses={trendingCourses} />
+
+        {/* Phase 8: Study Resources */}
+        <StudyResourcesSection items={studyResources} />
 
 
       <div className="we-public-page-placeholder">

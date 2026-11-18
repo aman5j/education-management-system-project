@@ -36,7 +36,8 @@ import BannerControls from "./components/BannerControls";
 import CategoryHighlightsControls from "./components/CategoryHighlightsControls";
 import CourseCategoriesControls from "./components/CourseCategoriesControls";
 import TrendingCoursesControls from "./components/TrendingCoursesControls";
-
+import StudyResourcesControls from "./components/StudyResourcesControls";
+import "./StudyResources.phase8.css";
 
 import { getAssetUrl } from "../../../utils/assetUrl";
 import notification, {
@@ -99,6 +100,11 @@ const initialCourseCategories = {
 const initialTrendingCourses = {
   selectedCourseIds: [],
 };
+
+const initialStudyResources = {
+  items: [],
+};
+
 
 const editorSections = [
   { id: "header", label: "Header", phase: 2, icon: FiLayout },
@@ -181,6 +187,15 @@ const WebsiteEditor = () => {
     initialTrendingCourses
   );
 
+  // Phase 8: Study Resources state
+  const [studyResources, setStudyResources] = useState(
+    initialStudyResources
+  );
+
+  const [savedStudyResources, setSavedStudyResources] = useState(
+    initialStudyResources
+  );
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -200,16 +215,18 @@ const WebsiteEditor = () => {
     imageUrl: getAssetUrl(slide.imageUrl),
   }));
 
-  const hasUnsavedChanges =
-    JSON.stringify(header) !== JSON.stringify(savedHeader) ||
-    JSON.stringify(institute) !== JSON.stringify(savedInstitute) ||
-    JSON.stringify(menu) !== JSON.stringify(savedMenu) ||
-    JSON.stringify(courseCategories) !==
-      JSON.stringify(savedCourseCategories) ||
-    JSON.stringify(categoryHighlights) !==
-      JSON.stringify(savedCategoryHighlights) ||
-    JSON.stringify(trendingCourses) !==
-      JSON.stringify(savedTrendingCourses);
+    const hasUnsavedChanges =
+      JSON.stringify(header) !== JSON.stringify(savedHeader) ||
+      JSON.stringify(institute) !== JSON.stringify(savedInstitute) ||
+      JSON.stringify(menu) !== JSON.stringify(savedMenu) ||
+      JSON.stringify(courseCategories) !==
+        JSON.stringify(savedCourseCategories) ||
+      JSON.stringify(categoryHighlights) !==
+        JSON.stringify(savedCategoryHighlights) ||
+      JSON.stringify(trendingCourses) !==
+        JSON.stringify(savedTrendingCourses) ||
+      JSON.stringify(studyResources) !==
+        JSON.stringify(savedStudyResources);
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -225,6 +242,7 @@ const WebsiteEditor = () => {
         categoryData,
         courseCategoryData,
         trendingCourseData,
+        studyResourceData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -233,6 +251,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getCategoryHighlights(),
         websiteEditorService.getCourseCategorySettings(),
         websiteEditorService.getTrendingCourseSettings(),
+        websiteEditorService.getStudyResourcesSettings(),
       ]);
 
       const nextHeader = {
@@ -339,6 +358,19 @@ const WebsiteEditor = () => {
       setTrendingCourses(nextTrendingCourses);
       setSavedTrendingCourses(nextTrendingCourses);
 
+      // Phase 8: Load Study Resources
+      const nextStudyResources = {
+        items: Array.isArray(studyResourceData?.items)
+          ? studyResourceData.items.map((item, index) => ({
+              ...item,
+              displayOrder: index,
+            }))
+          : [],
+      };
+
+      setStudyResources(nextStudyResources);
+      setSavedStudyResources(nextStudyResources);
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -399,6 +431,34 @@ const WebsiteEditor = () => {
     setTrendingCourses({
       selectedCourseIds,
     });
+  };
+
+  // Phase 8: Update Study Resources
+  const updateStudyResources = (items) => {
+    setStudyResources({
+      items: items.map((item, index) => ({
+        ...item,
+        displayOrder: index,
+      })),
+    });
+  };
+
+  const uploadStudyResourceImage = async (file) => {
+    try {
+      const uploaded =
+        await websiteEditorService.uploadStudyResourceImage(file);
+
+      notification.success("Study Resource image uploaded successfully.");
+
+      return uploaded;
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) ||
+          "Unable to upload Study Resource image."
+      );
+
+      throw error;
+    }
   };
 
 
@@ -688,6 +748,27 @@ const WebsiteEditor = () => {
     }
     // !!!!! INSERTION END: VALIDATE CATEGORY HIGHLIGHTS !!!!!
 
+    // Phase 8: Validate Study Resources
+    const invalidStudyResource = (studyResources.items || []).some(
+      (item) =>
+        !item.imageUrl?.trim() ||
+        !item.imageVersion?.trim() ||
+        !item.title?.trim() ||
+        !item.description?.trim() ||
+        !item.buttonText?.trim() ||
+        !item.buttonUrl?.trim()
+    );
+
+    if (invalidStudyResource) {
+      notification.warning(
+        "Complete the image, title, description and button details of every Study Resource card, or remove the incomplete card."
+      );
+
+      setActiveSection("resources");
+      setExpandedSection("resources");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -707,6 +788,7 @@ const WebsiteEditor = () => {
         savedCategoryData,
         savedCourseCategoryData,
         savedTrendingCourseData,
+        savedStudyResourceData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -717,6 +799,9 @@ const WebsiteEditor = () => {
         ),
         websiteEditorService.updateTrendingCourseSettings(
           trendingCourses
+        ),
+        websiteEditorService.updateStudyResourcesSettings(
+          studyResources
         ),
       ]);
 
@@ -783,6 +868,19 @@ const WebsiteEditor = () => {
       setTrendingCourses(nextTrendingCourses);
       setSavedTrendingCourses(nextTrendingCourses);
 
+      // Phase 8: Save Study Resources state
+    const nextStudyResources = {
+      items: Array.isArray(savedStudyResourceData?.items)
+        ? savedStudyResourceData.items.map((item, index) => ({
+            ...item,
+            displayOrder: index,
+          }))
+        : studyResources.items,
+    };
+
+    setStudyResources(nextStudyResources);
+    setSavedStudyResources(nextStudyResources);
+
 
       notification.success(
         "Website editor settings saved successfully."
@@ -806,7 +904,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories and Trending Courses changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -832,6 +930,9 @@ const WebsiteEditor = () => {
 
     // Phase 7: Restore saved Trending Courses
     setTrendingCourses(savedTrendingCourses);
+
+    // Phase 8: Restore saved Study Resources
+    setStudyResources(savedStudyResources);
   };
 
   const openPreviewInNewTab = () => {
@@ -957,6 +1058,12 @@ const WebsiteEditor = () => {
                         courses={availableTrendingCourses}
                         selectedCourseIds={trendingCourses.selectedCourseIds}
                         onChange={updateTrendingCourses}
+                      />
+                    ) : section.id === "resources" ? (
+                      <StudyResourcesControls
+                        items={studyResources.items}
+                        onChange={updateStudyResources}
+                        onUploadImage={uploadStudyResourceImage}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1122,6 +1229,13 @@ const WebsiteEditor = () => {
                 ...course,
                 courseImage: course.courseImage
                   ? getAssetUrl(course.courseImage)
+                  : "",
+              }))}
+
+              studyResources={studyResources.items.map((item) => ({
+                ...item,
+                imageUrl: item.imageUrl
+                  ? getAssetUrl(item.imageUrl)
                   : "",
               }))}
             />

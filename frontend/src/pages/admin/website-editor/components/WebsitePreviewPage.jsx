@@ -13,6 +13,7 @@ import notification, {
 import WebsitePreview from "./WebsitePreview";
 import "../WebsiteEditor.css";
 import "../WebsitePreviewPage.css";
+import "../StudyResources.phase8.css";
 
 const defaultHeader = {
   topbarEnabled: true,
@@ -35,13 +36,19 @@ export default function WebsitePreviewPage() {
   const [header, setHeader] = useState(defaultHeader);
   const [institute, setInstitute] = useState({});
   const [loading, setLoading] = useState(true);
+  const [studyResources, setStudyResources] = useState([]);
 
   useEffect(() => {
     const loadPreview = async () => {
       try {
-        const [headerData, instituteData] = await Promise.all([
-          websiteEditorService.getHeaderSettings(),
-          instituteSettingsService.getSettings(),
+        const [
+            headerData,
+            instituteData,
+            studyResourceData,
+            ] = await Promise.all([
+            websiteEditorService.getHeaderSettings(),
+            instituteSettingsService.getSettings(),
+            websiteEditorService.getPublicStudyResources(),
         ]);
 
         setHeader({
@@ -50,6 +57,17 @@ export default function WebsitePreviewPage() {
         });
 
         setInstitute(instituteData || {});
+
+        setStudyResources(
+        (Array.isArray(studyResourceData) ? studyResourceData : []).map(
+            (item) => ({
+            ...item,
+            imageUrl: item.imageUrl
+                ? getAssetUrl(item.imageUrl)
+                : "",
+            })
+        )
+        );
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -92,6 +110,7 @@ export default function WebsitePreviewPage() {
           header={header}
           institute={institute}
           logoUrl={logoUrl}
+          studyResources={studyResources}
         />
       </main>
     </div>

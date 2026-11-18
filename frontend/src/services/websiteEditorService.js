@@ -4,51 +4,39 @@ import api from "./api";
 const websiteEditorService = {
   // Header Services
   async getHeaderSettings() {
-    const response = await api.get(
-      "/website-editor/header",
-      { silent: true }
-    );
-
+    const response = await api.get("/website-editor/header", {
+      silent: true,
+    });
     return response.data?.data?.settings || {};
   },
 
   async updateHeaderSettings(payload) {
-    const response = await api.put(
-      "/website-editor/header",
-      payload,
-      { silent: true }
-    );
-
+    const response = await api.put("/website-editor/header", payload, {
+      silent: true,
+    });
     return response.data?.data?.settings || {};
   },
 
   // Menu Services
   async getMenuSettings() {
-    const response = await api.get(
-      "/website-editor/menu",
-      { silent: true }
-    );
-
+    const response = await api.get("/website-editor/menu", {
+      silent: true,
+    });
     return response.data?.data?.settings || {};
   },
 
   async updateMenuSettings(payload) {
-    const response = await api.put(
-      "/website-editor/menu",
-      payload,
-      { silent: true }
-    );
-
+    const response = await api.put("/website-editor/menu", payload, {
+      silent: true,
+    });
     return response.data?.data?.settings || {};
   },
 
   // Banner Services
   async getBannerSettings() {
-    const response = await api.get(
-      "/website-editor/banner",
-      { silent: true }
-    );
-
+    const response = await api.get("/website-editor/banner", {
+      silent: true,
+    });
     return response.data?.data?.settings || { slides: [] };
   },
 
@@ -56,17 +44,13 @@ const websiteEditorService = {
     const formData = new FormData();
     formData.append("image", file);
 
-    if (slideKey) {
-      formData.append("slideKey", slideKey);
-    }
+    if (slideKey) formData.append("slideKey", slideKey);
 
     const response = await api.post(
       "/website-editor/banner/slides",
       formData,
       {
-        headers: {
-          "Content-Type": undefined,
-        },
+        headers: { "Content-Type": undefined },
         silent: true,
       }
     );
@@ -79,7 +63,6 @@ const websiteEditorService = {
       `/website-editor/banner/slides/${encodeURIComponent(slideKey)}`,
       { silent: true }
     );
-
     return response.data?.data?.settings || { slides: [] };
   },
 
@@ -89,18 +72,15 @@ const websiteEditorService = {
       { slideKeys },
       { silent: true }
     );
-
     return response.data?.data?.settings || { slides: [] };
   },
 
-  
   // Category Highlights Services
   async getCategoryHighlights() {
     const response = await api.get(
       "/website-editor/category-highlights",
       { silent: true }
     );
-
     return response.data?.data?.settings || { items: [] };
   },
 
@@ -110,7 +90,6 @@ const websiteEditorService = {
       payload,
       { silent: true }
     );
-
     return response.data?.data?.settings || { items: [] };
   },
 
@@ -122,9 +101,7 @@ const websiteEditorService = {
       "/website-editor/category-highlights/icons",
       formData,
       {
-        headers: {
-          "Content-Type": undefined,
-        },
+        headers: { "Content-Type": undefined },
         silent: true,
       }
     );
@@ -132,10 +109,7 @@ const websiteEditorService = {
     return response.data?.data || {};
   },
 
-
-
   // Phase 6: Course Categories
-
   async getCourseCategorySettings() {
     const response = await api.get(
       "/website-editor/course-categories",
@@ -169,9 +143,7 @@ const websiteEditorService = {
     return response.data?.data?.categories || [];
   },
 
-  
   // Phase 7: Trending Courses
-
   async getTrendingCourseSettings() {
     const response = await api.get(
       "/website-editor/trending-courses",
@@ -205,8 +177,50 @@ const websiteEditorService = {
     return response.data?.data?.courses || [];
   },
 
+  // Phase 8: Study Resources
+  async getStudyResourcesSettings() {
+    const response = await api.get(
+      "/website-editor/study-resources",
+      { silent: true }
+    );
 
+    return response.data?.data?.settings || { items: [] };
+  },
 
+  async updateStudyResourcesSettings(payload) {
+    const response = await api.put(
+      "/website-editor/study-resources",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || { items: [] };
+  },
+
+  async uploadStudyResourceImage(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/study-resources/images",
+      formData,
+      {
+        headers: { "Content-Type": undefined },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
+  async getPublicStudyResources() {
+    const response = await api.get(
+      "/website-editor/public/study-resources",
+      { silent: true }
+    );
+
+    return response.data?.data?.items || [];
+  },
 };
 
 export default websiteEditorService;
