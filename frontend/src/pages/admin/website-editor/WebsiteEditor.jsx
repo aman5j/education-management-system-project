@@ -1107,13 +1107,16 @@ const WebsiteEditor = () => {
                   : "",
               }))}
 
-              trendingCourses={availableTrendingCourses
+              trendingCourses={trendingCourses.selectedCourseIds
+              .map((selectedId) =>
+                availableTrendingCourses.find(
+                  (course) =>
+                    String(course._id) === String(selectedId)
+                )
+              )
               .filter(
                 (course) =>
-                  course.status === "Published" &&
-                  trendingCourses.selectedCourseIds.includes(
-                    String(course._id)
-                  )
+                  course && course.status === "Published"
               )
               .map((course) => ({
                 ...course,

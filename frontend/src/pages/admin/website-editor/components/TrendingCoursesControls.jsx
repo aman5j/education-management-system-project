@@ -90,19 +90,28 @@ export default function TrendingCoursesControls({
     onChange(nextIds);
   };
 
-  const moveSelected = (index, direction) => {
-    const next = [...selectedCourseIds];
-    const targetIndex = index + direction;
+const moveSelected = (courseId, direction) => {
+  const next = [...selectedCourseIds];
 
-    if (targetIndex < 0 || targetIndex >= next.length) return;
+  // Find the actual course position by ID, not by the
+  // filtered selectedCourses array index.
+  const currentIndex = next.findIndex(
+    (id) => String(id) === String(courseId)
+  );
 
-    [next[index], next[targetIndex]] = [
-      next[targetIndex],
-      next[index],
-    ];
+  if (currentIndex === -1) return;
 
-    onChange(next);
-  };
+  const targetIndex = currentIndex + direction;
+
+  if (targetIndex < 0 || targetIndex >= next.length) return;
+
+  [next[currentIndex], next[targetIndex]] = [
+    next[targetIndex],
+    next[currentIndex],
+  ];
+
+  onChange(next);
+};
 
   return (
     <div className="we-trending-controls">
@@ -270,7 +279,7 @@ export default function TrendingCoursesControls({
                     title="Move up"
                     aria-label={`Move ${course.courseTitle} up`}
                     disabled={index === 0}
-                    onClick={() => moveSelected(index, -1)}
+                    onClick={() => moveSelected(course._id, -1)}
                   >
                     <FiArrowUp />
                   </button>
@@ -280,7 +289,7 @@ export default function TrendingCoursesControls({
                     title="Move down"
                     aria-label={`Move ${course.courseTitle} down`}
                     disabled={index === selectedCourses.length - 1}
-                    onClick={() => moveSelected(index, 1)}
+                    onClick={() => moveSelected(course._id, 1)}
                   >
                     <FiArrowDown />
                   </button>
