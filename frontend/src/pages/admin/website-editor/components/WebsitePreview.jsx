@@ -10,6 +10,8 @@ import {
   FiImage,
 } from "react-icons/fi";
 
+import TrendingCoursesPreview from "./TrendingCoursesPreview";
+
 export default function WebsitePreview({
   header,
   institute,
@@ -18,6 +20,7 @@ export default function WebsitePreview({
   banner = [],
   categoryHighlights = [],
   courseCategories = [],
+  trendingCourses = [],
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -284,7 +287,7 @@ const visibleCourseCategories = Array.isArray(courseCategories)
       )}
 
         {/* Phase 6: Course Categories */}
-              {/* !!!!! INSERTION START: PHASE 6 POPULAR COURSE CATEGORIES !!!!! */}
+    {/* !!!!! INSERTION START: PHASE 6 POPULAR COURSE CATEGORIES !!!!! */}
       {visibleCourseCategories.length > 0 && (
         <section
           className="we-preview-course-categories"
@@ -327,6 +330,10 @@ const visibleCourseCategories = Array.isArray(courseCategories)
         </section>
       )}
       {/* !!!!! INSERTION END: PHASE 6 POPULAR COURSE CATEGORIES !!!!! */}
+
+        {/* Phase 7: Trending Courses */}
+        <TrendingCoursesPreview courses={trendingCourses} />
+
 
       <div className="we-public-page-placeholder">
         <div className="we-preview-hero-content">

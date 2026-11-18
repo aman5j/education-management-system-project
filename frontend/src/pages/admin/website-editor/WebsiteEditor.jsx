@@ -35,6 +35,7 @@ import MenuControls from "./components/MenuControls";
 import BannerControls from "./components/BannerControls";
 import CategoryHighlightsControls from "./components/CategoryHighlightsControls";
 import CourseCategoriesControls from "./components/CourseCategoriesControls";
+import TrendingCoursesControls from "./components/TrendingCoursesControls";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -94,6 +95,10 @@ const initialCourseCategories = {
 };
 // !!!!! INSERTION END: PHASE 6 COURSE CATEGORIES INITIAL STATE !!!!!
 
+
+const initialTrendingCourses = {
+  selectedCourseIds: [],
+};
 
 const editorSections = [
   { id: "header", label: "Header", phase: 2, icon: FiLayout },
@@ -164,6 +169,18 @@ const WebsiteEditor = () => {
   );
   // !!!!! INSERTION END: PHASE 6 COURSE CATEGORIES STATE !!!!!
 
+  // Phase 7: Trending Courses state
+  const [availableTrendingCourses, setAvailableTrendingCourses] =
+    useState([]);
+
+  const [trendingCourses, setTrendingCourses] = useState(
+    initialTrendingCourses
+  );
+
+  const [savedTrendingCourses, setSavedTrendingCourses] = useState(
+    initialTrendingCourses
+  );
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -190,7 +207,9 @@ const WebsiteEditor = () => {
     JSON.stringify(courseCategories) !==
       JSON.stringify(savedCourseCategories) ||
     JSON.stringify(categoryHighlights) !==
-      JSON.stringify(savedCategoryHighlights);  
+      JSON.stringify(savedCategoryHighlights) ||
+    JSON.stringify(trendingCourses) !==
+      JSON.stringify(savedTrendingCourses);
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -205,6 +224,7 @@ const WebsiteEditor = () => {
         bannerData,
         categoryData,
         courseCategoryData,
+        trendingCourseData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -212,6 +232,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getBannerSettings(),
         websiteEditorService.getCategoryHighlights(),
         websiteEditorService.getCourseCategorySettings(),
+        websiteEditorService.getTrendingCourseSettings(),
       ]);
 
       const nextHeader = {
@@ -290,6 +311,34 @@ const WebsiteEditor = () => {
       setSavedCourseCategories(nextCourseCategories);
       // !!!!! INSERTION END: LOAD PHASE 6 COURSE CATEGORIES !!!!!
 
+      // Phase 7: Load Trending Courses
+      const nextAvailableTrendingCourses = Array.isArray(
+        trendingCourseData?.courses
+      )
+        ? trendingCourseData.courses
+        : [];
+
+      setAvailableTrendingCourses(nextAvailableTrendingCourses);
+
+      const publishedCourseIds = new Set(
+        nextAvailableTrendingCourses
+          .filter((course) => course.status === "Published")
+          .map((course) => String(course._id))
+      );
+
+      const nextTrendingCourses = {
+        selectedCourseIds: Array.isArray(
+          trendingCourseData?.settings?.selectedCourseIds
+        )
+          ? trendingCourseData.settings.selectedCourseIds
+              .map(String)
+              .filter((id) => publishedCourseIds.has(id))
+          : [],
+      };
+
+      setTrendingCourses(nextTrendingCourses);
+      setSavedTrendingCourses(nextTrendingCourses);
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -344,6 +393,13 @@ const WebsiteEditor = () => {
     });
   };
   // !!!!! INSERTION END: UPDATE PHASE 6 COURSE CATEGORIES !!!!!
+
+  // Phase 7: Update Trending Courses
+  const updateTrendingCourses = (selectedCourseIds) => {
+    setTrendingCourses({
+      selectedCourseIds,
+    });
+  };
 
 
   const handleBannerUpload = async (file, slideKey = "") => {
@@ -650,6 +706,7 @@ const WebsiteEditor = () => {
         savedMenuData,
         savedCategoryData,
         savedCourseCategoryData,
+        savedTrendingCourseData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -657,6 +714,9 @@ const WebsiteEditor = () => {
         websiteEditorService.updateCategoryHighlights(categoryHighlights),
         websiteEditorService.updateCourseCategorySettings(
           courseCategories
+        ),
+        websiteEditorService.updateTrendingCourseSettings(
+          trendingCourses
         ),
       ]);
 
@@ -710,6 +770,20 @@ const WebsiteEditor = () => {
       setSavedCourseCategories(nextCourseCategories);
       // !!!!! INSERTION END: SAVE PHASE 6 COURSE CATEGORIES !!!!!
 
+
+      // Phase 7: Save Trending Courses state
+      const nextTrendingCourses = {
+        selectedCourseIds: Array.isArray(
+          savedTrendingCourseData?.selectedCourseIds
+        )
+          ? savedTrendingCourseData.selectedCourseIds.map(String)
+          : trendingCourses.selectedCourseIds,
+      };
+
+      setTrendingCourses(nextTrendingCourses);
+      setSavedTrendingCourses(nextTrendingCourses);
+
+
       notification.success(
         "Website editor settings saved successfully."
       );
@@ -732,7 +806,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights and Course Categories changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories and Trending Courses changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -755,6 +829,9 @@ const WebsiteEditor = () => {
     // !!!!! INSERTION START: RESTORE PHASE 6 COURSE CATEGORIES !!!!!
     setCourseCategories(savedCourseCategories);
     // !!!!! INSERTION END: RESTORE PHASE 6 COURSE CATEGORIES !!!!!
+
+    // Phase 7: Restore saved Trending Courses
+    setTrendingCourses(savedTrendingCourses);
   };
 
   const openPreviewInNewTab = () => {
@@ -874,6 +951,12 @@ const WebsiteEditor = () => {
                         categories={availableCourseCategories}
                         selectedCategoryIds={courseCategories.selectedCategoryIds}
                         onChange={updateCourseCategories}
+                      />
+                    ) : section.id === "courses" ? (
+                      <TrendingCoursesControls
+                        courses={availableTrendingCourses}
+                        selectedCourseIds={trendingCourses.selectedCourseIds}
+                        onChange={updateTrendingCourses}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1023,8 +1106,24 @@ const WebsiteEditor = () => {
                   ? getAssetUrl(category.categoryIcon)
                   : "",
               }))}
+
+              trendingCourses={availableTrendingCourses
+              .filter(
+                (course) =>
+                  course.status === "Published" &&
+                  trendingCourses.selectedCourseIds.includes(
+                    String(course._id)
+                  )
+              )
+              .map((course) => ({
+                ...course,
+                courseImage: course.courseImage
+                  ? getAssetUrl(course.courseImage)
+                  : "",
+              }))}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
+            
           </div>
         </div>
 

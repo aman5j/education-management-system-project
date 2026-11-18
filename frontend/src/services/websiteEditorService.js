@@ -169,6 +169,43 @@ const websiteEditorService = {
     return response.data?.data?.categories || [];
   },
 
+  
+  // Phase 7: Trending Courses
+
+  async getTrendingCourseSettings() {
+    const response = await api.get(
+      "/website-editor/trending-courses",
+      { silent: true }
+    );
+
+    return response.data?.data || {
+      settings: { selectedCourseIds: [] },
+      courses: [],
+    };
+  },
+
+  async updateTrendingCourseSettings(payload) {
+    const response = await api.put(
+      "/website-editor/trending-courses",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      selectedCourseIds: [],
+    };
+  },
+
+  async getPublicTrendingCourses() {
+    const response = await api.get(
+      "/website-editor/public/trending-courses",
+      { silent: true }
+    );
+
+    return response.data?.data?.courses || [];
+  },
+
+
 
 };
 
