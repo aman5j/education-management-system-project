@@ -36,15 +36,8 @@ const ALLOWED_TYPES = [
 ];
 
 const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".webp",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
+  ".pdf", ".jpg", ".jpeg", ".png", ".webp",
+  ".doc", ".docx", ".xls", ".xlsx",
 ];
 
 const StudentDocuments = ({
@@ -67,6 +60,7 @@ const StudentDocuments = ({
   const [uploading, setUploading] = useState(false);
   const [busyDocumentId, setBusyDocumentId] = useState("");
   const [validationError, setValidationError] = useState("");
+  const [pendingFiles, setPendingFiles] = useState([]);
 
   useEffect(() => {
     countChangeRef.current = onCountChange;
@@ -86,8 +80,6 @@ const StudentDocuments = ({
       setLoading(true);
 
       try {
-        // Reuse an in-flight request when React StrictMode
-        // runs the development effect more than once.
         if (!loadPromiseRef.current) {
           loadPromiseRef.current = getStudentDocuments(studentId);
         }
@@ -109,21 +101,17 @@ const StudentDocuments = ({
       } catch (error) {
         if (isActive()) {
           setLoadFailed(true);
-
           notification.error(
             error?.response?.data?.message ||
-            error?.message ||
-            "Unable to load student documents."
+              error?.message ||
+              "Unable to load student documents."
           );
         }
 
         return false;
       } finally {
         loadPromiseRef.current = null;
-
-        if (isActive()) {
-          setLoading(false);
-        }
+        if (isActive()) setLoading(false);
       }
     },
     [studentId]
@@ -131,7 +119,6 @@ const StudentDocuments = ({
 
   useEffect(() => {
     let active = true;
-
     loadDocuments(() => active);
 
     return () => {
@@ -140,28 +127,19 @@ const StudentDocuments = ({
   }, [loadDocuments]);
 
   const getDocumentName = (document) =>
-    document?.originalName ||
-    document?.fileName ||
-    "Document";
+    document?.originalName || document?.fileName || "Document";
 
   const formatFileSize = (bytes) => {
     const size = Number(bytes || 0);
-
     if (!size) return "0 KB";
     if (size < 1024) return `${size} B`;
-
-    if (size < 1024 * 1024) {
-      return `${(size / 1024).toFixed(1)} KB`;
-    }
-
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const formatDate = (value) => {
     if (!value) return "-";
-
     const date = new Date(value);
-
     if (Number.isNaN(date.getTime())) return "-";
 
     return date.toLocaleString("en-IN", {
@@ -170,24 +148,16 @@ const StudentDocuments = ({
     });
   };
 
-  const isImage = (fileOrDocument) => {
-    const mimeType = fileOrDocument?.mimeType || fileOrDocument?.type;
-
-    return [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ].includes(mimeType);
-  };
+  const isImage = (item) =>
+    ["image/jpeg", "image/png", "image/webp"].includes(
+      item?.mimeType || item?.type
+    );
 
   const validateFiles = (selectedFiles) => {
     const files = Array.from(selectedFiles || []);
 
     if (!files.length) {
-      return {
-        valid: false,
-        message: "Please select at least one document.",
-      };
+      return { valid: false, message: "Please select at least one document." };
     }
 
     if (files.length > MAX_FILES_PER_UPLOAD) {
@@ -212,9 +182,7 @@ const StudentDocuments = ({
       };
     }
 
-    const oversized = files.find(
-      (file) => file.size > MAX_FILE_SIZE
-    );
+    const oversized = files.find((file) => file.size > MAX_FILE_SIZE);
 
     if (oversized) {
       return {
@@ -226,30 +194,80 @@ const StudentDocuments = ({
     return { valid: true, files };
   };
 
-  const handleFileChange = async (event) => {
-    const selectedFiles = event.target.files;
-    const result = validateFiles(selectedFiles);
+  const createDocumentEntries = (files) =>
+    files.map((file) => ({
+      file,
+      displayName: file.name.replace(/\.[^/.]+$/, ""),
+    }));
 
+  const handleFileChange = (event) => {
+    const result = validateFiles(event.target.files);
     event.target.value = "";
     setValidationError("");
 
     if (!result.valid) {
       setValidationError(result.message);
+      notification.error(result.message);
       return;
     }
 
-    // Add Student: keep selected files in the form until
-    // the student record has been created.
+    const newEntries = createDocumentEntries(result.files);
+
+    // Add Student: retain named draft files until student creation.
     if (!studentId) {
       onDraftFilesChange?.((previous) => [
         ...previous,
-        ...result.files,
+        ...newEntries,
       ]);
 
       notification.info(
-        `${result.files.length} document(s) selected. They will upload after the student is created.`
+        "Documents selected. Enter their display names before creating the student."
       );
+      return;
+    }
 
+    // Edit Student: collect names first; upload only after confirmation.
+    setPendingFiles((previous) => [
+      ...previous,
+      ...newEntries,
+    ]);
+  };
+
+  const updatePendingName = (index, displayName) => {
+    if (!studentId) {
+      onDraftFilesChange?.((previous) =>
+        previous.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, displayName } : item
+        )
+      );
+      return;
+    }
+
+    setPendingFiles((previous) =>
+      previous.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, displayName } : item
+      )
+    );
+  };
+
+  const removePendingFile = (index) => {
+    if (!studentId) {
+      onDraftFilesChange?.((previous) =>
+        previous.filter((_, itemIndex) => itemIndex !== index)
+      );
+      return;
+    }
+
+    setPendingFiles((previous) =>
+      previous.filter((_, itemIndex) => itemIndex !== index)
+    );
+  };
+
+  const handleUpload = async () => {
+    if (!studentId || uploading || pendingFiles.length === 0) return;
+
+    if (pendingFiles.some((item) => !item.displayName.trim())) {
+      notification.error("Please enter a name for every selected document.");
       return;
     }
 
@@ -258,57 +276,42 @@ const StudentDocuments = ({
     try {
       const response = await uploadStudentDocuments(
         studentId,
-        result.files
+        pendingFiles
       );
 
+      setPendingFiles([]);
       await loadDocuments();
 
       notification.success(
-        response?.data?.message ||
-        "Documents uploaded successfully."
+        response?.data?.message || "Documents uploaded successfully."
       );
     } catch (error) {
       notification.error(
         error?.response?.data?.message ||
-        error?.message ||
-        "Unable to upload documents."
+          error?.message ||
+          "Unable to upload documents."
       );
     } finally {
       setUploading(false);
     }
   };
 
-  const removeDraftFile = (indexToRemove) => {
-    onDraftFilesChange?.((previous) =>
-      previous.filter((_, index) => index !== indexToRemove)
-    );
-  };
-
   const handleView = async (document) => {
     if (!studentId || busyDocumentId) return;
 
     setBusyDocumentId(document._id);
-
-    // Open the tab during the click event to avoid popup blockers
-    // after the asynchronous document request.
     const previewWindow = window.open("about:blank", "_blank");
 
     if (!previewWindow) {
       setBusyDocumentId("");
-      notification.warning(
-        "Please allow pop-ups to preview student documents."
-      );
+      notification.warning("Please allow pop-ups to preview student documents.");
       return;
     }
 
     try {
       previewWindow.document.title = "Loading document...";
 
-      const response = await viewStudentDocument(
-        studentId,
-        document._id
-      );
-
+      const response = await viewStudentDocument(studentId, document._id);
       const blob = new Blob([response.data], {
         type:
           document.mimeType ||
@@ -317,18 +320,13 @@ const StudentDocuments = ({
       });
 
       const url = URL.createObjectURL(blob);
-
       previewWindow.location.href = url;
 
-      window.setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 60000);
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (error) {
       previewWindow.close();
-
       notification.error(
-        error?.response?.data?.message ||
-        "Unable to view document."
+        error?.response?.data?.message || "Unable to view document."
       );
     } finally {
       setBusyDocumentId("");
@@ -341,11 +339,7 @@ const StudentDocuments = ({
     setBusyDocumentId(document._id);
 
     try {
-      const response = await downloadStudentDocument(
-        studentId,
-        document._id
-      );
-
+      const response = await downloadStudentDocument(studentId, document._id);
       const blob = new Blob([response.data], {
         type:
           document.mimeType ||
@@ -358,20 +352,15 @@ const StudentDocuments = ({
 
       link.href = url;
       link.download = getDocumentName(document);
-
       window.document.body.appendChild(link);
       link.click();
       link.remove();
 
-      window.setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 1000);
-
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       notification.success("Document downloaded successfully.");
     } catch (error) {
       notification.error(
-        error?.response?.data?.message ||
-        "Unable to download document."
+        error?.response?.data?.message || "Unable to download document."
       );
     } finally {
       setBusyDocumentId("");
@@ -390,10 +379,7 @@ const StudentDocuments = ({
     setBusyDocumentId(document._id);
 
     try {
-      await deleteStudentDocument(
-        studentId,
-        document._id
-      );
+      await deleteStudentDocument(studentId, document._id);
 
       const updatedDocuments = documents.filter(
         (item) => String(item._id) !== String(document._id)
@@ -401,24 +387,75 @@ const StudentDocuments = ({
 
       setDocuments(updatedDocuments);
       countChangeRef.current?.(updatedDocuments.length);
-
       notification.success("Document deleted successfully.");
     } catch (error) {
       notification.error(
-        error?.response?.data?.message ||
-        "Unable to delete document."
+        error?.response?.data?.message || "Unable to delete document."
       );
     } finally {
       setBusyDocumentId("");
     }
   };
 
-  const fullName = [
-    student?.firstName,
-    student?.surname,
-  ]
+  const renderPendingFiles = (items) => (
+    <div className="student-documents-grid">
+      {items.map((item, index) => (
+        <div
+          className="student-document-card"
+          key={`${item.file.name}-${item.file.size}-${index}`}
+        >
+          <div
+            className={`student-document-file-icon ${
+              isImage(item.file) ? "image-file" : "regular-file"
+            }`}
+          >
+            {isImage(item.file) ? <FiFile /> : <FiFileText />}
+          </div>
+
+          <div className="student-document-info">
+            <strong title={item.file.name}>{item.file.name}</strong>
+
+            <span>
+              {item.file.name.split(".").pop()?.toUpperCase()}
+              {" • "}
+              {formatFileSize(item.file.size)}
+            </span>
+
+            <label className="student-document-name-field">
+              Display name
+              <input
+                type="text"
+                maxLength={120}
+                value={item.displayName}
+                placeholder="Enter document name"
+                onChange={(event) =>
+                  updatePendingName(index, event.target.value)
+                }
+              />
+            </label>
+          </div>
+
+          <div className="student-document-actions">
+            <button
+              type="button"
+              title="Remove selected file"
+              aria-label={`Remove ${item.file.name}`}
+              className="danger"
+              onClick={() => removePendingFile(index)}
+            >
+              <FiTrash2 />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const fullName = [student?.firstName, student?.surname]
     .filter(Boolean)
     .join(" ");
+
+  const pendingList = studentId ? pendingFiles : draftFiles;
 
   const documentContent = (
     <>
@@ -435,8 +472,7 @@ const StudentDocuments = ({
         </small>
 
         <label className="admin-profile-browse-button">
-          {uploading ? "Uploading..." : "Browse files"}
-
+          Browse files
           <input
             ref={inputRef}
             type="file"
@@ -455,68 +491,47 @@ const StudentDocuments = ({
         </div>
       )}
 
+      {pendingList.length > 0 && (
+        <>
+          <div className="student-documents-section-heading">
+            <strong>Selected Documents — Enter Display Names</strong>
+            <span>{pendingList.length} selected</span>
+          </div>
+
+          {renderPendingFiles(pendingList)}
+
+          {studentId && (
+            <button
+              type="button"
+              className="themebtn"
+              disabled={uploading}
+              onClick={handleUpload}
+            >
+              {uploading ? "Uploading..." : "Upload Documents"}
+            </button>
+          )}
+        </>
+      )}
+
       <div className="student-documents-section-heading">
-        <strong>My Documents</strong>
-        <span>
-          {studentId ? documents.length : draftFiles.length} document(s)
-        </span>
+        <strong>Uploaded Documents</strong>
+        <span>{studentId ? documents.length : 0} document(s)</span>
       </div>
 
       {!studentId ? (
-        draftFiles.length === 0 ? (
+        pendingList.length === 0 ? (
           <div className="student-documents-empty">
             <FiFileText />
             <strong>No documents selected</strong>
-            <span>
-              Browse files to add documents to this student.
-            </span>
+            <span>Browse files to add documents to this student.</span>
           </div>
         ) : (
-          <div className="student-documents-grid">
-            {draftFiles.map((file, index) => (
-              <div
-                className="student-document-card"
-                key={`${file.name}-${file.size}-${index}`}
-              >
-                <div
-                  className={`student-document-file-icon ${
-                    isImage(file) ? "image-file" : "regular-file"
-                  }`}
-                >
-                  {isImage(file) ? <FiFile /> : <FiFileText />}
-                </div>
-
-                <div className="student-document-info">
-                  <strong title={file.name}>{file.name}</strong>
-                  <span>
-                    {file.name.split(".").pop()?.toUpperCase()}
-                    {" • "}
-                    {formatFileSize(file.size)}
-                  </span>
-                  <span className="student-document-date">
-                    Ready to upload
-                  </span>
-                </div>
-
-                <div className="student-document-actions">
-                  <button
-                    type="button"
-                    title="Remove selected file"
-                    aria-label={`Remove ${file.name}`}
-                    className="danger"
-                    onClick={() => removeDraftFile(index)}
-                  >
-                    <FiTrash2 />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="student-documents-empty">
+            Selected documents will upload after the student is created.
           </div>
         )
       ) : loading ? (
-        <div className="student-documents-loading">
-          Loading documents...
-        </div>
+        <div className="student-documents-loading">Loading documents...</div>
       ) : loadFailed ? (
         <div className="student-documents-empty">
           <FiFileText />
@@ -542,10 +557,7 @@ const StudentDocuments = ({
             const isBusy = busyDocumentId === document._id;
 
             return (
-              <div
-                className="student-document-card"
-                key={document._id}
-              >
+              <div className="student-document-card" key={document._id}>
                 <div
                   className={`student-document-file-icon ${
                     isImage(document) ? "image-file" : "regular-file"
@@ -624,9 +636,7 @@ const StudentDocuments = ({
     <div
       className="student-documents-overlay"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose?.();
-        }
+        if (event.target === event.currentTarget) onClose?.();
       }}
     >
       <section
@@ -641,9 +651,7 @@ const StudentDocuments = ({
               STUDENT MANAGEMENT
             </span>
 
-            <h2 id="student-documents-title">
-              Student Documents
-            </h2>
+            <h2 id="student-documents-title">Student Documents</h2>
 
             <p>
               {fullName || "Student"}

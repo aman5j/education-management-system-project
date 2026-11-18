@@ -144,122 +144,145 @@ export const getStudentDocuments =
 |--------------------------------------------------------------------------
 */
 
-export const uploadStudentDocuments =
-  async (req, res, next) => {
-    const uploadedFiles =
-      req.files || [];
+/*
+|--------------------------------------------------------------------------
+| UPLOAD MULTIPLE STUDENT DOCUMENTS WITH CUSTOM DISPLAY NAMES
+|--------------------------------------------------------------------------
+*/
+
+// !!!!! INSERTION START: UPLOAD STUDENT DOCUMENTS WITH CUSTOM NAMES !!!!!
+export const uploadStudentDocuments = async (req, res, next) => {
+  const uploadedFiles = req.files || [];
+
+  const removeUploadedFiles = async () => {
+    await Promise.all(
+      uploadedFiles.map((file) =>
+        fs.unlink(file.path).catch(() => {})
+      )
+    );
+  };
+
+  try {
+    const { studentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      await removeUploadedFiles();
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student ID.",
+      });
+    }
+
+    if (!uploadedFiles.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select at least one document.",
+      });
+    }
+
+    let documentNames = [];
 
     try {
-      const { studentId } =
-        req.params;
+      documentNames = JSON.parse(req.body.documentNames || "[]");
+    } catch {
+      await removeUploadedFiles();
 
-      if (
-        !mongoose.Types.ObjectId.isValid(
-          studentId
-        )
-      ) {
-        for (const file of uploadedFiles) {
-          await fs
-            .unlink(file.path)
-            .catch(() => {});
-        }
-
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid student ID.",
-        });
-      }
-
-      if (!uploadedFiles.length) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Please select at least one document.",
-        });
-      }
-
-      const student =
-        await Student.findById(
-          studentId
-        );
-
-      if (!student) {
-        for (const file of uploadedFiles) {
-          await fs
-            .unlink(file.path)
-            .catch(() => {});
-        }
-
-        return res.status(404).json({
-          success: false,
-          message:
-            "Student not found.",
-        });
-      }
-
-      const documents =
-        uploadedFiles.map(
-          (file) => ({
-            originalName:
-              file.originalname,
-
-            fileName:
-              file.filename,
-
-            filePath:
-              path
-                .relative(
-                  process.cwd(),
-                  file.path
-                )
-                .replace(
-                  /\\/g,
-                  "/"
-                ),
-
-            mimeType:
-              file.mimetype,
-
-            fileSize:
-              file.size,
-
-            uploadedAt:
-              new Date(),
-          })
-        );
-
-      student.uploadDocument.push(
-        ...documents
-      );
-
-      await student.save();
-
-      return res.status(201).json({
-        success: true,
-
-        message:
-          `${documents.length} document${
-            documents.length > 1
-              ? "s"
-              : ""
-          } uploaded successfully.`,
-
-        data: {
-          documents:
-            student.uploadDocument,
-        },
+      return res.status(400).json({
+        success: false,
+        message: "Invalid document names data.",
       });
-    } catch (error) {
-      for (const file of uploadedFiles) {
-        await fs
-          .unlink(file.path)
-          .catch(() => {});
-      }
-
-      next(error);
     }
-  };
+
+    if (
+      !Array.isArray(documentNames) ||
+      documentNames.length !== uploadedFiles.length
+    ) {
+      await removeUploadedFiles();
+
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a name for every selected document.",
+      });
+    }
+
+    const normalizedNames = documentNames.map((name) =>
+      typeof name === "string" ? name.trim() : ""
+    );
+
+    if (normalizedNames.some((name) => !name)) {
+      await removeUploadedFiles();
+
+      return res.status(400).json({
+        success: false,
+        message: "Every document must have a name.",
+      });
+    }
+
+    if (normalizedNames.some((name) => name.length > 120)) {
+      await removeUploadedFiles();
+
+      return res.status(400).json({
+        success: false,
+        message: "Document names cannot exceed 120 characters.",
+      });
+    }
+
+    const student = await Student.findById(studentId);
+
+    if (!student) {
+      await removeUploadedFiles();
+
+      return res.status(404).json({
+        success: false,
+        message: "Student not found.",
+      });
+    }
+
+    const documents = uploadedFiles.map((file, index) => {
+      const extension = path.extname(file.originalname).toLowerCase();
+
+      // Use the admin-entered name as the display name.
+      // Preserve the actual file extension.
+      const enteredName = normalizedNames[index]
+        .replace(/[\\/]/g, "-")
+        .replace(/\.[^/.]+$/, "")
+        .trim();
+
+      const displayName = `${enteredName}${extension}`;
+
+      return {
+        originalName: displayName,
+        fileName: file.filename,
+        filePath: path
+          .relative(process.cwd(), file.path)
+          .replace(/\\/g, "/"),
+        mimeType: file.mimetype,
+        fileSize: file.size,
+        uploadedAt: new Date(),
+      };
+    });
+
+    student.uploadDocument.push(...documents);
+
+    await student.save();
+
+    return res.status(201).json({
+      success: true,
+      message: `${documents.length} document${
+        documents.length > 1 ? "s" : ""
+      } uploaded successfully.`,
+      data: {
+        documents: student.uploadDocument,
+      },
+    });
+  } catch (error) {
+    await removeUploadedFiles();
+    next(error);
+  }
+};
+// !!!!! INSERTION END: UPLOAD STUDENT DOCUMENTS WITH CUSTOM NAMES !!!!!
+
 
 /*
 |--------------------------------------------------------------------------

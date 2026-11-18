@@ -7,12 +7,20 @@ export const getStudentDocuments = async (studentId) => {
   });
 };
 
-export const uploadStudentDocuments = async (studentId, files) => {
+// !!!!! INSERTION START: UPLOAD DOCUMENTS WITH ADMIN-ENTERED NAMES !!!!!
+export const uploadStudentDocuments = async (studentId, documents) => {
   const formData = new FormData();
 
-  files.forEach((file) => {
-    formData.append("documents", file);
+  documents.forEach((document) => {
+    formData.append("documents", document.file);
   });
+
+  formData.append(
+    "documentNames",
+    JSON.stringify(
+      documents.map((document) => document.displayName.trim())
+    )
+  );
 
   return api.post(
     `/students/${studentId}/documents`,
@@ -25,6 +33,7 @@ export const uploadStudentDocuments = async (studentId, files) => {
     }
   );
 };
+// !!!!! INSERTION END: UPLOAD DOCUMENTS WITH ADMIN-ENTERED NAMES !!!!!
 
 export const viewStudentDocument = async (studentId, documentId) => {
   return api.get(

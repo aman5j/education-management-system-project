@@ -291,9 +291,16 @@ const StudentForm = ({
       }
     );
 
-    selectedDocuments.forEach((file) => {
-      formData.append("documents", file);
+    selectedDocuments.forEach((document) => {
+      formData.append("documents", document.file);
     });
+
+    formData.append(
+      "documentNames",
+      JSON.stringify(
+        selectedDocuments.map((document) => document.displayName.trim())
+      )
+    );
 
     try {
       await onSubmit(formData);

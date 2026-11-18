@@ -6,8 +6,6 @@ import {
   FiFileText,
   FiFolder,
   FiRefreshCw,
-  FiAlertCircle,
-  FiEye,
   FiImage,
 } from "react-icons/fi";
 
@@ -17,6 +15,8 @@ import notification, {
 } from "../../utils/notification";
 
 import "./StudentDocuments.css";
+
+// !!!!! INSERTION START: DOCUMENT HELPERS !!!!!
 
 const getExtension = (name = "") => {
   const parts = String(name).split(".");
@@ -50,41 +50,49 @@ const formatSize = (bytes) => {
   const size = Number(bytes || 0);
 
   if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
 
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
 const getErrorMessage = (error, fallback) =>
-  getApiErrorMessage(error) || fallback || "Something went wrong.";
+  getApiErrorMessage(error) ||
+  fallback ||
+  "Something went wrong. Please try again.";
 
-const getDocumentId = (doc) => String(doc?.id || doc?._id || "");
+const getDocumentId = (doc) =>
+  String(doc?.id || doc?._id || "");
+
+// !!!!! INSERTION END: DOCUMENT HELPERS !!!!!
 
 export default function StudentDocuments() {
   const [documents, setDocuments] = useState([]);
-  const [student, setStudent] = useState(null);
   const [previews, setPreviews] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
   const [actionId, setActionId] = useState("");
 
+  // !!!!! INSERTION START: LOAD STUDENT DOCUMENTS WITH TOAST ERRORS !!!!!
   const loadDocuments = useCallback(async (refresh = false) => {
-    if (refresh) setRefreshing(true);
-    else setLoading(true);
-
-    setError("");
+    if (refresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
     try {
       const response = await studentPortalService.getMyDocuments();
 
       if (!response?.success) {
-        throw new Error(response?.message || "Unable to load documents.");
+        throw new Error(
+          response?.message || "Unable to load documents."
+        );
       }
 
       const data = response.data || {};
 
-      setStudent(data.student || null);
       setDocuments(
         Array.isArray(data.documents) ? data.documents : []
       );
@@ -94,23 +102,20 @@ export default function StudentDocuments() {
         "Unable to load your documents."
       );
 
-      setError(message);
+      // Show the error only through the global Toast utility.
       notification.error(message);
-
-      setDocuments([]);
-      setStudent(null);
-    } 
-    finally {
+    } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
+  // !!!!! INSERTION END: LOAD STUDENT DOCUMENTS WITH TOAST ERRORS !!!!!
 
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
 
-  // Fetch image and PDF previews through the authenticated API.
+  // !!!!! INSERTION START: LOAD AUTHENTICATED DOCUMENT PREVIEWS !!!!!
   useEffect(() => {
     let cancelled = false;
     const objectUrls = [];
@@ -125,7 +130,8 @@ export default function StudentDocuments() {
           const id = getDocumentId(doc);
 
           try {
-            const blob = await studentPortalService.viewMyDocument(id);
+            const blob =
+              await studentPortalService.viewMyDocument(id);
 
             if (!(blob instanceof Blob) || blob.size === 0) {
               throw new Error("The preview file is empty.");
@@ -136,6 +142,8 @@ export default function StudentDocuments() {
 
             return [id, url];
           } catch {
+            // Preview failures use the file fallback.
+            // Do not show duplicate Toasts for background previews.
             return [id, ""];
           }
         })
@@ -144,7 +152,9 @@ export default function StudentDocuments() {
       if (!cancelled) {
         setPreviews(Object.fromEntries(entries));
       } else {
-        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+        objectUrls.forEach((url) =>
+          URL.revokeObjectURL(url)
+        );
       }
     };
 
@@ -153,19 +163,24 @@ export default function StudentDocuments() {
 
     return () => {
       cancelled = true;
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+
+      objectUrls.forEach((url) =>
+        URL.revokeObjectURL(url)
+      );
     };
   }, [documents]);
+  // !!!!! INSERTION END: LOAD AUTHENTICATED DOCUMENT PREVIEWS !!!!!
 
+  // !!!!! INSERTION START: OPEN DOCUMENT WITH TOAST ERROR !!!!!
   const openDocument = async (doc) => {
     const id = getDocumentId(doc);
     if (!id) return;
 
     setActionId(id);
-    setError("");
 
     try {
-      const blob = await studentPortalService.viewMyDocument(id);
+      const blob =
+        await studentPortalService.viewMyDocument(id);
 
       if (!(blob instanceof Blob) || blob.size === 0) {
         throw new Error("The document could not be opened.");
@@ -183,33 +198,37 @@ export default function StudentDocuments() {
       link.click();
       link.remove();
 
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 60000);
     } catch (err) {
-      const message = getErrorMessage(
-        err,
-        "Unable to open this document."
+      notification.error(
+        getErrorMessage(
+          err,
+          "Unable to open this document."
+        )
       );
-
-      setError(message);
-      notification.error(message);
-    }
-    finally {
+    } finally {
       setActionId("");
     }
   };
+  // !!!!! INSERTION END: OPEN DOCUMENT WITH TOAST ERROR !!!!!
 
+  // !!!!! INSERTION START: DOWNLOAD DOCUMENT WITH TOAST NOTIFICATIONS !!!!!
   const downloadDocument = async (doc) => {
     const id = getDocumentId(doc);
     if (!id) return;
 
     setActionId(id);
-    setError("");
 
     try {
-      const blob = await studentPortalService.downloadMyDocument(id);
+      const blob =
+        await studentPortalService.downloadMyDocument(id);
 
       if (!(blob instanceof Blob) || blob.size === 0) {
-        throw new Error("The document download returned an empty file.");
+        throw new Error(
+          "The document download returned an empty file."
+        );
       }
 
       const url = URL.createObjectURL(blob);
@@ -221,22 +240,26 @@ export default function StudentDocuments() {
       window.document.body.appendChild(link);
       link.click();
       link.remove();
-      notification.success("Document downloaded successfully.");
 
-      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-    } catch (err) {
-      const message = getErrorMessage(
-        err,
-        "Unable to download this document."
+      notification.success(
+        "Document downloaded successfully."
       );
 
-      setError(message);
-      notification.error(message);
-    } 
-    finally {
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1500);
+    } catch (err) {
+      notification.error(
+        getErrorMessage(
+          err,
+          "Unable to download this document."
+        )
+      );
+    } finally {
       setActionId("");
     }
   };
+  // !!!!! INSERTION END: DOWNLOAD DOCUMENT WITH TOAST NOTIFICATIONS !!!!!
 
   const handlePreviewKeyDown = (event, doc) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -247,139 +270,159 @@ export default function StudentDocuments() {
 
   return (
     <main className="student-documents">
-      
       <div className="common-card">
-        <div class="panel-header"><div><h3>My Documents</h3><p>View and download your uploaded documents.</p></div>
-        <div className="student-documents__total">
+        <div className="panel-header">
+          <div>
+            <h3>My Documents</h3>
+            <p>View and download your uploaded documents.</p>
+          </div>
+
+          <div className="student-documents__total">
             <strong>{documents.length}</strong>
             <span>Documents</span>
           </div>
         </div>
-      <div className="cardbody">
-      
 
-      {error && (
-        <div className="student-documents__error" role="alert">
-          <FiAlertCircle />
-          <span>{error}</span>
-          <button type="button" onClick={() => setError("")}>
-            Dismiss
-          </button>
-        </div>
-      )}
+        <div className="cardbody">
+          {loading ? (
+            <section className="student-documents__state">
+              <FiRefreshCw className="student-documents__spin" />
+              <h2>Loading your documents</h2>
+              <p>
+                Please wait while we retrieve your files.
+              </p>
+            </section>
+          ) : documents.length === 0 ? (
+            <section className="student-documents__state">
+              <span className="student-documents__empty-icon">
+                <FiFolder />
+              </span>
 
-      {loading ? (
-        <section className="student-documents__state">
-          <FiRefreshCw className="student-documents__spin" />
-          <h2>Loading your documents</h2>
-          <p>Please wait while we retrieve your files.</p>
-        </section>
-      ) : documents.length === 0 ? (
-        <section className="student-documents__state">
-          <span className="student-documents__empty-icon">
-            <FiFolder />
-          </span>
-          <h2>No documents available</h2>
-          <p>
-            Documents uploaded by your institute will appear here.
-            Please contact your institute administrator if you expect
-            to see a document.
-          </p>
-        </section>
-      ) : (
-        <section className="student-documents__grid">
-          {documents.map((doc) => {
-            const id = getDocumentId(doc);
-            const pdf = isPdf(doc);
-            const image = isImage(doc);
-            const previewUrl = previews[id];
+              <h2>No documents available</h2>
 
-            return (
-              <article className="student-document-card" key={id}>
-                <div
-                  className="student-document-card__preview"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openDocument(doc)}
-                  onKeyDown={(event) => handlePreviewKeyDown(event, doc)}
-                  title={`Open ${doc.originalName || "document"}`}
-                  aria-label={`Open ${doc.originalName || "document"}`}
-                >
-                  {previewUrl && image ? (
-                    <img
-                      className="student-document-card__image"
-                      src={previewUrl}
-                      alt={doc.originalName || "Document preview"}
-                    />
-                  ) : previewUrl && pdf ? (
-                    <iframe
-                      className="student-document-card__pdf"
-                      src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                      title={`${doc.originalName || "PDF"} preview`}
-                      tabIndex={-1}
-                    />
-                  ) : (
-                    <div className="student-document-card__file-fallback">
-                      {image ? (
-                        <FiImage />
-                      ) : pdf ? (
-                        <FiFileText />
-                      ) : (
-                        <FiFile />
-                      )}
-                      <strong>
-                        {getExtension(doc.originalName).toUpperCase() ||
-                          "FILE"}
-                      </strong>
-                      <span>
-                        {previewUrl === "" && (image || pdf)
-                          ? "Preview unavailable"
-                          : "Loading preview…"}
-                      </span>
-                    </div>
-                  )}
+              <p>
+                Documents uploaded by your institute will appear
+                here. Please contact your institute administrator
+                if you expect to see a document.
+              </p>
 
-                  {/* <span className="student-document-card__view">
-                    <FiEye /> Open
-                  </span> */}
-                </div>
+              <button
+                type="button"
+                className="themebtn"
+                onClick={() => loadDocuments(true)}
+                disabled={refreshing}
+              >
+                {refreshing ? (
+                  <FiRefreshCw className="student-documents__spin" />
+                ) : (
+                  <FiRefreshCw />
+                )}
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </button>
+            </section>
+          ) : (
+            <section className="student-documents__grid">
+              {documents.map((doc) => {
+                const id = getDocumentId(doc);
+                const pdf = isPdf(doc);
+                const image = isImage(doc);
+                const previewUrl = previews[id];
 
-                <div className="student-document-card__footer">
-                  <div className="student-document-card__details">
-                    <h2 title={doc.originalName}>
-                      {doc.originalName || "Untitled document"}
-                    </h2>
-                    <p>
-                      {formatDate(doc.uploadedAt)}
-                      <span>•</span>
-                      {formatSize(doc.fileSize)}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="student-document-card__download"
-                    onClick={() => downloadDocument(doc)}
-                    disabled={actionId === id}
-                    aria-label={`Download ${doc.originalName}`}
-                    title="Download document"
+                return (
+                  <article
+                    className="student-document-card"
+                    key={id}
                   >
-                    {actionId === id ? (
-                      <FiRefreshCw className="student-documents__spin" />
-                    ) : (
-                      <FiDownload />
-                    )}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-      )}
-</div>
-      </div>
+                    <div
+                      className="student-document-card__preview"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openDocument(doc)}
+                      onKeyDown={(event) =>
+                        handlePreviewKeyDown(event, doc)
+                      }
+                      title={`Open ${doc.originalName || "document"}`}
+                      aria-label={`Open ${
+                        doc.originalName || "document"
+                      }`}
+                    >
+                      {previewUrl && image ? (
+                        <img
+                          className="student-document-card__image"
+                          src={previewUrl}
+                          alt={
+                            doc.originalName || "Document preview"
+                          }
+                        />
+                      ) : previewUrl && pdf ? (
+                        <iframe
+                          className="student-document-card__pdf"
+                          src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                          title={`${
+                            doc.originalName || "PDF"
+                          } preview`}
+                          tabIndex={-1}
+                        />
+                      ) : (
+                        <div className="student-document-card__file-fallback">
+                          {image ? (
+                            <FiImage />
+                          ) : pdf ? (
+                            <FiFileText />
+                          ) : (
+                            <FiFile />
+                          )}
 
-     
+                          <strong>
+                            {getExtension(
+                              doc.originalName
+                            ).toUpperCase() || "FILE"}
+                          </strong>
+
+                          <span>
+                            {previewUrl === "" && (image || pdf)
+                              ? "Preview unavailable"
+                              : "Loading preview…"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="student-document-card__footer">
+                      <div className="student-document-card__details">
+                        <h2 title={doc.originalName}>
+                          {doc.originalName || "Untitled document"}
+                        </h2>
+
+                        <p>
+                          {formatDate(doc.uploadedAt)}
+                          <span>•</span>
+                          {formatSize(doc.fileSize)}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="student-document-card__download"
+                        onClick={() => downloadDocument(doc)}
+                        disabled={actionId === id}
+                        aria-label={`Download ${doc.originalName}`}
+                        title="Download document"
+                      >
+                        {actionId === id ? (
+                          <FiRefreshCw className="student-documents__spin" />
+                        ) : (
+                          <FiDownload />
+                        )}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+          )}
+        </div>
+      </div>
     </main>
   );
 }
