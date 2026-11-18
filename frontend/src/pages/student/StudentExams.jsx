@@ -1381,7 +1381,7 @@ export default function StudentExams() {
         <div>
           <h3>Question Navigator </h3>
           </div>
-         <span>
+         <span className="numberof">
           {answeredCount}/{questions.length}
         </span>
           </div>
