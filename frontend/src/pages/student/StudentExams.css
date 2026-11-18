@@ -4716,3 +4716,97 @@ article.se-instructions-panel button {
 }
 
   
+
+
+
+
+
+
+
+
+
+
+
+
+/* !!!!! INSERTION START: EXAM ACCESS UPCOMING COUNTDOWN STYLES !!!!! */
+
+.student-exam-instructions .se-access-countdown {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 112px;
+  margin-bottom: 18px;
+  padding: 17px 20px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: linear-gradient(115deg, #eff6ff, #ffffff);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.07);
+}
+
+.student-exam-instructions .se-access-countdown__icon {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-size: 28px;
+}
+
+.student-exam-instructions .se-access-countdown__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+
+.student-exam-instructions .se-access-countdown__content > span {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.student-exam-instructions .se-access-countdown__timer {
+  color: #1747a6;
+  font-size: clamp(25px, 4vw, 36px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.student-exam-instructions .se-access-countdown__content small {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .student-exam-instructions .se-access-countdown {
+    gap: 12px;
+    min-height: 95px;
+    padding: 13px;
+  }
+
+  .student-exam-instructions .se-access-countdown__icon {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+
+  .student-exam-instructions .se-access-countdown__content > span {
+    font-size: 10px;
+  }
+
+  .student-exam-instructions .se-access-countdown__timer {
+    font-size: 27px;
+  }
+}
+
+/* !!!!! INSERTION END: EXAM ACCESS UPCOMING COUNTDOWN STYLES !!!!! */

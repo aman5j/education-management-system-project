@@ -956,7 +956,7 @@ export default function StudentExams() {
             </div>
 
       {/* !!!!! INSERTION START: LIVE EXAM COUNTDOWN CARD !!!!! */}
-      <article
+      {/* <article
         className={`se-countdown-card common-card se-countdown-card--${countdownStatus}`}
         aria-live="off"
       >
@@ -1003,7 +1003,7 @@ export default function StudentExams() {
                   : "Please contact your institute administrator to confirm the exam schedule."}
           </p>
         </div>
-      </article>
+      </article> */}
       {/* !!!!! INSERTION END: LIVE EXAM COUNTDOWN CARD !!!!! */}
 
     </div>
@@ -1016,53 +1016,79 @@ export default function StudentExams() {
       <div className="common-card">
         <div className="panel-header"><div><h3>EXAM ACCESS</h3>
       </div><div className="sc-recommendations__heading"></div></div>
-        <div className="cardbody">
-           <button
-        type="button"
-        className="themebtn"
-        disabled={!canStart || busy}
-        onClick={handleStartExam}
-      >
-        <span className="se-start-icon">
-          <FiPlay />
-        </span>
+        
+      <div className="cardbody">
 
-        {busy
-          ? "Processing..."
-          : examInfo.alreadyStarted
-            ? "Resume Exam"
-            : "Start Exam"}
+        {/* !!!!! INSERTION START: EXAM ACCESS UPCOMING COUNTDOWN !!!!! */}
+        {countdownStatus === "upcoming" && (
+          <section
+            className="se-access-countdown"
+            aria-label="Time until exam starts"
+            aria-live="off"
+          >
+            <div className="se-access-countdown__icon">
+              <FiClock />
+            </div>
 
-       
-      </button>
+            <div className="se-access-countdown__content">
+              <span>EXAM WILL START IN</span>
 
-       {examInfo.feeClearance?.eligible === false && (
-        <div className="se-fee-warning" role="alert">
-          <div className="se-fee-warning-icon">
+              <strong className="se-access-countdown__timer">
+                {clockText(countdownRemainingMs)}
+              </strong>
+
+              <small>
+                Please be ready before your scheduled exam start time.
+              </small>
+            </div>
+          </section>
+        )}
+        {/* !!!!! INSERTION END: EXAM ACCESS UPCOMING COUNTDOWN !!!!! */}
+
+        <button
+          type="button"
+          className="themebtn"
+          disabled={!canStart || busy}
+          onClick={handleStartExam}
+        >
+          <span className="se-start-icon">
+            <FiPlay />
+          </span>
+
+          {busy
+            ? "Processing..."
+            : examInfo.alreadyStarted
+              ? "Resume Exam"
+              : "Start Exam"}
+        </button>
+
+        {examInfo.feeClearance?.eligible === false && (
+          <div className="se-fee-warning" role="alert">
+            <div className="se-fee-warning-icon">
+              <FiAlertCircle />
+            </div>
+
+            <div>
+              <strong>
+                Your course fee is due. Outstanding amount:{" "}
+                {examInfo.feeClearance.message ||
+                  "Please clear your pending fees."}
+              </strong>
+            </div>
+          </div>
+        )}
+
+        {!canStart && (
+          <p className="se-start-help">
             <FiAlertCircle />
-          </div>
-
-          <div>
-            <strong>
-              Your course fee is due. Outstanding amount:{" "}
-              {examInfo.feeClearance.message || "Please clear your pending fees."}
-            </strong>
-            
-          </div>
-        </div>
-      )}
-
-     
-
-      {!canStart && (
-        <p className="se-start-help">
-          <FiAlertCircle />
-          {examInfo.feeClearance?.eligible === false
-            ? "Please clear your outstanding course fees before requesting exam access."
-            : "This exam cannot be started right now. Confirm the schedule and hall-ticket status with your institute."}
-        </p>
-      )}
+            {examInfo.feeClearance?.eligible === false
+              ? "Please clear your outstanding course fees before requesting exam access."
+              : "This exam cannot be started right now. Confirm the schedule and hall-ticket status with your institute."}
+          </p>
+        )}
       </div>
+
+
     </div>
 
         <div className="common-card">
