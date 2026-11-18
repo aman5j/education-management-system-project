@@ -8,7 +8,9 @@ import {
 import { getAssetUrl } from "../../utils/assetUrl";
 import { GoDotFill } from "react-icons/go";
 
+
 import {
+  FiX,
    FiXCircle,
   FiAlertCircle,
   FiArrowLeft,
@@ -767,7 +769,7 @@ export default function StudentExams() {
     return (
      <main className="student-exams student-exam-instructions">
 
-<div class="page-header"><div><h1>Exam Instructions</h1>
+<div className="page-header"><div><h1>Exam Instructions</h1>
 <p>Review your schedule and instructions before starting.</p>
 </div>
  <button
@@ -898,8 +900,8 @@ export default function StudentExams() {
     <article className="se-instructions-panel  nospace" >
 
       <div className="common-card">
-        <div class="panel-header"><div><h3>EXAM ACCESS</h3>
-      </div><div class="sc-recommendations__heading"></div></div>
+        <div className="panel-header"><div><h3>EXAM ACCESS</h3>
+      </div><div className="sc-recommendations__heading"></div></div>
         <div className="cardbody">
            <button
         type="button"
@@ -950,8 +952,8 @@ export default function StudentExams() {
     </div>
 
         <div className="common-card">
-          <div class="panel-header"><div><h3>Important Instructions </h3>
-      </div><div class="sc-recommendations__heading"></div></div>
+          <div className="panel-header"><div><h3>Important Instructions </h3>
+      </div><div className="sc-recommendations__heading"></div></div>
 
 
           <div className="cardbody">
@@ -974,83 +976,129 @@ export default function StudentExams() {
 
   {/* Approval Modal */}
   {approvalModalOpen && (
-    <div className="se-approval-backdrop">
-      <section
-        className="se-approval-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="se-approval-title"
-      >
-        <div className="se-approval-icon">
+    
+
+<div className="se-approval-backdrop">
+  <section
+    className={`se-approval-modal se-approval-modal--${approvalStatus.toLowerCase()}`}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="se-approval-title"
+  >
+    {/* Decorative Background */}
+    <div className="se-approval-wave se-approval-wave--top" />
+    <div className="se-approval-wave se-approval-wave--bottom" />
+
+    {/* Close Button */}
+    <button
+      type="button"
+      className="se-approval-close-icon"
+      onClick={() => setApprovalModalOpen(false)}
+      aria-label="Close dialog"
+    >
+      <FiX />
+    </button>
+
+    {/* Animated Illustration */}
+    <div className="se-approval-illustration">
+      {approvalStatus === "Pending" ? (
+        <div className="se-approval-clock-art">
+          <div className="se-clock-glow" />
+
+          <div className="se-clock-face">
+            <span className="se-clock-mark se-clock-mark--top" />
+            <span className="se-clock-mark se-clock-mark--right" />
+            <span className="se-clock-mark se-clock-mark--bottom" />
+            <span className="se-clock-mark se-clock-mark--left" />
+
+            <span className="se-clock-hand se-clock-hand--hour" />
+            <span className="se-clock-hand se-clock-hand--minute" />
+            <span className="se-clock-center" />
+          </div>
+
+          <div className="se-clock-shield">
+            <FiShield />
+          </div>
+
+          <span className="se-clock-spark se-clock-spark--one" />
+          <span className="se-clock-spark se-clock-spark--two" />
+          <span className="se-clock-spark se-clock-spark--three" />
+        </div>
+      ) : (
+        <div className="se-approval-result-icon">
           {approvalStatus === "Approved" ? (
             <FiCheckCircle />
-          ) : approvalStatus === "Rejected" ? (
-            <FiAlertCircle />
           ) : (
-            <FiClock />
+            <FiAlertCircle />
           )}
         </div>
-
-        <h2 id="se-approval-title">
-          {approvalStatus === "Approved"
-            ? "Exam Access Approved"
-            : approvalStatus === "Rejected"
-              ? "Request Rejected"
-              : "Awaiting Admin Approval"}
-        </h2>
-
-        <p>
-          {approvalStatus === "Approved"
-            ? "Your exam access has been approved."
-            : approvalStatus === "Rejected"
-              ? approvalReason ||
-                "Please contact your institute administrator."
-              : "Your request has been sent to the institute administrator. This screen will update automatically after approval."}
-        </p>
-
-        {approvalStatus === "Pending" && (
-          <div className="se-approval-wait">
-            <span />
-            Waiting for administrator...
-          </div>
-        )}
-
-        {approvalStatus === "Approved" && (
-          <button
-            type="button"
-            className="se-button se-button--primary"
-            onClick={startApprovedExam}
-            disabled={busy}
-          >
-            {busy ? "Starting..." : "Start Exam"}
-            <FiArrowRight />
-          </button>
-        )}
-
-        {approvalStatus === "Rejected" && (
-          <button
-            type="button"
-            className="se-button se-button--primary"
-            onClick={() => {
-              setApprovalModalOpen(false);
-              setApprovalStatus("Pending");
-              handleStartExam();
-            }}
-            disabled={busy}
-          >
-            Request Again
-          </button>
-        )}
-
-        <button
-          type="button"
-          className="se-approval-close"
-          onClick={() => setApprovalModalOpen(false)}
-        >
-          Close
-        </button>
-      </section>
+      )}
     </div>
+
+    {/* Modal Content */}
+    <div className="se-approval-content">
+      <span className="se-approval-eyebrow">
+        OFFICIAL EXAM ACCESS REQUEST
+      </span>
+
+      <h2 id="se-approval-title">
+        {approvalStatus === "Approved"
+          ? "Examination Access Granted"
+          : approvalStatus === "Rejected"
+            ? "Application Not Approved"
+            : "Awaiting Examination Authority Approval"}
+      </h2>
+       {approvalStatus === "Pending" && (
+      <div className="se-wait-progress">
+            <span />
+          </div>
+    )}
+
+      <p className="se-approval-description">
+        {approvalStatus === "Approved"
+          ? "Your examination access application has been approved by the authorized examination authority. You may now proceed with your examination."
+          : approvalStatus === "Rejected"
+            ? approvalReason ||
+              "Your application could not be approved. Please contact your institute examination office for further clarification."
+            : "Your examination access application has been successfully forwarded to the concerned examination authority for verification and approval."}
+      </p>
+    </div>
+
+   
+
+    {/* Approved Action */}
+    {approvalStatus === "Approved" && (
+      <button
+        type="button"
+        className="se-approval-action"
+        onClick={startApprovedExam}
+        disabled={busy}
+      >
+        {busy ? "Starting..." : "Start Exam"}
+        <FiArrowRight />
+      </button>
+    )}
+
+    {/* Rejected Action */}
+    {approvalStatus === "Rejected" && (
+      <button
+        type="button"
+        className="se-approval-action"
+        onClick={() => {
+          setApprovalModalOpen(false);
+          setApprovalStatus("Pending");
+          handleStartExam();
+        }}
+        disabled={busy}
+      >
+        {busy ? "Requesting..." : "Submit New Request"}
+        <FiArrowRight />
+      </button>
+    )}
+  </section>
+</div>
+
+
   )}
 
 </main>
@@ -1189,7 +1237,7 @@ export default function StudentExams() {
         </span>
       </div> */}
 
-      <div class="panel-header">
+      <div className="panel-header">
         <div>
           <h3>Question Navigator </h3>
           </div>
@@ -1390,7 +1438,7 @@ export default function StudentExams() {
   </div> */}
 
 
-<div class="page-header"><div><h1>Exam Result Details</h1>
+<div className="page-header"><div><h1>Exam Result Details</h1>
       <p>Your complete exam performance report with detailed analysis.</p>
 
 </div>
@@ -1562,7 +1610,7 @@ export default function StudentExams() {
 
       
 
-      <div class="panel-header">
+      <div className="panel-header">
         <div><h3>Question-wise Review</h3><p>Review your submitted answers and correct options.</p>
         </div>
         <span className="se-question-count">
