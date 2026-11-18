@@ -670,9 +670,7 @@
 /* Main Fees & Payments page spacing */
 .student-fees {
   width: 100%;
-  max-width: 1600px;
   margin: 0 auto;
-  padding: 24px;
   box-sizing: border-box;
 }
 

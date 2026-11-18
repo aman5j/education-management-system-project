@@ -173,24 +173,11 @@ export default function StudentFees() {
 
   return (
     <div className="student-fees">
-      <header className="sf-page-header">
-        <div>
-          <span className="sf-eyebrow">STUDENT PORTAL</span>
-          <h1>Fees &amp; Payments</h1>
+      <div class="page-header"><div><h1>Fees &amp; Payments</h1>
           <p>View your admission fees, outstanding balances, and recorded payments.</p>
-        </div>
-
-        <button
-          type="button"
-          className="sf-refresh"
-          onClick={() => loadFees(true)}
-          disabled={loading || refreshing}
-        >
-          <FiRefreshCw className={refreshing ? "sf-spinning" : ""} />
-          Refresh
-        </button>
-      </header>
-
+      
+      </div></div>
+      
       {error && (
         <div className="sf-error" role="alert">
           <FiAlertCircle />

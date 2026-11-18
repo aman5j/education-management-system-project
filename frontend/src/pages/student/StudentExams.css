@@ -865,15 +865,6 @@
   background: rgba(15, 23, 42, 0.55);
 }
 
-.se-approval-modal {
-  width: min(100%, 430px);
-  padding: 28px;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.22);
-  text-align: center;
-}
 
 .se-approval-icon {
   display: grid;
@@ -3714,6 +3705,8 @@ flex-shrink: 0;
   background: #fff;
   text-align: center;
   box-shadow: 0 20px 60px rgba(22, 13, 76, .2);
+  position: relative;
+  overflow: hidden;
 }
 
 .student-exam-instructions .se-approval-icon {
@@ -3731,7 +3724,7 @@ flex-shrink: 0;
 .student-exam-instructions .se-approval-modal h2 {
   margin: 0 0 10px;
   color: #15194f;
-  font-size: 22px;
+  font-size: 19px;
 }
 
 .student-exam-instructions .se-approval-modal p {
@@ -3751,13 +3744,7 @@ flex-shrink: 0;
   font-weight: 700;
 }
 
-.student-exam-instructions .se-approval-wait span {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #6525d8;
-  animation: seApprovalPulse 1s infinite;
-}
+
 
 @keyframes seApprovalPulse {
   50% {
@@ -3900,8 +3887,649 @@ article.se-instructions-panel button {
 
 
 
+/* =========================================
+   APPROVAL MODAL - MAIN BACKDROP
+========================================= */
+
+.se-approval-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(13, 22, 62, 0.53);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  animation: seApprovalBackdropIn 0.3s ease both;
+}
+
+/* =========================================
+   MODAL CONTAINER
+========================================= */
 
 
+
+/* =========================================
+   DECORATIVE WAVES
+========================================= */
+
+.se-approval-wave {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.se-approval-wave--top {
+  width: 340px;
+  height: 210px;
+  top: -125px;
+  left: -115px;
+  border-radius: 45% 55% 65% 35%;
+  background: linear-gradient(
+    135deg,
+    #e4d9ff,
+    #f4efff
+  );
+  transform: rotate(-24deg);
+  z-index: 2;
+}
+
+.se-approval-wave--bottom {
+  width: 430px;
+  height: 180px;
+  right: -130px;
+  bottom: -115px;
+  border-radius: 65% 35% 0 0;
+  background: linear-gradient(
+    140deg,
+    #f0eaff,
+    #d6c3ff
+  );
+  transform: rotate(-13deg);
+  z-index: 2;
+}
+
+.se-approval-wave--bottom::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: -28px;
+  left: -35px;
+  border-radius: inherit;
+  background: rgba(229, 218, 255, 0.8);
+}
+
+/* =========================================
+   TOP CLOSE ICON
+========================================= */
+
+.se-approval-close-icon {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  z-index: 5;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  color: #27376b;
+  background: #f0f1f8;
+  font-size: 25px;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.se-approval-close-icon:hover {
+  color: #ffffff;
+  background: #2563eb;
+  transform: rotate(90deg);
+}
+
+/* =========================================
+   CLOCK ILLUSTRATION
+========================================= */
+
+.se-approval-illustration {
+  position: relative;
+  width: 330px;
+  height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+
+.se-approval-clock-art {
+  position: relative;
+  width: 250px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.se-clock-glow {
+  position: absolute;
+  width: 195px;
+  height: 155px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.10);
+  filter: blur(18px);
+  animation: seClockGlow 2.5s ease-in-out infinite;
+}
+
+.se-clock-face {
+  position: relative;
+  z-index: 2;
+  width: 145px;
+  height: 145px;
+  border-radius: 50%;
+  border: 9px solid #6d35ed;
+  background: linear-gradient(145deg, #ffffff, #f0eaff);
+  box-shadow:
+    inset 0 0 0 5px #c6aaff,
+    0 0 0 12px rgba(124, 58, 237, 0.10),
+    0 12px 30px rgba(91, 33, 182, 0.20);
+  animation: seClockFloat 3s ease-in-out infinite;
+}
+
+.se-clock-mark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8b6bea;
+}
+
+.se-clock-mark--top {
+  top: 13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 11px;
+}
+
+.se-clock-mark--right {
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.se-clock-mark--bottom {
+  bottom: 13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 11px;
+}
+
+.se-clock-mark--left {
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.se-clock-hand {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 50%;
+  display: block;
+  border-radius: 10px;
+  background: #1b216e;
+  transform-origin: bottom center;
+}
+
+.se-clock-hand--hour {
+  width: 7px;
+  height: 39px;
+  transform: translateX(-50%) rotate(0deg);
+}
+
+.se-clock-hand--minute {
+  width: 5px;
+  height: 49px;
+  transform: translateX(-50%) rotate(90deg);
+  animation: seClockMinute 12s linear infinite;
+}
+
+.se-clock-center {
+  position: absolute;
+  z-index: 3;
+  width: 15px;
+  height: 15px;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  background: #7138ed;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px rgba(113, 56, 237, 0.4);
+}
+
+/* Shield overlapping clock */
+
+.se-clock-shield {
+  position: absolute;
+  z-index: 4;
+  right: 13px;
+  bottom: 13px;
+  width: 78px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 44px;
+  background: linear-gradient(145deg, #8749ff, #4c16d7);
+  clip-path: polygon(50% 0%, 95% 16%, 90% 66%, 50% 100%, 10% 66%, 5% 16%);
+  filter: drop-shadow(0 8px 8px rgba(91, 33, 182, 0.28));
+  animation: seShieldFloat 2.5s ease-in-out infinite;
+}
+
+/* Small decorative sparks */
+
+.se-clock-spark {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  background: #9c72ff;
+  opacity: 0.8;
+}
+
+.se-clock-spark--one {
+  top: 22px;
+  right: 2px;
+  transform: rotate(22deg);
+  animation: seSpark 1.8s ease-in-out infinite;
+}
+
+.se-clock-spark--two {
+  left: 7px;
+  bottom: 35px;
+  transform: rotate(45deg);
+  animation: seSpark 2s ease-in-out infinite 0.4s;
+}
+
+.se-clock-spark--three {
+  top: 35px;
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  animation: seSpark 2.2s ease-in-out infinite 0.7s;
+}
+
+/* Other statuses */
+
+.se-approval-result-icon {
+  width: 125px;
+  height: 125px;
+  display: grid;
+  place-items: center;
+  border-radius: 35px;
+  color: #2563eb;
+  background: #e9f1ff;
+  font-size: 70px;
+}
+
+/* =========================================
+   HEADING & DESCRIPTION
+========================================= */
+
+.se-approval-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  text-align: center;
+}
+
+.se-approval-eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #7440eb;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+/* .se-approval-modal h2 {
+  margin: 0;
+  color: #111d55;
+  font-size: clamp(27px, 3.2vw, 42px);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -1px;
+} */
+
+.se-approval-description {
+  max-width: 720px;
+  margin: 18px auto 28px;
+  color: #58658e;
+  font-size: 20px;
+  line-height: 1.65;
+  font-weight: 400;
+}
+
+/* =========================================
+   WAITING STATUS PANEL
+========================================= */
+
+.se-approval-wait {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 118px;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 18px 40px;
+  margin: 0 auto 24px;
+  border: 1px solid #eee7ff;
+  border-radius: 23px;
+  background: linear-gradient(
+    110deg,
+    #f1ebff 0%,
+    #f8f5ff 50%,
+    #eee7ff 100%
+  );
+  box-shadow: inset 0 1px 0 #ffffff;
+  overflow: hidden;
+}
+
+.se-wait-icon {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  flex: 0 0 92px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #6331e6;
+  background: #ded0ff;
+  font-size: 48px;
+}
+
+.se-wait-icon svg {
+  animation: seWaitClock 3s ease-in-out infinite;
+}
+
+.se-wait-divider {
+  width: 2px;
+  height: 70px;
+  flex: 0 0 2px;
+  background: #a477ff;
+}
+
+.se-wait-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.se-wait-content strong {
+  color: #6028e9;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.se-wait-content > span {
+  color: #505e87;
+  font-size: 18px;
+}
+
+.se-wait-progress {
+  width: 100%;
+  max-width: 300px;
+  height: 5px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #dcd1ff;
+  margin: auto;
+  margin-top: 20px;
+}
+
+.se-wait-progress span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8b5cf6, #4f20dc);
+  animation: seWaitProgress 2s ease-in-out infinite;
+}
+
+/* =========================================
+   BUTTONS
+========================================= */
+
+.se-approval-close {
+  position: relative;
+  z-index: 2;
+  min-width: 195px;
+  min-height: 70px;
+  padding: 12px 35px;
+  border: 1.5px solid #7139f2;
+  border-radius: 50px;
+  color: #6330e9;
+  background: #ffffff;
+  font-size: 21px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.se-approval-close:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #8144f5, #5418d7);
+  box-shadow: 0 8px 20px rgba(91, 33, 182, 0.22);
+  transform: translateY(-2px);
+}
+
+.se-approval-action {
+  position: relative;
+  z-index: 2;
+  min-width: 220px;
+  min-height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 auto 20px;
+  padding: 12px 28px;
+  border: 0;
+  border-radius: 50px;
+  color: #ffffff;
+  background: linear-gradient(303deg, #2563eb 0%, #034584 100%);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.se-approval-action:hover {
+  box-shadow: 0 9px 22px rgba(37, 99, 235, 0.25);
+  transform: translateY(-2px);
+}
+
+.se-approval-action:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================================
+   ANIMATIONS
+========================================= */
+
+@keyframes seApprovalBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes seApprovalModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(25px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes seClockMinute {
+  from { transform: translateX(-50%) rotate(90deg); }
+  to { transform: translateX(-50%) rotate(450deg); }
+}
+
+@keyframes seClockFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes seShieldFloat {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-6px) rotate(4deg); }
+}
+
+@keyframes seClockGlow {
+  0%, 100% { opacity: 0.55; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes seSpark {
+  0%, 100% { opacity: 0.3; transform: scale(0.7) rotate(20deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(65deg); }
+}
+
+@keyframes seWaitClock {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@keyframes seWaitProgress {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(310%); }
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 768px) {
+  .se-approval-backdrop {
+    padding: 16px;
+  }
+
+  .se-approval-modal {
+    width: 100%;
+    min-height: auto;
+    padding: 35px 22px 25px;
+    border-radius: 25px;
+  }
+
+  .se-approval-close-icon {
+    top: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+  }
+
+  .se-approval-illustration {
+    width: 230px;
+    height: 155px;
+    margin-bottom: 12px;
+  }
+
+  .se-approval-clock-art {
+    transform: scale(0.82);
+  }
+
+  .se-approval-result-icon {
+    width: 95px;
+    height: 95px;
+    font-size: 55px;
+  }
+
+  .se-approval-modal h2 {
+    font-size: 27px;
+  }
+
+  .se-approval-description {
+    margin: 14px auto 22px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .se-approval-wait {
+    min-height: auto;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 17px;
+  }
+
+  .se-wait-icon {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    font-size: 30px;
+  }
+
+  .se-wait-divider {
+    height: 55px;
+  }
+
+  .se-wait-content strong {
+    font-size: 15px;
+  }
+
+  .se-wait-content > span {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .se-approval-close {
+    min-width: 145px;
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .se-approval-action {
+    min-height: 52px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 420px) {
+  .se-approval-wait {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .se-wait-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    font-size: 25px;
+  }
+
+  .se-wait-divider {
+    height: 48px;
+  }
+
+  .se-wait-content strong {
+    font-size: 13px;
+  }
+
+ 
+}
 
 
 
@@ -4073,4 +4701,18 @@ article.se-instructions-panel button {
   }
 }
 
-/* !!!!! INSERTION END: STUDENT EXAM INSTRUCTIONS LIVE COUNTDOWN !!!!! */
+@media (prefers-reduced-motion: reduce) {
+  .se-approval-backdrop,
+  .se-approval-modal,
+  .se-clock-face,
+  .se-clock-hand,
+  .se-clock-shield,
+  .se-clock-glow,
+  .se-clock-spark,
+  .se-wait-icon svg,
+  .se-wait-progress span {
+    animation: none !important;
+  }
+}
+
+  
