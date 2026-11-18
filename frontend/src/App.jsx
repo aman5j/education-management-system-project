@@ -70,6 +70,8 @@ import AlertNoticeManagement from "./pages/admin/alertNotices/AlertNoticeManagem
 import WebsiteEditor from "./pages/admin/website-editor/WebsiteEditor";
 import WebsitePreviewPage from "./pages/admin/website-editor/components/WebsitePreviewPage";
 import StudyResourcesPage from "./pages/public/StudyResourcesPage";
+import CertificateSectionPage from "./pages/public/CertificateSectionPage";
+
 
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
@@ -255,6 +257,11 @@ const App = () => {
       <Route
         path="/resources"
         element={<StudyResourcesPage />}
+      />
+
+      <Route
+        path="/certificate-section"
+        element={<CertificateSectionPage />}
       />
 
       {/* Admin portal */}

@@ -221,6 +221,64 @@ const websiteEditorService = {
 
     return response.data?.data?.items || [];
   },
+
+  
+  // Phase 9: Certificate Section
+  async getCertificateSectionSettings() {
+    const response = await api.get(
+      "/website-editor/certificate-section",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: false,
+      imageUrl: "",
+      imageVersion: "",
+      title: "",
+      highlightText: "",
+      description: "",
+      listItems: [],
+      buttonText: "View Full Certificate",
+      buttonAction: "image",
+      externalUrl: "",
+    };
+  },
+
+  async updateCertificateSectionSettings(payload) {
+    const response = await api.put(
+      "/website-editor/certificate-section",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async uploadCertificateSectionImage(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/certificate-section/image",
+      formData,
+      {
+        headers: { "Content-Type": undefined },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
+  async getPublicCertificateSection() {
+    const response = await api.get(
+      "/website-editor/public/certificate-section",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
 };
 
 export default websiteEditorService;

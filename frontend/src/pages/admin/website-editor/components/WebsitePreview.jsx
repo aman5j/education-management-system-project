@@ -12,7 +12,7 @@ import {
 
 import TrendingCoursesPreview from "./TrendingCoursesPreview";
 import StudyResourcesSection from "./StudyResourcesSection";
-
+import CertificateSection from "./CertificateSection";
 
 export default function WebsitePreview({
   header,
@@ -24,6 +24,7 @@ export default function WebsitePreview({
   courseCategories = [],
   trendingCourses = [],
   studyResources = [],
+  certificateSection = null,
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -339,6 +340,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
         {/* Phase 8: Study Resources */}
         <StudyResourcesSection items={studyResources} />
+
+        {/* Phase 9: Certificate Section */}
+        <CertificateSection settings={certificateSection} />
 
 
       <div className="we-public-page-placeholder">

@@ -38,6 +38,9 @@ import CourseCategoriesControls from "./components/CourseCategoriesControls";
 import TrendingCoursesControls from "./components/TrendingCoursesControls";
 import StudyResourcesControls from "./components/StudyResourcesControls";
 import "./StudyResources.phase8.css";
+import CertificateSectionControls from "./components/CertificateSectionControls";
+import "./CertificateSection.phase9.css";
+
 
 import { getAssetUrl } from "../../../utils/assetUrl";
 import notification, {
@@ -103,6 +106,19 @@ const initialTrendingCourses = {
 
 const initialStudyResources = {
   items: [],
+};
+
+const initialCertificateSection = {
+  enabled: false,
+  imageUrl: "",
+  imageVersion: "",
+  title: "",
+  highlightText: "",
+  description: "",
+  listItems: [],
+  buttonText: "View Full Certificate",
+  buttonAction: "image",
+  externalUrl: "",
 };
 
 
@@ -196,6 +212,14 @@ const WebsiteEditor = () => {
     initialStudyResources
   );
 
+  // Phase 9: Certificate Section
+  const [certificateSection, setCertificateSection] = useState(
+    initialCertificateSection
+  );
+
+  const [savedCertificateSection, setSavedCertificateSection] =
+    useState(initialCertificateSection);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -226,7 +250,9 @@ const WebsiteEditor = () => {
       JSON.stringify(trendingCourses) !==
         JSON.stringify(savedTrendingCourses) ||
       JSON.stringify(studyResources) !==
-        JSON.stringify(savedStudyResources);
+        JSON.stringify(savedStudyResources)  ||
+      JSON.stringify(certificateSection) !==
+        JSON.stringify(savedCertificateSection)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -243,6 +269,7 @@ const WebsiteEditor = () => {
         courseCategoryData,
         trendingCourseData,
         studyResourceData,
+        certificateSectionData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -252,6 +279,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getCourseCategorySettings(),
         websiteEditorService.getTrendingCourseSettings(),
         websiteEditorService.getStudyResourcesSettings(),
+        websiteEditorService.getCertificateSectionSettings(),
       ]);
 
       const nextHeader = {
@@ -371,6 +399,21 @@ const WebsiteEditor = () => {
       setStudyResources(nextStudyResources);
       setSavedStudyResources(nextStudyResources);
 
+      // Phase 9: Load Certificate Section
+      const nextCertificateSection = {
+        ...initialCertificateSection,
+        ...(certificateSectionData || {}),
+        listItems: Array.isArray(certificateSectionData?.listItems)
+          ? certificateSectionData.listItems.map((item, index) => ({
+              ...item,
+              displayOrder: index,
+            }))
+          : [],
+      };
+
+      setCertificateSection(nextCertificateSection);
+      setSavedCertificateSection(nextCertificateSection);
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -455,6 +498,40 @@ const WebsiteEditor = () => {
       notification.error(
         getApiErrorMessage(error) ||
           "Unable to upload Study Resource image."
+      );
+
+      throw error;
+    }
+  };
+
+  // Phase 9: Update Certificate Section
+  const updateCertificateSection = (nextSettings) => {
+    setCertificateSection({
+      ...nextSettings,
+      listItems: (nextSettings.listItems || []).map(
+        (item, index) => ({
+          ...item,
+          displayOrder: index,
+        })
+      ),
+    });
+  };
+
+  // Phase 9: Upload certificate image
+  const uploadCertificateSectionImage = async (file) => {
+    try {
+      const uploaded =
+        await websiteEditorService.uploadCertificateSectionImage(file);
+
+      notification.success(
+        "Certificate Section image uploaded successfully."
+      );
+
+      return uploaded;
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) ||
+          "Unable to upload Certificate Section image."
       );
 
       throw error;
@@ -769,6 +846,34 @@ const WebsiteEditor = () => {
       return;
     }
 
+    // Phase 9: Validate Certificate Section
+    if (certificateSection.enabled) {
+      const hasInvalidListItem = (
+        certificateSection.listItems || []
+      ).some((item) => !item.text?.trim());
+
+      if (
+        !certificateSection.imageUrl?.trim() ||
+        !certificateSection.imageVersion?.trim() ||
+        !certificateSection.title?.trim() ||
+        !certificateSection.description?.trim() ||
+        !certificateSection.buttonText?.trim() ||
+        hasInvalidListItem ||
+        (
+          certificateSection.buttonAction === "url" &&
+          !certificateSection.externalUrl?.trim()
+        )
+      ) {
+        notification.warning(
+          "Complete the Certificate Section image, title, description, list items and button settings before enabling it."
+        );
+
+        setActiveSection("certificate");
+        setExpandedSection("certificate");
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -789,6 +894,7 @@ const WebsiteEditor = () => {
         savedCourseCategoryData,
         savedTrendingCourseData,
         savedStudyResourceData,
+        savedCertificateSectionData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -802,6 +908,9 @@ const WebsiteEditor = () => {
         ),
         websiteEditorService.updateStudyResourcesSettings(
           studyResources
+        ),
+        websiteEditorService.updateCertificateSectionSettings(
+          certificateSection
         ),
       ]);
 
@@ -881,6 +990,22 @@ const WebsiteEditor = () => {
     setStudyResources(nextStudyResources);
     setSavedStudyResources(nextStudyResources);
 
+    // Phase 9: Save Certificate Section state
+  const nextCertificateSection = {
+    ...initialCertificateSection,
+    ...(savedCertificateSectionData || certificateSection),
+    listItems: Array.isArray(savedCertificateSectionData?.listItems)
+      ? savedCertificateSectionData.listItems.map((item, index) => ({
+          ...item,
+          displayOrder: index,
+        }))
+      : certificateSection.listItems,
+  };
+
+  setCertificateSection(nextCertificateSection);
+  setSavedCertificateSection(nextCertificateSection);
+
+
 
       notification.success(
         "Website editor settings saved successfully."
@@ -904,7 +1029,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -933,6 +1058,9 @@ const WebsiteEditor = () => {
 
     // Phase 8: Restore saved Study Resources
     setStudyResources(savedStudyResources);
+
+    // Phase 9: Restore Certificate Section
+    setCertificateSection(savedCertificateSection);
   };
 
   const openPreviewInNewTab = () => {
@@ -1064,6 +1192,12 @@ const WebsiteEditor = () => {
                         items={studyResources.items}
                         onChange={updateStudyResources}
                         onUploadImage={uploadStudyResourceImage}
+                      />
+                    ) : section.id === "certificate" ? (
+                      <CertificateSectionControls
+                        settings={certificateSection}
+                        onChange={updateCertificateSection}
+                        onUploadImage={uploadCertificateSectionImage}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1238,6 +1372,13 @@ const WebsiteEditor = () => {
                   ? getAssetUrl(item.imageUrl)
                   : "",
               }))}
+
+              certificateSection={{
+                ...certificateSection,
+                imageUrl: certificateSection.imageUrl
+                  ? getAssetUrl(certificateSection.imageUrl)
+                  : "",
+              }}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             
