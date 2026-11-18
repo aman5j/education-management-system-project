@@ -76,6 +76,7 @@ import websiteCategoryHighlightRoutes from "./routes/websiteCategoryHighlight.ro
 import websiteCourseCategoryRoutes from "./routes/websiteCourseCategory.routes.js";
 import websiteTrendingCourseRoutes from "./routes/websiteTrendingCourse.routes.js";
 import websiteStudyResourceRoutes from "./routes/websiteStudyResource.routes.js";
+import websiteCertificateSectionRoutes from "./routes/websiteCertificateSection.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -404,6 +405,11 @@ app.use(
 app.use(
   "/api/website-editor",
   websiteStudyResourceRoutes
+);
+
+app.use(
+  "/api/website-editor",
+  websiteCertificateSectionRoutes
 );
 
 

@@ -14,6 +14,7 @@ import WebsitePreview from "./WebsitePreview";
 import "../WebsiteEditor.css";
 import "../WebsitePreviewPage.css";
 import "../StudyResources.phase8.css";
+import "../CertificateSection.phase9.css";
 
 const defaultHeader = {
   topbarEnabled: true,
@@ -37,6 +38,7 @@ export default function WebsitePreviewPage() {
   const [institute, setInstitute] = useState({});
   const [loading, setLoading] = useState(true);
   const [studyResources, setStudyResources] = useState([]);
+  const [certificateSection, setCertificateSection] = useState(null);
 
   useEffect(() => {
     const loadPreview = async () => {
@@ -45,10 +47,12 @@ export default function WebsitePreviewPage() {
             headerData,
             instituteData,
             studyResourceData,
+            certificateSectionData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
             websiteEditorService.getPublicStudyResources(),
+            websiteEditorService.getPublicCertificateSection(),
         ]);
 
         setHeader({
@@ -68,6 +72,18 @@ export default function WebsitePreviewPage() {
             })
         )
         );
+
+        setCertificateSection(
+        certificateSectionData
+            ? {
+                ...certificateSectionData,
+                imageUrl: certificateSectionData.imageUrl
+                ? getAssetUrl(certificateSectionData.imageUrl)
+                : "",
+            }
+            : null
+        );
+
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -111,6 +127,7 @@ export default function WebsitePreviewPage() {
           institute={institute}
           logoUrl={logoUrl}
           studyResources={studyResources}
+          certificateSection={certificateSection}
         />
       </main>
     </div>
