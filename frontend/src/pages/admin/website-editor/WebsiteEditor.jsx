@@ -40,6 +40,8 @@ import StudyResourcesControls from "./components/StudyResourcesControls";
 import "./StudyResources.phase8.css";
 import CertificateSectionControls from "./components/CertificateSectionControls";
 import "./CertificateSection.phase9.css";
+import PartnersControls from "./components/PartnersControls";
+import "./Partners.phase10.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -120,6 +122,19 @@ const initialCertificateSection = {
   buttonAction: "image",
   externalUrl: "",
 };
+
+
+// Phase 10: Partners
+const initialPartners = {
+  enabled: true,
+  heading:
+    "Trusted by industry leaders and valued partners worldwide",
+  highlightText: "industry leaders and valued partners",
+  visibleCount: 5,
+  autoSlide: true,
+  logos: [],
+};
+
 
 
 const editorSections = [
@@ -216,9 +231,14 @@ const WebsiteEditor = () => {
   const [certificateSection, setCertificateSection] = useState(
     initialCertificateSection
   );
-
   const [savedCertificateSection, setSavedCertificateSection] =
     useState(initialCertificateSection);
+
+  // Phase 10: Partners
+  const [partners, setPartners] = useState(initialPartners);
+  const [savedPartners, setSavedPartners] = useState(initialPartners);
+
+
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -252,7 +272,8 @@ const WebsiteEditor = () => {
       JSON.stringify(studyResources) !==
         JSON.stringify(savedStudyResources)  ||
       JSON.stringify(certificateSection) !==
-        JSON.stringify(savedCertificateSection)
+        JSON.stringify(savedCertificateSection)  ||
+      JSON.stringify(partners) !== JSON.stringify(savedPartners);
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -270,6 +291,7 @@ const WebsiteEditor = () => {
         trendingCourseData,
         studyResourceData,
         certificateSectionData,
+        partnerData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -280,6 +302,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getTrendingCourseSettings(),
         websiteEditorService.getStudyResourcesSettings(),
         websiteEditorService.getCertificateSectionSettings(),
+        websiteEditorService.getPartnerSettings(),
       ]);
 
       const nextHeader = {
@@ -414,6 +437,22 @@ const WebsiteEditor = () => {
       setCertificateSection(nextCertificateSection);
       setSavedCertificateSection(nextCertificateSection);
 
+      // Phase 10: Load Partners
+      const nextPartners = {
+        ...initialPartners,
+        ...(partnerData || {}),
+        logos: Array.isArray(partnerData?.logos)
+          ? partnerData.logos.map((logo, index) => ({
+              ...logo,
+              displayOrder: index,
+            }))
+          : [],
+      };
+
+      setPartners(nextPartners);
+      setSavedPartners(nextPartners);
+
+
     } catch (error) {
       notification.error(
         getApiErrorMessage(error) ||
@@ -537,6 +576,37 @@ const WebsiteEditor = () => {
       throw error;
     }
   };
+
+
+  // Phase 10: Update Partners
+  const updatePartners = (nextSettings) => {
+    setPartners({
+      ...nextSettings,
+      logos: (nextSettings.logos || []).map((logo, index) => ({
+        ...logo,
+        displayOrder: index,
+      })),
+    });
+  };
+
+  // Phase 10: Upload partner logo
+  const uploadPartnerLogo = async (file) => {
+    try {
+      const uploaded =
+        await websiteEditorService.uploadPartnerLogo(file);
+
+      return uploaded;
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) ||
+          "Unable to upload partner logo."
+      );
+
+      throw error;
+    }
+  };
+
+
 
 
   const handleBannerUpload = async (file, slideKey = "") => {
@@ -874,6 +944,49 @@ const WebsiteEditor = () => {
       }
     }
 
+    // Phase 10: Validate Partners
+    if (!partners.heading?.trim()) {
+      notification.warning("Please enter the Partners heading.");
+      setActiveSection("partners");
+      setExpandedSection("partners");
+      return;
+    }
+
+    if (
+      !Number.isInteger(Number(partners.visibleCount)) ||
+      Number(partners.visibleCount) < 1 ||
+      Number(partners.visibleCount) > 8
+    ) {
+      notification.warning(
+        "Choose a desktop logo display count between 1 and 8."
+      );
+      setActiveSection("partners");
+      setExpandedSection("partners");
+      return;
+    }
+
+    const hasIncompletePartnerLogo = (partners.logos || []).some(
+      (logo) => !logo.imageUrl?.trim() || !logo.imageVersion?.trim()
+    );
+
+    if (hasIncompletePartnerLogo) {
+      notification.warning(
+        "Upload a JPG image for every partner logo before saving."
+      );
+      setActiveSection("partners");
+      setExpandedSection("partners");
+      return;
+    }
+
+    if ((partners.logos || []).length > 20) {
+      notification.warning("Maximum 20 partner logos are allowed.");
+      setActiveSection("partners");
+      setExpandedSection("partners");
+      return;
+    }
+
+
+
     setSaving(true);
 
     try {
@@ -895,6 +1008,7 @@ const WebsiteEditor = () => {
         savedTrendingCourseData,
         savedStudyResourceData,
         savedCertificateSectionData,
+        savedPartnerData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -912,6 +1026,7 @@ const WebsiteEditor = () => {
         websiteEditorService.updateCertificateSectionSettings(
           certificateSection
         ),
+        websiteEditorService.updatePartnerSettings(partners),
       ]);
 
       const nextHeader = {
@@ -991,19 +1106,35 @@ const WebsiteEditor = () => {
     setSavedStudyResources(nextStudyResources);
 
     // Phase 9: Save Certificate Section state
-  const nextCertificateSection = {
-    ...initialCertificateSection,
-    ...(savedCertificateSectionData || certificateSection),
-    listItems: Array.isArray(savedCertificateSectionData?.listItems)
-      ? savedCertificateSectionData.listItems.map((item, index) => ({
-          ...item,
-          displayOrder: index,
-        }))
-      : certificateSection.listItems,
-  };
+    const nextCertificateSection = {
+      ...initialCertificateSection,
+      ...(savedCertificateSectionData || certificateSection),
+      listItems: Array.isArray(savedCertificateSectionData?.listItems)
+        ? savedCertificateSectionData.listItems.map((item, index) => ({
+            ...item,
+            displayOrder: index,
+          }))
+        : certificateSection.listItems,
+    };
 
-  setCertificateSection(nextCertificateSection);
-  setSavedCertificateSection(nextCertificateSection);
+    setCertificateSection(nextCertificateSection);
+    setSavedCertificateSection(nextCertificateSection);
+
+
+    // Phase 10: Save Partners
+      const nextPartners = {
+        ...initialPartners,
+        ...(savedPartnerData || partners),
+        logos: Array.isArray(savedPartnerData?.logos)
+          ? savedPartnerData.logos.map((logo, index) => ({
+              ...logo,
+              displayOrder: index,
+            }))
+          : partners.logos,
+      };
+
+      setPartners(nextPartners);
+      setSavedPartners(nextPartners);
 
 
 
@@ -1029,7 +1160,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -1061,6 +1192,9 @@ const WebsiteEditor = () => {
 
     // Phase 9: Restore Certificate Section
     setCertificateSection(savedCertificateSection);
+
+    // Phase 10: Restore Partners
+    setPartners(savedPartners);
   };
 
   const openPreviewInNewTab = () => {
@@ -1198,6 +1332,12 @@ const WebsiteEditor = () => {
                         settings={certificateSection}
                         onChange={updateCertificateSection}
                         onUploadImage={uploadCertificateSectionImage}
+                      />
+                    ) : section.id === "partners" ? (
+                      <PartnersControls
+                        settings={partners}
+                        onChange={updatePartners}
+                        onUploadLogo={uploadPartnerLogo}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1378,6 +1518,16 @@ const WebsiteEditor = () => {
                 imageUrl: certificateSection.imageUrl
                   ? getAssetUrl(certificateSection.imageUrl)
                   : "",
+              }}
+
+              partners={{
+                ...partners,
+                logos: (partners.logos || []).map((logo) => ({
+                  ...logo,
+                  imageUrl: logo.imageUrl
+                    ? getAssetUrl(logo.imageUrl)
+                    : "",
+                })),
               }}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}

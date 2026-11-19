@@ -15,6 +15,8 @@ import "../WebsiteEditor.css";
 import "../WebsitePreviewPage.css";
 import "../StudyResources.phase8.css";
 import "../CertificateSection.phase9.css";
+import "../Partners.phase10.css";
+
 
 const defaultHeader = {
   topbarEnabled: true,
@@ -39,6 +41,8 @@ export default function WebsitePreviewPage() {
   const [loading, setLoading] = useState(true);
   const [studyResources, setStudyResources] = useState([]);
   const [certificateSection, setCertificateSection] = useState(null);
+  const [partners, setPartners] = useState(null);
+
 
   useEffect(() => {
     const loadPreview = async () => {
@@ -48,11 +52,13 @@ export default function WebsitePreviewPage() {
             instituteData,
             studyResourceData,
             certificateSectionData,
+            partnerData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
             websiteEditorService.getPublicStudyResources(),
             websiteEditorService.getPublicCertificateSection(),
+            websiteEditorService.getPublicPartnerSettings(),
         ]);
 
         setHeader({
@@ -81,6 +87,22 @@ export default function WebsitePreviewPage() {
                 ? getAssetUrl(certificateSectionData.imageUrl)
                 : "",
             }
+            : null
+        );
+
+
+        // Phase 10: Load saved Partners
+        setPartners(
+          partnerData
+            ? {
+                ...partnerData,
+                logos: (partnerData.logos || []).map((logo) => ({
+                  ...logo,
+                  imageUrl: logo.imageUrl
+                    ? getAssetUrl(logo.imageUrl)
+                    : "",
+                })),
+              }
             : null
         );
 
@@ -128,6 +150,7 @@ export default function WebsitePreviewPage() {
           logoUrl={logoUrl}
           studyResources={studyResources}
           certificateSection={certificateSection}
+          partners={partners}
         />
       </main>
     </div>

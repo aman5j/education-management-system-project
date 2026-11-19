@@ -279,6 +279,62 @@ const websiteEditorService = {
     return response.data?.data?.settings || null;
   },
 
+
+
+  // Phase 10: Partners
+  async getPartnerSettings() {
+    const response = await api.get(
+      "/website-editor/partners",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: true,
+      heading:
+        "Trusted by industry leaders and valued partners worldwide",
+      highlightText: "industry leaders and valued partners",
+      visibleCount: 5,
+      autoSlide: true,
+      logos: [],
+    };
+  },
+
+  async updatePartnerSettings(payload) {
+    const response = await api.put(
+      "/website-editor/partners",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async uploadPartnerLogo(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/partners/logos",
+      formData,
+      {
+        headers: { "Content-Type": undefined },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
+  async getPublicPartnerSettings() {
+    const response = await api.get(
+      "/website-editor/public/partners",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
+
 };
 
 export default websiteEditorService;
