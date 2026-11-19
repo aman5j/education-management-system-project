@@ -42,6 +42,8 @@ import CertificateSectionControls from "./components/CertificateSectionControls"
 import "./CertificateSection.phase9.css";
 import PartnersControls from "./components/PartnersControls";
 import "./Partners.phase10.css";
+import PlacementStoriesControls from "./components/PlacementStoriesControls";
+import "./PlacementStories.phase11.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -133,6 +135,15 @@ const initialPartners = {
   visibleCount: 5,
   autoSlide: true,
   logos: [],
+};
+
+
+// Phase 11: Placement Stories
+const initialPlacementStories = {
+  enabled: true,
+  heading: "Our Success Placement Story",
+  highlightText: "Placement Story",
+  stories: [],
 };
 
 
@@ -238,6 +249,13 @@ const WebsiteEditor = () => {
   const [partners, setPartners] = useState(initialPartners);
   const [savedPartners, setSavedPartners] = useState(initialPartners);
 
+  // Phase 11: Placement Stories
+  const [placementStories, setPlacementStories] = useState(
+    initialPlacementStories
+  );
+  const [savedPlacementStories, setSavedPlacementStories] =
+    useState(initialPlacementStories);
+
 
 
   const [loading, setLoading] = useState(true);
@@ -273,7 +291,9 @@ const WebsiteEditor = () => {
         JSON.stringify(savedStudyResources)  ||
       JSON.stringify(certificateSection) !==
         JSON.stringify(savedCertificateSection)  ||
-      JSON.stringify(partners) !== JSON.stringify(savedPartners);
+      JSON.stringify(partners) !== JSON.stringify(savedPartners) ||
+      JSON.stringify(placementStories) !==
+        JSON.stringify(savedPlacementStories)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -292,6 +312,7 @@ const WebsiteEditor = () => {
         studyResourceData,
         certificateSectionData,
         partnerData,
+        placementStoriesData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -303,6 +324,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getStudyResourcesSettings(),
         websiteEditorService.getCertificateSectionSettings(),
         websiteEditorService.getPartnerSettings(),
+        websiteEditorService.getPlacementStoriesSettings(),
       ]);
 
       const nextHeader = {
@@ -451,6 +473,22 @@ const WebsiteEditor = () => {
 
       setPartners(nextPartners);
       setSavedPartners(nextPartners);
+
+      // Phase 11: Load Placement Stories
+      const nextPlacementStories = {
+        ...initialPlacementStories,
+        ...(placementStoriesData || {}),
+        stories: Array.isArray(placementStoriesData?.stories)
+          ? placementStoriesData.stories.map((story, index) => ({
+              ...story,
+              displayOrder: index,
+              isVisible: story.isVisible !== false,
+            }))
+          : [],
+      };
+
+      setPlacementStories(nextPlacementStories);
+      setSavedPlacementStories(nextPlacementStories);
 
 
     } catch (error) {
@@ -607,6 +645,32 @@ const WebsiteEditor = () => {
   };
 
 
+  // Phase 11: Update Placement Stories
+  const updatePlacementStories = (nextSettings) => {
+    setPlacementStories({
+      ...nextSettings,
+      stories: (nextSettings.stories || []).map(
+        (story, index) => ({
+          ...story,
+          displayOrder: index,
+        })
+      ),
+    });
+  };
+
+  // Phase 11: Upload Placement Story image
+  const uploadPlacementStoryImage = async (file) => {
+    try {
+      return await websiteEditorService.uploadPlacementStoryImage(file);
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) ||
+          "Unable to upload placement story image."
+      );
+
+      throw error;
+    }
+  };
 
 
   const handleBannerUpload = async (file, slideKey = "") => {
@@ -986,6 +1050,47 @@ const WebsiteEditor = () => {
     }
 
 
+    // Phase 11: Validate Placement Stories
+    if (!placementStories.heading?.trim()) {
+      notification.warning(
+        "Please enter the Placement Stories heading."
+      );
+
+      setActiveSection("placements");
+      setExpandedSection("placements");
+      return;
+    }
+
+    if ((placementStories.stories || []).length > 20) {
+      notification.warning(
+        "Maximum 20 placement stories are allowed."
+      );
+
+      setActiveSection("placements");
+      setExpandedSection("placements");
+      return;
+    }
+
+    const hasIncompletePlacementStory = (
+      placementStories.stories || []
+    ).some(
+      (story) =>
+        !story.imageUrl?.trim() ||
+        !story.imageVersion?.trim() ||
+        !story.title?.trim() ||
+        !story.description?.trim()
+    );
+
+    if (hasIncompletePlacementStory) {
+      notification.warning(
+        "Complete the image, title and description of every placement story, or remove the incomplete story."
+      );
+
+      setActiveSection("placements");
+      setExpandedSection("placements");
+      return;
+    }
+
 
     setSaving(true);
 
@@ -1009,6 +1114,7 @@ const WebsiteEditor = () => {
         savedStudyResourceData,
         savedCertificateSectionData,
         savedPartnerData,
+        savedPlacementStoriesData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1027,6 +1133,9 @@ const WebsiteEditor = () => {
           certificateSection
         ),
         websiteEditorService.updatePartnerSettings(partners),
+        websiteEditorService.updatePlacementStoriesSettings(
+          placementStories
+        ),
       ]);
 
       const nextHeader = {
@@ -1136,6 +1245,22 @@ const WebsiteEditor = () => {
       setPartners(nextPartners);
       setSavedPartners(nextPartners);
 
+    // Phase 11: Save Placement Stories
+      const nextPlacementStories = {
+        ...initialPlacementStories,
+        ...(savedPlacementStoriesData || placementStories),
+        stories: Array.isArray(savedPlacementStoriesData?.stories)
+          ? savedPlacementStoriesData.stories.map((story, index) => ({
+              ...story,
+              displayOrder: index,
+              isVisible: story.isVisible !== false,
+            }))
+          : placementStories.stories,
+      };
+
+      setPlacementStories(nextPlacementStories);
+      setSavedPlacementStories(nextPlacementStories);
+
 
 
       notification.success(
@@ -1160,7 +1285,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -1195,6 +1320,9 @@ const WebsiteEditor = () => {
 
     // Phase 10: Restore Partners
     setPartners(savedPartners);
+
+    // Phase 11: Restore Placement Stories
+    setPlacementStories(savedPlacementStories);
   };
 
   const openPreviewInNewTab = () => {
@@ -1338,6 +1466,12 @@ const WebsiteEditor = () => {
                         settings={partners}
                         onChange={updatePartners}
                         onUploadLogo={uploadPartnerLogo}
+                      />
+                    ) : section.id === "placements" ? (
+                      <PlacementStoriesControls
+                        settings={placementStories}
+                        onChange={updatePlacementStories}
+                        onUploadImage={uploadPlacementStoryImage}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1526,6 +1660,16 @@ const WebsiteEditor = () => {
                   ...logo,
                   imageUrl: logo.imageUrl
                     ? getAssetUrl(logo.imageUrl)
+                    : "",
+                })),
+              }}
+
+              placementStories={{
+                ...placementStories,
+                stories: (placementStories.stories || []).map((story) => ({
+                  ...story,
+                  imageUrl: story.imageUrl
+                    ? getAssetUrl(story.imageUrl)
                     : "",
                 })),
               }}

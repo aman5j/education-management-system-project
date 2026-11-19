@@ -14,6 +14,7 @@ import TrendingCoursesPreview from "./TrendingCoursesPreview";
 import StudyResourcesSection from "./StudyResourcesSection";
 import CertificateSection from "./CertificateSection";
 import PartnersSection from "./PartnersSection";
+import PlacementStoriesSection from "./PlacementStoriesSection";
 
 
 export default function WebsitePreview({
@@ -28,6 +29,7 @@ export default function WebsitePreview({
   studyResources = [],
   certificateSection = null,
   partners = null,
+  placementStories = null,
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -349,6 +351,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
         {/* Phase 10: Partners */}
         <PartnersSection settings={partners} />
+
+        {/* Phase 11: Placement Stories */}
+        <PlacementStoriesSection settings={placementStories} />
 
 
       <div className="we-public-page-placeholder">

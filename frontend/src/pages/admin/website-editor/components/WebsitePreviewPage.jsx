@@ -16,6 +16,7 @@ import "../WebsitePreviewPage.css";
 import "../StudyResources.phase8.css";
 import "../CertificateSection.phase9.css";
 import "../Partners.phase10.css";
+import "../PlacementStories.phase11.css";
 
 
 const defaultHeader = {
@@ -42,6 +43,7 @@ export default function WebsitePreviewPage() {
   const [studyResources, setStudyResources] = useState([]);
   const [certificateSection, setCertificateSection] = useState(null);
   const [partners, setPartners] = useState(null);
+  const [placementStories, setPlacementStories] = useState(null);
 
 
   useEffect(() => {
@@ -53,12 +55,14 @@ export default function WebsitePreviewPage() {
             studyResourceData,
             certificateSectionData,
             partnerData,
+            placementStoriesData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
             websiteEditorService.getPublicStudyResources(),
             websiteEditorService.getPublicCertificateSection(),
             websiteEditorService.getPublicPartnerSettings(),
+            websiteEditorService.getPublicPlacementStories(),
         ]);
 
         setHeader({
@@ -102,6 +106,24 @@ export default function WebsitePreviewPage() {
                     ? getAssetUrl(logo.imageUrl)
                     : "",
                 })),
+              }
+            : null
+        );
+
+        // Phase 11: Load saved Placement Stories
+        setPlacementStories(
+          placementStoriesData
+            ? {
+                ...placementStoriesData,
+                stories: (placementStoriesData.stories || []).map(
+                  (story, index) => ({
+                    ...story,
+                    displayOrder: index,
+                    imageUrl: story.imageUrl
+                      ? getAssetUrl(story.imageUrl)
+                      : "",
+                  })
+                ),
               }
             : null
         );
@@ -151,6 +173,7 @@ export default function WebsitePreviewPage() {
           studyResources={studyResources}
           certificateSection={certificateSection}
           partners={partners}
+          placementStories={placementStories}
         />
       </main>
     </div>

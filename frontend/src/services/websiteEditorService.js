@@ -335,6 +335,60 @@ const websiteEditorService = {
   },
 
 
+
+
+  // Phase 11: Placement Stories
+  async getPlacementStoriesSettings() {
+    const response = await api.get(
+      "/website-editor/placement-stories",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: true,
+      heading: "Our Success Placement Story",
+      highlightText: "Placement Story",
+      stories: [],
+    };
+  },
+
+  async updatePlacementStoriesSettings(payload) {
+    const response = await api.put(
+      "/website-editor/placement-stories",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async uploadPlacementStoryImage(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/placement-stories/images",
+      formData,
+      {
+        headers: { "Content-Type": undefined },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
+  async getPublicPlacementStories() {
+    const response = await api.get(
+      "/website-editor/public/placement-stories",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
+
+
 };
 
 export default websiteEditorService;

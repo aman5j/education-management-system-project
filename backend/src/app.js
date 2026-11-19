@@ -78,6 +78,7 @@ import websiteTrendingCourseRoutes from "./routes/websiteTrendingCourse.routes.j
 import websiteStudyResourceRoutes from "./routes/websiteStudyResource.routes.js";
 import websiteCertificateSectionRoutes from "./routes/websiteCertificateSection.routes.js";
 import websitePartnerRoutes from "./routes/websitePartner.routes.js";
+import websitePlacementRoutes from "./routes/websitePlacement.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -418,6 +419,10 @@ app.use(
   websitePartnerRoutes
 );
 
+app.use(
+  "/api/website-editor",
+  websitePlacementRoutes
+);
 
 
 
