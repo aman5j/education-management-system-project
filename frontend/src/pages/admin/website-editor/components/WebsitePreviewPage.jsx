@@ -19,6 +19,7 @@ import "../Partners.phase10.css";
 import "../PlacementStories.phase11.css";
 import "../OurTeam.phase12.css";
 import "../FreeVideos.phase13.css";
+import "../Careers.phase14.css";
 
 
 const defaultHeader = {
@@ -48,6 +49,7 @@ export default function WebsitePreviewPage() {
   const [placementStories, setPlacementStories] = useState(null);
   const [team, setTeam] = useState(null);
   const [freeVideos, setFreeVideos] = useState(null);
+  const [careers, setCareers] = useState(null);
 
 
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function WebsitePreviewPage() {
             placementStoriesData,
             teamData,
             freeVideoData,
+            careerData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
@@ -71,6 +74,7 @@ export default function WebsitePreviewPage() {
             websiteEditorService.getPublicPlacementStories(),
             websiteEditorService.getPublicTeamSettings(),
             websiteEditorService.getPublicFreeVideos(),
+            websiteEditorService.getPublicCareerSettings(),
         ]);
 
         setHeader({
@@ -169,6 +173,20 @@ export default function WebsitePreviewPage() {
             : null
         );
 
+        // Phase 14: Load Careers
+        setCareers(
+          careerData
+            ? {
+                ...careerData,
+                jobs: (careerData.jobs || []).map((job, index) => ({
+                  ...job,
+                  displayOrder: index,
+                  skills: Array.isArray(job.skills) ? job.skills : [],
+                })),
+              }
+            : null
+        );
+
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -217,6 +235,7 @@ export default function WebsitePreviewPage() {
           placementStories={placementStories}
           team={team}
           freeVideos={freeVideos}
+          careers={careers}
         />
       </main>
     </div>

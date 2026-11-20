@@ -17,6 +17,7 @@ import PartnersSection from "./PartnersSection";
 import PlacementStoriesSection from "./PlacementStoriesSection";
 import OurTeamSection from "./OurTeamSection";
 import FreeVideosSection from "./FreeVideosSection";
+import CareersSection from "./CareersSection";
 
 
 export default function WebsitePreview({
@@ -34,6 +35,7 @@ export default function WebsitePreview({
   placementStories = null,
   team = null,
   freeVideos = null,
+  careers = null,
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -364,6 +366,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
         {/* Phase 13: Free Videos */}
         <FreeVideosSection settings={freeVideos} />
+
+        {/* Phase 14: Careers */}
+        <CareersSection settings={careers} />
 
 
       <div className="we-public-page-placeholder">

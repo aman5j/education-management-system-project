@@ -48,6 +48,8 @@ import OurTeamControls from "./components/OurTeamControls";
 import "./OurTeam.phase12.css";
 import FreeVideosControls from "./components/FreeVideosControls";
 import "./FreeVideos.phase13.css";
+import CareersControls from "./components/CareersControls";
+import "./Careers.phase14.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -172,6 +174,15 @@ const initialFreeVideos = {
 };
 
 
+// Phase 14: Careers
+const initialCareers = {
+  enabled: true,
+  heading: "Join Our Growing Team",
+  highlightText: "Team",
+  description:
+    "Explore exciting career opportunities and be part of the team that's revolutionizing education technology.",
+  jobs: [],
+};
 
 
 
@@ -291,6 +302,10 @@ const WebsiteEditor = () => {
   const [freeVideos, setFreeVideos] = useState(initialFreeVideos);
   const [savedFreeVideos, setSavedFreeVideos] =
     useState(initialFreeVideos);
+  
+  // Phase 14: Careers
+  const [careers, setCareers] = useState(initialCareers);
+  const [savedCareers, setSavedCareers] = useState(initialCareers);
 
 
   const [loading, setLoading] = useState(true);
@@ -330,7 +345,8 @@ const WebsiteEditor = () => {
       JSON.stringify(placementStories) !==
         JSON.stringify(savedPlacementStories)  ||
       JSON.stringify(team) !== JSON.stringify(savedTeam)  ||
-      JSON.stringify(freeVideos) !== JSON.stringify(savedFreeVideos)
+      JSON.stringify(freeVideos) !== JSON.stringify(savedFreeVideos) ||
+      JSON.stringify(careers) !== JSON.stringify(savedCareers)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -352,6 +368,7 @@ const WebsiteEditor = () => {
         placementStoriesData,
         teamData,
         freeVideoData,
+        careerData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -366,6 +383,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getPlacementStoriesSettings(),
         websiteEditorService.getTeamSettings(),
         websiteEditorService.getFreeVideoSettings(),
+        websiteEditorService.getCareerSettings(),
       ]);
 
       const nextHeader = {
@@ -563,6 +581,24 @@ const WebsiteEditor = () => {
 
       setFreeVideos(nextFreeVideos);
       setSavedFreeVideos(nextFreeVideos);
+
+
+      // Phase 14: Load Careers
+      const nextCareers = {
+        ...initialCareers,
+        ...(careerData || {}),
+        jobs: Array.isArray(careerData?.jobs)
+          ? careerData.jobs.map((job, index) => ({
+              ...job,
+              displayOrder: index,
+              skills: Array.isArray(job.skills) ? job.skills : [],
+              isVisible: job.isVisible !== false,
+            }))
+          : [],
+      };
+
+      setCareers(nextCareers);
+      setSavedCareers(nextCareers);
 
 
     } catch (error) {
@@ -784,6 +820,18 @@ const WebsiteEditor = () => {
           displayOrder: index,
         })
       ),
+    });
+  };
+
+
+  // Phase 14: Update Careers
+  const updateCareers = (nextSettings) => {
+    setCareers({
+      ...nextSettings,
+      jobs: (nextSettings.jobs || []).map((job, index) => ({
+        ...job,
+        displayOrder: index,
+      })),
     });
   };
 
@@ -1313,6 +1361,7 @@ const WebsiteEditor = () => {
         savedPlacementStoriesData,
         savedTeamData,
         savedFreeVideoData,
+        savedCareerData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1336,6 +1385,7 @@ const WebsiteEditor = () => {
         ),
         websiteEditorService.updateTeamSettings(team),
         websiteEditorService.updateFreeVideoSettings(freeVideos),
+        websiteEditorService.updateCareerSettings(careers),
       ]);
 
       const nextHeader = {
@@ -1496,6 +1546,23 @@ const WebsiteEditor = () => {
       setSavedFreeVideos(nextFreeVideos);
 
 
+      // Phase 14: Save Careers
+      const nextCareers = {
+        ...initialCareers,
+        ...(savedCareerData || careers),
+        jobs: Array.isArray(savedCareerData?.jobs)
+          ? savedCareerData.jobs.map((job, index) => ({
+              ...job,
+              displayOrder: index,
+              skills: Array.isArray(job.skills) ? job.skills : [],
+              isVisible: job.isVisible !== false,
+            }))
+          : careers.jobs,
+      };
+
+      setCareers(nextCareers);
+      setSavedCareers(nextCareers);
+
 
       notification.success(
         "Website editor settings saved successfully."
@@ -1519,7 +1586,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team, Free Videos changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team, Free Videos, careers changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -1563,6 +1630,9 @@ const WebsiteEditor = () => {
 
     // Phase 13: Restore Free Videos
     setFreeVideos(savedFreeVideos);
+
+    // Phase 14: Restore Careers
+    setCareers(savedCareers);
   };
 
   const openPreviewInNewTab = () => {
@@ -1723,6 +1793,11 @@ const WebsiteEditor = () => {
                       <FreeVideosControls
                         settings={freeVideos}
                         onChange={updateFreeVideos}
+                      />
+                    ) : section.id === "careers" ? (
+                      <CareersControls
+                        settings={careers}
+                        onChange={updateCareers}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1936,6 +2011,8 @@ const WebsiteEditor = () => {
               }}
 
               freeVideos={freeVideos}
+
+              careers={careers}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             

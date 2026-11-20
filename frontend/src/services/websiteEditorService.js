@@ -480,6 +480,44 @@ const websiteEditorService = {
 
 
 
+  // Phase 14: Careers
+  async getCareerSettings() {
+    const response = await api.get(
+      "/website-editor/careers",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: true,
+      heading: "Join Our Growing Team",
+      highlightText: "Team",
+      description:
+        "Explore exciting career opportunities and be part of the team that's revolutionizing education technology.",
+      jobs: [],
+    };
+  },
+
+  async updateCareerSettings(payload) {
+    const response = await api.put(
+      "/website-editor/careers",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async getPublicCareerSettings() {
+    const response = await api.get(
+      "/website-editor/public/careers",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
+
+
 };
 
 export default websiteEditorService;

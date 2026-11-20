@@ -81,6 +81,7 @@ import websitePartnerRoutes from "./routes/websitePartner.routes.js";
 import websitePlacementRoutes from "./routes/websitePlacement.routes.js";
 import websiteTeamRoutes from "./routes/websiteTeam.routes.js";
 import websiteFreeVideoRoutes from "./routes/websiteFreeVideo.routes.js";
+import websiteCareerRoutes from "./routes/websiteCareer.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -434,6 +435,11 @@ app.use(
 app.use(
   "/api/website-editor",
   websiteFreeVideoRoutes
+);
+
+app.use(
+  "/api/website-editor",
+  websiteCareerRoutes
 );
 
 
