@@ -16,6 +16,7 @@ import CertificateSection from "./CertificateSection";
 import PartnersSection from "./PartnersSection";
 import PlacementStoriesSection from "./PlacementStoriesSection";
 import OurTeamSection from "./OurTeamSection";
+import FreeVideosSection from "./FreeVideosSection";
 
 
 export default function WebsitePreview({
@@ -32,6 +33,7 @@ export default function WebsitePreview({
   partners = null,
   placementStories = null,
   team = null,
+  freeVideos = null,
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -359,6 +361,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
         {/* Phase 12: Our Team */}
         <OurTeamSection settings={team} />
+
+        {/* Phase 13: Free Videos */}
+        <FreeVideosSection settings={freeVideos} />
 
 
       <div className="we-public-page-placeholder">

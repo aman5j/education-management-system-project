@@ -442,6 +442,43 @@ const websiteEditorService = {
 
 
 
+  // Phase 13: Free Videos
+  async getFreeVideoSettings() {
+    const response = await api.get(
+      "/website-editor/free-videos",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: true,
+      heading: "Free Videos",
+      highlightText: "Videos",
+      description:
+        "Watch our most popular and high-quality free videos to boost your learning journey.",
+      videos: [],
+    };
+  },
+
+  async updateFreeVideoSettings(payload) {
+    const response = await api.put(
+      "/website-editor/free-videos",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async getPublicFreeVideos() {
+    const response = await api.get(
+      "/website-editor/public/free-videos",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
+
 
 };
 

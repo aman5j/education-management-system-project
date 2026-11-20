@@ -18,6 +18,7 @@ import "../CertificateSection.phase9.css";
 import "../Partners.phase10.css";
 import "../PlacementStories.phase11.css";
 import "../OurTeam.phase12.css";
+import "../FreeVideos.phase13.css";
 
 
 const defaultHeader = {
@@ -46,6 +47,7 @@ export default function WebsitePreviewPage() {
   const [partners, setPartners] = useState(null);
   const [placementStories, setPlacementStories] = useState(null);
   const [team, setTeam] = useState(null);
+  const [freeVideos, setFreeVideos] = useState(null);
 
 
   useEffect(() => {
@@ -59,6 +61,7 @@ export default function WebsitePreviewPage() {
             partnerData,
             placementStoriesData,
             teamData,
+            freeVideoData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
@@ -67,6 +70,7 @@ export default function WebsitePreviewPage() {
             websiteEditorService.getPublicPartnerSettings(),
             websiteEditorService.getPublicPlacementStories(),
             websiteEditorService.getPublicTeamSettings(),
+            websiteEditorService.getPublicFreeVideos(),
         ]);
 
         setHeader({
@@ -150,6 +154,21 @@ export default function WebsitePreviewPage() {
             : null
         );
 
+        // Phase 13: Load saved Free Videos
+        setFreeVideos(
+          freeVideoData
+            ? {
+                ...freeVideoData,
+                videos: (freeVideoData.videos || []).map(
+                  (video, index) => ({
+                    ...video,
+                    displayOrder: index,
+                  })
+                ),
+              }
+            : null
+        );
+
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -197,6 +216,7 @@ export default function WebsitePreviewPage() {
           partners={partners}
           placementStories={placementStories}
           team={team}
+          freeVideos={freeVideos}
         />
       </main>
     </div>

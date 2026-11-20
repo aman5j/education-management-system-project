@@ -46,6 +46,8 @@ import PlacementStoriesControls from "./components/PlacementStoriesControls";
 import "./PlacementStories.phase11.css";
 import OurTeamControls from "./components/OurTeamControls";
 import "./OurTeam.phase12.css";
+import FreeVideosControls from "./components/FreeVideosControls";
+import "./FreeVideos.phase13.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -158,6 +160,18 @@ const initialTeam = {
     "We craft solutions that amplify key characteristics, achieving a harmonious balance of function and intent. Through careful analysis and collaborative engagement, our spaces transcend the conventional.",
   members: [],
 };
+
+// Phase 13: Free Videos
+const initialFreeVideos = {
+  enabled: true,
+  heading: "Free Videos",
+  highlightText: "Videos",
+  description:
+    "Watch our most popular and high-quality free videos to boost your learning journey.",
+  videos: [],
+};
+
+
 
 
 
@@ -273,6 +287,10 @@ const WebsiteEditor = () => {
   const [team, setTeam] = useState(initialTeam);
   const [savedTeam, setSavedTeam] = useState(initialTeam);
 
+  // Phase 13: Free Videos
+  const [freeVideos, setFreeVideos] = useState(initialFreeVideos);
+  const [savedFreeVideos, setSavedFreeVideos] =
+    useState(initialFreeVideos);
 
 
   const [loading, setLoading] = useState(true);
@@ -311,7 +329,8 @@ const WebsiteEditor = () => {
       JSON.stringify(partners) !== JSON.stringify(savedPartners) ||
       JSON.stringify(placementStories) !==
         JSON.stringify(savedPlacementStories)  ||
-      JSON.stringify(team) !== JSON.stringify(savedTeam)
+      JSON.stringify(team) !== JSON.stringify(savedTeam)  ||
+      JSON.stringify(freeVideos) !== JSON.stringify(savedFreeVideos)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -332,6 +351,7 @@ const WebsiteEditor = () => {
         partnerData,
         placementStoriesData,
         teamData,
+        freeVideoData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -345,6 +365,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getPartnerSettings(),
         websiteEditorService.getPlacementStoriesSettings(),
         websiteEditorService.getTeamSettings(),
+        websiteEditorService.getFreeVideoSettings(),
       ]);
 
       const nextHeader = {
@@ -526,6 +547,22 @@ const WebsiteEditor = () => {
 
       setTeam(nextTeam);
       setSavedTeam(nextTeam);
+
+      // Phase 13: Load Free Videos
+      const nextFreeVideos = {
+        ...initialFreeVideos,
+        ...(freeVideoData || {}),
+        videos: Array.isArray(freeVideoData?.videos)
+          ? freeVideoData.videos.map((video, index) => ({
+              ...video,
+              displayOrder: index,
+              isVisible: video.isVisible !== false,
+            }))
+          : [],
+      };
+
+      setFreeVideos(nextFreeVideos);
+      setSavedFreeVideos(nextFreeVideos);
 
 
     } catch (error) {
@@ -735,6 +772,19 @@ const WebsiteEditor = () => {
 
       throw error;
     }
+  };
+
+  // Phase 13: Update Free Videos
+  const updateFreeVideos = (nextSettings) => {
+    setFreeVideos({
+      ...nextSettings,
+      videos: (nextSettings.videos || []).map(
+        (video, index) => ({
+          ...video,
+          displayOrder: index,
+        })
+      ),
+    });
   };
 
 
@@ -1198,6 +1248,45 @@ const WebsiteEditor = () => {
       return;
     }
 
+    // Phase 13: Validate Free Videos
+    if (!freeVideos.heading?.trim()) {
+      notification.warning(
+        "Please enter the Free Videos heading."
+      );
+
+      setActiveSection("videos");
+      setExpandedSection("videos");
+      return;
+    }
+
+    if ((freeVideos.videos || []).length > 20) {
+      notification.warning(
+        "Maximum 20 free videos are allowed."
+      );
+
+      setActiveSection("videos");
+      setExpandedSection("videos");
+      return;
+    }
+
+    const hasIncompleteFreeVideo = (
+      freeVideos.videos || []
+    ).some(
+      (video) =>
+        !video.title?.trim() ||
+        !video.videoUrl?.trim()
+    );
+
+    if (hasIncompleteFreeVideo) {
+      notification.warning(
+        "Complete the title and YouTube URL of every video, or remove the incomplete video."
+      );
+
+      setActiveSection("videos");
+      setExpandedSection("videos");
+      return;
+    }
+
 
     setSaving(true);
 
@@ -1223,6 +1312,7 @@ const WebsiteEditor = () => {
         savedPartnerData,
         savedPlacementStoriesData,
         savedTeamData,
+        savedFreeVideoData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1245,6 +1335,7 @@ const WebsiteEditor = () => {
           placementStories
         ),
         websiteEditorService.updateTeamSettings(team),
+        websiteEditorService.updateFreeVideoSettings(freeVideos),
       ]);
 
       const nextHeader = {
@@ -1388,6 +1479,23 @@ const WebsiteEditor = () => {
       setSavedTeam(nextTeam);
 
 
+      // Phase 13: Save Free Videos
+      const nextFreeVideos = {
+        ...initialFreeVideos,
+        ...(savedFreeVideoData || freeVideos),
+        videos: Array.isArray(savedFreeVideoData?.videos)
+          ? savedFreeVideoData.videos.map((video, index) => ({
+              ...video,
+              displayOrder: index,
+              isVisible: video.isVisible !== false,
+            }))
+          : freeVideos.videos,
+      };
+
+      setFreeVideos(nextFreeVideos);
+      setSavedFreeVideos(nextFreeVideos);
+
+
 
       notification.success(
         "Website editor settings saved successfully."
@@ -1411,7 +1519,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team, Free Videos changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -1452,6 +1560,9 @@ const WebsiteEditor = () => {
 
     // Phase 12: Restore Our Team
     setTeam(savedTeam);
+
+    // Phase 13: Restore Free Videos
+    setFreeVideos(savedFreeVideos);
   };
 
   const openPreviewInNewTab = () => {
@@ -1607,6 +1718,11 @@ const WebsiteEditor = () => {
                         settings={team}
                         onChange={updateTeam}
                         onUploadImage={uploadTeamMemberImage}
+                      />
+                    ) : section.id === "videos" ? (
+                      <FreeVideosControls
+                        settings={freeVideos}
+                        onChange={updateFreeVideos}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1818,6 +1934,8 @@ const WebsiteEditor = () => {
                     : "",
                 })),
               }}
+
+              freeVideos={freeVideos}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             
