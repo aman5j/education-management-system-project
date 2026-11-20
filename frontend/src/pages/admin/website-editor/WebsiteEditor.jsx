@@ -44,6 +44,8 @@ import PartnersControls from "./components/PartnersControls";
 import "./Partners.phase10.css";
 import PlacementStoriesControls from "./components/PlacementStoriesControls";
 import "./PlacementStories.phase11.css";
+import OurTeamControls from "./components/OurTeamControls";
+import "./OurTeam.phase12.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -144,6 +146,17 @@ const initialPlacementStories = {
   heading: "Our Success Placement Story",
   highlightText: "Placement Story",
   stories: [],
+};
+
+
+// Phase 12: Our Team
+const initialTeam = {
+  enabled: true,
+  heading: "Our Team",
+  highlightText: "Team",
+  description:
+    "We craft solutions that amplify key characteristics, achieving a harmonious balance of function and intent. Through careful analysis and collaborative engagement, our spaces transcend the conventional.",
+  members: [],
 };
 
 
@@ -256,6 +269,10 @@ const WebsiteEditor = () => {
   const [savedPlacementStories, setSavedPlacementStories] =
     useState(initialPlacementStories);
 
+  // Phase 12: Our Team
+  const [team, setTeam] = useState(initialTeam);
+  const [savedTeam, setSavedTeam] = useState(initialTeam);
+
 
 
   const [loading, setLoading] = useState(true);
@@ -293,7 +310,8 @@ const WebsiteEditor = () => {
         JSON.stringify(savedCertificateSection)  ||
       JSON.stringify(partners) !== JSON.stringify(savedPartners) ||
       JSON.stringify(placementStories) !==
-        JSON.stringify(savedPlacementStories)
+        JSON.stringify(savedPlacementStories)  ||
+      JSON.stringify(team) !== JSON.stringify(savedTeam)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -313,6 +331,7 @@ const WebsiteEditor = () => {
         certificateSectionData,
         partnerData,
         placementStoriesData,
+        teamData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -325,6 +344,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getCertificateSectionSettings(),
         websiteEditorService.getPartnerSettings(),
         websiteEditorService.getPlacementStoriesSettings(),
+        websiteEditorService.getTeamSettings(),
       ]);
 
       const nextHeader = {
@@ -489,6 +509,23 @@ const WebsiteEditor = () => {
 
       setPlacementStories(nextPlacementStories);
       setSavedPlacementStories(nextPlacementStories);
+
+
+      // Phase 12: Load Our Team
+      const nextTeam = {
+        ...initialTeam,
+        ...(teamData || {}),
+        members: Array.isArray(teamData?.members)
+          ? teamData.members.map((member, index) => ({
+              ...member,
+              displayOrder: index,
+              isVisible: member.isVisible !== false,
+            }))
+          : [],
+      };
+
+      setTeam(nextTeam);
+      setSavedTeam(nextTeam);
 
 
     } catch (error) {
@@ -666,6 +703,34 @@ const WebsiteEditor = () => {
       notification.error(
         getApiErrorMessage(error) ||
           "Unable to upload placement story image."
+      );
+
+      throw error;
+    }
+  };
+
+
+  // Phase 12: Update Our Team
+  const updateTeam = (nextSettings) => {
+    setTeam({
+      ...nextSettings,
+      members: (nextSettings.members || []).map(
+        (member, index) => ({
+          ...member,
+          displayOrder: index,
+        })
+      ),
+    });
+  };
+
+  // Phase 12: Upload team member image
+  const uploadTeamMemberImage = async (file) => {
+    try {
+      return await websiteEditorService.uploadTeamMemberImage(file);
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) ||
+          "Unable to upload team member image."
       );
 
       throw error;
@@ -1092,6 +1157,48 @@ const WebsiteEditor = () => {
     }
 
 
+    // Phase 12: Validate Our Team
+    if (!team.heading?.trim()) {
+      notification.warning(
+        "Please enter the Our Team heading."
+      );
+
+      setActiveSection("team");
+      setExpandedSection("team");
+      return;
+    }
+
+    if ((team.members || []).length > 20) {
+      notification.warning(
+        "Maximum 20 team members are allowed."
+      );
+
+      setActiveSection("team");
+      setExpandedSection("team");
+      return;
+    }
+
+    const hasIncompleteTeamMember = (
+      team.members || []
+    ).some(
+      (member) =>
+        !member.imageUrl?.trim() ||
+        !member.imageVersion?.trim() ||
+        !member.name?.trim() ||
+        !member.designation?.trim()
+    );
+
+    if (hasIncompleteTeamMember) {
+      notification.warning(
+        "Complete the image, name and designation of every team member, or remove the incomplete member."
+      );
+
+      setActiveSection("team");
+      setExpandedSection("team");
+      return;
+    }
+
+
     setSaving(true);
 
     try {
@@ -1115,6 +1222,7 @@ const WebsiteEditor = () => {
         savedCertificateSectionData,
         savedPartnerData,
         savedPlacementStoriesData,
+        savedTeamData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1136,6 +1244,7 @@ const WebsiteEditor = () => {
         websiteEditorService.updatePlacementStoriesSettings(
           placementStories
         ),
+        websiteEditorService.updateTeamSettings(team),
       ]);
 
       const nextHeader = {
@@ -1262,6 +1371,23 @@ const WebsiteEditor = () => {
       setSavedPlacementStories(nextPlacementStories);
 
 
+      // Phase 12: Save Our Team
+      const nextTeam = {
+        ...initialTeam,
+        ...(savedTeamData || team),
+        members: Array.isArray(savedTeamData?.members)
+          ? savedTeamData.members.map((member, index) => ({
+              ...member,
+              displayOrder: index,
+              isVisible: member.isVisible !== false,
+            }))
+          : team.members,
+      };
+
+      setTeam(nextTeam);
+      setSavedTeam(nextTeam);
+
+
 
       notification.success(
         "Website editor settings saved successfully."
@@ -1285,7 +1411,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -1323,6 +1449,9 @@ const WebsiteEditor = () => {
 
     // Phase 11: Restore Placement Stories
     setPlacementStories(savedPlacementStories);
+
+    // Phase 12: Restore Our Team
+    setTeam(savedTeam);
   };
 
   const openPreviewInNewTab = () => {
@@ -1472,6 +1601,12 @@ const WebsiteEditor = () => {
                         settings={placementStories}
                         onChange={updatePlacementStories}
                         onUploadImage={uploadPlacementStoryImage}
+                      />
+                    ) : section.id === "team" ? (
+                      <OurTeamControls
+                        settings={team}
+                        onChange={updateTeam}
+                        onUploadImage={uploadTeamMemberImage}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -1670,6 +1805,16 @@ const WebsiteEditor = () => {
                   ...story,
                   imageUrl: story.imageUrl
                     ? getAssetUrl(story.imageUrl)
+                    : "",
+                })),
+              }}
+
+              team={{
+                ...team,
+                members: (team.members || []).map((member) => ({
+                  ...member,
+                  imageUrl: member.imageUrl
+                    ? getAssetUrl(member.imageUrl)
                     : "",
                 })),
               }}

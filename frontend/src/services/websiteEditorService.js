@@ -389,6 +389,60 @@ const websiteEditorService = {
 
 
 
+  // Phase 12: Our Team
+  async getTeamSettings() {
+    const response = await api.get(
+      "/website-editor/our-team",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: true,
+      heading: "Our Team",
+      highlightText: "Team",
+      description: "",
+      members: [],
+    };
+  },
+
+  async updateTeamSettings(payload) {
+    const response = await api.put(
+      "/website-editor/our-team",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async uploadTeamMemberImage(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/our-team/images",
+      formData,
+      {
+        headers: { "Content-Type": undefined },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
+  async getPublicTeamSettings() {
+    const response = await api.get(
+      "/website-editor/public/our-team",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
+
+
+
 };
 
 export default websiteEditorService;

@@ -79,6 +79,7 @@ import websiteStudyResourceRoutes from "./routes/websiteStudyResource.routes.js"
 import websiteCertificateSectionRoutes from "./routes/websiteCertificateSection.routes.js";
 import websitePartnerRoutes from "./routes/websitePartner.routes.js";
 import websitePlacementRoutes from "./routes/websitePlacement.routes.js";
+import websiteTeamRoutes from "./routes/websiteTeam.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -422,6 +423,11 @@ app.use(
 app.use(
   "/api/website-editor",
   websitePlacementRoutes
+);
+
+app.use(
+  "/api/website-editor",
+  websiteTeamRoutes
 );
 
 

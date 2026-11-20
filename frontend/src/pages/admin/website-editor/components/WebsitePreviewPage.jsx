@@ -17,6 +17,7 @@ import "../StudyResources.phase8.css";
 import "../CertificateSection.phase9.css";
 import "../Partners.phase10.css";
 import "../PlacementStories.phase11.css";
+import "../OurTeam.phase12.css";
 
 
 const defaultHeader = {
@@ -44,6 +45,7 @@ export default function WebsitePreviewPage() {
   const [certificateSection, setCertificateSection] = useState(null);
   const [partners, setPartners] = useState(null);
   const [placementStories, setPlacementStories] = useState(null);
+  const [team, setTeam] = useState(null);
 
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function WebsitePreviewPage() {
             certificateSectionData,
             partnerData,
             placementStoriesData,
+            teamData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
@@ -63,6 +66,7 @@ export default function WebsitePreviewPage() {
             websiteEditorService.getPublicCertificateSection(),
             websiteEditorService.getPublicPartnerSettings(),
             websiteEditorService.getPublicPlacementStories(),
+            websiteEditorService.getPublicTeamSettings(),
         ]);
 
         setHeader({
@@ -128,6 +132,24 @@ export default function WebsitePreviewPage() {
             : null
         );
 
+        // Phase 12: Load saved Our Team
+        setTeam(
+          teamData
+            ? {
+                ...teamData,
+                members: (teamData.members || []).map(
+                  (member, index) => ({
+                    ...member,
+                    displayOrder: index,
+                    imageUrl: member.imageUrl
+                      ? getAssetUrl(member.imageUrl)
+                      : "",
+                  })
+                ),
+              }
+            : null
+        );
+
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -174,6 +196,7 @@ export default function WebsitePreviewPage() {
           certificateSection={certificateSection}
           partners={partners}
           placementStories={placementStories}
+          team={team}
         />
       </main>
     </div>
