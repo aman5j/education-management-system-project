@@ -518,6 +518,60 @@ const websiteEditorService = {
 
 
 
+  // Phase 15: Testimonials
+  async getTestimonialSettings() {
+    const response = await api.get(
+      "/website-editor/testimonials",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      enabled: true,
+      sectionLabel: "Testimonials",
+      heading: "What Our Students Say",
+      highlightText: "Students Say",
+      description:
+        "Hear from our students about their learning experience and journey with us.",
+      testimonials: [],
+    };
+  },
+
+  async updateTestimonialSettings(payload) {
+    const response = await api.put(
+      "/website-editor/testimonials",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async uploadTestimonialImage(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(
+      "/website-editor/testimonials/images",
+      formData,
+      {
+        headers: { "Content-Type": undefined },
+        silent: true,
+      }
+    );
+
+    return response.data?.data || {};
+  },
+
+  async getPublicTestimonialSettings() {
+    const response = await api.get(
+      "/website-editor/public/testimonials",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || null;
+  },
+
+
 };
 
 export default websiteEditorService;

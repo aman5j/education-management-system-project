@@ -18,6 +18,7 @@ import PlacementStoriesSection from "./PlacementStoriesSection";
 import OurTeamSection from "./OurTeamSection";
 import FreeVideosSection from "./FreeVideosSection";
 import CareersSection from "./CareersSection";
+import TestimonialsSection from "./TestimonialsSection";
 
 
 export default function WebsitePreview({
@@ -36,6 +37,7 @@ export default function WebsitePreview({
   team = null,
   freeVideos = null,
   careers = null,
+  testimonials = null,
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -369,6 +371,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
         {/* Phase 14: Careers */}
         <CareersSection settings={careers} />
+
+        {/* Phase 15: Testimonials */}
+        <TestimonialsSection settings={testimonials} />
 
 
       <div className="we-public-page-placeholder">

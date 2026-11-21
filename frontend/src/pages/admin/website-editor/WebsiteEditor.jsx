@@ -50,6 +50,8 @@ import FreeVideosControls from "./components/FreeVideosControls";
 import "./FreeVideos.phase13.css";
 import CareersControls from "./components/CareersControls";
 import "./Careers.phase14.css";
+import TestimonialsControls from "./components/TestimonialsControls";
+import "./Testimonials.phase15.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -185,6 +187,18 @@ const initialCareers = {
 };
 
 
+// Phase 15: Testimonials
+const initialTestimonials = {
+  enabled: true,
+  sectionLabel: "Testimonials",
+  heading: "What Our Students Say",
+  highlightText: "Students Say",
+  description:
+    "Hear from our students about their learning experience and journey with us.",
+  testimonials: [],
+};
+
+
 
 const editorSections = [
   { id: "header", label: "Header", phase: 2, icon: FiLayout },
@@ -307,6 +321,15 @@ const WebsiteEditor = () => {
   const [careers, setCareers] = useState(initialCareers);
   const [savedCareers, setSavedCareers] = useState(initialCareers);
 
+  // Phase 15: Testimonials
+  const [testimonials, setTestimonials] = useState(
+    initialTestimonials
+  );
+
+  const [savedTestimonials, setSavedTestimonials] = useState(
+    initialTestimonials
+  );
+
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -346,7 +369,9 @@ const WebsiteEditor = () => {
         JSON.stringify(savedPlacementStories)  ||
       JSON.stringify(team) !== JSON.stringify(savedTeam)  ||
       JSON.stringify(freeVideos) !== JSON.stringify(savedFreeVideos) ||
-      JSON.stringify(careers) !== JSON.stringify(savedCareers)
+      JSON.stringify(careers) !== JSON.stringify(savedCareers)  || 
+      JSON.stringify(testimonials) !==
+        JSON.stringify(savedTestimonials)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -369,6 +394,7 @@ const WebsiteEditor = () => {
         teamData,
         freeVideoData,
         careerData,
+        testimonialData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -384,6 +410,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getTeamSettings(),
         websiteEditorService.getFreeVideoSettings(),
         websiteEditorService.getCareerSettings(),
+        websiteEditorService.getTestimonialSettings(),
       ]);
 
       const nextHeader = {
@@ -600,6 +627,24 @@ const WebsiteEditor = () => {
       setCareers(nextCareers);
       setSavedCareers(nextCareers);
 
+      // Phase 15: Load Testimonials
+      const nextTestimonials = {
+        ...initialTestimonials,
+        ...(testimonialData || {}),
+        testimonials: Array.isArray(testimonialData?.testimonials)
+          ? testimonialData.testimonials.map((item, index) => ({
+              ...item,
+              displayOrder: index,
+              imageUrl: item.imageUrl || "",
+              imageVersion: item.imageVersion || "",
+              isVisible: item.isVisible !== false,
+            }))
+          : [],
+      };
+
+      setTestimonials(nextTestimonials);
+      setSavedTestimonials(nextTestimonials);
+
 
     } catch (error) {
       notification.error(
@@ -810,6 +855,7 @@ const WebsiteEditor = () => {
     }
   };
 
+  
   // Phase 13: Update Free Videos
   const updateFreeVideos = (nextSettings) => {
     setFreeVideos({
@@ -832,6 +878,33 @@ const WebsiteEditor = () => {
         ...job,
         displayOrder: index,
       })),
+    });
+  };
+
+
+  // Phase 15: Upload testimonial image
+  const uploadTestimonialImage = async (file) => {
+    try {
+      return await websiteEditorService.uploadTestimonialImage(file);
+    } catch (error) {
+      notification.error(
+        getApiErrorMessage(error) ||
+          "Unable to upload testimonial image."
+      );
+      throw error;
+    }
+  };
+  
+  // Phase 15: Update Testimonials
+  const updateTestimonials = (nextSettings) => {
+    setTestimonials({
+      ...nextSettings,
+      testimonials: (nextSettings.testimonials || []).map(
+        (item, index) => ({
+          ...item,
+          displayOrder: index,
+        })
+      ),
     });
   };
 
@@ -1362,6 +1435,7 @@ const WebsiteEditor = () => {
         savedTeamData,
         savedFreeVideoData,
         savedCareerData,
+        savedTestimonialData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1386,6 +1460,7 @@ const WebsiteEditor = () => {
         websiteEditorService.updateTeamSettings(team),
         websiteEditorService.updateFreeVideoSettings(freeVideos),
         websiteEditorService.updateCareerSettings(careers),
+        websiteEditorService.updateTestimonialSettings(testimonials),
       ]);
 
       const nextHeader = {
@@ -1564,6 +1639,25 @@ const WebsiteEditor = () => {
       setSavedCareers(nextCareers);
 
 
+      // Phase 15: Save Testimonials
+      const nextTestimonials = {
+        ...initialTestimonials,
+        ...(savedTestimonialData || testimonials),
+        testimonials: Array.isArray(savedTestimonialData?.testimonials)
+          ? savedTestimonialData.testimonials.map((item, index) => ({
+              ...item,
+              displayOrder: index,
+              imageUrl: item.imageUrl || "",
+              imageVersion: item.imageVersion || "",
+              isVisible: item.isVisible !== false,
+            }))
+          : testimonials.testimonials,
+      };
+
+      setTestimonials(nextTestimonials);
+      setSavedTestimonials(nextTestimonials);
+
+
       notification.success(
         "Website editor settings saved successfully."
       );
@@ -1586,7 +1680,7 @@ const WebsiteEditor = () => {
 
     const confirmed = await notification.confirm({
       title: "Discard unsaved changes?",
-      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team, Free Videos, careers changes will be discarded.",
+      text: "Your unsaved Header, Topbar, Menu, Category Highlights, Course Categories, Trending Courses and Study Resources and Certificate Section, Partners, Placement Stories, Our Team, Free Videos, careers, testimonials changes will be discarded.",
       icon: "warning",
       confirmText: "Discard Changes",
       cancelText: "Continue Editing",
@@ -1633,6 +1727,9 @@ const WebsiteEditor = () => {
 
     // Phase 14: Restore Careers
     setCareers(savedCareers);
+
+    // Phase 15: Restore Testimonials
+    setTestimonials(savedTestimonials);
   };
 
   const openPreviewInNewTab = () => {
@@ -1798,6 +1895,12 @@ const WebsiteEditor = () => {
                       <CareersControls
                         settings={careers}
                         onChange={updateCareers}
+                      />
+                    ) : section.id === "testimonials" ? (
+                      <TestimonialsControls
+                        settings={testimonials}
+                        onChange={updateTestimonials}
+                        onUploadImage={uploadTestimonialImage}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -2013,6 +2116,16 @@ const WebsiteEditor = () => {
               freeVideos={freeVideos}
 
               careers={careers}
+
+              testimonials={{
+                ...testimonials,
+                testimonials: (testimonials.testimonials || []).map((item) => ({
+                  ...item,
+                  imageUrl: item.imageUrl
+                    ? getAssetUrl(item.imageUrl)
+                    : "",
+                })),
+              }}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             

@@ -20,6 +20,7 @@ import "../PlacementStories.phase11.css";
 import "../OurTeam.phase12.css";
 import "../FreeVideos.phase13.css";
 import "../Careers.phase14.css";
+import "../Testimonials.phase15.css";
 
 
 const defaultHeader = {
@@ -50,6 +51,7 @@ export default function WebsitePreviewPage() {
   const [team, setTeam] = useState(null);
   const [freeVideos, setFreeVideos] = useState(null);
   const [careers, setCareers] = useState(null);
+  const [testimonials, setTestimonials] = useState(null);
 
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function WebsitePreviewPage() {
             teamData,
             freeVideoData,
             careerData,
+            testimonialData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
@@ -75,6 +78,7 @@ export default function WebsitePreviewPage() {
             websiteEditorService.getPublicTeamSettings(),
             websiteEditorService.getPublicFreeVideos(),
             websiteEditorService.getPublicCareerSettings(),
+            websiteEditorService.getPublicTestimonialSettings(),
         ]);
 
         setHeader({
@@ -187,6 +191,24 @@ export default function WebsitePreviewPage() {
             : null
         );
 
+        // Phase 15: Load public Testimonials
+        setTestimonials(
+          testimonialData
+            ? {
+                ...testimonialData,
+                testimonials: (testimonialData.testimonials || []).map(
+                  (item, index) => ({
+                    ...item,
+                    displayOrder: index,
+                    imageUrl: item.imageUrl
+                      ? getAssetUrl(item.imageUrl)
+                      : "",
+                  })
+                ),
+              }
+            : null
+        );
+
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -236,6 +258,7 @@ export default function WebsitePreviewPage() {
           team={team}
           freeVideos={freeVideos}
           careers={careers}
+          testimonials={testimonials}
         />
       </main>
     </div>
