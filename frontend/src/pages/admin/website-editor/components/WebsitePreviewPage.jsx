@@ -21,7 +21,7 @@ import "../OurTeam.phase12.css";
 import "../FreeVideos.phase13.css";
 import "../Careers.phase14.css";
 import "../Testimonials.phase15.css";
-
+import contactUsService from "../../../../services/contactUsService";
 
 const defaultHeader = {
   topbarEnabled: true,
@@ -52,6 +52,12 @@ export default function WebsitePreviewPage() {
   const [freeVideos, setFreeVideos] = useState(null);
   const [careers, setCareers] = useState(null);
   const [testimonials, setTestimonials] = useState(null);
+  const [contactUs, setContactUs] = useState({
+    enabled: true,
+    heading: "Get in Touch",
+    description:
+      "Have a question about a batch, test series or books? Send us a message and our team will help you choose the right preparation path.",
+  });
 
 
   useEffect(() => {
@@ -68,6 +74,7 @@ export default function WebsitePreviewPage() {
             freeVideoData,
             careerData,
             testimonialData,
+            contactData,
             ] = await Promise.all([
             websiteEditorService.getHeaderSettings(),
             instituteSettingsService.getSettings(),
@@ -79,6 +86,7 @@ export default function WebsitePreviewPage() {
             websiteEditorService.getPublicFreeVideos(),
             websiteEditorService.getPublicCareerSettings(),
             websiteEditorService.getPublicTestimonialSettings(),
+            contactUsService.getPublicContactData(),
         ]);
 
         setHeader({
@@ -209,6 +217,16 @@ export default function WebsitePreviewPage() {
             : null
         );
 
+        // Phase 16: Load saved Contact Us settings
+        setContactUs({
+          enabled: contactData?.settings?.enabled !== false,
+          heading:
+            contactData?.settings?.heading || "Get in Touch",
+          description:
+            contactData?.settings?.description ||
+            "Have a question about a batch, test series or books? Send us a message and our team will help you choose the right preparation path.",
+        });
+
       } catch (error) {
         notification.error(
           getApiErrorMessage(error) ||
@@ -259,6 +277,8 @@ export default function WebsitePreviewPage() {
           freeVideos={freeVideos}
           careers={careers}
           testimonials={testimonials}
+          contactUs={contactUs}
+          contact={institute}
         />
       </main>
     </div>

@@ -2173,6 +2173,9 @@ const WebsiteEditor = () => {
                     : "",
                 })),
               }}
+
+              contactUs={contactUs}
+              contact={institute}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             
