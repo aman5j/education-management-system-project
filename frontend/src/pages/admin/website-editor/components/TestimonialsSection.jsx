@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import {
   FiChevronLeft,
   FiChevronRight,
-  FiUserRound,
-  FiQuote,
+  FiUser,
+  FiMessageSquare,
   FiStar,
 } from "react-icons/fi";
 
@@ -51,7 +51,6 @@ export default function TestimonialsSection({ settings }) {
   );
 
   const safePage = Math.min(page, pageCount - 1);
-
   const startIndex = safePage * visibleCount;
 
   const visibleTestimonials = testimonials.slice(
@@ -65,6 +64,7 @@ export default function TestimonialsSection({ settings }) {
 
   const heading = settings.heading || "";
   const highlightText = settings.highlightText || "";
+
   const highlightIndex = highlightText
     ? heading.indexOf(highlightText)
     : -1;
@@ -109,7 +109,7 @@ export default function TestimonialsSection({ settings }) {
         <header className="we-testimonials-heading">
           {settings.sectionLabel?.trim() && (
             <span className="we-testimonials-eyebrow">
-              <FiQuote />
+              <FiMessageSquare />
               {settings.sectionLabel}
             </span>
           )}
@@ -151,7 +151,7 @@ export default function TestimonialsSection({ settings }) {
                           alt={item.name}
                         />
                       ) : (
-                        <FiUserRound />
+                        <FiUser />
                       )}
                     </div>
 
@@ -179,7 +179,7 @@ export default function TestimonialsSection({ settings }) {
                       </div>
                     </div>
 
-                    <FiQuote className="we-testimonial-quote" />
+                    <FiMessageSquare className="we-testimonial-quote" />
                   </div>
 
                   <p className="we-testimonial-review">
