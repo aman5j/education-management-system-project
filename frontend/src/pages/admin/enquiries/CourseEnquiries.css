@@ -1,0 +1,412 @@
+
+.course-enquiries-page {
+  padding: 25px;
+  color: #172b4d;
+}
+
+.course-enquiries-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.course-enquiries-eyebrow {
+  color: #f15a24;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.course-enquiries-header h1 {
+  margin: 7px 0;
+  font-size: 27px;
+}
+
+.course-enquiries-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.enquiries-refresh-button,
+.enquiries-actions button,
+.enquiries-pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.enquiries-refresh-button {
+  padding: 11px 15px;
+  font-weight: 700;
+}
+
+.enquiries-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.enquiries-stat-card {
+  padding: 19px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.enquiries-stat-card span,
+.enquiries-stat-card strong {
+  display: block;
+}
+
+.enquiries-stat-card span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.enquiries-stat-card strong {
+  margin-top: 8px;
+  color: #172b4d;
+  font-size: 27px;
+}
+
+.enquiries-stat-card.selected {
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.08);
+}
+
+.enquiries-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+
+.enquiries-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+}
+
+.enquiries-search input {
+  width: 100%;
+  min-height: 45px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172b4d;
+}
+
+.enquiries-toolbar select,
+.enquiry-status-control select {
+  min-height: 45px;
+  padding: 0 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #334155;
+}
+
+.enquiries-table-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.enquiries-table-scroll {
+  overflow-x: auto;
+}
+
+.enquiries-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.enquiries-table th,
+.enquiries-table td {
+  padding: 15px;
+  border-bottom: 1px solid #edf1f6;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.enquiries-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.enquiries-table td strong,
+.enquiries-table td small {
+  display: block;
+}
+
+.enquiries-table td small {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.enquiry-status {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.enquiry-status-new {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.enquiry-status-contacted {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.enquiry-status-closed {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.enquiries-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.enquiries-actions button {
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+}
+
+.enquiries-actions button.delete {
+  color: #dc2626;
+}
+
+.enquiries-empty {
+  height: 160px;
+  text-align: center !important;
+  color: #64748b;
+}
+
+.enquiries-empty svg,
+.enquiries-empty strong,
+.enquiries-empty span {
+  display: block;
+  margin: 5px auto;
+}
+
+.enquiries-empty svg {
+  font-size: 24px;
+}
+
+.enquiries-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 17px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.enquiries-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.enquiries-pagination button {
+  width: 32px;
+  height: 32px;
+}
+
+.enquiries-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.enquiries-pagination strong {
+  color: #334155;
+}
+
+.enquiry-modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.enquiry-modal {
+  width: min(100%, 570px);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.enquiry-modal > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.enquiry-modal > header span {
+  color: #f15a24;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.enquiry-modal > header h2 {
+  margin: 7px 0 0;
+  font-size: 21px;
+}
+
+.enquiry-modal > header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+
+.enquiry-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  padding: 22px;
+}
+
+.enquiry-modal-content > p {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.enquiry-modal-content > div small {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.enquiry-modal-content > div strong {
+  color: #172b4d;
+  font-size: 13px;
+}
+
+.enquiry-message {
+  padding: 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.enquiry-message p {
+  margin: 8px 0 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.enquiry-status-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.enquiry-status-control label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.enquiry-contact-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  color: #334155;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.enquiries-spin {
+  animation: enquiries-spin 1s linear infinite;
+}
+
+@keyframes enquiries-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 650px) {
+  .course-enquiries-page {
+    padding: 15px;
+  }
+
+  .course-enquiries-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .enquiries-stat-grid {
+    gap: 8px;
+  }
+
+  .enquiries-stat-card {
+    padding: 12px;
+  }
+
+  .enquiries-stat-card strong {
+    font-size: 22px;
+  }
+
+  .enquiries-toolbar {
+    flex-direction: column;
+  }
+
+  .enquiries-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,149 @@
+
+.we-contact-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.we-contact-controls-intro h4 {
+  margin: 0 0 7px;
+  color: #172b4d;
+  font-size: 16px;
+}
+
+.we-contact-controls-intro p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.we-contact-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.we-contact-toggle-row strong,
+.we-contact-toggle-row span {
+  display: block;
+}
+
+.we-contact-toggle-row strong {
+  color: #172b4d;
+  font-size: 14px;
+}
+
+.we-contact-toggle-row div > span {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.we-contact-toggle {
+  width: 46px;
+  height: 25px;
+  padding: 3px;
+  border: 0;
+  border-radius: 20px;
+  background: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.we-contact-toggle span {
+  display: block;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.we-contact-toggle.active {
+  background: #16a34a;
+}
+
+.we-contact-toggle.active span {
+  transform: translateX(21px);
+}
+
+.we-contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.we-contact-field label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.we-contact-field input,
+.we-contact-field textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  outline: none;
+  color: #1e293b;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.we-contact-field input:focus,
+.we-contact-field textarea:focus {
+  border-color: #f45b16;
+  box-shadow: 0 0 0 3px rgba(244, 91, 22, 0.1);
+}
+
+.we-contact-field textarea {
+  resize: vertical;
+}
+
+.we-contact-info-preview {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.we-contact-info-preview h5 {
+  margin: 0 0 15px;
+  color: #172b4d;
+  font-size: 13px;
+}
+
+.we-contact-info-preview > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: #f45b16;
+}
+
+.we-contact-info-preview > div span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.we-contact-info-preview > div strong {
+  color: #172b4d;
+  font-size: 12px;
+}
+
+.we-contact-info-preview small {
+  display: block;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 11px;
+}

@@ -71,6 +71,8 @@ import WebsiteEditor from "./pages/admin/website-editor/WebsiteEditor";
 import WebsitePreviewPage from "./pages/admin/website-editor/components/WebsitePreviewPage";
 import StudyResourcesPage from "./pages/public/StudyResourcesPage";
 import CertificateSectionPage from "./pages/public/CertificateSectionPage";
+import ContactUsPage from "./pages/public/ContactUsPage";
+import CourseEnquiries from "./pages/admin/enquiries/CourseEnquiries";
 
 
 import Admissions from "./pages/admin/admissions/Admissions";
@@ -264,6 +266,12 @@ const App = () => {
         element={<CertificateSectionPage />}
       />
 
+      <Route
+        path="/contact"
+        element={<ContactUsPage />}
+      />
+
+
       {/* Admin portal */}
       <Route
         path="/admin"
@@ -291,8 +299,11 @@ const App = () => {
           }
         />
 
+        <Route
+          path="enquiries"
+          element={<CourseEnquiries />}
+        />
         
-
 
         {/* Keep all your existing routes here. */}
         <Route path="roles" element={<RoleManagement />} />

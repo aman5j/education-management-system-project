@@ -52,6 +52,9 @@ import CareersControls from "./components/CareersControls";
 import "./Careers.phase14.css";
 import TestimonialsControls from "./components/TestimonialsControls";
 import "./Testimonials.phase15.css";
+import ContactUsControls from "./components/ContactUsControls";
+import contactUsService from "../../../services/contactUsService";
+import "./ContactUs.phase16.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -198,6 +201,12 @@ const initialTestimonials = {
   testimonials: [],
 };
 
+const initialContactUs = {
+  enabled: true,
+  heading: "Get in Touch",
+  description:
+    "Have a question about a batch, test series or books? Send us a message and our team will help you choose the right preparation path.",
+};
 
 
 const editorSections = [
@@ -330,6 +339,10 @@ const WebsiteEditor = () => {
     initialTestimonials
   );
 
+  // Phase 16: Contact Us
+  const [contactUs, setContactUs] = useState(initialContactUs);
+  const [savedContactUs, setSavedContactUs] = useState(initialContactUs);
+
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -371,7 +384,8 @@ const WebsiteEditor = () => {
       JSON.stringify(freeVideos) !== JSON.stringify(savedFreeVideos) ||
       JSON.stringify(careers) !== JSON.stringify(savedCareers)  || 
       JSON.stringify(testimonials) !==
-        JSON.stringify(savedTestimonials)
+        JSON.stringify(savedTestimonials) ||
+      JSON.stringify(contactUs) !== JSON.stringify(savedContactUs)
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -395,6 +409,7 @@ const WebsiteEditor = () => {
         freeVideoData,
         careerData,
         testimonialData,
+        contactData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -411,6 +426,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getFreeVideoSettings(),
         websiteEditorService.getCareerSettings(),
         websiteEditorService.getTestimonialSettings(),
+        contactUsService.getContactSettings(),
       ]);
 
       const nextHeader = {
@@ -644,6 +660,16 @@ const WebsiteEditor = () => {
 
       setTestimonials(nextTestimonials);
       setSavedTestimonials(nextTestimonials);
+
+
+      // Phase 16: Load Contact Us
+      const nextContactUs = {
+        ...initialContactUs,
+        ...(contactData || {}),
+      };
+
+      setContactUs(nextContactUs);
+      setSavedContactUs(nextContactUs);
 
 
     } catch (error) {
@@ -1436,6 +1462,7 @@ const WebsiteEditor = () => {
         savedFreeVideoData,
         savedCareerData,
         savedTestimonialData,
+        savedContactUsData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1461,6 +1488,7 @@ const WebsiteEditor = () => {
         websiteEditorService.updateFreeVideoSettings(freeVideos),
         websiteEditorService.updateCareerSettings(careers),
         websiteEditorService.updateTestimonialSettings(testimonials),
+        contactUsService.updateContactSettings(contactUs),
       ]);
 
       const nextHeader = {
@@ -1658,6 +1686,16 @@ const WebsiteEditor = () => {
       setSavedTestimonials(nextTestimonials);
 
 
+      // Phase 16: Save Contact Us
+      const nextContactUs = {
+        ...initialContactUs,
+        ...(savedContactUsData || contactUs),
+      };
+
+      setContactUs(nextContactUs);
+      setSavedContactUs(nextContactUs);
+
+
       notification.success(
         "Website editor settings saved successfully."
       );
@@ -1730,6 +1768,9 @@ const WebsiteEditor = () => {
 
     // Phase 15: Restore Testimonials
     setTestimonials(savedTestimonials);
+
+    // Phase 16: Contact Us
+    setContactUs(savedContactUs);
   };
 
   const openPreviewInNewTab = () => {
@@ -1901,6 +1942,12 @@ const WebsiteEditor = () => {
                         settings={testimonials}
                         onChange={updateTestimonials}
                         onUploadImage={uploadTestimonialImage}
+                      />
+                    ) : section.id === "contact" ? (
+                      <ContactUsControls
+                        settings={contactUs}
+                        contact={institute}
+                        onChange={setContactUs}
                       />
                     ) : (
                       <div className="we-coming-soon">

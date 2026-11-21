@@ -83,6 +83,8 @@ import websiteTeamRoutes from "./routes/websiteTeam.routes.js";
 import websiteFreeVideoRoutes from "./routes/websiteFreeVideo.routes.js";
 import websiteCareerRoutes from "./routes/websiteCareer.routes.js";
 import websiteTestimonialRoutes from "./routes/websiteTestimonial.routes.js";
+import websiteContactRoutes from "./routes/websiteContact.routes.js";
+import courseEnquiryRoutes from "./routes/courseEnquiry.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -446,6 +448,16 @@ app.use(
 app.use(
   "/api/website-editor",
   websiteTestimonialRoutes
+);
+
+app.use(
+  "/api/website-editor",
+  websiteContactRoutes
+);
+
+app.use(
+  "/api/course-enquiries",
+  courseEnquiryRoutes
 );
 
 
