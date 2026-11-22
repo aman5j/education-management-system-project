@@ -134,12 +134,9 @@ export const updateWebsiteContactSettings = async (
   }
 };
 
+
 // PUBLIC CONTACT US DATA
-export const getPublicContactData = async (
-  req,
-  res,
-  next
-) => {
+export const getPublicContactData = async (req, res, next) => {
   try {
     const [settings, institute, courses] = await Promise.all([
       WebsiteContactSettings.findOne({
@@ -152,16 +149,28 @@ export const getPublicContactData = async (
         .select("instituteName email phone")
         .lean(),
 
+      // Match Published regardless of capitalization or surrounding spaces.
       Course.find({
-        status: "Published",
+        status: {
+          $regex: /^\s*published\s*$/i,
+        },
       })
-        .select("_id courseTitle courseType courseCategory")
+        .select("_id courseTitle courseType courseCategory status")
         .sort({
           displayOrder: 1,
           courseTitle: 1,
         })
         .lean(),
     ]);
+
+    const publishedCourses = Array.isArray(courses)
+      ? courses.map((course) => ({
+          _id: course._id,
+          courseTitle: course.courseTitle,
+          courseType: course.courseType,
+          courseCategory: course.courseCategory,
+        }))
+      : [];
 
     return res.status(200).json({
       success: true,
@@ -174,12 +183,7 @@ export const getPublicContactData = async (
           phone: institute?.phone || "",
         },
 
-        courses: courses.map((course) => ({
-          _id: course._id,
-          courseTitle: course.courseTitle,
-          courseType: course.courseType,
-          courseCategory: course.courseCategory,
-        })),
+        courses: publishedCourses,
       },
     });
   } catch (error) {
