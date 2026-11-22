@@ -13,6 +13,14 @@ import {
 
 const router = express.Router();
 
+
+// Public website navigation menu
+router.get(
+  "/public/menu",
+  getWebsiteMenuSettings
+);
+
+
 // Authentication applies ONLY to Menu endpoints.
 router.get(
   "/menu",

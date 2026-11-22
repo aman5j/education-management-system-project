@@ -71,8 +71,9 @@ import WebsiteEditor from "./pages/admin/website-editor/WebsiteEditor";
 import WebsitePreviewPage from "./pages/admin/website-editor/components/WebsitePreviewPage";
 import StudyResourcesPage from "./pages/public/StudyResourcesPage";
 import CertificateSectionPage from "./pages/public/CertificateSectionPage";
-import ContactUsPage from "./pages/public/ContactUsPage";
+// import ContactUsPage from "./pages/public/ContactUsPage";
 import CourseEnquiries from "./pages/admin/enquiries/CourseEnquiries";
+import WebsitePage from "./pages/public/WebsitePage";
 
 
 import Admissions from "./pages/admin/admissions/Admissions";
@@ -266,9 +267,21 @@ const App = () => {
         element={<CertificateSectionPage />}
       />
 
+      {/* Public institute website */}
+      <Route
+        path="/website"
+        element={<WebsitePage />}
+      />
+
+      {/* Keep old Contact Us links working */}
       <Route
         path="/contact"
-        element={<ContactUsPage />}
+        element={
+          <Navigate
+            to="/website#contact"
+            replace
+          />
+        }
       />
 
 

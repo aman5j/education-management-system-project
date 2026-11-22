@@ -402,3 +402,125 @@
   }
 }
 
+
+
+
+
+
+
+
+
+/* ==========================================
+   PUBLIC WEBSITE CONTACT FORM
+========================================== */
+
+.we-public-website {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.we-public-website-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #102944;
+  font-weight: 700;
+}
+
+.we-preview-contact-section {
+  scroll-margin-top: 25px;
+}
+
+.we-preview-contact-input input,
+.we-preview-contact-input select,
+.we-preview-contact-input textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #102944;
+  font: inherit;
+}
+
+.we-preview-contact-input input::placeholder,
+.we-preview-contact-input textarea::placeholder {
+  color: #718099;
+  opacity: 1;
+}
+
+.we-preview-contact-input select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.we-preview-contact-input textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+
+.we-preview-contact-input:focus-within {
+  border-color: #ff5a0a;
+  box-shadow: 0 0 0 3px rgba(255, 90, 10, 0.08);
+}
+
+.we-preview-contact-submit {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.we-preview-contact-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.we-preview-contact-success {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 25px;
+}
+
+.we-preview-contact-success > svg {
+  width: 55px;
+  height: 55px;
+  color: #16a36a;
+  margin-bottom: 15px;
+}
+
+.we-preview-contact-success h3 {
+  color: #102944;
+  font-size: 23px;
+  margin: 0 0 10px;
+}
+
+.we-preview-contact-success p {
+  color: #586984;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.we-preview-contact-success button {
+  border: 0;
+  border-radius: 9px;
+  padding: 12px 20px;
+  background: #ff5a0a;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .we-preview-contact-success {
+    min-height: 250px;
+    padding: 15px;
+  }
+}

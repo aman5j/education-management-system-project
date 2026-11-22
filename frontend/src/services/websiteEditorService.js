@@ -75,6 +75,41 @@ const websiteEditorService = {
     return response.data?.data?.settings || { slides: [] };
   },
 
+
+  // Public Website Header
+  async getPublicHeaderSettings() {
+    const response = await api.get(
+      "/website-editor/public/header",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {};
+  },
+
+  // Public Website Menu
+  async getPublicMenuSettings() {
+    const response = await api.get(
+      "/website-editor/public/menu",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      items: [],
+    };
+  },
+
+  // Public Website Banner
+  async getPublicBannerSettings() {
+    const response = await api.get(
+      "/website-editor/public/banner",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      slides: [],
+    };
+  },
+
   // Category Highlights Services
   async getCategoryHighlights() {
     const response = await api.get(

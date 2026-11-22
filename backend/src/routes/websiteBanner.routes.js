@@ -24,6 +24,13 @@ router.get(
   getWebsiteBannerImage
 );
 
+// Public homepage banner settings
+router.get(
+  "/public/banner",
+  getWebsiteBannerSettings
+);
+
+
 // ADMIN: Get banner settings
 router.get(
   "/banner",

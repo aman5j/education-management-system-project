@@ -41,6 +41,10 @@ export default function WebsitePreview({
   testimonials = null,
   contactUs = null,
   contact = null,
+  publicSite = false,
+  showPreviewPlaceholder = true,
+  interactiveContact = false,
+  contactCourses = [],
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -69,8 +73,30 @@ const visibleCourseCategories = Array.isArray(courseCategories)
 
   const activeBanner = bannerSlides[safeBannerIndex];
 
+  // const getLinkProps = (item) => ({
+  //   href: item.url || "#",
+  //   target: item.openInNewTab ? "_blank" : undefined,
+  //   rel: item.openInNewTab ? "noopener noreferrer" : undefined,
+  // });
+
+  const resolveWebsiteLink = (url) => {
+    if (!publicSite) {
+      return url || "#";
+    }
+
+    if (url === "/") {
+      return "/website";
+    }
+
+    if (url === "/contact") {
+      return "/website#contact";
+    }
+
+    return url || "#";
+  };
+
   const getLinkProps = (item) => ({
-    href: item.url || "#",
+    href: resolveWebsiteLink(item.url),
     target: item.openInNewTab ? "_blank" : undefined,
     rel: item.openInNewTab ? "noopener noreferrer" : undefined,
   });
@@ -127,7 +153,9 @@ const visibleCourseCategories = Array.isArray(courseCategories)
               {header.showEnquiryButton && (
                 <a
                   className="we-topbar-demo"
-                  href={header.enquiryButtonUrl || "/contact"}
+                  href={resolveWebsiteLink(
+                    header.enquiryButtonUrl || "/contact"
+                  )}
                 >
                   {header.enquiryButtonLabel || "Book Free Demo"}
                 </a>
@@ -151,7 +179,7 @@ const visibleCourseCategories = Array.isArray(courseCategories)
         <div className="we-public-main-header-inner">
           <a
             className="we-public-brand"
-            href="/"
+            href={publicSite ? "/website" : "/"}
             aria-label="Institute home"
           >
             {header.showInstituteLogo && logoUrl && (
@@ -382,20 +410,26 @@ const visibleCourseCategories = Array.isArray(courseCategories)
         <ContactUsSection
           settings={contactUs}
           contact={contact || institute}
+          courses={contactCourses}
+          interactive={interactiveContact}
         />
 
 
-      <div className="we-public-page-placeholder">
-        <div className="we-preview-hero-content">
-          <span>WEBSITE PREVIEW</span>
-          <h2>
-            {institute.instituteName || "Your Institute Website"}
-          </h2>
-          <p>
-            Homepage sections will be connected in their respective phases.
-          </p>
+      {showPreviewPlaceholder && (
+        <div className="we-public-page-placeholder">
+          <div className="we-preview-hero-content">
+            <span>WEBSITE PREVIEW</span>
+            <h2>
+              {institute.instituteName || "Your Institute Website"}
+            </h2>
+            <p>
+              Homepage sections will be connected in their respective phases.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
+
+
     </div>
   );
 }

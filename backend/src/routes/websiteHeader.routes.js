@@ -13,6 +13,12 @@ import {
 
 const router = express.Router();
 
+// Public website header settings
+router.get(
+  "/public/header",
+  getWebsiteHeaderSettings
+);
+
 // Authentication applies ONLY to Header endpoints.
 router.get(
   "/header",
