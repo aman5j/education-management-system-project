@@ -18,33 +18,42 @@ import {
 
 const router = express.Router();
 
-// Public image delivery.
-router.get("/banner-image/:version", getWebsiteBannerImage);
+// PUBLIC: Banner image delivery
+router.get(
+  "/banner-image/:version",
+  getWebsiteBannerImage
+);
 
-// Admin-only banner management.
-router.use(authenticate);
-router.use(authorizeRoles("admin"));
+// ADMIN: Get banner settings
+router.get(
+  "/banner",
+  authenticate,
+  authorizeRoles("admin"),
+  getWebsiteBannerSettings
+);
 
-router.get("/banner", getWebsiteBannerSettings);
-
-// router.post(
-//   "/banner/slides",
-//   websiteBannerUpload.single("image"),
-//   uploadWebsiteBannerSlide
-// );
+// ADMIN: Upload banner slide
 router.post(
   "/banner/slides",
+  authenticate,
+  authorizeRoles("admin"),
   websiteBannerUpload,
   uploadWebsiteBannerSlide
 );
 
+// ADMIN: Delete banner slide
 router.delete(
   "/banner/slides/:slideKey",
+  authenticate,
+  authorizeRoles("admin"),
   deleteWebsiteBannerSlide
 );
 
+// ADMIN: Reorder banner slides
 router.put(
   "/banner/reorder",
+  authenticate,
+  authorizeRoles("admin"),
   reorderWebsiteBannerSlides
 );
 
