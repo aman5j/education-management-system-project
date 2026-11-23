@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import dns from "dns";
+import connectPlatformDB from "./config/platformDb.js";
 
 dotenv.config();
 
@@ -12,7 +13,10 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
+    // !!!!! INSERTION START: CONNECT BOTH DATABASES !!!!!
     await connectDB();
+    await connectPlatformDB();
+    // !!!!! INSERTION END: CONNECT BOTH DATABASES !!!!!
 
     app.listen(PORT, () => {
       console.log("");

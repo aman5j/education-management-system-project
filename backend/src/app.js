@@ -6,6 +6,8 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url"; // Needed for ES modules path resolution
+import platformRoutes from "./routes/platform.routes.js";
+
 
 import authRoutes from "./routes/auth.routes.js";
 
@@ -242,6 +244,9 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+// !!!!! INSERTION START: CENTRAL PLATFORM ROUTES !!!!!
+app.use("/api/platform", platformRoutes);
+// !!!!! INSERTION END: CENTRAL PLATFORM ROUTES !!!!!
 app.use("/api/roles", roleRoutes);
 app.use("/api/staff", staffRoutes);
 

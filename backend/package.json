@@ -5,12 +5,13 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "seed": "node src/seed/seedUsers.js",
-    "seed:categories": "node src/seed/seedCategories.js",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+  "dev": "nodemon src/server.js",
+  "start": "node src/server.js",
+  "seed": "node src/seed/seedUsers.js",
+  "seed:categories": "node src/seed/seedCategories.js",
+  "seed:platform-admin": "node src/seed/seedPlatformAdmin.js",
+  "lint": "eslint .",
+  "format": "prettier --write ."
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
