@@ -76,6 +76,18 @@ import CourseEnquiries from "./pages/admin/enquiries/CourseEnquiries";
 import WebsitePage from "./pages/public/WebsitePage";
 
 
+
+// ==========================================
+// EMS PLATFORM - SUPER ADMIN
+// ==========================================
+import PlatformLogin from "./pages/platform/PlatformLogin";
+import PlatformDashboard from "./pages/platform/PlatformDashboard";
+import PlatformInstitutes from "./pages/platform/PlatformInstitutes";
+
+import PlatformLayout from "./layout/PlatformLayout";
+import PlatformProtectedRoute from "./components/platform/PlatformProtectedRoute";
+
+
 import Admissions from "./pages/admin/admissions/Admissions";
 import AddAdmission from "./pages/admin/admissions/AddAdmission";
 import EditAdmission from "./pages/admin/admissions/EditAdmission";
@@ -283,6 +295,44 @@ const App = () => {
           />
         }
       />
+
+      {/* ==========================================
+            EMS PLATFORM - SUPER ADMIN ROUTES
+        ========================================== */}
+
+        <Route
+          path="/platform/login"
+          element={<PlatformLogin />}
+        />
+
+        <Route
+          path="/platform"
+          element={
+            <PlatformProtectedRoute>
+              <PlatformLayout />
+            </PlatformProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={<Navigate to="dashboard" replace />}
+          />
+
+          <Route
+            path="dashboard"
+            element={<PlatformDashboard />}
+          />
+
+          <Route
+            path="institutes"
+            element={<PlatformInstitutes />}
+          />
+
+          <Route
+            path="*"
+            element={<Navigate to="dashboard" replace />}
+          />
+        </Route>
 
 
       {/* Admin portal */}
