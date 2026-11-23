@@ -1,56 +1,78 @@
 
 import mongoose from "mongoose";
 
-/**
- * Platform data uses the same default Mongoose connection
- * as the existing EMS application.
- *
- * Main database:
- * education_management_system
- *
- * Collections:
- * platformusers
- * institutes
- */
+let platformConnection;
+let connectionPromise;
 
 const EXPECTED_DATABASE = "education_management_system";
 
 const connectPlatformDB = async () => {
-  const connection = mongoose.connection;
+  const mongoUri = process.env.PLATFORM_MONGO_URI;
 
-  if (connection.readyState !== 1) {
+  if (!mongoUri) {
     throw new Error(
-      "Main EMS MongoDB connection must be established before platform initialization."
+      "PLATFORM_MONGO_URI is required."
     );
   }
 
-  if (connection.name !== EXPECTED_DATABASE) {
-    throw new Error(
-      `Expected database "${EXPECTED_DATABASE}", but connected to "${connection.name}".`
-    );
+  if (
+    platformConnection &&
+    platformConnection.readyState === 1
+  ) {
+    return platformConnection;
   }
 
-  console.log(
-    `Platform models using shared database: ${connection.name}`
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  platformConnection = mongoose.createConnection(
+    mongoUri,
+    {
+      serverSelectionTimeoutMS: 10000,
+    }
   );
 
-  return connection;
+  connectionPromise = platformConnection
+    .asPromise()
+    .then((connection) => {
+      if (connection.name !== EXPECTED_DATABASE) {
+        throw new Error(
+          `Platform must connect to ${EXPECTED_DATABASE}, received ${connection.name}.`
+        );
+      }
+
+      console.log(
+        `Platform MongoDB connected: ${connection.name}`
+      );
+
+      return connection;
+    })
+    .catch(async (error) => {
+      if (platformConnection) {
+        await platformConnection.close().catch(() => {});
+      }
+
+      platformConnection = null;
+      connectionPromise = null;
+
+      throw error;
+    });
+
+  return connectionPromise;
 };
 
 export const getPlatformConnection = () => {
-  const connection = mongoose.connection;
-
-  if (connection.readyState !== 1) {
-    throw new Error("EMS MongoDB connection is not ready.");
-  }
-
-  if (connection.name !== EXPECTED_DATABASE) {
+  if (
+    !platformConnection ||
+    platformConnection.readyState !== 1
+  ) {
     throw new Error(
-      `Platform database mismatch. Expected ${EXPECTED_DATABASE}, received ${connection.name}.`
+      "Platform database is not connected."
     );
   }
 
-  return connection;
+  return platformConnection;
 };
 
 export default connectPlatformDB;

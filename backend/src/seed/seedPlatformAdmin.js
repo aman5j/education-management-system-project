@@ -1,5 +1,9 @@
 
 import dotenv from "dotenv";
+import dns from "dns";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 
 dotenv.config();
 
@@ -10,11 +14,8 @@ import connectPlatformDB, {
 import getPlatformUserModel from "../models/PlatformUser.js";
 
 const seedPlatformAdmin = async () => {
-  const email = (
-    process.env.PLATFORM_ADMIN_EMAIL ||
-    "amanprajapati190@gmail.com"
-  )
-    .trim()
+  const email = process.env.PLATFORM_ADMIN_EMAIL
+    ?.trim()
     .toLowerCase();
 
   const name =
@@ -23,31 +24,36 @@ const seedPlatformAdmin = async () => {
 
   const password = process.env.PLATFORM_ADMIN_PASSWORD;
 
-  if (!password) {
+  if (!email) {
     throw new Error(
-      "Set PLATFORM_ADMIN_PASSWORD in your backend .env file before running this script."
+      "Set PLATFORM_ADMIN_EMAIL in backend/.env."
     );
   }
 
-  if (password.length < 12) {
+  if (!password || password.length < 12) {
     throw new Error(
-      "Platform Super Admin password must contain at least 12 characters."
+      "Set a private PLATFORM_ADMIN_PASSWORD with at least 12 characters."
     );
   }
 
+  // Connect directly to the shared Atlas database.
   await connectPlatformDB();
 
   const connection = getPlatformConnection();
-  const PlatformUser = getPlatformUserModel(connection);
 
-  const existingUser = await PlatformUser.findOne({ email });
+  const PlatformUser =
+    getPlatformUserModel(connection);
+
+  const existingUser = await PlatformUser.findOne({
+    email,
+  });
 
   if (existingUser) {
     console.log(
       `Platform Super Admin already exists: ${email}`
     );
     console.log(
-      "No changes were made to the existing account."
+      "Existing account was not overwritten."
     );
     return;
   }
@@ -68,6 +74,7 @@ const seedPlatformAdmin = async () => {
   console.log(`Role: ${user.role}`);
   console.log(`Status: ${user.status}`);
   console.log("Password: securely hashed in MongoDB");
+  console.log("Database: education_management_system");
   console.log("======================================");
 };
 
