@@ -7,13 +7,24 @@ import {
   FiMapPin,
   FiImage,
   FiExternalLink,
+  FiShare2,
 } from "react-icons/fi";
+
+const SOCIAL_PLATFORMS = [
+  "Facebook",
+  "Instagram",
+  "YouTube",
+  "LinkedIn",
+  "X",
+];
 
 export default function FooterControls({
   settings,
   institute,
   logoUrl,
   onChange,
+  socialLinks = [],
+  onSocialLinksChange,
 }) {
   const updateField = (field, value) => {
     onChange({
@@ -49,10 +60,46 @@ export default function FooterControls({
 
   const removeLink = (field, index) => {
     const links = [...(settings[field] || [])];
-
     links.splice(index, 1);
-
     updateField(field, links);
+  };
+
+  const addSocialLink = () => {
+    if (socialLinks.length >= SOCIAL_PLATFORMS.length) return;
+
+    const availablePlatform = SOCIAL_PLATFORMS.find(
+      (platform) =>
+        !socialLinks.some(
+          (item) => item.platform === platform
+        )
+    );
+
+    if (!availablePlatform) return;
+
+    onSocialLinksChange([
+      ...socialLinks,
+      {
+        platform: availablePlatform,
+        url: "",
+      },
+    ]);
+  };
+
+  const updateSocialLink = (index, key, value) => {
+    const updated = [...socialLinks];
+
+    updated[index] = {
+      ...updated[index],
+      [key]: value,
+    };
+
+    onSocialLinksChange(updated);
+  };
+
+  const removeSocialLink = (index) => {
+    onSocialLinksChange(
+      socialLinks.filter((_, itemIndex) => itemIndex !== index)
+    );
   };
 
   const renderLinkEditor = (heading, field) => (
@@ -160,6 +207,7 @@ export default function FooterControls({
         </p>
       </div>
 
+      {/* Institute Information */}
       <div className="we-footer-control-group">
         <h4>Institute Information</h4>
 
@@ -200,6 +248,7 @@ export default function FooterControls({
         </label>
       </div>
 
+      {/* Main Heading 1 */}
       <div className="we-footer-control-group">
         <h4>Main Heading 1</h4>
 
@@ -219,11 +268,9 @@ export default function FooterControls({
         </label>
       </div>
 
-      {renderLinkEditor(
-        "Heading 1 Links",
-        "columnOneLinks"
-      )}
+      {renderLinkEditor("Heading 1 Links", "columnOneLinks")}
 
+      {/* Main Heading 2 */}
       <div className="we-footer-control-group">
         <h4>Main Heading 2</h4>
 
@@ -243,11 +290,9 @@ export default function FooterControls({
         </label>
       </div>
 
-      {renderLinkEditor(
-        "Heading 2 Links",
-        "columnTwoLinks"
-      )}
+      {renderLinkEditor("Heading 2 Links", "columnTwoLinks")}
 
+      {/* Main Heading 3 */}
       <div className="we-footer-control-group">
         <h4>Main Heading 3</h4>
 
@@ -291,6 +336,107 @@ export default function FooterControls({
         </div>
       </div>
 
+      {/* Social Links - managed from Footer */}
+      <div className="we-footer-control-group">
+        <div className="we-footer-control-group-heading">
+          <h4>
+            <FiShare2 className="we-footer-social-heading-icon" />
+            Social Links
+          </h4>
+
+          <button
+            type="button"
+            onClick={addSocialLink}
+            disabled={socialLinks.length >= SOCIAL_PLATFORMS.length}
+          >
+            <FiPlus />
+            Add Social Link
+          </button>
+        </div>
+
+        <p className="we-footer-social-help">
+          Select a social media platform and enter your official
+          account URL. Configured icons will appear in the Footer.
+        </p>
+
+        {socialLinks.length === 0 && (
+          <div className="we-footer-empty-links">
+            No social accounts added. Click Add Social Link to
+            configure Facebook, Instagram, YouTube, LinkedIn or X.
+          </div>
+        )}
+
+        {socialLinks.map((item, index) => (
+          <div
+            className="we-footer-link-editor we-footer-social-editor"
+            key={`${item.platform}-${index}`}
+          >
+            <div className="we-footer-link-editor-top">
+              <strong>Social Account {index + 1}</strong>
+
+              <button
+                type="button"
+                className="we-footer-remove-link"
+                onClick={() => removeSocialLink(index)}
+                aria-label={`Remove ${item.platform} account`}
+              >
+                <FiTrash2 />
+              </button>
+            </div>
+
+            <label>
+              Select Platform
+              <select
+                value={item.platform || ""}
+                onChange={(event) =>
+                  updateSocialLink(
+                    index,
+                    "platform",
+                    event.target.value
+                  )
+                }
+              >
+                {SOCIAL_PLATFORMS.map((platform) => (
+                  <option
+                    key={platform}
+                    value={platform}
+                    disabled={socialLinks.some(
+                      (link, linkIndex) =>
+                        link.platform === platform &&
+                        linkIndex !== index
+                    )}
+                  >
+                    {platform}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Account URL
+              <input
+                type="url"
+                value={item.url || ""}
+                placeholder={`https://${item.platform?.toLowerCase()}.com/your-account`}
+                onChange={(event) =>
+                  updateSocialLink(
+                    index,
+                    "url",
+                    event.target.value
+                  )
+                }
+              />
+            </label>
+          </div>
+        ))}
+
+        <small>
+          Social links are saved through the existing Header
+          settings API. You can manage them here in Footer.
+        </small>
+      </div>
+
+      {/* Fixed Copyright */}
       <div className="we-footer-static-credit">
         <FiExternalLink />
         <div>

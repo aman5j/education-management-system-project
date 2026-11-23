@@ -422,6 +422,7 @@ const visibleCourseCategories = Array.isArray(courseCategories)
           settings={footerSettings || {}}
           institute={institute || {}}
           logoUrl={logoUrl}
+          socialLinks={header?.socialLinks || []}
         />
 
 

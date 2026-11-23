@@ -1926,9 +1926,7 @@ const WebsiteEditor = () => {
                         onAddQuickLink={addQuickLink}
                         onUpdateQuickLink={updateQuickLink}
                         onRemoveQuickLink={removeQuickLink}
-                        onAddSocialLink={addSocialLink}
-                        onUpdateSocialLink={updateSocialLink}
-                        onRemoveSocialLink={removeSocialLink}
+
                       />
                     ) : section.id === "menu" ? (
                       <MenuControls
@@ -2019,6 +2017,13 @@ const WebsiteEditor = () => {
                         institute={institute}
                         logoUrl={logoUrl}
                         onChange={setFooterSettings}
+                        socialLinks={header.socialLinks || []}
+                        onSocialLinksChange={(socialLinks) =>
+                          setHeader((current) => ({
+                            ...current,
+                            socialLinks,
+                          }))
+                        }
                       />
                     ) : (
                       <div className="we-coming-soon">

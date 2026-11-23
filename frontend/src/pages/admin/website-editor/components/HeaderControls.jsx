@@ -7,13 +7,6 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 
-const SOCIAL_PLATFORMS = [
-  "Facebook",
-  "Instagram",
-  "YouTube",
-  "LinkedIn",
-  "X",
-];
 
 export default function HeaderControls({
   header,
@@ -27,9 +20,6 @@ export default function HeaderControls({
   onAddQuickLink,
   onUpdateQuickLink,
   onRemoveQuickLink,
-  onAddSocialLink,
-  onUpdateSocialLink,
-  onRemoveSocialLink,
 }) {
   const toggle = (label, description, field) => (
     <label className="we-control-toggle" key={field}>
@@ -253,62 +243,6 @@ export default function HeaderControls({
         ))}
       </div>
 
-      {/* Social links */}
-      <div className="we-control-block">
-        <div className="we-control-heading-row">
-          <h4>Social Links</h4>
-          <button
-            type="button"
-            onClick={onAddSocialLink}
-            disabled={header.socialLinks.length >= 5}
-          >
-            <FiPlus /> Add
-          </button>
-        </div>
-
-        {header.socialLinks.map((item, index) => (
-          <div className="we-repeat-item" key={index}>
-            <select
-              value={item.platform}
-              aria-label="Social platform"
-              onChange={(event) =>
-                onUpdateSocialLink(index, "platform", event.target.value)
-              }
-            >
-              {SOCIAL_PLATFORMS.map((platform) => (
-                <option
-                  key={platform}
-                  value={platform}
-                  disabled={header.socialLinks.some(
-                    (link, linkIndex) =>
-                      link.platform === platform && linkIndex !== index
-                  )}
-                >
-                  {platform}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="url"
-              value={item.url}
-              placeholder="https://..."
-              aria-label="Social URL"
-              onChange={(event) =>
-                onUpdateSocialLink(index, "url", event.target.value)
-              }
-            />
-
-            <button
-              type="button"
-              title="Remove social link"
-              onClick={() => onRemoveSocialLink(index)}
-            >
-              <FiTrash2 />
-            </button>
-          </div>
-        ))}
-      </div>
 
       {/* Main header */}
       <div className="we-control-block">

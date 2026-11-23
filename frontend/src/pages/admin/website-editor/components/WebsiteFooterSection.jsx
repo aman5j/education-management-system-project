@@ -7,12 +7,27 @@ import {
   FiChevronRight,
 } from "react-icons/fi";
 
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaYoutube,
+  FaLinkedinIn,
+  FaXTwitter,
+} from "react-icons/fa6";
+
 import "./../Footer.phase17.css";
 
-// Fixed developer credit. This is intentionally not editable
-// through the Website Editor or stored in the database.
+// Fixed developer credit. Not editable in Website Editor.
 const DEVELOPER_NAME = "IndiaTech Samadhaan";
 const DEVELOPER_WEBSITE_URL = "https://indiatechsamadhaan.com";
+
+const SOCIAL_ICONS = {
+  Facebook: FaFacebookF,
+  Instagram: FaInstagram,
+  YouTube: FaYoutube,
+  LinkedIn: FaLinkedinIn,
+  X: FaXTwitter,
+};
 
 function FooterLinks({ heading, links = [] }) {
   return (
@@ -42,25 +57,58 @@ function FooterLinks({ heading, links = [] }) {
   );
 }
 
+function FooterSocialLinks({ links = [] }) {
+  const visibleLinks = links.filter(
+    (item) =>
+      SOCIAL_ICONS[item.platform] &&
+      typeof item.url === "string" &&
+      item.url.trim()
+  );
+
+  if (!visibleLinks.length) return null;
+
+  return (
+    <div className="we-site-footer-socials">
+      {visibleLinks.map((item) => {
+        const Icon = SOCIAL_ICONS[item.platform];
+
+        return (
+          <a
+            key={item.platform}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Visit our ${item.platform} account`}
+            title={item.platform}
+          >
+            <Icon />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function WebsiteFooterSection({
   settings = {},
   institute = {},
   logoUrl = "",
+  socialLinks = [],
 }) {
   const currentYear = new Date().getFullYear();
 
   const phone = String(institute.phone || "").trim();
   const email = String(institute.email || "").trim();
-//   const address = String(institute.address || "").trim();
+
   const address = [
-  institute.address,
-  institute.city,
-  institute.state,
-  institute.postalCode,
-  institute.country,
-]
-  .filter(Boolean)
-  .join(", ");
+    institute.address,
+    institute.city,
+    institute.state,
+    institute.postalCode,
+    institute.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const phoneLink = phone.replace(/[^\d+]/g, "");
 
@@ -111,7 +159,7 @@ export default function WebsiteFooterSection({
             links={settings.columnTwoLinks || []}
           />
 
-          {/* Column 4: Main Heading 3 / Institute Contact */}
+          {/* Column 4: Contact and Social Media */}
           <div className="we-site-footer-column we-site-footer-contact">
             <h3>
               {settings.columnThreeHeading || "Get in Touch"}
@@ -123,8 +171,7 @@ export default function WebsiteFooterSection({
                   <FiPhone />
 
                   <a href={`tel:${phoneLink}`}>
-                    <span>Phone:</span>
-                    {phone}
+                    <span>Phone: {phone}</span>
                   </a>
                 </li>
               )}
@@ -155,6 +202,9 @@ export default function WebsiteFooterSection({
                 </li>
               )}
             </ul>
+
+            {/* Dynamic Social Links configured in Footer Editor */}
+            <FooterSocialLinks links={socialLinks} />
           </div>
         </div>
 
