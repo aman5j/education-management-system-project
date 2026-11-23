@@ -85,6 +85,7 @@ import websiteCareerRoutes from "./routes/websiteCareer.routes.js";
 import websiteTestimonialRoutes from "./routes/websiteTestimonial.routes.js";
 import websiteContactRoutes from "./routes/websiteContact.routes.js";
 import courseEnquiryRoutes from "./routes/courseEnquiry.routes.js";
+import websiteFooterRoutes from "./routes/websiteFooter.routes.js";
 
 
 // import receiptUploadRoutes from
@@ -460,6 +461,10 @@ app.use(
   courseEnquiryRoutes
 );
 
+app.use(
+  "/api/website-editor",
+  websiteFooterRoutes
+);
 
 
 app.use("/api/student-portal", studentPortalRoutes);

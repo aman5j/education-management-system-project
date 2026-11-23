@@ -76,6 +76,9 @@ export default function WebsitePage() {
   const [contactUs, setContactUs] = useState(null);
   const [contactCourses, setContactCourses] = useState([]);
 
+  // Phase 17: Footer
+  const [footerSettings, setFooterSettings] = useState({});
+
   useEffect(() => {
     let active = true;
 
@@ -98,6 +101,7 @@ export default function WebsitePage() {
           careerData,
           testimonialData,
           contactData,
+          footerData,
         ] = await Promise.all([
           websiteEditorService.getPublicHeaderSettings(),
           websiteEditorService.getPublicMenuSettings(),
@@ -119,13 +123,18 @@ export default function WebsitePage() {
           websiteEditorService.getPublicTestimonialSettings(),
 
           contactUsService.getPublicContactData(),
+          websiteEditorService.getPublicFooterSettings(),
         ]);
 
         if (!active) return;
 
         const instituteData = {
-          ...(contactData?.contact || {}),
-          logoUrl: brandingData?.logoUrl || "",
+        ...(contactData?.contact || {}),
+        ...(footerData?.institute || {}),
+        logoUrl:
+            brandingData?.logoUrl ||
+            footerData?.institute?.logoUrl ||
+            "",
         };
 
         setHeader({
@@ -134,7 +143,12 @@ export default function WebsitePage() {
         });
 
         setInstitute(instituteData);
-        setLogoUrl(asset(brandingData?.logoUrl));
+        setLogoUrl(
+            asset(
+                brandingData?.logoUrl ||
+                footerData?.institute?.logoUrl
+            )
+        );
 
         setMenu(
           menuData || { items: [] }
@@ -275,6 +289,9 @@ export default function WebsitePage() {
             ? contactData.courses
             : []
         );
+
+        // Phase 17: Public Footer settings
+        setFooterSettings(footerData?.settings || {});
       } catch (error) {
         if (active) {
           notification.error(
@@ -338,6 +355,7 @@ export default function WebsitePage() {
         contactUs={contactUs}
         contact={institute}
         contactCourses={contactCourses}
+        footerSettings={footerSettings}
         interactiveContact
         publicSite
         showPreviewPlaceholder={false}

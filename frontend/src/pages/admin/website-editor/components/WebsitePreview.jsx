@@ -21,6 +21,8 @@ import CareersSection from "./CareersSection";
 import TestimonialsSection from "./TestimonialsSection";
 import ContactUsSection from "./ContactUsSection";
 import "../ContactUs.phase16.css";
+import WebsiteFooterSection from "./WebsiteFooterSection";
+
 
 export default function WebsitePreview({
   header,
@@ -45,6 +47,7 @@ export default function WebsitePreview({
   showPreviewPlaceholder = true,
   interactiveContact = false,
   contactCourses = [],
+  footerSettings = null,
 }) {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
@@ -412,6 +415,13 @@ const visibleCourseCategories = Array.isArray(courseCategories)
           contact={contact || institute}
           courses={contactCourses}
           interactive={interactiveContact}
+        />
+
+        {/* Phase 17: Website Footer */}
+        <WebsiteFooterSection
+          settings={footerSettings || {}}
+          institute={institute || {}}
+          logoUrl={logoUrl}
         />
 
 

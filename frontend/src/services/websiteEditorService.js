@@ -607,6 +607,45 @@ const websiteEditorService = {
   },
 
 
+    // Phase 17: Footer
+  async getFooterSettings() {
+    const response = await api.get(
+      "/website-editor/footer",
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || {
+      instituteDescription: "",
+      columnOneHeading: "Useful Links",
+      columnOneLinks: [],
+      columnTwoHeading: "Our Company",
+      columnTwoLinks: [],
+      columnThreeHeading: "Get in Touch",
+    };
+  },
+
+  async updateFooterSettings(payload) {
+    const response = await api.put(
+      "/website-editor/footer",
+      payload,
+      { silent: true }
+    );
+
+    return response.data?.data?.settings || payload;
+  },
+
+  async getPublicFooterSettings() {
+    const response = await api.get(
+      "/website-editor/public/footer",
+      { silent: true }
+    );
+
+    return response.data?.data || {
+      settings: {},
+      institute: {},
+    };
+  },
+
 };
 
 export default websiteEditorService;

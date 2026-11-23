@@ -55,6 +55,8 @@ import "./Testimonials.phase15.css";
 import ContactUsControls from "./components/ContactUsControls";
 import contactUsService from "../../../services/contactUsService";
 import "./ContactUs.phase16.css";
+import FooterControls from "./components/FooterControls";
+import "./Footer.phase17.css";
 
 
 import { getAssetUrl } from "../../../utils/assetUrl";
@@ -209,6 +211,18 @@ const initialContactUs = {
 };
 
 
+const initialFooterSettings = {
+  instituteDescription:
+    "Empowering learners with industry-relevant courses, practical training and career support to build a successful future.",
+  columnOneHeading: "Useful Links",
+  columnOneLinks: [],
+  columnTwoHeading: "Our Company",
+  columnTwoLinks: [],
+  columnThreeHeading: "Get in Touch",
+};
+
+
+
 const editorSections = [
   { id: "header", label: "Header", phase: 2, icon: FiLayout },
   { id: "menu", label: "Menu", phase: 3, icon: FiMenu },
@@ -343,6 +357,15 @@ const WebsiteEditor = () => {
   const [contactUs, setContactUs] = useState(initialContactUs);
   const [savedContactUs, setSavedContactUs] = useState(initialContactUs);
 
+  // Phase 17: Footer
+  const [footerSettings, setFooterSettings] = useState(
+    initialFooterSettings
+  );
+
+  const [savedFooterSettings, setSavedFooterSettings] = useState(
+    initialFooterSettings
+  );
+
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -385,7 +408,9 @@ const WebsiteEditor = () => {
       JSON.stringify(careers) !== JSON.stringify(savedCareers)  || 
       JSON.stringify(testimonials) !==
         JSON.stringify(savedTestimonials) ||
-      JSON.stringify(contactUs) !== JSON.stringify(savedContactUs)
+      JSON.stringify(contactUs) !== JSON.stringify(savedContactUs) || 
+      JSON.stringify(footerSettings) !==
+        JSON.stringify(savedFooterSettings);
 
 
   // !!!!! INSERTION START: LOAD HEADER, INSTITUTE AND MENU SETTINGS !!!!!
@@ -410,6 +435,7 @@ const WebsiteEditor = () => {
         careerData,
         testimonialData,
         contactData,
+        footerData,
       ] = await Promise.all([
         websiteEditorService.getHeaderSettings(),
         instituteSettingsService.getSettings(),
@@ -427,6 +453,7 @@ const WebsiteEditor = () => {
         websiteEditorService.getCareerSettings(),
         websiteEditorService.getTestimonialSettings(),
         contactUsService.getContactSettings(),
+        websiteEditorService.getFooterSettings(),
       ]);
 
       const nextHeader = {
@@ -670,6 +697,22 @@ const WebsiteEditor = () => {
 
       setContactUs(nextContactUs);
       setSavedContactUs(nextContactUs);
+
+
+      // Phase 17: Load Footer
+      const nextFooterSettings = {
+        ...initialFooterSettings,
+        ...(footerData || {}),
+        columnOneLinks: Array.isArray(footerData?.columnOneLinks)
+          ? footerData.columnOneLinks
+          : [],
+        columnTwoLinks: Array.isArray(footerData?.columnTwoLinks)
+          ? footerData.columnTwoLinks
+          : [],
+      };
+
+      setFooterSettings(nextFooterSettings);
+      setSavedFooterSettings(nextFooterSettings);
 
 
     } catch (error) {
@@ -1463,6 +1506,7 @@ const WebsiteEditor = () => {
         savedCareerData,
         savedTestimonialData,
         savedContactUsData,
+        savedFooterData,
       ] = await Promise.all([
         websiteEditorService.updateHeaderSettings(header),
         instituteSettingsService.updateSettings(institutePayload),
@@ -1489,6 +1533,7 @@ const WebsiteEditor = () => {
         websiteEditorService.updateCareerSettings(careers),
         websiteEditorService.updateTestimonialSettings(testimonials),
         contactUsService.updateContactSettings(contactUs),
+        websiteEditorService.updateFooterSettings(footerSettings),
       ]);
 
       const nextHeader = {
@@ -1696,6 +1741,22 @@ const WebsiteEditor = () => {
       setSavedContactUs(nextContactUs);
 
 
+      // Phase 17: Save Footer
+      const nextFooterSettings = {
+        ...initialFooterSettings,
+        ...(savedFooterData || footerSettings),
+        columnOneLinks: Array.isArray(savedFooterData?.columnOneLinks)
+          ? savedFooterData.columnOneLinks
+          : footerSettings.columnOneLinks,
+        columnTwoLinks: Array.isArray(savedFooterData?.columnTwoLinks)
+          ? savedFooterData.columnTwoLinks
+          : footerSettings.columnTwoLinks,
+      };
+
+      setFooterSettings(nextFooterSettings);
+      setSavedFooterSettings(nextFooterSettings);
+
+
       notification.success(
         "Website editor settings saved successfully."
       );
@@ -1771,6 +1832,9 @@ const WebsiteEditor = () => {
 
     // Phase 16: Contact Us
     setContactUs(savedContactUs);
+
+    // Phase 17: Restore Footer
+    setFooterSettings(savedFooterSettings);
   };
 
   const openPreviewInNewTab = () => {
@@ -1948,6 +2012,13 @@ const WebsiteEditor = () => {
                         settings={contactUs}
                         contact={institute}
                         onChange={setContactUs}
+                      />
+                    ) : section.id === "footer" ? (
+                      <FooterControls
+                        settings={footerSettings}
+                        institute={institute}
+                        logoUrl={logoUrl}
+                        onChange={setFooterSettings}
                       />
                     ) : (
                       <div className="we-coming-soon">
@@ -2176,6 +2247,8 @@ const WebsiteEditor = () => {
 
               contactUs={contactUs}
               contact={institute}
+
+              footerSettings={footerSettings}
             />
             {/* !!!!! INSERTION END: PASS MENU TO WEBSITE PREVIEW !!!!! */}
             
