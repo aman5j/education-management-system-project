@@ -1,58 +1,56 @@
 
 import mongoose from "mongoose";
 
-let platformConnection;
-let connectionPromise;
+/**
+ * Platform data uses the same default Mongoose connection
+ * as the existing EMS application.
+ *
+ * Main database:
+ * education_management_system
+ *
+ * Collections:
+ * platformusers
+ * institutes
+ */
+
+const EXPECTED_DATABASE = "education_management_system";
 
 const connectPlatformDB = async () => {
-  const mongoUri = process.env.PLATFORM_MONGO_URI;
+  const connection = mongoose.connection;
 
-  if (!mongoUri) {
+  if (connection.readyState !== 1) {
     throw new Error(
-      "PLATFORM_MONGO_URI is required for the central platform database."
+      "Main EMS MongoDB connection must be established before platform initialization."
     );
   }
 
-  if (
-    platformConnection &&
-    platformConnection.readyState === 1
-  ) {
-    return platformConnection;
+  if (connection.name !== EXPECTED_DATABASE) {
+    throw new Error(
+      `Expected database "${EXPECTED_DATABASE}", but connected to "${connection.name}".`
+    );
   }
 
-  if (connectionPromise) {
-    return connectionPromise;
-  }
+  console.log(
+    `Platform models using shared database: ${connection.name}`
+  );
 
-  platformConnection = mongoose.createConnection(mongoUri, {
-    serverSelectionTimeoutMS: 10000,
-  });
-
-  connectionPromise = platformConnection.asPromise()
-    .then((connection) => {
-      console.log(
-        `Platform MongoDB connected: ${connection.name}`
-      );
-
-      return connection;
-    })
-    .catch((error) => {
-      platformConnection = null;
-      connectionPromise = null;
-      throw error;
-    });
-
-  return connectionPromise;
+  return connection;
 };
 
 export const getPlatformConnection = () => {
-  if (!platformConnection || platformConnection.readyState !== 1) {
+  const connection = mongoose.connection;
+
+  if (connection.readyState !== 1) {
+    throw new Error("EMS MongoDB connection is not ready.");
+  }
+
+  if (connection.name !== EXPECTED_DATABASE) {
     throw new Error(
-      "Platform database is not connected."
+      `Platform database mismatch. Expected ${EXPECTED_DATABASE}, received ${connection.name}.`
     );
   }
 
-  return platformConnection;
+  return connection;
 };
 
 export default connectPlatformDB;
