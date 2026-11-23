@@ -9,7 +9,7 @@ import {
   FiEdit2,
   FiChevronLeft,
   FiChevronRight,
-  FiBuilding,
+  FiHome,
   FiX,
   FiSave,
   FiShield,
@@ -390,7 +390,7 @@ const PlatformInstitutes = () => {
               ) : institutes.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="platform-institute-empty">
-                    <FiBuilding />
+                    <FiHome />
                     <strong>No institutes found</strong>
                     <span>
                       Register your first institute or change the filters.
