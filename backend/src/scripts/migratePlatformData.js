@@ -4,34 +4,66 @@ import mongoose from "mongoose";
 
 dotenv.config();
 
-import getPlatformUserModel from "../models/PlatformUser.js";
-import getInstituteModel from "../models/Institute.js";
+const SOURCE_DATABASE = "education_management_system";
+const TARGET_DATABASE = "ems_platform";
 
-const SOURCE_DATABASE = "ems_platform";
-const TARGET_DATABASE = "education_management_system";
+const SOURCE_URI = process.env.MONGO_URI;
+const TARGET_URI = process.env.PLATFORM_MONGO_URI;
 
-const SOURCE_URI = process.env.LEGACY_PLATFORM_MONGO_URI;
-const TARGET_URI = process.env.MONGO_URI;
-
-// Preserve the existing migration while renaming only the
-// platformusers collection in the target database.
-const COLLECTIONS = [
+const COLLECTION_MIGRATIONS = [
   {
-    sourceName: "platformusers",
-    targetName: "superadmins",
+    source: "platformusers",
+    target: "superadmins",
     uniqueFields: ["email"],
   },
   {
-    sourceName: "institutes",
-    targetName: "institutes",
+    source: "superadmins",
+    target: "superadmins",
+    uniqueFields: ["email"],
+  },
+  {
+    source: "institutes",
+    target: "institutes",
     uniqueFields: ["slug", "databaseName"],
   },
+  {
+    source: "domains",
+    target: "domains",
+    uniqueFields: [],
+  },
+  {
+    source: "plans",
+    target: "plans",
+    uniqueFields: [],
+  },
+  {
+    source: "subscriptions",
+    target: "subscriptions",
+    uniqueFields: [],
+  },
+  {
+    source: "provisioninglogs",
+    target: "provisioninglogs",
+    uniqueFields: [],
+  },
+  {
+    source: "platformauditlogs",
+    target: "platformauditlogs",
+    uniqueFields: [],
+  },
+  {
+    source: "platformsettings",
+    target: "platformsettings",
+    uniqueFields: [],
+  },
 ];
+
+const isConfirmed =
+  process.env.PLATFORM_MIGRATION_CONFIRM === "YES";
 
 const getDatabaseName = (uri) => {
   try {
     const parsed = new URL(uri);
-
     return decodeURIComponent(
       parsed.pathname.replace(/^\/+/, "")
     );
@@ -40,39 +72,148 @@ const getDatabaseName = (uri) => {
   }
 };
 
+const validateConnections = () => {
+  if (!SOURCE_URI || !TARGET_URI) {
+    throw new Error(
+      "Set both MONGO_URI and PLATFORM_MONGO_URI in backend/.env."
+    );
+  }
+
+  const source = new URL(SOURCE_URI);
+  const target = new URL(TARGET_URI);
+
+  if (
+    getDatabaseName(SOURCE_URI) !== SOURCE_DATABASE
+  ) {
+    throw new Error(
+      `MONGO_URI must point to ${SOURCE_DATABASE}.`
+    );
+  }
+
+  if (
+    getDatabaseName(TARGET_URI) !== TARGET_DATABASE
+  ) {
+    throw new Error(
+      `PLATFORM_MONGO_URI must point to ${TARGET_DATABASE}.`
+    );
+  }
+
+  if (
+    source.hostname !== target.hostname ||
+    source.username !== target.username
+  ) {
+    throw new Error(
+      "Both databases must use the same MongoDB host and database user."
+    );
+  }
+};
+
 const collectionExists = async (db, name) => {
-  return db
-    .listCollections(
-      { name },
-      { nameOnly: true }
+  const cursor = db.listCollections(
+    { name },
+    { nameOnly: true }
+  );
+
+  try {
+    return Boolean(await cursor.hasNext());
+  } finally {
+    await cursor.close();
+  }
+};
+
+const ensureTargetCollection = async (
+  targetDb,
+  collectionName
+) => {
+  if (
+    !(await collectionExists(targetDb, collectionName))
+  ) {
+    await targetDb.createCollection(collectionName);
+  }
+};
+
+const getUniqueConflict = async (
+  target,
+  document,
+  uniqueFields
+) => {
+  const conditions = uniqueFields
+    .filter(
+      (field) =>
+        document[field] !== undefined &&
+        document[field] !== null &&
+        document[field] !== ""
     )
-    .hasNext();
+    .map((field) => ({
+      [field]: document[field],
+    }));
+
+  if (!conditions.length) {
+    return null;
+  }
+
+  return target.findOne({
+    $or: conditions,
+  });
+};
+
+const copyIndexes = async (
+  source,
+  target,
+  dryRun
+) => {
+  const indexes = await source.indexes();
+
+  let copied = 0;
+
+  for (const index of indexes) {
+    if (index.name === "_id_") {
+      continue;
+    }
+
+    const options = { ...index };
+
+    delete options.key;
+    delete options.name;
+    delete options.ns;
+    delete options.v;
+    delete options.background;
+
+    if (!dryRun) {
+      await target.createIndex(
+        index.key,
+        {
+          ...options,
+          name: index.name,
+        }
+      );
+    }
+
+    copied++;
+  }
+
+  return copied;
 };
 
 const migrateCollection = async (
   sourceDb,
   targetDb,
-  config
+  config,
+  dryRun
 ) => {
   const {
-    sourceName,
-    targetName,
+    source: sourceName,
+    target: targetName,
     uniqueFields,
   } = config;
 
-  const sourceExists = await collectionExists(
-    sourceDb,
-    sourceName
-  );
-
-  if (!sourceExists) {
-    console.log(
-      `${sourceName}: source collection does not exist; skipped.`
-    );
-
+  if (
+    !(await collectionExists(sourceDb, sourceName))
+  ) {
     return {
       sourceName,
       targetName,
+      skipped: true,
       sourceCount: 0,
       copied: 0,
       alreadyPresent: 0,
@@ -80,19 +221,16 @@ const migrateCollection = async (
   }
 
   const source = sourceDb.collection(sourceName);
-
-  const targetExists = await collectionExists(
-    targetDb,
-    targetName
-  );
-
-  if (!targetExists) {
-    await targetDb.createCollection(targetName);
-  }
-
   const target = targetDb.collection(targetName);
 
   const sourceCount = await source.countDocuments();
+
+  if (!dryRun) {
+    await ensureTargetCollection(
+      targetDb,
+      targetName
+    );
+  }
 
   let copied = 0;
   let alreadyPresent = 0;
@@ -100,7 +238,6 @@ const migrateCollection = async (
   const cursor = source.find({});
 
   for await (const document of cursor) {
-    // Preserve original MongoDB document identity.
     const existingById = await target.findOne({
       _id: document._id,
     });
@@ -110,74 +247,86 @@ const migrateCollection = async (
       continue;
     }
 
-    // Prevent duplicate email, slug or databaseName conflicts.
-    const conditions = uniqueFields
-      .filter((field) => document[field] !== undefined)
-      .map((field) => ({
-        [field]: document[field],
-      }));
+    const conflict = await getUniqueConflict(
+      target,
+      document,
+      uniqueFields
+    );
 
-    if (conditions.length) {
-      const conflict = await target.findOne({
-        $or: conditions,
-      });
-
-      if (conflict) {
-        throw new Error(
-          `Conflict migrating ${sourceName} to ${targetName}. ` +
-          `A different record already uses a unique value. ` +
-          `No existing record was overwritten.`
-        );
-      }
+    if (conflict) {
+      throw new Error(
+        `Unique-value conflict in ${sourceName} -> ${targetName}. ` +
+        `A different target document already uses one of its unique values. ` +
+        `No existing record was overwritten.`
+      );
     }
 
-    await target.insertOne(document);
+    if (!dryRun) {
+      await target.insertOne(document);
+    }
+
     copied++;
   }
 
-  console.log(
-    `${sourceName} -> ${targetName}: ` +
-    `copied ${copied}, already present ${alreadyPresent}.`
-  );
+  let indexCount = 0;
+
+  if (!dryRun) {
+    indexCount = await copyIndexes(
+      source,
+      target,
+      false
+    );
+  } else {
+    indexCount = (await source.indexes()).filter(
+      (item) => item.name !== "_id_"
+    ).length;
+  }
 
   return {
     sourceName,
     targetName,
+    skipped: false,
     sourceCount,
     copied,
     alreadyPresent,
+    indexes: indexCount,
   };
 };
 
+const verifyCollection = async (
+  sourceDb,
+  targetDb,
+  config
+) => {
+  if (
+    !(await collectionExists(
+      sourceDb,
+      config.source
+    ))
+  ) {
+    return true;
+  }
+
+  const source = sourceDb.collection(config.source);
+  const target = targetDb.collection(config.target);
+
+  const cursor = source.find({});
+
+  for await (const document of cursor) {
+    const exists = await target.findOne({
+      _id: document._id,
+    });
+
+    if (!exists) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const runMigration = async () => {
-  if (!SOURCE_URI || !TARGET_URI) {
-    throw new Error(
-      "Set LEGACY_PLATFORM_MONGO_URI and MONGO_URI in backend/.env."
-    );
-  }
-
-  const sourceDatabaseName = getDatabaseName(SOURCE_URI);
-  const targetDatabaseName = getDatabaseName(TARGET_URI);
-
-  if (sourceDatabaseName !== SOURCE_DATABASE) {
-    throw new Error(
-      `Source database must be ${SOURCE_DATABASE}; ` +
-      `received ${sourceDatabaseName}.`
-    );
-  }
-
-  if (targetDatabaseName !== TARGET_DATABASE) {
-    throw new Error(
-      `Target database must be ${TARGET_DATABASE}; ` +
-      `received ${targetDatabaseName}.`
-    );
-  }
-
-  if (SOURCE_URI === TARGET_URI) {
-    throw new Error(
-      "Source and target connection URIs must be different."
-    );
-  }
+  validateConnections();
 
   let sourceConnection;
   let targetConnection;
@@ -185,132 +334,109 @@ const runMigration = async () => {
   try {
     console.log("");
     console.log("======================================");
-    console.log(" EMS PLATFORM DATA MIGRATION");
+    console.log(" EMS CENTRAL PLATFORM DATA MIGRATION");
     console.log("======================================");
-    console.log(`Source database: ${SOURCE_DATABASE}`);
-    console.log(`Target database: ${TARGET_DATABASE}`);
+    console.log(`Source: ${SOURCE_DATABASE}`);
+    console.log(`Target: ${TARGET_DATABASE}`);
+    console.log(
+      `Mode: ${isConfirmed ? "WRITE / COPY" : "DRY RUN"}`
+    );
     console.log("");
-
-    console.log("Connecting to source database...");
 
     sourceConnection = await mongoose
       .createConnection(SOURCE_URI, {
-        serverSelectionTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 15000,
       })
       .asPromise();
-
-    console.log(
-      `Source connected: ${sourceConnection.name}`
-    );
-
-    console.log("Connecting to target database...");
 
     targetConnection = await mongoose
       .createConnection(TARGET_URI, {
-        serverSelectionTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 15000,
       })
       .asPromise();
 
-    console.log(
-      `Target connected: ${targetConnection.name}`
-    );
+    if (
+      sourceConnection.name !== SOURCE_DATABASE ||
+      targetConnection.name !== TARGET_DATABASE
+    ) {
+      throw new Error(
+        "Connected database names do not match the expected source and target."
+      );
+    }
 
-    const migrationResults = [];
+    const sourceDb = sourceConnection.db;
+    const targetDb = targetConnection.db;
 
-    for (const config of COLLECTIONS) {
+    const results = [];
+
+    for (const config of COLLECTION_MIGRATIONS) {
       const result = await migrateCollection(
-        sourceConnection.db,
-        targetConnection.db,
-        config
+        sourceDb,
+        targetDb,
+        config,
+        !isConfirmed
       );
 
-      migrationResults.push(result);
-    }
+      results.push(result);
 
-    // Register models against the target database.
-    // PlatformUser must explicitly use the superadmins collection.
-    const PlatformUser = getPlatformUserModel(
-      targetConnection
-    );
+      if (result.skipped) {
+        console.log(
+          `${result.sourceName}: source collection not found; skipped.`
+        );
+        continue;
+      }
 
-    const Institute = getInstituteModel(
-      targetConnection
-    );
-
-    // Ensure indexes exist on the destination collections.
-    await PlatformUser.createIndexes();
-    await Institute.createIndexes();
-
-    // Verify destination records through the actual models.
-    const [
-      superAdminCount,
-      instituteCount,
-    ] = await Promise.all([
-      PlatformUser.countDocuments(),
-      Institute.countDocuments(),
-    ]);
-
-    const superAdminResult = migrationResults.find(
-      (item) => item.targetName === "superadmins"
-    );
-
-    const instituteResult = migrationResults.find(
-      (item) => item.targetName === "institutes"
-    );
-
-    if (
-      superAdminResult &&
-      superAdminCount <
-        superAdminResult.sourceCount
-    ) {
-      throw new Error(
-        "Super Admin migration verification failed. " +
-        "The target count is smaller than the source count."
-      );
-    }
-
-    if (
-      instituteResult &&
-      instituteCount <
-        instituteResult.sourceCount
-    ) {
-      throw new Error(
-        "Institute migration verification failed. " +
-        "The target count is smaller than the source count."
-      );
-    }
-
-    console.log("");
-    console.log("======================================");
-    console.log(" MIGRATION COMPLETED AND VERIFIED");
-    console.log("======================================");
-    console.log(`Target database: ${TARGET_DATABASE}`);
-    console.log(`Super Admins: ${superAdminCount}`);
-    console.log(`Institutes: ${instituteCount}`);
-    console.log("");
-    console.log("Collection mapping:");
-
-    for (const result of migrationResults) {
       console.log(
         `${result.sourceName} -> ${result.targetName}`
       );
+      console.log(`  Source documents: ${result.sourceCount}`);
+      console.log(`  To copy / copied: ${result.copied}`);
+      console.log(`  Already present: ${result.alreadyPresent}`);
+      console.log(`  Indexes: ${result.indexes}`);
+    }
+
+    if (!isConfirmed) {
+      console.log("");
+      console.log("DRY RUN COMPLETED.");
       console.log(
-        `  Source records: ${result.sourceCount}`
+        "No collections or documents were created, changed or deleted."
       );
       console.log(
-        `  Copied: ${result.copied}`
+        "Review the counts, then set PLATFORM_MIGRATION_CONFIRM=YES to copy."
       );
-      console.log(
-        `  Already present: ${result.alreadyPresent}`
-      );
+      return;
     }
 
     console.log("");
+    console.log("Verifying copied records...");
+
+    for (const config of COLLECTION_MIGRATIONS) {
+      const verified = await verifyCollection(
+        sourceDb,
+        targetDb,
+        config
+      );
+
+      if (!verified) {
+        throw new Error(
+          `Verification failed for ${config.source} -> ${config.target}.`
+        );
+      }
+    }
+
+    console.log("");
+    console.log("======================================");
+    console.log(" MIGRATION VERIFIED");
+    console.log("======================================");
+    console.log(`Central database: ${TARGET_DATABASE}`);
+    console.log("Super Admin collection: superadmins");
+    console.log("Institute collection: institutes");
+    console.log("");
     console.log(
-      "Original source collections were NOT deleted."
+      "Original education_management_system records were NOT deleted."
     );
     console.log(
-      "Existing institute and EMS collections were NOT modified."
+      "Existing EMS institute collections were NOT modified."
     );
     console.log("======================================");
   } finally {
@@ -328,7 +454,7 @@ try {
   await runMigration();
 } catch (error) {
   console.error("");
-  console.error("EMS Platform migration failed:");
+  console.error("Platform migration failed:");
   console.error(error.message);
   process.exitCode = 1;
 }

@@ -1,18 +1,16 @@
 
 import mongoose from "mongoose";
 
-let platformConnection;
-let connectionPromise;
+let platformConnection = null;
+let connectionPromise = null;
 
-const EXPECTED_DATABASE = "education_management_system";
+const EXPECTED_DATABASE = "ems_platform";
 
 const connectPlatformDB = async () => {
   const mongoUri = process.env.PLATFORM_MONGO_URI;
 
   if (!mongoUri) {
-    throw new Error(
-      "PLATFORM_MONGO_URI is required."
-    );
+    throw new Error("PLATFORM_MONGO_URI is required.");
   }
 
   if (
@@ -26,19 +24,16 @@ const connectPlatformDB = async () => {
     return connectionPromise;
   }
 
-  platformConnection = mongoose.createConnection(
-    mongoUri,
-    {
-      serverSelectionTimeoutMS: 10000,
-    }
-  );
+  platformConnection = mongoose.createConnection(mongoUri, {
+    serverSelectionTimeoutMS: 15000,
+  });
 
   connectionPromise = platformConnection
     .asPromise()
     .then((connection) => {
       if (connection.name !== EXPECTED_DATABASE) {
         throw new Error(
-          `Platform must connect to ${EXPECTED_DATABASE}, received ${connection.name}.`
+          `Platform database must be ${EXPECTED_DATABASE}; received ${connection.name}.`
         );
       }
 
@@ -67,9 +62,7 @@ export const getPlatformConnection = () => {
     !platformConnection ||
     platformConnection.readyState !== 1
   ) {
-    throw new Error(
-      "Platform database is not connected."
-    );
+    throw new Error("Platform database is not connected.");
   }
 
   return platformConnection;
