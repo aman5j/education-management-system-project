@@ -83,11 +83,16 @@ platformUserSchema.methods.toSafeObject = function () {
   };
 };
 
-// Always bind this model to the central platform connection.
+// Internal Mongoose model name remains PlatformUser.
+// Actual MongoDB collection name is explicitly superadmins.
 const getPlatformUserModel = (connection) => {
   return (
     connection.models.PlatformUser ||
-    connection.model("PlatformUser", platformUserSchema)
+    connection.model(
+      "PlatformUser",
+      platformUserSchema,
+      "superadmins"
+    )
   );
 };
 

@@ -11,6 +11,7 @@
   "seed:categories": "node src/seed/seedCategories.js",
   "seed:platform-admin": "node src/seed/seedPlatformAdmin.js",
   "migrate:platform-data": "node src/scripts/migratePlatformData.js",
+  "migrate:platform-superadmins": "node src/scripts/migratePlatformUsersToSuperadmins.js",
   "lint": "eslint .",
   "format": "prettier --write ."
   },
