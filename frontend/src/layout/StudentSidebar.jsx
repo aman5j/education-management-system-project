@@ -32,7 +32,7 @@ const navigation = [
     path: "/student/assignments",
   },
   {
-    label: "Practice Zone",
+    label: "Test Paper",
     icon: FiTarget,
     path: "/student/practice",
   },

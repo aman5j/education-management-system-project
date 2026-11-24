@@ -1303,51 +1303,13 @@ const loadTests = useCallback(async () => {
 
   return (
     <main className="spz-page">
-      <header className="spz-header">
-        <div>
-          <span className="spz-eyebrow">STUDENT LEARNING</span>
-          <h1>Practice Zone</h1>
-          <p>
-            Improve your knowledge with practice tests from your enrolled courses.
-          </p>
-        </div>
+     
 
-        <button
-          type="button"
-          className="spz-refresh"
-          onClick={loadTests}
-          disabled={loading}
-        >
-          <FiRefreshCw className={loading ? "spz-spin" : ""} />
-          Refresh
-        </button>
-      </header>
+      <div class="page-header"><div><h1>Test Paper</h1></div></div>
 
-      <section className="spz-overview">
-        <div>
-          <span className="spz-overview__icon">
-            <FiTarget />
-          </span>
 
-          <div>
-            <small>Available Practice Tests</small>
-            <strong>{tests.length}</strong>
-            <p>Published tests for your active admissions</p>
-          </div>
-        </div>
 
-        <div>
-          <span className="spz-overview__icon spz-overview__icon--green">
-            <FiBookOpen />
-          </span>
-
-          <div>
-            <small>Enrolled Courses</small>
-            <strong>{courses.length}</strong>
-            <p>Courses with available practice tests</p>
-          </div>
-        </div>
-      </section>
+    
 
       {error || loading ? (
         <StateMessage
@@ -1357,17 +1319,20 @@ const loadTests = useCallback(async () => {
         />
       ) : (
         <>
-          <section className="spz-toolbar">
-            <label className="spz-search">
-              <FiSearch />
-              <input
-                type="search"
-                placeholder="Search tests, courses or subjects..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </label>
+          <section className="common-card-filters">
+            <div className="input-search">
+               
+                  <FiSearch />
+                  <input
+                    type="search"
+                    placeholder="Search tests, courses or subjects..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+               
+            </div>
 
+<div className="input-search">
             <select
               value={courseFilter}
               onChange={(event) => {
@@ -1383,7 +1348,9 @@ const loadTests = useCallback(async () => {
                 </option>
               ))}
             </select>
+            </div>
 
+<div className="input-search">
             <select
               value={subjectFilter}
               onChange={(event) => setSubjectFilter(event.target.value)}
@@ -1396,11 +1363,11 @@ const loadTests = useCallback(async () => {
                 </option>
               ))}
             </select>
-
+</div>
             {hasFilters && (
               <button
                 type="button"
-                className="spz-clear"
+                className="themebtn themebtnline"
                 onClick={clearFilters}
               >
                 <FiX /> Clear
@@ -1410,8 +1377,8 @@ const loadTests = useCallback(async () => {
 
           <div className="spz-results-heading">
             <div>
-              <h2>Available Tests</h2>
-              <p>{filteredTests.length} test(s) available</p>
+              <h2>Available Tests ({filteredTests.length})</h2>
+              
             </div>
           </div>
 
@@ -1433,14 +1400,7 @@ const loadTests = useCallback(async () => {
           ) : (
             <section className="spz-test-grid">
               {filteredTests.map((test) => (
-                <article className="spz-test-card" key={test._id}>
-                  <div className="spz-test-card__top">
-                    <span className="spz-test-icon">
-                      <FiFileText />
-                    </span>
-                    <span className="spz-published">Published</span>
-                  </div>
-
+                <article className="common-card" key={test._id}>
                   <div className="spz-test-card__content">
                     <span className="spz-test-course">
                       {test.course_id?.courseTitle || "Course"}
@@ -1479,12 +1439,13 @@ const loadTests = useCallback(async () => {
                   <div className="spz-test-card__footer">
                     <span>Unlimited attempts</span>
 
-                    <button
+                    <button className="themebtn"
                       type="button"
                       onClick={() => openInstructions(test)}
                     >
-                      View Instructions <FiArrowRight />
+                     Start Test <FiArrowRight />
                     </button>
+                    
                   </div>
                 </article>
               ))}
