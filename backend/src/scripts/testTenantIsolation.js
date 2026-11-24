@@ -307,6 +307,43 @@ const run = async () => {
       courseB._id
     ).populate("subjects");
 
+
+    console.log("\n========== POPULATE DEBUG ==========");
+
+    console.log(
+    "Course A subjects ref:",
+    CourseA.schema.path("subjects")?.caster?.options?.ref,
+    CourseA.schema.path("subjects")?.$embeddedSchemaType?.options?.ref
+    );
+
+    console.log(
+    "Course B subjects ref:",
+    CourseB.schema.path("subjects")?.caster?.options?.ref,
+    CourseB.schema.path("subjects")?.$embeddedSchemaType?.options?.ref
+    );
+
+    console.log("Subject A model:", SubjectA.modelName);
+    console.log("Subject B model:", SubjectB.modelName);
+
+    console.log(
+    "Course A populated subjects:",
+    populatedCourseA.subjects?.map((subject) => ({
+        id: subject?._id?.toString(),
+        name: subject?.subjectName,
+    }))
+    );
+
+    console.log(
+    "Course B populated subjects:",
+    populatedCourseB.subjects?.map((subject) => ({
+        id: subject?._id?.toString(),
+        name: subject?.subjectName,
+    }))
+    );
+
+    console.log("========== END POPULATE DEBUG ==========\n");
+
+
     assert(
       populatedCourseA.subjects[0]?.subjectName ===
         "Institute A Mathematics",
