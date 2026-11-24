@@ -26,6 +26,8 @@ const stableStringify = (value) => {
   return JSON.stringify(value);
 };
 
+
+
 const verifySchemaIndexes = async (model) => {
   const expectedIndexes = model.schema.indexes();
   const actualIndexes = await model.collection.indexes();
@@ -42,16 +44,39 @@ const verifySchemaIndexes = async (model) => {
         options.partialFilterExpression ?? null,
     });
 
-    // Avoid checking an identical index definition twice.
     uniqueExpected.set(signature, { key, options });
   }
 
   const missing = [];
 
   for (const { key, options } of uniqueExpected.values()) {
+    const expectedTextFields = Object.entries(key)
+      .filter(([, direction]) => direction === "text")
+      .map(([field]) => field)
+      .sort();
+
     const found = actualIndexes.find((actual) => {
-      if (stableStringify(actual.key) !== stableStringify(key)) {
-        return false;
+      // MongoDB represents text indexes internally using
+      // _fts and _ftsx. Compare the original field names
+      // through the index weights metadata instead.
+      if (expectedTextFields.length > 0) {
+        const actualTextFields = Object.keys(
+          actual.weights || {}
+        ).sort();
+
+        if (
+          stableStringify(actualTextFields) !==
+          stableStringify(expectedTextFields)
+        ) {
+          return false;
+        }
+      } else {
+        if (
+          stableStringify(actual.key) !==
+          stableStringify(key)
+        ) {
+          return false;
+        }
       }
 
       if (
@@ -100,6 +125,8 @@ const verifySchemaIndexes = async (model) => {
     passed: missing.length === 0,
   };
 };
+
+
 
 /**
  * Creates all registered tenant collections and their indexes.
