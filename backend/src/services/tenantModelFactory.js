@@ -12,6 +12,7 @@ const registeredModelSets = new WeakMap();
 const getInternalModelName = (prefix, modelName) =>
   `${modelName}__${prefix}`;
 
+
 const assertTenantReference = ({
   ref,
   modelName,
@@ -31,6 +32,18 @@ const assertTenantReference = ({
     );
   }
 
+  // Reference rewriting can encounter the same Mongoose array
+  // reference more than once. Accept only internal names belonging
+  // to this exact institute.
+  const alreadyRewritten = TENANT_MODEL_NAMES.some(
+    (tenantModelName) =>
+      ref === getInternalModelName(prefix, tenantModelName)
+  );
+
+  if (alreadyRewritten) {
+    return ref;
+  }
+
   if (!isTenantModel(ref)) {
     throw new Error(
       `Unregistered reference "${ref}" in ${modelName}.${pathName}.`
@@ -39,6 +52,7 @@ const assertTenantReference = ({
 
   return getInternalModelName(prefix, ref);
 };
+
 
 const rewriteSchemaReferences = (
   schema,
