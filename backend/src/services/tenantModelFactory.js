@@ -12,8 +12,6 @@ const registeredModelSets = new WeakMap();
 const getInternalModelName = (prefix, modelName) =>
   `${modelName}__${prefix}`;
 
-
-
 const assertTenantReference = ({
   ref,
   modelName,
@@ -29,36 +27,29 @@ const assertTenantReference = ({
   if (CENTRAL_MODEL_NAMES.includes(ref)) {
     throw new Error(
       `Tenant model "${modelName}" references central model "${ref}" ` +
-      `at "${pathName}". Central references require explicit review.`
+        `at "${pathName}". Central references require explicit review.`
     );
   }
 
-  // Already rewritten for the current institute.
-  const alreadyCurrentInstituteReference =
+  if (
     TENANT_MODEL_NAMES.some(
-      (tenantModelName) =>
-        ref === getInternalModelName(prefix, tenantModelName)
-    );
-
-  if (alreadyCurrentInstituteReference) {
+      (name) => ref === getInternalModelName(prefix, name)
+    )
+  ) {
     return ref;
   }
 
-  // A schema may carry an internal reference from a previously
-  // registered institute when Mongoose clones nested array types.
-  // Recognize only our exact generated internal-name format and
-  // remap the referenced tenant model to the current institute.
-  const previousTenantReference = ref.match(
+  const previousReference = ref.match(
     /^([A-Za-z][A-Za-z0-9]*)__(inst_[a-f0-9]{24})$/i
   );
 
-  if (previousTenantReference) {
-    const referencedModelName = previousTenantReference[1];
+  if (previousReference) {
+    const referencedModelName = previousReference[1];
 
     if (!isTenantModel(referencedModelName)) {
       throw new Error(
         `Unregistered tenant reference "${ref}" in ` +
-        `${modelName}.${pathName}.`
+          `${modelName}.${pathName}.`
       );
     }
 
@@ -74,7 +65,68 @@ const assertTenantReference = ({
   return getInternalModelName(prefix, ref);
 };
 
+/**
+ * Detach schema type objects from other schema clones.
+ *
+ * Mongoose schema.clone() can leave nested array reference metadata
+ * shared between clones. We explicitly clone each path and its caster
+ * before rewriting tenant-specific refs.
+ */
+const detachSchemaTypes = (schema, visitedSchemas = new Set()) => {
+  if (!schema || visitedSchemas.has(schema)) return;
 
+  visitedSchemas.add(schema);
+
+  for (const [pathName, originalType] of Object.entries(schema.paths)) {
+    if (!originalType || typeof originalType.clone !== "function") {
+      throw new Error(
+        `Cannot safely clone schema path "${pathName}".`
+      );
+    }
+
+    const detachedType = originalType.clone();
+
+    // Detach root path options.
+    if (detachedType.options) {
+      detachedType.options = { ...detachedType.options };
+    }
+
+    // Explicitly detach array caster metadata.
+    if (
+      originalType.caster &&
+      typeof originalType.caster.clone === "function"
+    ) {
+      detachedType.caster = originalType.caster.clone();
+
+      if (detachedType.caster.options) {
+        detachedType.caster.options = {
+          ...detachedType.caster.options,
+        };
+      }
+    }
+
+    // Detach embedded schema paths recursively.
+    if (detachedType.schema) {
+      detachSchemaTypes(detachedType.schema, visitedSchemas);
+    }
+
+    if (detachedType.caster?.schema) {
+      detachSchemaTypes(
+        detachedType.caster.schema,
+        visitedSchemas
+      );
+    }
+
+    schema.paths[pathName] = detachedType;
+  }
+
+  // Detach virtual populate options too.
+  for (const virtual of Object.values(schema.virtuals || {})) {
+    if (virtual?.options) {
+      virtual.options = { ...virtual.options };
+    }
+  }
+};
 
 const rewriteSchemaReferences = (
   schema,
@@ -88,7 +140,10 @@ const rewriteSchemaReferences = (
   visitedSchemas.add(schema);
 
   const rewriteReference = (owner, key, pathName) => {
-    if (!owner || !Object.prototype.hasOwnProperty.call(owner, key)) {
+    if (
+      !owner ||
+      !Object.prototype.hasOwnProperty.call(owner, key)
+    ) {
       return;
     }
 
@@ -114,13 +169,12 @@ const rewriteSchemaReferences = (
     if (options.refPath || options.refpath) {
       throw new Error(
         `Dynamic refPath in ${modelName}.${pathName} ` +
-        "requires an explicit tenant reference implementation."
+          "requires an explicit tenant reference implementation."
       );
     }
 
     rewriteReference(options, "ref", pathName);
 
-    // Array of ObjectIds with ref.
     if (schemaType.caster?.options) {
       const casterOptions = schemaType.caster.options;
 
@@ -137,7 +191,6 @@ const rewriteSchemaReferences = (
       );
     }
 
-    // Mongoose versions may expose the embedded array type here.
     if (schemaType.$embeddedSchemaType?.options) {
       const embeddedOptions =
         schemaType.$embeddedSchemaType.options;
@@ -158,7 +211,6 @@ const rewriteSchemaReferences = (
       );
     }
 
-    // Nested document schemas.
     if (schemaType.schema) {
       rewriteSchemaReferences(
         schemaType.schema,
@@ -178,23 +230,12 @@ const rewriteSchemaReferences = (
         visitedTypes
       );
     }
-
-    if (schemaType.$embeddedSchemaType?.schema) {
-      rewriteSchemaReferences(
-        schemaType.$embeddedSchemaType.schema,
-        prefix,
-        modelName,
-        visitedSchemas,
-        visitedTypes
-      );
-    }
   };
 
   schema.eachPath((pathName, schemaType) => {
     inspectSchemaType(schemaType, pathName);
   });
 
-  // Virtual populate references.
   for (const [virtualName, virtual] of Object.entries(
     schema.virtuals || {}
   )) {
@@ -203,7 +244,7 @@ const rewriteSchemaReferences = (
     if (options.refPath || options.refpath) {
       throw new Error(
         `Virtual refPath in ${modelName}.${virtualName} ` +
-        "requires an explicit tenant reference implementation."
+          "requires an explicit tenant reference implementation."
       );
     }
 
@@ -227,7 +268,9 @@ const validateDefinitions = (definitions) => {
     const schema = definition?.schema;
 
     if (!name || !schema) {
-      throw new Error("Every tenant definition needs a name and schema.");
+      throw new Error(
+        "Every tenant definition needs a name and schema."
+      );
     }
 
     if (!isTenantModel(name)) {
@@ -256,16 +299,6 @@ const validateDefinitions = (definitions) => {
   return definitionMap;
 };
 
-/**
- * Register the complete EMS model set for one institute.
- *
- * Each model is registered with:
- * - an internal institute-specific Mongoose model name
- * - an institute-specific MongoDB collection name
- *
- * The original global model schemas are cloned before references
- * are rewritten. Existing global model schemas are not modified.
- */
 export const registerTenantModelSet = (
   connection,
   institute,
@@ -291,11 +324,13 @@ export const registerTenantModelSet = (
 
   const prepared = [];
 
-  // Clone and validate every schema before registering any model.
+  // Prepare every schema before registering any model.
   for (const [name, originalSchema] of definitionMap.entries()) {
     const tenantSchema = originalSchema.clone();
-    // Tenant indexes are created explicitly by the initializer.
-    // Prevent Mongoose from creating indexes automatically in the background.
+
+    // Critical: detach mutable path/caster metadata before rewriting refs.
+    detachSchemaTypes(tenantSchema);
+
     tenantSchema.set("autoIndex", false);
 
     rewriteSchemaReferences(
@@ -322,7 +357,7 @@ export const registerTenantModelSet = (
     ) {
       throw new Error(
         `Existing model "${internalName}" points to ` +
-        `"${existing.collection.name}", expected "${collectionName}".`
+          `"${existing.collection.name}", expected "${collectionName}".`
       );
     }
 
@@ -369,9 +404,7 @@ export const getTenantModel = (
   }
 
   const prefix = getTenantCollectionPrefix(institute);
-
-  const modelCache = registeredModelSets.get(connection);
-  const models = modelCache?.get(prefix);
+  const models = registeredModelSets.get(connection)?.get(prefix);
 
   if (!models?.[modelName]) {
     throw new Error(

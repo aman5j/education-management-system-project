@@ -273,6 +273,25 @@ const run = async () => {
       "Course"
     );
 
+    const courseSchemaA = CourseA.schema;
+    const courseSchemaB = CourseB.schema;
+
+    const refA =
+    courseSchemaA.path("subjects")?.caster?.options?.ref;
+
+    const refB =
+    courseSchemaB.path("subjects")?.caster?.options?.ref;
+
+    assert(
+    refA === SubjectA.modelName,
+    "Institute A Course references Institute A Subject"
+    );
+
+    assert(
+    refB === SubjectB.modelName,
+    "Institute B Course references Institute B Subject"
+    );
+
     const subjectA = await SubjectA.create({
       subjectName: "Institute A Mathematics",
       subjectCode: "PHASE3-SHARED-SUBJECT",
