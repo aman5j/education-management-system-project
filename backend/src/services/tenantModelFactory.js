@@ -258,6 +258,9 @@ export const registerTenantModelSet = (
   // Clone and validate every schema before registering any model.
   for (const [name, originalSchema] of definitionMap.entries()) {
     const tenantSchema = originalSchema.clone();
+    // Tenant indexes are created explicitly by the initializer.
+    // Prevent Mongoose from creating indexes automatically in the background.
+    tenantSchema.set("autoIndex", false);
 
     rewriteSchemaReferences(
       tenantSchema,

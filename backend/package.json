@@ -13,6 +13,7 @@
   "migrate:platform-data": "node src/scripts/migratePlatformData.js",
   "migrate:platform-superadmins": "node src/scripts/migratePlatformUsersToSuperadmins.js",
   "audit:tenant-schemas": "node src/scripts/auditTenantSchemaLoader.js",
+  "test:tenant-isolation": "node src/scripts/testTenantIsolation.js",
   "lint": "eslint .",
   "format": "prettier --write ."
   },
