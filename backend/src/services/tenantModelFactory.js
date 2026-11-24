@@ -13,6 +13,7 @@ const getInternalModelName = (prefix, modelName) =>
   `${modelName}__${prefix}`;
 
 
+
 const assertTenantReference = ({
   ref,
   modelName,
@@ -32,16 +33,36 @@ const assertTenantReference = ({
     );
   }
 
-  // Reference rewriting can encounter the same Mongoose array
-  // reference more than once. Accept only internal names belonging
-  // to this exact institute.
-  const alreadyRewritten = TENANT_MODEL_NAMES.some(
-    (tenantModelName) =>
-      ref === getInternalModelName(prefix, tenantModelName)
+  // Already rewritten for the current institute.
+  const alreadyCurrentInstituteReference =
+    TENANT_MODEL_NAMES.some(
+      (tenantModelName) =>
+        ref === getInternalModelName(prefix, tenantModelName)
+    );
+
+  if (alreadyCurrentInstituteReference) {
+    return ref;
+  }
+
+  // A schema may carry an internal reference from a previously
+  // registered institute when Mongoose clones nested array types.
+  // Recognize only our exact generated internal-name format and
+  // remap the referenced tenant model to the current institute.
+  const previousTenantReference = ref.match(
+    /^([A-Za-z][A-Za-z0-9]*)__(inst_[a-f0-9]{24})$/i
   );
 
-  if (alreadyRewritten) {
-    return ref;
+  if (previousTenantReference) {
+    const referencedModelName = previousTenantReference[1];
+
+    if (!isTenantModel(referencedModelName)) {
+      throw new Error(
+        `Unregistered tenant reference "${ref}" in ` +
+        `${modelName}.${pathName}.`
+      );
+    }
+
+    return getInternalModelName(prefix, referencedModelName);
   }
 
   if (!isTenantModel(ref)) {
@@ -52,6 +73,7 @@ const assertTenantReference = ({
 
   return getInternalModelName(prefix, ref);
 };
+
 
 
 const rewriteSchemaReferences = (
