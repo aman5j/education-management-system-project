@@ -26,17 +26,47 @@ const instituteSchema = new mongoose.Schema(
       trim: true,
     },
 
-    phone: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-
+    /**
+     * LEGACY FIELD
+     *
+     * Retained so existing institute records and current UI/API
+     * continue working during the transition.
+     *
+     * It must NOT be used to connect to a separate MongoDB database.
+     * The platform and all institute collections use the central
+     * education_management_system database.
+     */
     databaseName: {
       type: String,
       required: true,
       unique: true,
       trim: true,
+    },
+
+    /**
+     * Internal collection namespace.
+     *
+     * Generated from the institute ObjectId:
+     * inst_<24-character-object-id>
+     *
+     * Never accept this value from the browser.
+     */
+    collectionPrefix: {
+      type: String,
+      trim: true,
+      immutable: true,
+      match: /^inst_[a-f0-9]{24}$/i,
+    },
+
+    tenantSchemaVersion: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    tenantInitializedAt: {
+      type: Date,
+      default: null,
     },
 
     domain: {
@@ -69,6 +99,29 @@ const instituteSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+/**
+ * Backward-compatible prefix generation.
+ *
+ * Existing documents receive a prefix when they are next saved.
+ * This hook does not bulk-update or rewrite existing records.
+ */
+instituteSchema.pre("validate", function () {
+  if (!this.collectionPrefix && this._id) {
+    this.collectionPrefix = `inst_${String(this._id).toLowerCase()}`;
+  }
+
+  if (this.collectionPrefix && this._id) {
+    const expected = `inst_${String(this._id).toLowerCase()}`;
+
+    if (this.collectionPrefix !== expected) {
+      this.invalidate(
+        "collectionPrefix",
+        "Collection prefix must match the institute ID."
+      );
+    }
+  }
+});
 
 const getInstituteModel = (connection) => {
   return (
