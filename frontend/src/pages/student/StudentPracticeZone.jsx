@@ -26,6 +26,7 @@ import notification, {
 } from "../../utils/notification";
 
 import "./StudentPracticeZone.css";
+import { GoDotFill } from "react-icons/go";
 // import { clockText } from "./StudentExams";
 
 const ACTIVE_ATTEMPT_KEY = "ems_student_practice_active_attempt_v1";
@@ -97,15 +98,13 @@ const formatTime = (seconds) => {
 
 function PracticeStat({ icon: Icon, label, value }) {
   return (
-    <div className="spz-stat">
-      <span className="spz-stat__icon">
-        <Icon />
-      </span>
+    <div className="se-detail-card common-card se-detail-card--green">
+      <div className="se-detail-icon"> <Icon /> </div>
 
-      <div>
-        <small>{label}</small>
+     
+        <span>{label}</span>
         <strong>{value}</strong>
-      </div>
+     
     </div>
   );
 }
@@ -180,24 +179,24 @@ export default function StudentPracticeZone() {
   activeAttemptRef.current = activeAttempt;
   answersRef.current = answers;
 
-const loadTests = useCallback(async () => {
-  setLoading(true);
-  setError("");
+  const loadTests = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-  try {
-    const response =
-      await practiceStudentService.getAvailableTests();
+    try {
+      const response =
+        await practiceStudentService.getAvailableTests();
 
-    const data = getData(response);
-    setTests(Array.isArray(data) ? data : []);
-  } catch (err) {
-    setError(getApiErrorMessage(err));
-    setTests([]);
-    notification.error(getApiErrorMessage(err));
-  } finally {
-    setLoading(false);
-  }
-}, []);
+      const data = getData(response);
+      setTests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+      setTests([]);
+      notification.error(getApiErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadTests();
@@ -685,8 +684,8 @@ const loadTests = useCallback(async () => {
 
   const answeredCount = activeAttempt
     ? activeAttempt.questions.filter(
-        (question) => answers[getQuestionId(question)]
-      ).length
+      (question) => answers[getQuestionId(question)]
+    ).length
     : 0;
 
   const unansweredCount = activeAttempt
@@ -837,7 +836,7 @@ const loadTests = useCallback(async () => {
         <header className="spz-quiz-header">
           <div>
             <span className="spz-eyebrow">PRACTICE ZONE / LIVE TEST</span>
-            <h1>{activeAttempt.title}</h1>
+            {/* <h1>{activeAttempt.title}</h1> */}
             <p>
               Answer each question. Your answers are saved automatically.
             </p>
@@ -874,215 +873,213 @@ const loadTests = useCallback(async () => {
 
         <section className="se-exam-overview common-card">
 
-    <article className="se-overview-item">
-      <div className="se-overview-icon se-overview-icon--purple">
-        <FiFileText />
-      </div>
-      <div className="se-overview-info">
-        <span>Total Questions</span>
-        <strong>{activeAttempt.questions.length}</strong>
-      </div>
-    </article>
+          <article className="se-overview-item">
+            <div className="se-overview-icon se-overview-icon--purple">
+              <FiFileText />
+            </div>
+            <div className="se-overview-info">
+              <span>Total Questions</span>
+              <strong>{activeAttempt.questions.length}</strong>
+            </div>
+          </article>
 
-    <article className="se-overview-item">
-      <div className="se-overview-icon se-overview-icon--blue">
-        <FiLayers />
-      </div>
-      <div className="se-overview-info">
-        <span>Answered Count</span>
-        <strong>{answeredCount}</strong>
-      </div>
-    </article>
+          <article className="se-overview-item">
+            <div className="se-overview-icon se-overview-icon--blue">
+              <FiLayers />
+            </div>
+            <div className="se-overview-info">
+              <span>Answered Count</span>
+              <strong>{answeredCount}</strong>
+            </div>
+          </article>
 
-    <article className="se-overview-item se-overview-timer">
-      <div className="se-overview-icon se-overview-icon--pink">
-        <FiClock />
-      </div>
-      <div className="se-overview-info">
-        <span>Time Left</span>
-        <strong>
-         {formatTime(timeLeft)}
-        </strong>
-      </div>
-    </article>
+          <article className="se-overview-item se-overview-timer">
+            <div className="se-overview-icon se-overview-icon--pink">
+              <FiClock />
+            </div>
+            <div className="se-overview-info">
+              <span>Time Left</span>
+              <strong>
+                {formatTime(timeLeft)}
+              </strong>
+            </div>
+          </article>
 
-    <article className="se-overview-progress">
-      <div className="se-overview-progress-heading">
-        <strong>Overall Progress</strong>
-        <span>
-          Question <strong>{unansweredCount}</strong> of {activeAttempt.questions.length}
-        </span>
-      </div>
-      <div className="se-progress se-progress--overview">
-         <span
-              style={{
-                width: `${
-                  activeAttempt.questions.length
-                    ? (answeredCount /
+          <article className="se-overview-progress">
+            <div className="se-overview-progress-heading">
+              <strong>Overall Progress</strong>
+              <span>
+                Question <strong>{unansweredCount}</strong> of {activeAttempt.questions.length}
+              </span>
+            </div>
+            <div className="se-progress se-progress--overview">
+              <span
+                style={{
+                  width: `${activeAttempt.questions.length
+                      ? (answeredCount /
                         activeAttempt.questions.length) *
                       100
-                    : 0
-                }%`,
-              }}
-            />
-      </div>
-    </article>
+                      : 0
+                    }%`,
+                }}
+              />
+            </div>
+          </article>
 
-  </section>
+        </section>
 
         <div className="se-take-layout">
 
-           <aside className="se-panel se-question-nav common-card">
+          <aside className="se-panel se-question-nav common-card">
             <div class="panel-header"><div><h3>Question Navigator </h3></div> <span className="numberof">
-                 {currentQuestionIndex + 1} / {" "}
-                {activeAttempt.questions.length}
-              </span>
+              {currentQuestionIndex + 1} / {" "}
+              {activeAttempt.questions.length}
+            </span>
 
               {/* <span className="spz-question-marks">
                 {formatNumber(activeAttempt.marksPerQuestion)} Marks
               </span> */}
-              </div>
+            </div>
             <div className="cardbody">
-             
 
-            
 
-            <div className="se-question-grid">
-              {activeAttempt.questions.map((question, index) => {
-                const id = getQuestionId(question);
-                const isAnswered = Boolean(answers[id]);
-                const isCurrent = index === currentQuestionIndex;
 
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    className={[
-                      "se-question-number ",
-                      isAnswered
-                        ? "is-answered"
-                        : "",
-                      isCurrent
-                        ? "is-current"
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={() => goToQuestion(index)}
-                    disabled={submitting}
-                    aria-label={`Go to question ${index + 1}`}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
 
-            <div className="spz-sidebar-summary">
-              <div>
-                <span>Answered</span>
-                <strong>{answeredCount}</strong>
+              <div className="se-question-grid">
+                {activeAttempt.questions.map((question, index) => {
+                  const id = getQuestionId(question);
+                  const isAnswered = Boolean(answers[id]);
+                  const isCurrent = index === currentQuestionIndex;
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={[
+                        "se-question-number ",
+                        isAnswered
+                          ? "is-answered"
+                          : "",
+                        isCurrent
+                          ? "is-current"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => goToQuestion(index)}
+                      disabled={submitting}
+                      aria-label={`Go to question ${index + 1}`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
               </div>
-              <div>
-                <span>Unanswered</span>
-                <strong>{unansweredCount}</strong>
+
+              <div className="spz-sidebar-summary">
+                <div>
+                  <span>Answered</span>
+                  <strong>{answeredCount}</strong>
+                </div>
+                <div>
+                  <span>Unanswered</span>
+                  <strong>{unansweredCount}</strong>
+                </div>
               </div>
-            </div>
-            <div class="se-legend"><span><i class="is-current"></i> Current</span><span><i class="is-answered"></i> Answered</span><span><i></i> Unanswered</span></div>
+              <div class="se-legend"><span><i class="is-current"></i> Current</span><span><i class="is-answered"></i> Answered</span><span><i></i> Unanswered</span></div>
 
-            
 
-            <p className="spz-sidebar-note">
-              Your progress is saved automatically. If you refresh
-              or reopen this page, you can continue your attempt
-              while time remains.
-            </p>
+
+              <p className="spz-sidebar-note">
+                Your progress is saved automatically. If you refresh
+                or reopen this page, you can continue your attempt
+                while time remains.
+              </p>
             </div>
           </aside>
           <section className="se-panel se-question-panel common-card">
-              <div className="cardbody">
-                <div className="se-question-content">
-                  <h2 className="se-question-text">
-                    {currentQuestion.questionText}
-                  </h2>
-            </div>
+            <div className="cardbody">
+              <div className="se-question-content">
+                <h2 className="se-question-text">
+                  {currentQuestion.questionText}
+                </h2>
+              </div>
 
-            <div className="se-options">
-              {["A", "B", "C", "D"].map((option) => {
-                const optionText =
-                  currentQuestion[`option${option}`];
+              <div className="se-options">
+                {["A", "B", "C", "D"].map((option) => {
+                  const optionText =
+                    currentQuestion[`option${option}`];
 
-                return (
-                  <label
-                    key={option}
-                    className={`se-option  ${
-                      selectedAnswer === option
-                        ? "is-selected"
-                        : ""
-                    }`}
+                  return (
+                    <label
+                      key={option}
+                      className={`se-option  ${selectedAnswer === option
+                          ? "is-selected"
+                          : ""
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`question-${questionId}`}
+                        value={option}
+                        checked={selectedAnswer === option}
+                        disabled={submitting || timeLeft <= 0}
+                        onChange={() =>
+                          handleAnswerChange(questionId, option)
+                        }
+                      />
+                      <span className="se-option__radio" />
+
+                      <span className="se-option__key">
+                        {option}
+                      </span>
+
+                      <span className="se-option__text">
+                        {optionText}
+                      </span>
+
+                      {selectedAnswer === option && (
+                        <FiCheckCircle className="spz-option__check" />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+
+
+
+              {submitError && (
+                <div className="spz-alert spz-alert--error spz-submit-error">
+                  <FiAlertCircle />
+                  <span>{submitError}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit(timeLeft <= 0)}
                   >
-                    <input
-                      type="radio"
-                      name={`question-${questionId}`}
-                      value={option}
-                      checked={selectedAnswer === option}
-                      disabled={submitting || timeLeft <= 0}
-                      onChange={() =>
-                        handleAnswerChange(questionId, option)
-                      }
-                    />
-                     <span className="se-option__radio" />
+                    Retry submit
+                  </button>
+                </div>
+              )}
 
-                    <span className="se-option__key">
-                      {option}
-                    </span>
+              {submitting && (
+                <div className="spz-submitting-note">
+                  <FiRefreshCw className="spz-spin" />
+                  Submitting your answers. Please wait...
+                </div>
+              )}
 
-                    <span className="se-option__text">
-                      {optionText}
-                    </span>
 
-                    {selectedAnswer === option && (
-                      <FiCheckCircle className="spz-option__check" />
-                    )}
-                  </label>
-                );
-              })}
             </div>
-
-           
-
-            {submitError && (
-              <div className="spz-alert spz-alert--error spz-submit-error">
-                <FiAlertCircle />
-                <span>{submitError}</span>
-                <button
-                  type="button"
-                  onClick={() => handleSubmit(timeLeft <= 0)}
-                >
-                  Retry submit
-                </button>
-              </div>
-            )}
-
-            {submitting && (
-              <div className="spz-submitting-note">
-                <FiRefreshCw className="spz-spin" />
-                Submitting your answers. Please wait...
-              </div>
-            )}
-
-            
-              </div>
- <div className="se-exam-footer">
-  <button
-              type="button"
-              className="themebtn themebtnline"
-              disabled={submitting}
-              onClick={() => handleSubmit(false)}
-            >
-              <FiSend />
-              Submit & Exit
-            </button>
+            <div className="se-exam-footer">
+              <button
+                type="button"
+                className="themebtn themebtnline"
+                disabled={submitting}
+                onClick={() => handleSubmit(false)}
+              >
+                <FiSend />
+                Submit & Exit
+              </button>
               <button
                 type="button"
                 className="themebtn"
@@ -1094,10 +1091,10 @@ const loadTests = useCallback(async () => {
                 <FiChevronLeft /> Previous
               </button>
 
-             
+
 
               {currentQuestionIndex <
-              activeAttempt.questions.length - 1 ? (
+                activeAttempt.questions.length - 1 ? (
                 <button
                   type="button"
                   className="themebtn"
@@ -1121,7 +1118,7 @@ const loadTests = useCallback(async () => {
             </div>
           </section>
 
-         
+
         </div>
       </main>
     );
@@ -1133,165 +1130,209 @@ const loadTests = useCallback(async () => {
 
   if (selectedTest) {
     return (
-      <main className="spz-page">
-        <button
-          type="button"
-          className="spz-back-button"
-          onClick={closeInstructions}
-        >
-          <FiArrowLeft /> Back to Practice Zone
-        </button>
+      <main className="spz-page student-exam-instructions">
 
-        <section className="spz-instructions">
-          <div className="spz-instructions__top">
-            <span className="spz-eyebrow">
-              PRACTICE ZONE / TEST INSTRUCTIONS
-            </span>
 
-            <span className="spz-live-badge">
-              <FiCheckCircle /> Published
-            </span>
+        <section className="student-exams student-exam-instructions">
+          <div class="page-header"><div><h1>Practice Test Instructions</h1>
+            <p>Review your schedule and instructions before starting.</p>
           </div>
 
-          <h1>{instructions?.title || selectedTest.title}</h1>
 
-          <p className="spz-instructions__description">
-            {instructions?.description ||
-              selectedTest.description ||
-              "Practice your knowledge with this test."}
-          </p>
+            <button
+              type="button"
+              className="themebtn"
+              onClick={closeInstructions}
+            >
+              <FiArrowLeft /> Back To Test
+            </button>
+          </div>
 
-          {detailLoading ? (
-            <div className="spz-state">
-              <FiRefreshCw className="spz-spin" />
-              Loading test instructions...
-            </div>
-          ) : detailError ? (
-            <div className="spz-alert spz-alert--error">
-              <FiAlertCircle />
-              <span>{detailError}</span>
-              <button
-                type="button"
-                onClick={() => openInstructions(selectedTest)}
-              >
-                Retry
-              </button>
-            </div>
-          ) : instructions ? (
-            <>
-              <div className="spz-instruction-stats">
-                <PracticeStat
-                  icon={FiBookOpen}
-                  label="Course"
-                  value={instructions.course || "—"}
-                />
+          <div className="se-instruction-layout">
 
-                <PracticeStat
-                  icon={FiFileText}
-                  label="Subject"
-                  value={instructions.subject || "—"}
-                />
 
-                <PracticeStat
-                  icon={FiTarget}
-                  label="Questions"
-                  value={instructions.totalQuestions}
-                />
-
-                <PracticeStat
-                  icon={FiClock}
-                  label="Duration"
-                  value={`${instructions.durationMinutes} minutes`}
-                />
-
-                <PracticeStat
-                  icon={FiCheckCircle}
-                  label="Total Marks"
-                  value={formatNumber(instructions.totalMarks)}
-                />
-
-                <PracticeStat
-                  icon={FiActivity}
-                  label="Marks / Question"
-                  value={formatNumber(instructions.marksPerQuestion)}
-                />
+            {detailLoading ? (
+              <div className="spz-state">
+                <FiRefreshCw className="spz-spin" />
+                Loading test instructions...
               </div>
-
-              <section className="spz-rules">
-                <h2>Test Instructions</h2>
-
-                <ul>
-                  <li>
-                    Read every question carefully before selecting an answer.
-                  </li>
-                  <li>
-                    The test has {instructions.totalQuestions} questions.
-                  </li>
-                  <li>
-                    You will have {instructions.durationMinutes} minutes.
-                  </li>
-                  <li>
-                    Each correct answer carries{" "}
-                    {formatNumber(instructions.marksPerQuestion)} marks.
-                  </li>
-                  <li>
-                    Your answers are saved automatically during the attempt.
-                  </li>
-                  <li>
-                    You can resume an unfinished attempt after refreshing
-                    or reopening the Practice Zone.
-                  </li>
-                  <li>
-                    The test is submitted automatically when the timer expires.
-                  </li>
-                  <li>
-                    You can attempt this practice test unlimited times.
-                  </li>
-                </ul>
-              </section>
-
-              <div className="spz-attempt-summary">
-                <div>
-                  <small>Previous completed attempts</small>
-                  <strong>
-                    {instructions.attemptsCompleted ?? 0}
-                  </strong>
-                </div>
-
-                <div>
-                  <small>Attempt limit</small>
-                  <strong>
-                    {instructions.attemptsAllowed || "Unlimited"}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="spz-start-footer">
-                <p>
-                  Starting the test will begin the timer immediately.
-                  Make sure you are ready before continuing.
-                </p>
-
+            ) : detailError ? (
+              <div className="spz-alert spz-alert--error">
+                <FiAlertCircle />
+                <span>{detailError}</span>
                 <button
                   type="button"
-                  className="spz-primary-button spz-start-button"
-                  onClick={startPracticeTest}
-                  disabled={starting}
+                  onClick={() => openInstructions(selectedTest)}
                 >
-                  {starting ? (
-                    <>
-                      <FiRefreshCw className="spz-spin" />
-                      Starting Test...
-                    </>
-                  ) : (
-                    <>
-                      Start Practice Test <FiArrowRight />
-                    </>
-                  )}
+                  Retry
                 </button>
               </div>
-            </>
-          ) : null}
+            ) : instructions ? (
+              <>
+
+                <div className="se-instruction-left">
+                  <div class="se-hall-ticket common-card">
+                    <div class="se-hall-content">
+                      <span>Practice Test Paper</span>
+                        <h2>{instructions?.title || selectedTest.title} </h2> 
+                       <p>
+                        {instructions?.description ||
+                      selectedTest.description ||
+                      "Practice your knowledge with this test."}
+                       </p>
+                       </div>
+                        
+                    </div>
+
+                    <div class="se-schedule-heading"><h2>Practice Test Schedule &amp; Details</h2><span></span></div>
+
+<div className="se-detail-grid">
+
+                  <PracticeStat
+                    icon={FiBookOpen}
+                    label="Course"
+                    value={instructions.course || "—"}
+                  />
+
+                  <PracticeStat
+                    icon={FiFileText}
+                    label="Subject"
+                    value={instructions.subject || "—"}
+                  />
+
+                  <PracticeStat
+                    icon={FiTarget}
+                    label="Questions"
+                    value={instructions.totalQuestions}
+                  />
+
+                  <PracticeStat
+                    icon={FiClock}
+                    label="Duration"
+                    value={`${instructions.durationMinutes} minutes`}
+                  />
+
+                  <PracticeStat
+                    icon={FiCheckCircle}
+                    label="Total Marks"
+                    value={formatNumber(instructions.totalMarks)}
+                  />
+
+                  <PracticeStat
+                    icon={FiActivity}
+                    label="Marks / Question"
+                    value={formatNumber(instructions.marksPerQuestion)}
+                  />
+                  </div>  
+                </div>
+                <div className="se-instructions-panel  nospace">
+                  <div className="common-card">
+                    <div className="panel-header"><div><h3>START PRACTICE</h3>
+                    </div><div className="sc-recommendations__heading"></div></div>
+
+                    <div className="cardbody">
+
+                      <button
+                        type="button"
+                        className="themebtn"
+                        onClick={startPracticeTest}
+                        disabled={starting}
+                      >
+                        {starting ? (
+                          <>
+                            <FiRefreshCw className="spz-spin" />
+                            Starting Test...
+                          </>
+                        ) : (
+                          <>
+                            Start Practice Test <FiArrowRight />
+                          </>
+                        )}
+                      </button>
+
+                      <p className="se-start-help">
+                        Starting the test will begin the timer immediately.
+                        Make sure you are ready before continuing.
+                      </p>
+
+
+
+
+                    </div>
+
+
+                  </div>
+
+                  <section className="common-card">
+
+
+                    <div class="panel-header"><div><h3>Important Test Instructions </h3></div><div class="sc-recommendations__heading"></div></div>
+                    <div className="cardbody">
+                      <ul className="se-instruction-list">
+
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p> Read every question carefully before selecting an answer.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p> The test has {instructions.totalQuestions} questions.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p> You will have {instructions.durationMinutes} minutes.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p> Each correct answer carries{" "}
+                            {formatNumber(instructions.marksPerQuestion)} marks.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p> Your answers are saved automatically during the attempt.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p> You can resume an unfinished attempt after refreshing
+                            or reopening the Practice Zone.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p>  The test is submitted automatically when the timer expires.</p>
+                        </li>
+                        <li>  <span className="se-instruction-number"> <GoDotFill />
+                        </span>
+                          <p>  You can attempt this practice test unlimited times.</p>
+                        </li>
+                      </ul>
+                    </div>
+                  </section>
+
+                  <div className="spz-attempt-summary">
+                    <div >
+                      <small>Previous completed attempts</small>
+                      <strong>
+                        {instructions.attemptsCompleted ?? 0}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <small>Attempt limit</small>
+                      <strong>
+                        {instructions.attemptsAllowed || "Unlimited"}
+                      </strong>
+                    </div>
+                  </div>
+
+
+                </div>
+
+
+
+
+              </>
+            ) : null}
+          </div>
         </section>
       </main>
     );
@@ -1303,13 +1344,13 @@ const loadTests = useCallback(async () => {
 
   return (
     <main className="spz-page">
-     
+
 
       <div class="page-header"><div><h1>Test Paper</h1></div></div>
 
 
 
-    
+
 
       {error || loading ? (
         <StateMessage
@@ -1321,49 +1362,49 @@ const loadTests = useCallback(async () => {
         <>
           <section className="common-card-filters">
             <div className="input-search">
-               
-                  <FiSearch />
-                  <input
-                    type="search"
-                    placeholder="Search tests, courses or subjects..."
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                  />
-               
+
+              <FiSearch />
+              <input
+                type="search"
+                placeholder="Search tests, courses or subjects..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+
             </div>
 
-<div className="input-search">
-            <select
-              value={courseFilter}
-              onChange={(event) => {
-                setCourseFilter(event.target.value);
-                setSubjectFilter("");
-              }}
-              aria-label="Filter by course"
-            >
-              <option value="">All Courses</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.name}
-                </option>
-              ))}
-            </select>
+            <div className="input-search">
+              <select
+                value={courseFilter}
+                onChange={(event) => {
+                  setCourseFilter(event.target.value);
+                  setSubjectFilter("");
+                }}
+                aria-label="Filter by course"
+              >
+                <option value="">All Courses</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-<div className="input-search">
-            <select
-              value={subjectFilter}
-              onChange={(event) => setSubjectFilter(event.target.value)}
-              aria-label="Filter by subject"
-            >
-              <option value="">All Subjects</option>
-              {subjects.map((subject) => (
-                <option key={subject.id} value={subject.id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-</div>
+            <div className="input-search">
+              <select
+                value={subjectFilter}
+                onChange={(event) => setSubjectFilter(event.target.value)}
+                aria-label="Filter by subject"
+              >
+                <option value="">All Subjects</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             {hasFilters && (
               <button
                 type="button"
@@ -1378,7 +1419,7 @@ const loadTests = useCallback(async () => {
           <div className="spz-results-heading">
             <div>
               <h2>Available Tests ({filteredTests.length})</h2>
-              
+
             </div>
           </div>
 
@@ -1443,9 +1484,9 @@ const loadTests = useCallback(async () => {
                       type="button"
                       onClick={() => openInstructions(test)}
                     >
-                     Start Test <FiArrowRight />
+                      Start Test <FiArrowRight />
                     </button>
-                    
+
                   </div>
                 </article>
               ))}
