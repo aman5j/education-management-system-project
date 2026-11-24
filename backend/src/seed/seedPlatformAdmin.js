@@ -74,7 +74,7 @@ const seedPlatformAdmin = async () => {
   console.log(`Role: ${user.role}`);
   console.log(`Status: ${user.status}`);
   console.log("Password: securely hashed in MongoDB");
-  console.log("Database: education_management_system");
+  console.log("Database: ems_platform");
   console.log("======================================");
 };
 

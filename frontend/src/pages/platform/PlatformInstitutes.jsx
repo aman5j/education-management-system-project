@@ -462,62 +462,64 @@ const PlatformInstitutes = () => {
                             <FiEdit2 />
                           </button>
 
-                          {institute.status === "active" ? (
+                          
+                        {institute.status === "active" ? (
+                        <>
                             <button
-                              type="button"
-                              className="danger"
-                              title="Suspend institute"
-                              onClick={() =>
-                                handleStatusChange(
-                                  institute,
-                                  "suspended"
-                                )
-                              }
+                            type="button"
+                            className="danger"
+                            title="Suspend institute"
+                            onClick={() =>
+                                handleStatusChange(institute, "suspended")
+                            }
                             >
-                              <FiShield />
+                            <FiShield />
                             </button>
-                          ) : institute.status === "deactivated" ? (
-                            <button
-                              type="button"
-                              title="Deactivated"
-                              disabled
-                            >
-                              <FiShield />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="success"
-                              title="Activate institute"
-                              disabled={
-                                institute.provisioningStatus !== "ready"
-                              }
-                              onClick={() =>
-                                handleStatusChange(
-                                  institute,
-                                  "active"
-                                )
-                              }
-                            >
-                              <FiShield />
-                            </button>
-                          )}
 
-                          {institute.status !== "deactivated" && (
                             <button
-                              type="button"
-                              className="danger"
-                              title="Deactivate institute"
-                              onClick={() =>
-                                handleStatusChange(
-                                  institute,
-                                  "deactivated"
-                                )
-                              }
+                            type="button"
+                            className="danger"
+                            title="Deactivate institute"
+                            onClick={() =>
+                                handleStatusChange(institute, "deactivated")
+                            }
                             >
-                              <FiX />
+                            <FiX />
                             </button>
-                          )}
+                        </>
+                        ) : (
+                        <>
+                            <button
+                            type="button"
+                            className="success"
+                            title={
+                                institute.provisioningStatus === "ready"
+                                ? "Activate institute"
+                                : "Database provisioning must be completed before activation"
+                            }
+                            disabled={institute.provisioningStatus !== "ready"}
+                            onClick={() =>
+                                handleStatusChange(institute, "active")
+                            }
+                            >
+                            <FiShield />
+                            </button>
+
+                            {institute.status !== "deactivated" && (
+                            <button
+                                type="button"
+                                className="danger"
+                                title="Deactivate institute"
+                                onClick={() =>
+                                handleStatusChange(institute, "deactivated")
+                                }
+                            >
+                                <FiX />
+                            </button>
+                            )}
+                        </>
+                        )}
+
                         </div>
                       </td>
                     </tr>
