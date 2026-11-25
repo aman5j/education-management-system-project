@@ -9,6 +9,11 @@ import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import platformRoutes from "./routes/platform.routes.js";
 
 
+import tenantAuthRoutes from "./routes/tenantAuth.routes.js";
+import { resolveTenant } from "./middleware/tenantResolver.middleware.js";
+import { attachTenantModels } from "./middleware/tenantModelContext.middleware.js";
+
+
 import authRoutes from "./routes/auth.routes.js";
 
 import roleRoutes from "./routes/role.routes.js";
@@ -260,6 +265,20 @@ app.get("/api/health", (req, res) => {
     environment: process.env.NODE_ENV,
   });
 });
+
+/*
+ * Phase 4B — Tenant Authentication
+ *
+ * 1. Resolve institute from trusted hostname.
+ * 2. Register only that institute's model set.
+ * 3. Handle tenant authentication routes.
+ */
+app.use(
+  "/api/tenant",
+  resolveTenant,
+  attachTenantModels,
+  tenantAuthRoutes
+);
 
 app.use("/api/auth", authRoutes);
 // !!!!! INSERTION START: CENTRAL PLATFORM ROUTES !!!!!
