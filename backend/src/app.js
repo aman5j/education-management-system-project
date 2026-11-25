@@ -274,7 +274,7 @@ app.get("/api/health", (req, res) => {
  * 3. Handle tenant authentication routes.
  */
 app.use(
-  "/api/tenant",
+  "/api/tenant/auth",
   resolveTenant,
   attachTenantModels,
   tenantAuthRoutes
