@@ -1443,9 +1443,9 @@ export default function StudentPracticeZone() {
               {filteredTests.map((test) => (
                 <article className="common-card" key={test._id}>
                   <div className="spz-test-card__content">
-                    <span className="spz-test-course">
+                    {/* <span className="spz-test-course">
                       {test.course_id?.courseTitle || "Course"}
-                    </span>
+                    </span> */}
 
                     <h3>{test.title}</h3>
 
@@ -1454,10 +1454,10 @@ export default function StudentPracticeZone() {
                         "Test your understanding of this subject."}
                     </p>
 
-                    <div className="spz-test-subject">
+                    {/* <div className="spz-test-subject">
                       <FiBookOpen />
                       {test.subject_id?.subjectName || "Subject"}
-                    </div>
+                    </div> */}
 
                     <div className="spz-test-meta">
                       <span>
@@ -1478,7 +1478,17 @@ export default function StudentPracticeZone() {
                   </div>
 
                   <div className="spz-test-card__footer">
-                    <span>Unlimited attempts</span>
+                    <div className="leftcols">
+                      <div className="colstatus">
+                        <label>Attempts : </label>
+                        <span> &nbsp; Unlimited</span>
+                      </div>
+                      <div className="colstatus">
+                        <label>Attend Attempts : </label>
+                        <span> &nbsp; 04</span>
+                      </div>
+
+                    </div>
 
                     <button className="themebtn"
                       type="button"

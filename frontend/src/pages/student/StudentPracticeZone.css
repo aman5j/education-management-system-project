@@ -199,7 +199,7 @@
 .spz-test-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  column-gap: 15px;
 }
 
 .spz-test-card {
@@ -277,12 +277,26 @@
   margin: 0 0 13px;
   overflow: hidden;
   color: #718096;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
+.leftcols {
+    display: flex;
+    gap: 15px;
+}
+.colstatus {
+    display: flex;
+    padding: 7px 12px;
+    border-radius: 3px;
+    border: 1px solid #06488d40;
+    background: #07488e00;
+    font-size: 12px;
+    font-weight: 500;
+    color: #06488d;
+}
 .spz-test-subject {
   display: flex;
   align-items: center;
@@ -1221,6 +1235,12 @@
   .spz-result__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+.spz-test-card__content h3 {
+    margin-top: 0;
+    text-transform: capitalize;
+    font-weight: 600;
+    margin-bottom: 10px;
 }
 
 @media (max-width: 380px) {
