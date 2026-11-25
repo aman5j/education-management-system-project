@@ -4,6 +4,10 @@ import mongoose from "mongoose";
 import { getPlatformConnection } from "../config/platformDb.js";
 import getInstituteModel from "../models/Institute.js";
 
+import {
+  invalidateTenantResolutionCache,
+} from "../middleware/tenantResolver.middleware.js";
+
 const getInstituteModelInstance = () => {
   return getInstituteModel(getPlatformConnection());
 };
@@ -252,6 +256,8 @@ export const createInstitute = async (req, res, next) => {
       provisionedAt: null,
     });
 
+    invalidateTenantResolutionCache();
+
     return res.status(201).json({
       success: true,
       message:
@@ -448,6 +454,8 @@ export const updateInstitute = async (req, res, next) => {
     // not editable through this profile endpoint.
     await institute.save();
 
+    invalidateTenantResolutionCache();
+
     return res.status(200).json({
       success: true,
       message: "Institute details updated successfully.",
@@ -510,6 +518,8 @@ export const updateInstituteStatus = async (req, res, next) => {
 
     institute.status = status;
     await institute.save();
+
+    invalidateTenantResolutionCache();
 
     return res.status(200).json({
       success: true,

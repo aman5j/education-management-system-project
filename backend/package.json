@@ -14,6 +14,7 @@
   "migrate:platform-superadmins": "node src/scripts/migratePlatformUsersToSuperadmins.js",
   "audit:tenant-schemas": "node src/scripts/auditTenantSchemaLoader.js",
   "test:tenant-isolation": "node src/scripts/testTenantIsolation.js",
+  "test:tenant-resolver": "node --test src/scripts/testTenantResolver.js",
   "lint": "eslint .",
   "format": "prettier --write ."
   },

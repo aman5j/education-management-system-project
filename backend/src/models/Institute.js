@@ -76,6 +76,18 @@ const instituteSchema = new mongoose.Schema(
       trim: true,
     },
 
+
+    domainVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    domainVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+
+
     status: {
       type: String,
       enum: ["active", "suspended", "deactivated"],

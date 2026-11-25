@@ -108,6 +108,24 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+
+const trustProxySetting = process.env.TRUST_PROXY;
+
+if (trustProxySetting) {
+  let trustProxyValue = trustProxySetting.trim();
+
+  if (trustProxyValue === "true") {
+    trustProxyValue = true;
+  } else if (trustProxyValue === "false") {
+    trustProxyValue = false;
+  } else if (/^\d+$/.test(trustProxyValue)) {
+    trustProxyValue = Number(trustProxyValue);
+  }
+
+  app.set("trust proxy", trustProxyValue);
+}
+
+
 // app.use(
 //   "/uploads",
 //   express.static(
