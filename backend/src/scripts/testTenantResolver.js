@@ -206,6 +206,33 @@ test("valid hostname resolves only its own institute", async () => {
   );
 });
 
+
+test("Institute B hostname resolves only Institute B", async () => {
+  const result = await invokeResolver({
+    hostname: "institute-b.ems.test",
+    records: [instituteB],
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(result.nextCalled, true);
+
+  assert.equal(
+    result.req.tenantContext.instituteId,
+    instituteB._id
+  );
+
+  assert.equal(
+    result.req.tenantContext.collectionPrefix,
+    instituteB.collectionPrefix
+  );
+
+  assert.notEqual(
+    result.req.tenantContext.instituteId,
+    instituteA._id
+  );
+});
+
+
 test("platform host is reserved", async () => {
   const result = await invokeResolver({
     hostname: "platform.ems.test",
