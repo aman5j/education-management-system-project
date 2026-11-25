@@ -82,9 +82,9 @@ paymentSchema.index({
   payment_date: -1,
 });
 
-paymentSchema.index({
-  receipt_no: 1,
-});
+// paymentSchema.index({
+//   receipt_no: 1,
+// });
 
 const Payment = mongoose.model(
   "Payment",

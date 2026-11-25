@@ -6,21 +6,21 @@ const studentAdmissionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Student",
       required: true,
-      index: true,
+      // index: true,
     },
 
     course_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
       required: true,
-      index: true,
+      // index: true,
     },
 
     batch_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Batch",
       required: true,
-      index: true,
+      // index: true,
     },
 
     course_type: {

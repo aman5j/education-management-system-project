@@ -60,7 +60,7 @@ const subjectSchema = new mongoose.Schema(
       uppercase: true,
       minlength: 2,
       maxlength: 30,
-      unique: true,
+      // unique: true,
     },
 
     // Optional legacy field for existing records.
