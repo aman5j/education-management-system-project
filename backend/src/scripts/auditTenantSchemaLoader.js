@@ -15,14 +15,16 @@ const runAudit = async () => {
   try {
     console.log("Starting EMS tenant schema loader audit...");
 
-    // This script runs in a fresh Node process.
-    const courseWasAlreadyRegistered = Boolean(
-      mongoose.models.Course
-    );
+    // This audit must run in a fresh Node process.
+    const registeredBeforeLoading =
+      TENANT_SCHEMA_ONLY_MODEL_NAMES.filter(
+        (name) => Boolean(mongoose.models[name])
+      );
 
-    if (courseWasAlreadyRegistered) {
+    if (registeredBeforeLoading.length) {
       throw new Error(
-        "Course was registered globally before the tenant schema audit began."
+        "Schema-only models were already globally registered before loading: " +
+        registeredBeforeLoading.join(", ")
       );
     }
 
@@ -40,9 +42,10 @@ const runAudit = async () => {
       (name) => CENTRAL_MODEL_NAMES.includes(name)
     );
 
-    const courseGloballyRegistered = Boolean(
-      mongoose.models.Course
-    );
+    const globallyRegisteredAfterLoading =
+      TENANT_SCHEMA_ONLY_MODEL_NAMES.filter(
+        (name) => Boolean(mongoose.models[name])
+      );
 
     console.log("");
     console.log("========== TENANT SCHEMA AUDIT ==========");
@@ -53,12 +56,21 @@ const runAudit = async () => {
     console.log(
       `Schema-only models:      ${TENANT_SCHEMA_ONLY_MODEL_NAMES.length}`
     );
+
     console.log(
-      `Course globally registered by loader: ${courseGloballyRegistered ? "YES" : "NO"}`
+      "Schema-only model names:",
+      TENANT_SCHEMA_ONLY_MODEL_NAMES.join(", ")
+    );
+
+    console.log(
+      "Globally registered after loading:",
+      globallyRegisteredAfterLoading.length
+        ? globallyRegisteredAfterLoading.join(", ")
+        : "NONE"
     );
 
     if (missing.length) {
-      console.error("Missing:", missing);
+      console.error("Missing schemas:", missing);
       process.exitCode = 1;
       return;
     }
@@ -69,9 +81,9 @@ const runAudit = async () => {
       return;
     }
 
-    if (courseGloballyRegistered) {
+    if (globallyRegisteredAfterLoading.length) {
       console.error(
-        "FAIL: Loading tenant definitions registered Course globally."
+        "FAIL: Schema-only modules registered global models."
       );
       process.exitCode = 1;
       return;
@@ -79,7 +91,7 @@ const runAudit = async () => {
 
     console.log("");
     console.log("All tenant schemas loaded successfully.");
-    console.log("Course schema-only loading verified.");
+    console.log("All extracted schemas passed global registration checks.");
     console.log("No database records were modified.");
     console.log("=========================================");
   } catch (error) {

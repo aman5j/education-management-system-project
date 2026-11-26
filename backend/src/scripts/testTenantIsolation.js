@@ -123,10 +123,18 @@ const run = async () => {
     `Loaded all ${TENANT_MODEL_NAMES.length} tenant schemas`
     );
 
+    const schemaOnlyModels = [
+    "Course",
+    "Subject",
+    "Role",
+    ];
+
+    for (const modelName of schemaOnlyModels) {
     assert(
-    !mongoose.models.Course,
-    "Tenant schema loading does not register Course globally"
+        !mongoose.models[modelName],
+        `Tenant schema loading does not register ${modelName} globally`
     );
+    }
 
     console.log("");
     console.log("Initializing temporary Institute A collections...");
