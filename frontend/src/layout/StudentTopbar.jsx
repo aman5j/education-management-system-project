@@ -9,9 +9,11 @@ import {
   FiUser,
   FiLogOut,
 } from "react-icons/fi";
+import { FaBell } from "react-icons/fa";
 
 import studentPortalService from "../services/studentPortalService";
 import { getAssetUrl } from "../utils/assetUrl";
+import { HiOutlineBars3 } from "react-icons/hi2";
 
 export default function StudentTopbar({
   user,
@@ -122,36 +124,24 @@ export default function StudentTopbar({
   };
 
   return (
-    <header className="student-layout__topbar">
+    <header className="admin-topbar">
       <div className="student-layout__topbar-left">
         <button
           type="button"
-          className="student-layout__menu-toggle"
+          className="sidebar-collapse-button studentport"
           onClick={onMenuToggle}
           aria-label="Toggle sidebar"
         >
-          <FiMenu />
+           <HiOutlineBars3 />
         </button>
 
-        <label className="student-layout__search">
-          <FiSearch />
-          <input
-            type="search"
-            aria-label="Search student portal"
-            placeholder="Search student portal"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.currentTarget.value = "";
-              }
-            }}
-          />
-        </label>
+       
       </div>
 
-      <div className="student-layout__topbar-actions">
+      <div className="topbar-actions">
         <button
           type="button"
-          className="student-layout__icon-button"
+          className="topbar-icon-button"
           onClick={toggleFullscreen}
           title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
           aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -161,42 +151,43 @@ export default function StudentTopbar({
 
         <button
           type="button"
-          className="student-layout__icon-button"
+          className="notification-bell"
           aria-label="Notifications"
           onClick={() => onPlannedItem({ label: "Notifications", phase: 10 })}
           title="Notifications"
         >
-          <FiBell />
+          <FaBell />
         </button>
 
-        <div className="student-layout__profile-wrap" ref={profileRef}>
+        <div className="topbar-profile-wrapper" ref={profileRef}>
           <button
             type="button"
-            className="student-layout__profile-button"
+            className="topbar-profile"
             onClick={handleProfileClick}
             aria-expanded={profileOpen}
             aria-label="Open student profile menu"
           >
             {renderAvatar()}
 
-            <span className="student-layout__profile-text">
+            <span className="profile-info">
               <strong>{displayName}</strong>
-              <small>Student</small>
+              <span>Student</span>
             </span>
 
-            <FiChevronDown />
+            {/* <FiChevronDown /> */}
           </button>
 
           {profileOpen && (
-            <div className="student-layout__profile-menu">
-              <div className="student-layout__profile-menu-heading">
+            <div className="profile-dropdown">
+              <div className="profile-dropdown-header">
                 {renderAvatar()}
                 <div>
                   <strong>{displayName}</strong>
                   <span>{user?.email || "Student account"}</span>
                 </div>
               </div>
-
+<div className="profile-dropdown-divider"></div>
+            <div className="profile-dropdown-item">
               <button
                 type="button"
                 onClick={() => {
@@ -210,7 +201,7 @@ export default function StudentTopbar({
                 My Profile
               </button>
 
-              <button
+              <button className="profile-logout-button"
                 type="button"
                 onClick={() => {
                   setProfileOpen(false);
@@ -220,6 +211,7 @@ export default function StudentTopbar({
                 <FiLogOut />
                 Sign out
               </button>
+            </div>
             </div>
           )}
         </div>

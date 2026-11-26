@@ -21,6 +21,7 @@
 .notification-bell > svg {
   width: 19px;
   height: 19px;
+  fill: #05478b;
 }
 
 .notification-badge {

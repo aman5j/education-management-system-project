@@ -535,9 +535,9 @@
     padding: 8px;
 }
 
-.profile-dropdown > button svg {
+/* .profile-dropdown > button svg {
   width: 16px;
-}
+} */
 
 .profile-dropdown
   .profile-logout-button {

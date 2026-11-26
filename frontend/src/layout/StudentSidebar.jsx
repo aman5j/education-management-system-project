@@ -178,26 +178,7 @@ export default function StudentSidebar({
           })}
         </nav>
 
-        <div className="student-layout__sidebar-bottom">
-          <div className="student-layout__support-note">
-            <FiHelpCircle />
-            <div>
-              <strong>Need help?</strong>
-              <span>
-                Contact your institute administrator.
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="student-layout__signout"
-            onClick={onLogout}
-          >
-            <FiLogOut />
-            <span>Sign out</span>
-          </button>
-        </div>
+       
       </aside>
     </>
   );
