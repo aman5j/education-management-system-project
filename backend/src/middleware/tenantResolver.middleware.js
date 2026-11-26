@@ -372,9 +372,23 @@ export const createTenantResolver = ({
 
       const institute = institutes[0];
 
+      // A platform subdomain must resolve to the exact matching slug.
+      // A custom-domain record must never claim a platform subdomain.
+      if (
+      platformSlug &&
+      institute.slug !== platformSlug
+      ) {
+      return res.status(404).json({
+         success: false,
+         code: "TENANT_NOT_FOUND",
+         message:
+         "No institute is registered for this hostname.",
+      });
+      }
+
       const isApprovedPlatformSubdomain =
-        Boolean(platformSlug) &&
-        institute.slug === platformSlug;
+      Boolean(platformSlug) &&
+      institute.slug === platformSlug;
 
       let isVerifiedCustomDomain = false;
 

@@ -719,12 +719,13 @@ test("untrusted X-Forwarded-Host cannot override the actual Host header", async 
       "institute-a.ems.test"
     );
   } finally {
-    await new Promise((resolve, reject) => {
-      server.close((error) => {
-        if (error) reject(error);
-        else resolve();
-      });
-    });
+     if (server.listening) {
+        await new Promise((resolve) => {
+        server.close(() => {
+            resolve();
+        });
+        });
+    }
   }
 });
 
