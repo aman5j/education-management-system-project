@@ -1,4 +1,3 @@
-
 import {
   TENANT_MODEL_NAMES,
   isTenantModel,
@@ -15,6 +14,18 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
 
   Role: () =>
     import("../models/schemas/Role.schema.js"),
+
+  User: () =>
+    import("../models/schemas/User.schema.js"),
+
+  Student: () =>
+    import("../models/schemas/Student.schema.js"),
+
+  Batch: () =>
+    import("../models/schemas/Batch.schema.js"),
+
+  Category: () =>
+    import("../models/schemas/Category.schema.js"),
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =
