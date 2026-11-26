@@ -161,6 +161,14 @@ const run = async () => {
     "WebsiteCategoryHighlightSettings",
     "WebsiteCertificateSectionSettings",
     "WebsiteContactSettings",
+    "WebsiteCourseCategorySettings",
+    "WebsiteFreeVideoSettings",
+    "WebsitePartnerSettings",
+    "WebsitePlacementSettings",
+    "WebsiteStudyResourceSettings",
+    "WebsiteTeamSettings",
+    "WebsiteTestimonialSettings",
+    "WebsiteTrendingCourseSettings",
 
 
 

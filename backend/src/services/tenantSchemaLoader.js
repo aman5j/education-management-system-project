@@ -117,6 +117,31 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
     import("../models/schemas/WebsiteContactSettings.schema.js"),
 
 
+  WebsiteCourseCategorySettings: () =>
+    import("../models/schemas/WebsiteCourseCategorySettings.schema.js"),
+
+  WebsiteFreeVideoSettings: () =>
+    import("../models/schemas/WebsiteFreeVideoSettings.schema.js"),
+
+  WebsitePartnerSettings: () =>
+    import("../models/schemas/WebsitePartnerSettings.schema.js"),
+
+  WebsitePlacementSettings: () =>
+    import("../models/schemas/WebsitePlacementSettings.schema.js"),
+
+  WebsiteStudyResourceSettings: () =>
+    import("../models/schemas/WebsiteStudyResourceSettings.schema.js"),
+
+  WebsiteTeamSettings: () =>
+    import("../models/schemas/WebsiteTeamSettings.schema.js"),
+
+  WebsiteTestimonialSettings: () =>
+    import("../models/schemas/WebsiteTestimonialSettings.schema.js"),
+
+  WebsiteTrendingCourseSettings: () =>
+    import("../models/schemas/WebsiteTrendingCourseSettings.schema.js"),
+
+
 
 });
 
