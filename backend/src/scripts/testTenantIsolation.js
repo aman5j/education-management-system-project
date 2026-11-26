@@ -119,8 +119,13 @@ const run = async () => {
     const definitions = await loadTenantModelDefinitions();
 
     assert(
-      definitions.length === TENANT_MODEL_NAMES.length,
-      `Loaded all ${TENANT_MODEL_NAMES.length} tenant schemas`
+    definitions.length === TENANT_MODEL_NAMES.length,
+    `Loaded all ${TENANT_MODEL_NAMES.length} tenant schemas`
+    );
+
+    assert(
+    !mongoose.models.Course,
+    "Tenant schema loading does not register Course globally"
     );
 
     console.log("");
