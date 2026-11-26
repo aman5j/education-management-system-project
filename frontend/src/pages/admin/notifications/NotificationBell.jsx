@@ -3,10 +3,7 @@ import {
   useState,
 } from "react";
 
-import {
-  FiBell,
-} from "react-icons/fi";
-
+import { FaBell } from "react-icons/fa";
 import {
   useNavigate,
 } from "react-router-dom";
@@ -70,7 +67,7 @@ const NotificationBell = () => {
         )
       }
     >
-      <FiBell />
+      <FaBell /> 
 
       {unreadCount > 0 && (
         <span className="notification-badge">
