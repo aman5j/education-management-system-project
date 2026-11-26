@@ -337,7 +337,6 @@
   gap: 7px;
   min-width: 0;
   border: 1px solid #e5ecf8;
-  border-radius: 10px;
   padding: 13px;
   background: #fbfcff;
 }
@@ -2721,8 +2720,8 @@
 
 .se-overview-info strong {
   color: #10164d;
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 22 px;
+  font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -3332,9 +3331,10 @@
 
 .student-exam-instructions .se-hall-content > span {
   color: #7142d5;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: .7px;
+  text-transform: uppercase;
 }
 
 .student-exam-instructions .se-hall-content h2 {
@@ -3672,8 +3672,7 @@ flex-shrink: 0;
   gap: 7px;
   margin: 14px 5px 0;
   color: #62658e;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 13px;
 }
 
 .student-exam-instructions .se-start-help svg {
@@ -3875,7 +3874,7 @@ flex-shrink: 0;
     font-size: 25px;
   }
 }
-article.se-instructions-panel button {
+.se-instructions-panel button {
     width: 100%;
     height: 50px;
     border-radius: 50px;
@@ -4766,8 +4765,8 @@ article.se-instructions-panel button {
 
 .student-exam-instructions .se-access-countdown__content > span {
   color: #2563eb;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 1px;
 }
 
