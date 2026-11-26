@@ -131,6 +131,10 @@ const run = async () => {
     "Student",
     "Batch",
     "Category",
+    "AlertNotice",
+    "AlertNoticeDismissal",
+    "Assignment",
+    "AssignmentEvaluation",
     ];
 
     for (const modelName of schemaOnlyModels) {

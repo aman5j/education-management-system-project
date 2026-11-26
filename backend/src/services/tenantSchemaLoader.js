@@ -3,8 +3,6 @@ import {
   isTenantModel,
 } from "../config/tenantCollectionRegistry.js";
 
-// Schema-only modules must export Mongoose Schemas,
-// never globally registered Mongoose Models.
 const SCHEMA_ONLY_LOADERS = Object.freeze({
   Course: () =>
     import("../models/schemas/Course.schema.js"),
@@ -26,6 +24,18 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
 
   Category: () =>
     import("../models/schemas/Category.schema.js"),
+
+  AlertNotice: () =>
+    import("../models/schemas/AlertNotice.schema.js"),
+
+  AlertNoticeDismissal: () =>
+    import("../models/schemas/AlertNoticeDismissal.schema.js"),
+
+  Assignment: () =>
+    import("../models/schemas/Assignment.schema.js"),
+
+  AssignmentEvaluation: () =>
+    import("../models/schemas/AssignmentEvaluation.schema.js"),
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =
@@ -79,17 +89,6 @@ const loadLegacyModelSchema = async (modelName) => {
   return model.schema;
 };
 
-/**
- * Loads all registered tenant schemas.
- *
- * Schema-only modules are preferred and do not register
- * global Mongoose models.
- *
- * Legacy model imports remain temporarily available for
- * models not yet migrated.
- *
- * Central models are excluded by TENANT_MODEL_NAMES.
- */
 export const loadTenantModelDefinitions = async () => {
   if (definitionsPromise) {
     return definitionsPromise;
