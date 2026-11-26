@@ -209,17 +209,20 @@
 
 .la-actions button,
 .la-view {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 7px 9px;
-  border: 0;
-  border-radius: 7px;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
+cursor: pointer;
+    border: 1px solid #0000;
+    border-radius: 4px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background .15s, border-color .15s;
+    display: inline-flex;
+}
+.la-actions svg {
+    font-size: 13px;
 }
 
 .la-approve {
@@ -490,4 +493,8 @@
   .la-detail-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.contact-details{
+  white-space: nowrap;
 }
