@@ -142,6 +142,16 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
     import("../models/schemas/WebsiteTrendingCourseSettings.schema.js"),
 
 
+  InstituteLogo: () =>
+    import("../models/schemas/InstituteLogo.schema.js"),
+
+  InstituteSettings: () =>
+    import("../models/schemas/InstituteSettings.schema.js"),
+
+  WebsiteBannerImage: () =>
+    import("../models/schemas/WebsiteBannerImage.schema.js"),
+
+
 
 });
 

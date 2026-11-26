@@ -169,6 +169,9 @@ const run = async () => {
     "WebsiteTeamSettings",
     "WebsiteTestimonialSettings",
     "WebsiteTrendingCourseSettings",
+    "InstituteLogo",
+    "InstituteSettings",
+    "WebsiteBannerImage",
 
 
 
