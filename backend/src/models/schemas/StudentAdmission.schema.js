@@ -1,0 +1,126 @@
+
+import mongoose from "mongoose";
+
+const studentAdmissionSchema = new mongoose.Schema(
+  {
+    student_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      required: true,
+    },
+    course_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+      required: true,
+    },
+    batch_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      required: true,
+    },
+    course_type: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    course_fee: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    discount_type: {
+      type: String,
+      enum: ["Amount", "Percentage"],
+      default: "Amount",
+    },
+    discount_value: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    is_gst_taken: {
+      type: Boolean,
+      default: false,
+    },
+    gst_amount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    final_amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    admission_fee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    paid_amount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    admission_date: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    referral_source: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Completed", "Dropped"],
+      default: "Active",
+      index: true,
+    },
+    remark: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+studentAdmissionSchema.virtual("remaining_amount").get(function () {
+  const finalAmount = Number(this.final_amount || 0);
+  const paidAmount = Number(this.paid_amount || 0);
+
+  return Number(
+    Math.max(finalAmount - paidAmount, 0).toFixed(2)
+  );
+});
+
+studentAdmissionSchema.set("toJSON", {
+  virtuals: true,
+});
+
+studentAdmissionSchema.set("toObject", {
+  virtuals: true,
+});
+
+studentAdmissionSchema.index({
+  admission_date: -1,
+  status: 1,
+});
+
+studentAdmissionSchema.index({
+  student_id: 1,
+});
+
+studentAdmissionSchema.index({
+  course_id: 1,
+});
+
+studentAdmissionSchema.index({
+  batch_id: 1,
+});
+
+export default studentAdmissionSchema;

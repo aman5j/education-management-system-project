@@ -124,6 +124,7 @@ const run = async () => {
     );
 
     
+    
     const schemaOnlyModels = [
     "Course",
     "Subject",
@@ -140,6 +141,10 @@ const run = async () => {
     "Certificate",
     "CourseEnquiry",
     "Expense",
+    "AssignmentSubmission",
+    "AssignmentSubmissionVersion",
+    "StudentAdmission",
+    "Payment",
     ];
 
 
