@@ -152,6 +152,19 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
     import("../models/schemas/WebsiteBannerImage.schema.js"),
 
 
+  Exam: () =>
+    import("../models/schemas/Exam.schema.js"),
+
+  ExamAccessRequest: () =>
+    import("../models/schemas/ExamAccessRequest.schema.js"),
+
+  ExamResult: () =>
+    import("../models/schemas/ExamResult.schema.js"),
+
+  HallTicket: () =>
+    import("../models/schemas/HallTicket.schema.js"),
+
+
 
 });
 

@@ -172,6 +172,10 @@ const run = async () => {
     "InstituteLogo",
     "InstituteSettings",
     "WebsiteBannerImage",
+    "Exam",
+    "ExamAccessRequest",
+    "ExamResult",
+    "HallTicket",
 
 
 
