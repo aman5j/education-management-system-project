@@ -157,6 +157,10 @@ const run = async () => {
     "WebsiteHeaderSettings",
     "WebsiteMenuSettings",
     "WebsiteFooterSettings",
+    "WebsiteCareerSettings",
+    "WebsiteCategoryHighlightSettings",
+    "WebsiteCertificateSectionSettings",
+    "WebsiteContactSettings",
 
 
 

@@ -104,6 +104,19 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
     import("../models/schemas/WebsiteFooterSettings.schema.js"),
 
 
+  WebsiteCareerSettings: () =>
+    import("../models/schemas/WebsiteCareerSettings.schema.js"),
+
+  WebsiteCategoryHighlightSettings: () =>
+    import("../models/schemas/WebsiteCategoryHighlightSettings.schema.js"),
+
+  WebsiteCertificateSectionSettings: () =>
+    import("../models/schemas/WebsiteCertificateSectionSettings.schema.js"),
+
+  WebsiteContactSettings: () =>
+    import("../models/schemas/WebsiteContactSettings.schema.js"),
+
+
 
 });
 
