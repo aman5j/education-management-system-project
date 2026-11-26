@@ -635,13 +635,7 @@ const visibleMenuItems =
               alt="Institute Logo"
               className="sidebar-logo"
               onError={() => setLogoLoadFailed(true)}
-              style={{
-                display: "block",
-                width: "100%",
-                maxWidth: "190px",
-                height: "48px",
-                objectFit: "contain",
-              }}
+              
             />
           </NavLink>
 
