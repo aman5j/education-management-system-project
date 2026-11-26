@@ -91,6 +91,20 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
     import("../models/schemas/PracticeAttempt.schema.js"),
 
 
+  WebsiteBannerSettings: () =>
+    import("../models/schemas/WebsiteBannerSettings.schema.js"),
+
+  WebsiteHeaderSettings: () =>
+    import("../models/schemas/WebsiteHeaderSettings.schema.js"),
+
+  WebsiteMenuSettings: () =>
+    import("../models/schemas/WebsiteMenuSettings.schema.js"),
+
+  WebsiteFooterSettings: () =>
+    import("../models/schemas/WebsiteFooterSettings.schema.js"),
+
+
+
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =

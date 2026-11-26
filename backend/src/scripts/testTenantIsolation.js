@@ -153,6 +153,11 @@ const run = async () => {
     "Note",
     "PracticeTest",
     "PracticeAttempt",
+    "WebsiteBannerSettings",
+    "WebsiteHeaderSettings",
+    "WebsiteMenuSettings",
+    "WebsiteFooterSettings",
+
 
 
     ];
