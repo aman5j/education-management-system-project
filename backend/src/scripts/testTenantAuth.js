@@ -57,6 +57,7 @@ const makeResponse = () => ({
   },
 });
 
+
 const makeTenantRequest = ({
   token,
   institute = instituteA,
@@ -87,13 +88,18 @@ const makeTenantRequest = ({
         instituteId: institute.instituteId,
         collectionPrefix: institute.collectionPrefix,
       },
-      tenantModels: { User },
+      getTenantModel(modelName) {
+        assert.equal(modelName, "User");
+        return User;
+      },
     },
+
     get databaseLookups() {
       return databaseLookups;
     },
   };
 };
+
 
 const runMiddleware = async (req) => {
   const res = makeResponse();

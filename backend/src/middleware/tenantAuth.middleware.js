@@ -31,7 +31,7 @@ export const authenticateTenant = async (req, res, next) => {
   if (
     !req.tenantContext?.instituteId ||
     !req.tenantContext?.collectionPrefix ||
-    !req.tenantModels?.User
+    typeof req.getTenantModel !== "function"
   ) {
     return res.status(503).json({
       success: false,
@@ -68,7 +68,7 @@ export const authenticateTenant = async (req, res, next) => {
   }
 
   try {
-    const User = req.tenantModels.User;
+    const User = req.getTenantModel("User");
 
     const user = await User.findById(decoded.sub).populate({
       path: "assignedRole",
@@ -97,7 +97,8 @@ export const authenticateTenant = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         code: "TENANT_ROLE_CHANGED",
-        message: "Your account permissions have changed. Please sign in again.",
+        message:
+          "Your account permissions have changed. Please sign in again.",
       });
     }
 
@@ -132,7 +133,6 @@ export const authorizeTenantRoles = (...allowedRoles) => {
   };
 };
 
-// Reusable current-user response for tenant controllers.
 export const getTenantAuthenticatedUser = (req) => {
   if (!req.tenantUser) {
     throw new Error("TENANT_USER_NOT_AUTHENTICATED");

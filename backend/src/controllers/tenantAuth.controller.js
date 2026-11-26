@@ -59,15 +59,20 @@ const clearRefreshCookie = (res) => {
   res.clearCookie(COOKIE_NAME, getClearCookieOptions());
 };
 
-const getTenantUserModel = (req) => {
-  const User = req.tenantModels?.User;
 
-  if (!User || !req.tenantContext?.instituteId) {
-    throw new Error("Tenant User model or context is unavailable.");
+const getTenantUserModel = (req) => {
+  if (
+    typeof req.getTenantModel !== "function" ||
+    !req.tenantContext?.instituteId
+  ) {
+    throw new Error(
+      "Tenant model accessor or context is unavailable."
+    );
   }
 
-  return User;
+  return req.getTenantModel("User");
 };
+
 
 const getTenantRole = (role) =>
   ["admin", "staff", "student"].includes(role);

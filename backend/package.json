@@ -16,6 +16,7 @@
     "test:tenant-isolation": "node src/scripts/testTenantIsolation.js",
     "test:tenant-resolver": "node --test src/scripts/testTenantResolver.js",
     "test:tenant-auth": "node --test src/scripts/testTenantAuth.js",
+    "test:tenant-model-accessor": "node --test src/scripts/testTenantModelAccessor.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
