@@ -78,6 +78,19 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
 
 
 
+  LeaveRequest: () =>
+    import("../models/schemas/LeaveRequest.schema.js"),
+
+  Note: () =>
+    import("../models/schemas/Note.schema.js"),
+
+  PracticeTest: () =>
+    import("../models/schemas/PracticeTest.schema.js"),
+
+  PracticeAttempt: () =>
+    import("../models/schemas/PracticeAttempt.schema.js"),
+
+
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =

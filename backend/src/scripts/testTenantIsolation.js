@@ -149,6 +149,11 @@ const run = async () => {
     "SupportTicket",
     "SupportMessage",
     "SupportCounter",
+    "LeaveRequest",
+    "Note",
+    "PracticeTest",
+    "PracticeAttempt",
+
 
     ];
 
