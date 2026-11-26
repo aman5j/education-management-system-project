@@ -1,11 +1,17 @@
 
 import { getPlatformConnection } from "../config/platformDb.js";
+
 import {
   loadTenantModelDefinitions,
 } from "../services/tenantSchemaLoader.js";
+
 import {
   registerTenantModelSet,
 } from "../services/tenantModelFactory.js";
+
+import {
+  attachTenantModelAccessor,
+} from "../services/tenantModelAccessor.js";
 
 let definitionsPromise = null;
 
@@ -45,14 +51,15 @@ export const attachTenantModels = async (req, res, next) => {
       });
     }
 
-    // Construct only from resolver-generated values.
-    // Never use instituteId or collectionPrefix from req.body/headers.
+    // These values are taken only from resolveTenant.
+    // Never use browser-supplied institute IDs or prefixes.
     const institute = {
       _id: instituteId,
       collectionPrefix,
     };
 
     const connection = getPlatformConnection();
+
     const definitions = await getDefinitions();
 
     const models = registerTenantModelSet(
@@ -61,7 +68,11 @@ export const attachTenantModels = async (req, res, next) => {
       definitions
     );
 
-    req.tenantModels = models;
+    // Attach the single request-scoped model accessor.
+    attachTenantModelAccessor(req, models);
+
+    // Retain the trusted institute metadata for existing
+    // tenant middleware and controllers that need it.
     req.tenantInstitute = Object.freeze(institute);
 
     return next();

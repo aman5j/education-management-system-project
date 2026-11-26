@@ -8,7 +8,7 @@ export const authenticateTenant = async (req, res, next) => {
   const authorization = req.headers.authorization;
 
   if (
-    !authorization ||
+    typeof authorization !== "string" ||
     !authorization.startsWith("Bearer ")
   ) {
     return res.status(401).json({
@@ -19,6 +19,26 @@ export const authenticateTenant = async (req, res, next) => {
   }
 
   const token = authorization.slice(7).trim();
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      code: "TENANT_AUTH_REQUIRED",
+      message: "Institute authentication is required.",
+    });
+  }
+
+  if (
+    !req.tenantContext?.instituteId ||
+    !req.tenantContext?.collectionPrefix ||
+    typeof req.getTenantModel !== "function"
+  ) {
+    return res.status(503).json({
+      success: false,
+      code: "TENANT_CONTEXT_UNAVAILABLE",
+      message: "Institute authentication is temporarily unavailable.",
+    });
+  }
 
   let decoded;
 
@@ -37,23 +57,18 @@ export const authenticateTenant = async (req, res, next) => {
 
   if (
     decoded.type !== "access" ||
-    decoded.instituteId !== req.tenantContext?.instituteId ||
-    decoded.tenantKey !== req.tenantContext?.collectionPrefix
+    decoded.instituteId !== req.tenantContext.instituteId ||
+    decoded.tenantKey !== req.tenantContext.collectionPrefix
   ) {
     return res.status(401).json({
       success: false,
       code: "TENANT_TOKEN_MISMATCH",
-      message:
-        "This session does not belong to the current institute.",
+      message: "This session does not belong to the current institute.",
     });
   }
 
   try {
-    const User = req.tenantModels?.User;
-
-    if (!User) {
-      throw new Error("Tenant User model is unavailable.");
-    }
+    const User = req.getTenantModel("User");
 
     const user = await User.findById(decoded.sub).populate({
       path: "assignedRole",
@@ -77,6 +92,16 @@ export const authenticateTenant = async (req, res, next) => {
       });
     }
 
+    // A role change invalidates an access token issued for the old role.
+    if (decoded.role && decoded.role !== user.role) {
+      return res.status(401).json({
+        success: false,
+        code: "TENANT_ROLE_CHANGED",
+        message:
+          "Your account permissions have changed. Please sign in again.",
+      });
+    }
+
     req.tenantUser = user;
     req.tenantUserModel = User;
 
@@ -91,6 +116,7 @@ export const authorizeTenantRoles = (...allowedRoles) => {
     if (!req.tenantUser) {
       return res.status(401).json({
         success: false,
+        code: "TENANT_AUTH_REQUIRED",
         message: "Institute authentication is required.",
       });
     }
@@ -98,10 +124,19 @@ export const authorizeTenantRoles = (...allowedRoles) => {
     if (!allowedRoles.includes(req.tenantUser.role)) {
       return res.status(403).json({
         success: false,
+        code: "TENANT_ROLE_FORBIDDEN",
         message: "You are not authorized for this institute action.",
       });
     }
 
     return next();
   };
+};
+
+export const getTenantAuthenticatedUser = (req) => {
+  if (!req.tenantUser) {
+    throw new Error("TENANT_USER_NOT_AUTHENTICATED");
+  }
+
+  return sanitizeTenantUser(req.tenantUser);
 };

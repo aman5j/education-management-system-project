@@ -16,6 +16,7 @@
     "test:tenant-isolation": "node src/scripts/testTenantIsolation.js",
     "test:tenant-resolver": "node --test src/scripts/testTenantResolver.js",
     "test:tenant-auth": "node --test src/scripts/testTenantAuth.js",
+    "test:tenant-model-accessor": "node --test src/scripts/testTenantModelAccessor.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -32,7 +33,6 @@
     "mongoose": "^8.18.0",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "nodemailer": "^10.6.1",
     "pdfkit": "^0.20.2",
     "qrcode": "^1.5.4"
   },

@@ -13,6 +13,21 @@ const COOKIE_NAME =
 
 const REFRESH_COOKIE_PATH = "/api/tenant/auth";
 
+const PLATFORM_COOKIE_NAME =
+  process.env.PLATFORM_COOKIE_NAME || "ems_platform_refresh_token";
+
+const LEGACY_COOKIE_NAME =
+  process.env.COOKIE_NAME || "ems_refresh_token";
+
+if (
+  COOKIE_NAME === PLATFORM_COOKIE_NAME ||
+  COOKIE_NAME === LEGACY_COOKIE_NAME
+) {
+  throw new Error(
+    "Tenant, platform and legacy refresh cookie names must be different."
+  );
+}
+
 const getCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
 
@@ -44,18 +59,34 @@ const clearRefreshCookie = (res) => {
   res.clearCookie(COOKIE_NAME, getClearCookieOptions());
 };
 
-const getTenantUserModel = (req) => {
-  const User = req.tenantModels?.User;
 
-  if (!User) {
-    throw new Error("Tenant User model is unavailable.");
+const getTenantUserModel = (req) => {
+  if (
+    typeof req.getTenantModel !== "function" ||
+    !req.tenantContext?.instituteId
+  ) {
+    throw new Error(
+      "Tenant model accessor or context is unavailable."
+    );
   }
 
-  return User;
+  return req.getTenantModel("User");
 };
+
 
 const getTenantRole = (role) =>
   ["admin", "staff", "student"].includes(role);
+
+const isValidEmail = (email) =>
+  typeof email === "string" &&
+  email.length <= 254 &&
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const getTenantAccountResponse = (req) => ({
+  id: req.tenant.id,
+  name: req.tenant.name,
+  slug: req.tenant.slug,
+});
 
 export const tenantLogin = async (req, res, next) => {
   try {
@@ -70,14 +101,14 @@ export const tenantLogin = async (req, res, next) => {
     }
 
     if (
-      typeof email !== "string" ||
+      !isValidEmail(email) ||
       typeof password !== "string" ||
-      !email.trim() ||
-      !password
+      !password ||
+      password.length > 128
     ) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required.",
+        message: "Enter a valid email address and password.",
       });
     }
 
@@ -103,8 +134,7 @@ export const tenantLogin = async (req, res, next) => {
     if (user.role !== role) {
       return res.status(401).json({
         success: false,
-        message:
-          "The selected portal does not match this account.",
+        message: "The selected portal does not match this account.",
       });
     }
 
@@ -149,11 +179,7 @@ export const tenantLogin = async (req, res, next) => {
       data: {
         accessToken,
         user: sanitizeTenantUser(user),
-        institute: {
-          id: req.tenant.id,
-          name: req.tenant.name,
-          slug: req.tenant.slug,
-        },
+        institute: getTenantAccountResponse(req),
       },
     });
   } catch (error) {
@@ -168,6 +194,7 @@ export const tenantRefresh = async (req, res, next) => {
     if (!refreshToken) {
       return res.status(401).json({
         success: false,
+        code: "TENANT_REFRESH_REQUIRED",
         message: "Institute refresh token not found.",
       });
     }
@@ -181,6 +208,7 @@ export const tenantRefresh = async (req, res, next) => {
 
       return res.status(401).json({
         success: false,
+        code: "TENANT_REFRESH_INVALID",
         message: "Institute session expired or invalid.",
       });
     }
@@ -197,6 +225,19 @@ export const tenantRefresh = async (req, res, next) => {
         code: "TENANT_REFRESH_TOKEN_MISMATCH",
         message:
           "This refresh session does not belong to the current institute.",
+      });
+    }
+
+    const remainingSeconds =
+      decoded.exp - Math.floor(Date.now() / 1000);
+
+    if (remainingSeconds <= 0) {
+      clearRefreshCookie(res);
+
+      return res.status(401).json({
+        success: false,
+        code: "TENANT_REFRESH_EXPIRED",
+        message: "Institute session has expired.",
       });
     }
 
@@ -228,38 +269,51 @@ export const tenantRefresh = async (req, res, next) => {
 
       return res.status(401).json({
         success: false,
+        code: "TENANT_REFRESH_REUSED",
         message: "Institute session is no longer valid.",
       });
     }
 
-    const remainingSeconds =
-      decoded.exp - Math.floor(Date.now() / 1000);
-
-    if (remainingSeconds <= 0) {
-      clearRefreshCookie(res);
-
-      return res.status(401).json({
-        success: false,
-        message: "Institute session has expired.",
-      });
-    }
-
-    const remainingLifetime = `${remainingSeconds}s`;
-
     const newAccessToken = createTenantAccessToken(
       user,
-      req.tenantContext,
-      remainingLifetime
+      req.tenantContext
     );
 
     const newRefreshToken = createTenantRefreshToken(
       user,
       req.tenantContext,
-      remainingLifetime
+      `${remainingSeconds}s`
     );
 
-    user.refreshTokenHash = hashTenantToken(newRefreshToken);
-    await user.save();
+    const rotatedUser = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        status: "active",
+        refreshTokenHash: hashTenantToken(refreshToken),
+      },
+      {
+        $set: {
+          refreshTokenHash: hashTenantToken(newRefreshToken),
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate({
+      path: "assignedRole",
+      select: "name label permissions isActive roleType isSystem",
+    });
+
+    if (!rotatedUser) {
+      clearRefreshCookie(res);
+
+      return res.status(401).json({
+        success: false,
+        code: "TENANT_REFRESH_REUSED",
+        message: "Institute session is no longer valid.",
+      });
+    }
 
     setRefreshCookie(res, newRefreshToken);
 
@@ -267,7 +321,7 @@ export const tenantRefresh = async (req, res, next) => {
       success: true,
       data: {
         accessToken: newAccessToken,
-        user: sanitizeTenantUser(user),
+        user: sanitizeTenantUser(rotatedUser),
       },
     });
   } catch (error) {
@@ -290,22 +344,18 @@ export const tenantLogout = async (req, res, next) => {
         ) {
           const User = getTenantUserModel(req);
 
-          const user = await User.findById(decoded.sub)
-            .select("+refreshTokenHash");
-
-          if (
-            user &&
-            safeTenantHashMatch(
-              user.refreshTokenHash,
-              refreshToken
-            )
-          ) {
-            user.refreshTokenHash = null;
-            await user.save();
-          }
+          await User.updateOne(
+            {
+              _id: decoded.sub,
+              refreshTokenHash: hashTenantToken(refreshToken),
+            },
+            {
+              $set: { refreshTokenHash: null },
+            }
+          );
         }
       } catch {
-        // Always clear the browser cookie, even if expired.
+        // Always clear this tenant's browser cookie.
       }
     }
 
@@ -325,11 +375,7 @@ export const tenantMe = async (req, res) => {
     success: true,
     data: {
       user: sanitizeTenantUser(req.tenantUser),
-      institute: {
-        id: req.tenant.id,
-        name: req.tenant.name,
-        slug: req.tenant.slug,
-      },
+      institute: getTenantAccountResponse(req),
     },
   });
 };
@@ -342,20 +388,13 @@ export const tenantChangePassword = async (req, res, next) => {
       typeof currentPassword !== "string" ||
       typeof newPassword !== "string" ||
       !currentPassword ||
-      !newPassword
+      newPassword.length < 8 ||
+      newPassword.length > 128
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Current password and new password are required.",
-      });
-    }
-
-    if (newPassword.length < 8 || newPassword.length > 128) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "New password must contain between 8 and 128 characters.",
+          "Enter your current password and a new password between 8 and 128 characters.",
       });
     }
 
@@ -364,7 +403,7 @@ export const tenantChangePassword = async (req, res, next) => {
     const user = await User.findById(req.tenantUser._id)
       .select("+password +refreshTokenHash");
 
-    if (!user) {
+    if (!user || user.status !== "active") {
       return res.status(404).json({
         success: false,
         message: "Institute account not found.",
@@ -389,8 +428,7 @@ export const tenantChangePassword = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message:
-        "Password changed. Please sign in again.",
+      message: "Password changed. Please sign in again.",
     });
   } catch (error) {
     return next(error);
