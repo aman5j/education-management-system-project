@@ -789,3 +789,423 @@
   right: auto;
   left: 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   STUDENT PORTAL SIDEBAR REDESIGN
+   Append to the END of StudentLayout.css
+========================================================= */
+
+.student-layout {
+  --student-sidebar-width: 260px;
+  --student-sidebar-navy: #061f3d;
+  --student-sidebar-navy-deep: #04172e;
+  --student-sidebar-blue: #1768ed;
+}
+
+/* Main sidebar */
+.student-layout .student-layout__sidebar {
+  width: var(--student-sidebar-width);
+  overflow-x: hidden;
+  overflow-y: auto;
+  isolation: isolate;
+  border-right: 1px solid rgba(255,255,255,.08);
+
+  background:
+    radial-gradient(
+      ellipse at 110% 105%,
+      rgba(27,103,221,.30) 0,
+      transparent 43%
+    ),
+    linear-gradient(
+      165deg,
+      #082747 0%,
+      var(--student-sidebar-navy) 48%,
+      var(--student-sidebar-navy-deep) 100%
+    );
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(164,193,231,.35) transparent;
+}
+
+/* Decorative blue waves */
+.student-layout .student-layout__sidebar::before,
+.student-layout .student-layout__sidebar::after {
+  position: absolute;
+  z-index: -1;
+  left: -72px;
+  bottom: -112px;
+  width: 410px;
+  height: 205px;
+  border-radius: 50% 50% 0 0;
+  content: "";
+  pointer-events: none;
+}
+
+.student-layout .student-layout__sidebar::before {
+  transform: rotate(-10deg);
+  background: linear-gradient(
+    160deg,
+    rgba(24,91,193,.72),
+    rgba(9,49,104,.05) 75%
+  );
+}
+
+.student-layout .student-layout__sidebar::after {
+  left: -105px;
+  bottom: -145px;
+  transform: rotate(8deg);
+  background: linear-gradient(
+    160deg,
+    rgba(13,65,139,.65),
+    rgba(7,35,75,.02) 76%
+  );
+}
+
+/* Institute logo */
+.student-layout .student-layout__brand {
+  position: relative;
+  z-index: 1;
+  min-height: 136px;
+  justify-content: flex-start;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(220,234,255,.22);
+  background: transparent;
+}
+
+.student-layout .student-layout__brand-logo {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  max-height: 92px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,.12));
+}
+
+/* Student Portal heading */
+.student-layout .student-layout__portal-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 82px;
+  padding: 14px 20px 13px;
+  overflow: hidden;
+  border: 0;
+  color: transparent;
+  font-size: 0;
+  letter-spacing: 0;
+  white-space: normal;
+}
+
+.student-layout .student-layout__portal-label::before {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  content: "🎓";
+  color: #ffd21f;
+  font-size: 31px;
+  line-height: 1;
+}
+
+.student-layout .student-layout__portal-label::after {
+  display: block;
+  content: "Student Portal\A Academic & Learning";
+  color: #fff;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+/* Navigation */
+.student-layout .student-layout__nav {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  padding: 8px 15px 24px;
+}
+
+.student-layout .student-layout__nav-item {
+  position: relative;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #f2f6ff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .05px;
+
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.student-layout .student-layout__nav-item > svg {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: #dce8ff;
+  font-size: 20px;
+  stroke-width: 1.9;
+}
+
+.student-layout .student-layout__nav-item > span:nth-child(2) {
+  color: inherit;
+}
+
+.student-layout .student-layout__nav-item:hover {
+  transform: translateX(2px);
+  border-color: rgba(255,255,255,.08);
+  background: rgba(255,255,255,.09);
+  color: #fff;
+}
+
+.student-layout .student-layout__nav-item:hover > svg {
+  color: #fff;
+}
+
+/* Active menu */
+.student-layout .student-layout__nav-item--active {
+  border-color: rgba(120,174,255,.55);
+
+  background: linear-gradient(
+    110deg,
+    #2581ff 0%,
+    #1261e8 58%,
+    #0d55d1 100%
+  );
+
+  color: #fff;
+  font-weight: 750;
+
+  box-shadow:
+    0 5px 14px rgba(0,0,0,.22),
+    0 0 0 4px rgba(100,160,255,.13);
+}
+
+.student-layout .student-layout__nav-item--active::before {
+  inset: 7px auto 7px 0;
+  width: 3px;
+  border-radius: 0 5px 5px 0;
+  background: #fff;
+}
+
+.student-layout .student-layout__nav-item--active > svg {
+  color: #fff;
+}
+
+/* Phase labels */
+.student-layout .student-layout__phase-tag {
+  border: 1px solid rgba(255,255,255,.13);
+  background: rgba(255,255,255,.12);
+  color: #dbeafe;
+}
+
+/* Menu arrows */
+.student-layout .student-layout__nav-item:nth-child(8)::after,
+.student-layout .student-layout__nav-item:nth-child(9)::after {
+  flex: 0 0 auto;
+  margin-left: auto;
+  content: "›";
+  color: #dce8ff;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Sidebar bottom elements */
+.student-layout .student-layout__sidebar-bottom {
+  position: relative;
+  z-index: 1;
+  border-top-color: rgba(220,234,255,.20);
+}
+
+.student-layout .student-layout__support-note {
+  background: rgba(255,255,255,.09);
+  color: #9fc4ff;
+}
+
+.student-layout .student-layout__support-note strong {
+  color: #fff;
+}
+
+.student-layout .student-layout__support-note span {
+  color: #c1d2e9;
+}
+
+.student-layout .student-layout__signout {
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.07);
+  color: #f2f6ff;
+}
+
+.student-layout .student-layout__signout:hover {
+  border-color: rgba(255,150,150,.45);
+  background: rgba(220,60,60,.15);
+  color: #fff;
+}
+
+/* Collapsed desktop sidebar */
+.student-layout--collapsed .student-layout__sidebar {
+  width: 76px;
+}
+
+.student-layout--collapsed .student-layout__brand {
+  min-height: 90px;
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+.student-layout--collapsed .student-layout__brand-logo {
+  width: 48px;
+  max-width: 48px;
+  height: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.student-layout--collapsed .student-layout__portal-label {
+  min-height: 48px;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.student-layout--collapsed .student-layout__portal-label::before {
+  flex-basis: 36px;
+  width: 36px;
+  height: 36px;
+  font-size: 26px;
+}
+
+.student-layout--collapsed .student-layout__portal-label::after {
+  display: none;
+}
+
+.student-layout--collapsed .student-layout__nav {
+  gap: 8px;
+  padding: 8px 8px 20px;
+}
+
+.student-layout--collapsed .student-layout__nav-item {
+  min-height: 44px;
+  justify-content: center;
+  padding: 9px 5px;
+}
+
+.student-layout--collapsed .student-layout__nav-item > svg {
+  flex: 0 0 auto;
+  color: #e7efff;
+}
+
+.student-layout--collapsed .student-layout__nav-item:nth-child(8)::after,
+.student-layout--collapsed .student-layout__nav-item:nth-child(9)::after {
+  display: none;
+}
+
+/* Main content alignment */
+.student-layout:not(.student-layout--collapsed) .student-layout__main {
+  margin-left: var(--student-sidebar-width);
+}
+
+.student-layout--collapsed .student-layout__main {
+  margin-left: 76px;
+}
+
+/* Tablet */
+@media (max-width: 1050px) and (min-width: 761px) {
+  .student-layout {
+    --student-sidebar-width: 224px;
+  }
+
+  .student-layout .student-layout__brand {
+    min-height: 116px;
+    padding: 15px;
+  }
+
+  .student-layout .student-layout__portal-label {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .student-layout .student-layout__nav {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+}
+
+/* Mobile sidebar */
+@media (max-width: 760px) {
+  .student-layout .student-layout__sidebar,
+  .student-layout--collapsed .student-layout__sidebar {
+    width: min(290px, 86vw);
+    transform: translateX(-105%);
+  }
+
+  .student-layout .student-layout__sidebar--open {
+    transform: translateX(0);
+  }
+
+  .student-layout .student-layout__brand {
+    min-height: 112px;
+    padding: 14px 18px;
+  }
+
+  .student-layout .student-layout__brand-logo {
+    max-width: 215px;
+    max-height: 76px;
+  }
+
+  .student-layout .student-layout__portal-label {
+    min-height: 74px;
+    padding: 12px 18px;
+  }
+
+  .student-layout .student-layout__nav {
+    gap: 5px;
+    padding: 6px 12px 20px;
+  }
+
+  .student-layout .student-layout__nav-item {
+    min-height: 45px;
+  }
+
+  .student-layout .student-layout__main,
+  .student-layout--collapsed .student-layout__main {
+    margin-left: 0;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .student-layout .student-layout__nav-item {
+    transition: none;
+  }
+}
