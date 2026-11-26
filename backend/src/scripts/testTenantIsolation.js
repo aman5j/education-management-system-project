@@ -149,6 +149,31 @@ const run = async () => {
     "SupportTicket",
     "SupportMessage",
     "SupportCounter",
+    "LeaveRequest",
+    "Note",
+    "PracticeTest",
+    "PracticeAttempt",
+    "WebsiteBannerSettings",
+    "WebsiteHeaderSettings",
+    "WebsiteMenuSettings",
+    "WebsiteFooterSettings",
+    "WebsiteCareerSettings",
+    "WebsiteCategoryHighlightSettings",
+    "WebsiteCertificateSectionSettings",
+    "WebsiteContactSettings",
+    "WebsiteCourseCategorySettings",
+    "WebsiteFreeVideoSettings",
+    "WebsitePartnerSettings",
+    "WebsitePlacementSettings",
+    "WebsiteStudyResourceSettings",
+    "WebsiteTeamSettings",
+    "WebsiteTestimonialSettings",
+    "WebsiteTrendingCourseSettings",
+    "InstituteLogo",
+    "InstituteSettings",
+    "WebsiteBannerImage",
+
+
 
     ];
 

@@ -78,6 +78,81 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
 
 
 
+  LeaveRequest: () =>
+    import("../models/schemas/LeaveRequest.schema.js"),
+
+  Note: () =>
+    import("../models/schemas/Note.schema.js"),
+
+  PracticeTest: () =>
+    import("../models/schemas/PracticeTest.schema.js"),
+
+  PracticeAttempt: () =>
+    import("../models/schemas/PracticeAttempt.schema.js"),
+
+
+  WebsiteBannerSettings: () =>
+    import("../models/schemas/WebsiteBannerSettings.schema.js"),
+
+  WebsiteHeaderSettings: () =>
+    import("../models/schemas/WebsiteHeaderSettings.schema.js"),
+
+  WebsiteMenuSettings: () =>
+    import("../models/schemas/WebsiteMenuSettings.schema.js"),
+
+  WebsiteFooterSettings: () =>
+    import("../models/schemas/WebsiteFooterSettings.schema.js"),
+
+
+  WebsiteCareerSettings: () =>
+    import("../models/schemas/WebsiteCareerSettings.schema.js"),
+
+  WebsiteCategoryHighlightSettings: () =>
+    import("../models/schemas/WebsiteCategoryHighlightSettings.schema.js"),
+
+  WebsiteCertificateSectionSettings: () =>
+    import("../models/schemas/WebsiteCertificateSectionSettings.schema.js"),
+
+  WebsiteContactSettings: () =>
+    import("../models/schemas/WebsiteContactSettings.schema.js"),
+
+
+  WebsiteCourseCategorySettings: () =>
+    import("../models/schemas/WebsiteCourseCategorySettings.schema.js"),
+
+  WebsiteFreeVideoSettings: () =>
+    import("../models/schemas/WebsiteFreeVideoSettings.schema.js"),
+
+  WebsitePartnerSettings: () =>
+    import("../models/schemas/WebsitePartnerSettings.schema.js"),
+
+  WebsitePlacementSettings: () =>
+    import("../models/schemas/WebsitePlacementSettings.schema.js"),
+
+  WebsiteStudyResourceSettings: () =>
+    import("../models/schemas/WebsiteStudyResourceSettings.schema.js"),
+
+  WebsiteTeamSettings: () =>
+    import("../models/schemas/WebsiteTeamSettings.schema.js"),
+
+  WebsiteTestimonialSettings: () =>
+    import("../models/schemas/WebsiteTestimonialSettings.schema.js"),
+
+  WebsiteTrendingCourseSettings: () =>
+    import("../models/schemas/WebsiteTrendingCourseSettings.schema.js"),
+
+
+  InstituteLogo: () =>
+    import("../models/schemas/InstituteLogo.schema.js"),
+
+  InstituteSettings: () =>
+    import("../models/schemas/InstituteSettings.schema.js"),
+
+  WebsiteBannerImage: () =>
+    import("../models/schemas/WebsiteBannerImage.schema.js"),
+
+
+
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =

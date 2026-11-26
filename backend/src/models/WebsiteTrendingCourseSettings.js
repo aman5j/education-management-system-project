@@ -1,38 +1,7 @@
 
+// backend/src/models/WebsiteTrendingCourseSettings.js
 import mongoose from "mongoose";
+import schema from "./schemas/WebsiteTrendingCourseSettings.schema.js";
 
-const websiteTrendingCourseSettingsSchema = new mongoose.Schema(
-  {
-    key: {
-      type: String,
-      default: "default",
-      unique: true,
-      immutable: true,
-    },
-
-    selectedCourseIds: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Course",
-        },
-      ],
-      default: [],
-    },
-
-    updatedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-  },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
-);
-
-export default mongoose.model(
-  "WebsiteTrendingCourseSettings",
-  websiteTrendingCourseSettingsSchema
-);
+export default mongoose.models.WebsiteTrendingCourseSettings ||
+  mongoose.model("WebsiteTrendingCourseSettings", schema);
