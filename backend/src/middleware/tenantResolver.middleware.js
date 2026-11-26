@@ -37,14 +37,14 @@ export const normalizeHostname = (value) => {
     throw new Error("INVALID_HOSTNAME");
   }
 
-  // Express req.hostname normally excludes the port.
-  // This also supports direct utility calls with host:port.
+  // Remove a valid port when supplied.
   if (hostname.includes(":")) {
     const parts = hostname.split(":");
 
     if (
       parts.length !== 2 ||
       !/^\d{1,5}$/.test(parts[1]) ||
+      Number(parts[1]) < 1 ||
       Number(parts[1]) > 65535
     ) {
       throw new Error("INVALID_HOSTNAME");
@@ -53,7 +53,10 @@ export const normalizeHostname = (value) => {
     hostname = parts[0];
   }
 
-  hostname = hostname.replace(/\.$/, "");
+  // Accept one trailing DNS root dot.
+  if (hostname.endsWith(".")) {
+    hostname = hostname.slice(0, -1);
+  }
 
   const asciiHostname = domainToASCII(hostname);
 
@@ -98,7 +101,7 @@ const parseReservedHosts = (values = []) => {
   return result;
 };
 
-const createError = (statusCode, code, message) => ({
+const createErrorResponse = (statusCode, code, message) => ({
   statusCode,
   code,
   message,
@@ -109,8 +112,11 @@ const getReservedHostError = (
   baseDomain,
   reservedHosts
 ) => {
-  if (reservedHosts.has(hostname) || hostname === baseDomain) {
-    return createError(
+  if (
+    hostname === baseDomain ||
+    reservedHosts.has(hostname)
+  ) {
+    return createErrorResponse(
       404,
       "PLATFORM_HOST_RESERVED",
       "This hostname is reserved for the EMS Platform."
@@ -122,12 +128,13 @@ const getReservedHostError = (
   if (hostname.endsWith(suffix)) {
     const subdomain = hostname.slice(0, -suffix.length);
 
+    // Only one institute slug level is permitted.
     if (
       !subdomain ||
       subdomain.includes(".") ||
       DEFAULT_RESERVED_LABELS.includes(subdomain)
     ) {
-      return createError(
+      return createErrorResponse(
         404,
         "PLATFORM_HOST_RESERVED",
         "This hostname is reserved for the EMS Platform."
@@ -147,7 +154,6 @@ const getPlatformSubdomainSlug = (hostname, baseDomain) => {
 
   const slug = hostname.slice(0, -suffix.length);
 
-  // Only one institute slug level is permitted.
   if (
     !slug ||
     slug.includes(".") ||
@@ -160,26 +166,38 @@ const getPlatformSubdomainSlug = (hostname, baseDomain) => {
 };
 
 const makeTenantContext = (institute, hostname) => {
-  const instituteId = String(institute._id);
+  const instituteId = String(institute?._id || "").toLowerCase();
 
-  const collectionPrefix =
-    `inst_${instituteId.toLowerCase()}`;
+  if (!/^[a-f0-9]{24}$/.test(instituteId)) {
+    throw new Error("INVALID_TENANT_RECORD");
+  }
 
-  // Never trust a prefix stored in an unverified client request.
+  const expectedPrefix = `inst_${instituteId}`;
+
   if (
     institute.collectionPrefix &&
-    institute.collectionPrefix !== collectionPrefix
+    institute.collectionPrefix !== expectedPrefix
   ) {
-    throw new Error("INVALID_TENANT_PREFIX");
+    throw new Error("INVALID_TENANT_RECORD");
+  }
+
+  const schemaVersion = Number(
+    institute.tenantSchemaVersion || 1
+  );
+
+  if (
+    !Number.isInteger(schemaVersion) ||
+    schemaVersion < 1
+  ) {
+    throw new Error("INVALID_TENANT_RECORD");
   }
 
   return Object.freeze({
     instituteId,
     slug: institute.slug,
     hostname,
-    collectionPrefix,
-    tenantSchemaVersion:
-      institute.tenantSchemaVersion || 1,
+    collectionPrefix: expectedPrefix,
+    tenantSchemaVersion: schemaVersion,
   });
 };
 
@@ -191,6 +209,11 @@ const makeTenantSummary = (institute) =>
     status: institute.status,
     provisioningStatus: institute.provisioningStatus,
   });
+
+const attachResolvedTenant = (req, resolved) => {
+  req.tenant = resolved.tenant;
+  req.tenantContext = resolved.tenantContext;
+};
 
 const getCacheEntry = (hostname) => {
   const entry = resolutionCache.get(hostname);
@@ -213,12 +236,13 @@ const setCacheEntry = (
 ) => {
   if (ttlMs <= 0) return;
 
-  if (resolutionCache.size >= maxEntries) {
+  // Keep the cache bounded.
+  while (resolutionCache.size >= maxEntries) {
     const oldestKey = resolutionCache.keys().next().value;
 
-    if (oldestKey) {
-      resolutionCache.delete(oldestKey);
-    }
+    if (oldestKey === undefined) break;
+
+    resolutionCache.delete(oldestKey);
   }
 
   resolutionCache.set(hostname, {
@@ -258,18 +282,24 @@ export const createTenantResolver = ({
 
   const maxEntries = Math.max(
     1,
-    Math.min(Number(maxCacheEntries) || 1, 5000)
+    Math.min(
+      Math.floor(Number(maxCacheEntries) || 1),
+      5000
+    )
   );
 
   return async (req, res, next) => {
     try {
+      // Do not retain any previously attached tenant context.
+      delete req.tenant;
+      delete req.tenantContext;
+
       /*
-       * IMPORTANT:
-       * req.hostname is supplied by Express.
-       * Express only uses X-Forwarded-Host when trust proxy
-       * is configured for the actual trusted proxy.
+       * req.hostname is provided by Express.
        *
-       * Never read X-Forwarded-Host directly here.
+       * Never read X-Forwarded-Host directly.
+       * Express may use forwarded host information only when
+       * the configured proxy is trusted by the application.
        */
       const hostname = normalizeHostname(req.hostname);
 
@@ -280,19 +310,19 @@ export const createTenantResolver = ({
       );
 
       if (reservedError) {
-        return res.status(reservedError.statusCode).json({
-          success: false,
-          code: reservedError.code,
-          message: reservedError.message,
-        });
+        return res
+          .status(reservedError.statusCode)
+          .json({
+            success: false,
+            code: reservedError.code,
+            message: reservedError.message,
+          });
       }
 
       const cached = getCacheEntry(hostname);
 
       if (cached) {
-        req.tenant = cached.value.tenant;
-        req.tenantContext = cached.value.tenantContext;
-
+        attachResolvedTenant(req, cached.value);
         return next();
       }
 
@@ -302,23 +332,21 @@ export const createTenantResolver = ({
       );
 
       /*
-       * A platform subdomain resolves by the unique institute slug.
-       * A custom domain resolves only when domainVerified === true.
+       * IMPORTANT:
        *
-       * The current repository does not yet have a DNS verification
-       * workflow. Phase 6 will implement the complete Domain registry.
+       * Platform subdomains resolve ONLY by institute slug.
+       * Custom domains resolve ONLY by exact domain.
+       *
+       * This prevents a custom-domain record from claiming
+       * an institute's reserved platform subdomain.
        */
-      const conditions = [];
+      const lookupFilter = platformSlug
+        ? { slug: platformSlug }
+        : { domain: hostname };
 
-      if (platformSlug) {
-        conditions.push({ slug: platformSlug });
-      }
-
-      conditions.push({ domain: hostname });
-
-      const institutes = await findInstitutes({
-        $or: conditions,
-      });
+      const institutes = await findInstitutes(
+        lookupFilter
+      );
 
       if (!Array.isArray(institutes)) {
         throw new Error("INVALID_REGISTRY_RESULT");
@@ -328,7 +356,8 @@ export const createTenantResolver = ({
         return res.status(404).json({
           success: false,
           code: "TENANT_NOT_FOUND",
-          message: "No institute is registered for this hostname.",
+          message:
+            "No institute is registered for this hostname.",
         });
       }
 
@@ -343,13 +372,39 @@ export const createTenantResolver = ({
 
       const institute = institutes[0];
 
-      const isApprovedPlatformSubdomain =
-        Boolean(platformSlug) &&
-        institute.slug === platformSlug;
+      // A platform subdomain must resolve to the exact matching slug.
+      // A custom-domain record must never claim a platform subdomain.
+      if (
+      platformSlug &&
+      institute.slug !== platformSlug
+      ) {
+      return res.status(404).json({
+         success: false,
+         code: "TENANT_NOT_FOUND",
+         message:
+         "No institute is registered for this hostname.",
+      });
+      }
 
-      const isVerifiedCustomDomain =
-        institute.domain === hostname &&
-        institute.domainVerified === true;
+      const isApprovedPlatformSubdomain =
+      Boolean(platformSlug) &&
+      institute.slug === platformSlug;
+
+      let isVerifiedCustomDomain = false;
+
+      if (!platformSlug && institute.domain) {
+        try {
+          const registeredDomain = normalizeHostname(
+            institute.domain
+          );
+
+          isVerifiedCustomDomain =
+            registeredDomain === hostname &&
+            institute.domainVerified === true;
+        } catch {
+          isVerifiedCustomDomain = false;
+        }
+      }
 
       if (
         !isApprovedPlatformSubdomain &&
@@ -367,7 +422,8 @@ export const createTenantResolver = ({
         return res.status(403).json({
           success: false,
           code: "TENANT_SUSPENDED",
-          message: "This institute is currently suspended.",
+          message:
+            "This institute is currently suspended.",
         });
       }
 
@@ -375,7 +431,8 @@ export const createTenantResolver = ({
         return res.status(403).json({
           success: false,
           code: "TENANT_DEACTIVATED",
-          message: "This institute has been deactivated.",
+          message:
+            "This institute has been deactivated.",
         });
       }
 
@@ -383,7 +440,8 @@ export const createTenantResolver = ({
         return res.status(403).json({
           success: false,
           code: "TENANT_INACTIVE",
-          message: "This institute is not active.",
+          message:
+            "This institute is not active.",
         });
       }
 
@@ -391,7 +449,8 @@ export const createTenantResolver = ({
         return res.status(503).json({
           success: false,
           code: "TENANT_PROVISIONING_PENDING",
-          message: "Institute setup is not complete.",
+          message:
+            "Institute setup is not complete.",
         });
       }
 
@@ -399,7 +458,8 @@ export const createTenantResolver = ({
         return res.status(503).json({
           success: false,
           code: "TENANT_PROVISIONING_FAILED",
-          message: "Institute setup has failed.",
+          message:
+            "Institute setup has failed.",
         });
       }
 
@@ -407,7 +467,8 @@ export const createTenantResolver = ({
         return res.status(503).json({
           success: false,
           code: "TENANT_NOT_READY",
-          message: "This institute is not ready.",
+          message:
+            "This institute is not ready.",
         });
       }
 
@@ -430,24 +491,21 @@ export const createTenantResolver = ({
         ttl
       );
 
-      // Attach context only after all registry and status checks.
-      req.tenant = tenant;
-      req.tenantContext = tenantContext;
+      // Attach context only after every validation succeeds.
+      attachResolvedTenant(req, resolved);
 
       return next();
     } catch (error) {
-      if (
-        error.message === "INVALID_HOSTNAME" ||
-        error.message === "INVALID_TENANT_PREFIX"
-      ) {
+      if (error.message === "INVALID_HOSTNAME") {
         return res.status(400).json({
           success: false,
-          code: error.message,
-          message: "The request hostname or tenant configuration is invalid.",
+          code: "INVALID_HOSTNAME",
+          message:
+            "The request hostname is invalid.",
         });
       }
 
-      // Registry/database errors must fail closed.
+      // Registry and tenant-record errors fail closed.
       console.error(
         "Tenant resolver failed:",
         error.message
@@ -468,7 +526,16 @@ const getInstituteModelInstance = () => {
 };
 
 const platformBaseDomain =
-  process.env.PLATFORM_BASE_DOMAIN;
+  process.env.PLATFORM_BASE_DOMAIN?.trim();
+
+if (
+  process.env.NODE_ENV === "production" &&
+  !platformBaseDomain
+) {
+  throw new Error(
+    "PLATFORM_BASE_DOMAIN must be configured in production."
+  );
+}
 
 const configuredReservedHosts = (
   process.env.PLATFORM_RESERVED_HOSTS || ""

@@ -114,17 +114,32 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 
-const trustProxySetting = process.env.TRUST_PROXY;
+const trustProxySetting = process.env.TRUST_PROXY?.trim();
 
 if (trustProxySetting) {
-  let trustProxyValue = trustProxySetting.trim();
+  let trustProxyValue;
 
-  if (trustProxyValue === "true") {
+  if (trustProxySetting === "true") {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "TRUST_PROXY=true is not allowed in production. " +
+        "Configure a specific trusted proxy hop count or IP range."
+      );
+    }
+
     trustProxyValue = true;
-  } else if (trustProxyValue === "false") {
+  } else if (trustProxySetting === "false") {
     trustProxyValue = false;
-  } else if (/^\d+$/.test(trustProxyValue)) {
-    trustProxyValue = Number(trustProxyValue);
+  } else if (/^\d+$/.test(trustProxySetting)) {
+    trustProxyValue = Number(trustProxySetting);
+
+    if (trustProxyValue > 10) {
+      throw new Error(
+        "TRUST_PROXY hop count cannot exceed 10."
+      );
+    }
+  } else {
+    trustProxyValue = trustProxySetting;
   }
 
   app.set("trust proxy", trustProxyValue);
