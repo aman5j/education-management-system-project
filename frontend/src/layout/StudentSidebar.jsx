@@ -130,9 +130,7 @@ export default function StudentSidebar({
           </button>
         </div>
 
-        <div className="student-layout__portal-label">
-          STUDENT PORTAL
-        </div>
+        
 
         <nav
           className="student-layout__nav"
