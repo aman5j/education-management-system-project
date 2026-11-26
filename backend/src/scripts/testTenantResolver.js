@@ -635,13 +635,14 @@ test("resolver replaces preexisting untrusted tenant context", async () => {
 // REAL EXPRESS FORWARDED-HOST TEST
 // --------------------------------------------------
 
+
 test("untrusted X-Forwarded-Host cannot override the actual Host header", async () => {
   invalidateTenantResolutionCache();
 
   const app = express();
 
-  // Simulate a request that does not arrive through
-  // a configured trusted reverse proxy.
+  // Requests must use the actual Host header unless
+  // they arrive through a specifically trusted proxy.
   app.set("trust proxy", false);
 
   const middleware = createTenantResolver({
@@ -673,7 +674,17 @@ test("untrusted X-Forwarded-Host cannot override the actual Host header", async 
   const server = app.listen(0, "127.0.0.1");
 
   try {
+    // IMPORTANT: Wait until the server is actually listening.
+    await new Promise((resolve, reject) => {
+      server.once("listening", resolve);
+      server.once("error", reject);
+    });
+
     const address = server.address();
+
+    if (!address || typeof address === "string") {
+      throw new Error("Unable to determine test server address.");
+    }
 
     const response = await new Promise((resolve, reject) => {
       const request = http.request(
@@ -685,6 +696,7 @@ test("untrusted X-Forwarded-Host cannot override the actual Host header", async 
           headers: {
             Host: "institute-a.ems.test",
             "X-Forwarded-Host": "institute-b.ems.test",
+            Connection: "close",
           },
         },
         (res) => {
@@ -695,18 +707,32 @@ test("untrusted X-Forwarded-Host cannot override the actual Host header", async 
           });
 
           res.on("end", () => {
-            resolve({
-              status: res.statusCode,
-              body: JSON.parse(data),
-            });
+            try {
+              resolve({
+                status: res.statusCode,
+                body: JSON.parse(data),
+              });
+            } catch (error) {
+              reject(error);
+            }
           });
+
+          res.on("error", reject);
         }
       );
+
+      request.setTimeout(5000, () => {
+        request.destroy(
+          new Error("Tenant resolver HTTP test timed out.")
+        );
+      });
 
       request.on("error", reject);
       request.end();
     });
 
+    // Actual Host must resolve Institute A.
+    // Forwarded Host must not redirect the request to Institute B.
     assert.equal(response.status, 200);
 
     assert.equal(
@@ -718,16 +744,23 @@ test("untrusted X-Forwarded-Host cannot override the actual Host header", async 
       response.body.hostname,
       "institute-a.ems.test"
     );
+
+    assert.notEqual(
+      response.body.instituteId,
+      instituteB._id
+    );
   } finally {
-     if (server.listening) {
-        await new Promise((resolve) => {
-        server.close(() => {
-            resolve();
-        });
-        });
+    // Close active connections and wait for server shutdown.
+    if (server.listening) {
+      server.closeAllConnections();
+
+      await new Promise((resolve) => {
+        server.close(() => resolve());
+      });
     }
   }
 });
+
 
 // --------------------------------------------------
 // CACHE INVALIDATION
