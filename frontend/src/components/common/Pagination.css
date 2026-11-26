@@ -1,26 +1,33 @@
 
 .ems-pagination-footer {
-  min-height: 64px;
+  min-height: 55px;
   padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: var(--text-muted);
-  font-size: 10px;
+  color: #084991;
+  font-size: 12px;
   background: #fff;
   flex-wrap: wrap;
+  text-transform: capitalize;
+    font-weight: 400;
 }
 
 .ems-pagination-footer > select {
-  height: 32px;
-  min-width: 76px;
-  border: 1px solid var(--border-color);
-  border-radius: 7px;
-  background: #fff;
-  color: var(--text-secondary);
-  padding: 0 7px;
-  font-size: 10px;
+       height: 33px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    background: #fff;
+    color: #05478b;
+    padding: 2px 11px;
+    font-size: 12px;
+    background: #f8f8f830;
+    cursor: pointer;
+    text-transform: capitalize;
+    font-weight: 500;
+    box-shadow: 0 0 1px #ddd;
+    outline: none;
 }
 
 .ems-pagination-buttons {
@@ -31,17 +38,27 @@
 }
 
 .ems-pagination-buttons button {
-  min-width: 31px;
-  height: 31px;
-  padding: 0 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: #fff;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 10px;
+width: 31px;
+    height: 31px;
+    border: 1px solid #043f7b33;
+    border-radius: 34px;
+    background: #fff;
+    color: #043f7b;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
+.ems-pagination-buttons button:first-child, .ems-pagination-buttons button:last-child {
+    width: 68px;
+    border: none;
+    background-color: transparent !important;
+}
+.ems-pagination-buttons button svg{
+font-size: 18px;
+}
 .ems-pagination-buttons button:hover:not(:disabled) {
   color: var(--primary-color);
   background: var(--primary-light);
@@ -53,9 +70,16 @@
 }
 
 .ems-pagination-buttons .ems-pagination-active {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: #fff;
+ background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%) !important;
+  color: #fff !important;
+}
+/* .ems-pagination-buttons .ems-pagination-active:hover {
+ background: linear-gradient(303deg, rgba(37, 99, 235, 1) 0%, rgba(3, 69, 132, 1) 100%) !important;
+  color: #fff !important;
+} */
+ .heiglight-cout {
+    color: #084991;
+    font-weight: 500;
 }
 
 @media (max-width: 600px) {

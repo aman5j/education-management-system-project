@@ -1181,10 +1181,10 @@
 
 .admission-student-image,
 .admission-student-fallback {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  flex: 0 0 55px;
+  border-radius: 6px;
   object-fit: cover;
 }
 
@@ -1200,8 +1200,8 @@
   justify-content: center;
   background: #eaf0ff;
   color: #2457c5;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   border: 1px solid #dbe5ff;
 }
 

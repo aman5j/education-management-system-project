@@ -21,7 +21,8 @@ import StudentTable from "../../../components/students/StudentTable";
 import StudentView from "../../../components/students/StudentView";
 import StudentCredentialsModal from "../../../components/students/StudentCredentialsModal";
 import StudentExcelImport from "../../../components/students/StudentExcelImport";
-
+import { MdKeyboardArrowLeft } from "react-icons/md";
+import { MdKeyboardArrowRight } from "react-icons/md";
 import "../../../layout/AdminLayout.css";
 import "./StudentManagement.css";
 
@@ -484,18 +485,20 @@ const Students = () => {
               onSort={handleSort}
             />
 
-            <div className="student-table-footer">
-              <div>
-                Showing {students.length} of {pagination.total} students
-              </div>
+            <div className="ems-pagination-footer">
+               <div className="ems-pagination-count">
+        Showing <span className="heiglight-cout">{students.length}</span> of <span className="heiglight-cout"> {pagination.total} </span>
+        students
+      </div>
 
-              <div className="student-pagination">
+
+              <div className="ems-pagination-buttons">
                 <button
                   type="button"
                   disabled={pagination.page <= 1}
                   onClick={() => goToPage(pagination.page - 1)}
                 >
-                  Previous
+                 <MdKeyboardArrowLeft />  Prev
                 </button>
 
                 {Array.from(
@@ -512,7 +515,7 @@ const Students = () => {
                       key={page}
                       className={
                         page === pagination.page
-                          ? "student-pagination-active"
+                          ? "ems-pagination-active"
                           : ""
                       }
                       onClick={() => goToPage(page)}
@@ -526,7 +529,7 @@ const Students = () => {
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => goToPage(pagination.page + 1)}
                 >
-                  Next
+                  Next <MdKeyboardArrowRight />
                 </button>
               </div>
 

@@ -150,7 +150,12 @@
   overflow: hidden;
   border: 1px solid #e1e8f2;
   border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
 }
+
 
 .student-document-card__preview {
   position: relative;

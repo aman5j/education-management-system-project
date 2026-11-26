@@ -1,6 +1,7 @@
 
 import "./Pagination.css";
-
+import { MdKeyboardArrowLeft } from "react-icons/md";
+import { MdKeyboardArrowRight } from "react-icons/md";
 const Pagination = ({
   page = 1,
   totalPages = 0,
@@ -26,7 +27,8 @@ const Pagination = ({
   return (
     <div className="ems-pagination-footer">
       <div className="ems-pagination-count">
-        Showing {itemCount} of {total} {itemLabel}
+        Showing <span className="heiglight-cout">{itemCount}</span> of <span className="heiglight-cout"> {total} </span>
+        {itemLabel}
       </div>
 
       <div className="ems-pagination-buttons">
@@ -35,7 +37,10 @@ const Pagination = ({
           disabled={loading || safePage <= 1}
           onClick={() => onPageChange?.(safePage - 1)}
         >
-          Previous
+         
+
+        <MdKeyboardArrowLeft />
+  Prev
         </button>
 
         {pageNumbers.map((pageNumber) => (
@@ -62,7 +67,9 @@ const Pagination = ({
           disabled={loading || safePage >= safeTotalPages}
           onClick={() => onPageChange?.(safePage + 1)}
         >
-          Next
+          Next 
+<MdKeyboardArrowRight />
+
         </button>
       </div>
 
