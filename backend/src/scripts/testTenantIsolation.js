@@ -123,6 +123,7 @@ const run = async () => {
     `Loaded all ${TENANT_MODEL_NAMES.length} tenant schemas`
     );
 
+    
     const schemaOnlyModels = [
     "Course",
     "Subject",
@@ -135,7 +136,12 @@ const run = async () => {
     "AlertNoticeDismissal",
     "Assignment",
     "AssignmentEvaluation",
+    "Attendance",
+    "Certificate",
+    "CourseEnquiry",
+    "Expense",
     ];
+
 
     for (const modelName of schemaOnlyModels) {
     assert(

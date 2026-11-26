@@ -36,6 +36,20 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
 
   AssignmentEvaluation: () =>
     import("../models/schemas/AssignmentEvaluation.schema.js"),
+
+
+  Attendance: () =>
+    import("../models/schemas/Attendance.schema.js"),
+
+  Certificate: () =>
+    import("../models/schemas/Certificate.schema.js"),
+
+  CourseEnquiry: () =>
+    import("../models/schemas/CourseEnquiry.schema.js"),
+
+  Expense: () =>
+    import("../models/schemas/Expense.schema.js"),
+
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =
