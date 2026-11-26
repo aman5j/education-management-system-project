@@ -17,6 +17,7 @@
     "test:tenant-resolver": "node --test src/scripts/testTenantResolver.js",
     "test:tenant-auth": "node --test src/scripts/testTenantAuth.js",
     "test:tenant-model-accessor": "node --test src/scripts/testTenantModelAccessor.js",
+    "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

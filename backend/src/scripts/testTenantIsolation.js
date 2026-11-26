@@ -119,9 +119,22 @@ const run = async () => {
     const definitions = await loadTenantModelDefinitions();
 
     assert(
-      definitions.length === TENANT_MODEL_NAMES.length,
-      `Loaded all ${TENANT_MODEL_NAMES.length} tenant schemas`
+    definitions.length === TENANT_MODEL_NAMES.length,
+    `Loaded all ${TENANT_MODEL_NAMES.length} tenant schemas`
     );
+
+    const schemaOnlyModels = [
+    "Course",
+    "Subject",
+    "Role",
+    ];
+
+    for (const modelName of schemaOnlyModels) {
+    assert(
+        !mongoose.models[modelName],
+        `Tenant schema loading does not register ${modelName} globally`
+    );
+    }
 
     console.log("");
     console.log("Initializing temporary Institute A collections...");
@@ -273,106 +286,95 @@ const run = async () => {
       "Course"
     );
 
+
     const courseSchemaA = CourseA.schema;
     const courseSchemaB = CourseB.schema;
 
-    const refA =
-    courseSchemaA.path("subjects")?.caster?.options?.ref;
+    const courseSubjectsPathA = courseSchemaA.path("subjects");
+    const courseSubjectsPathB = courseSchemaB.path("subjects");
 
-    const refB =
-    courseSchemaB.path("subjects")?.caster?.options?.ref;
+    const casterRefA = courseSubjectsPathA?.caster?.options?.ref;
+    const casterRefB = courseSubjectsPathB?.caster?.options?.ref;
+
+    const embeddedRefA =
+    courseSubjectsPathA?.$embeddedSchemaType?.options?.ref;
+
+    const embeddedRefB =
+    courseSubjectsPathB?.$embeddedSchemaType?.options?.ref;
 
     assert(
-    refA === SubjectA.modelName,
-    "Institute A Course references Institute A Subject"
+    casterRefA === SubjectA.modelName &&
+        embeddedRefA === SubjectA.modelName,
+    "Institute A Course caster and embedded references both resolve to Institute A Subject"
     );
 
     assert(
-    refB === SubjectB.modelName,
-    "Institute B Course references Institute B Subject"
+    casterRefB === SubjectB.modelName &&
+        embeddedRefB === SubjectB.modelName,
+    "Institute B Course caster and embedded references both resolve to Institute B Subject"
+    );
+
+    assert(
+    courseSubjectsPathA.caster ===
+        courseSubjectsPathA.$embeddedSchemaType,
+    "Institute A Course array caster and embedded schema type are correctly linked"
+    );
+
+    assert(
+    courseSubjectsPathB.caster ===
+        courseSubjectsPathB.$embeddedSchemaType,
+    "Institute B Course array caster and embedded schema type are correctly linked"
+    );
+
+    assert(
+    courseSubjectsPathA.caster !== courseSubjectsPathB.caster,
+    "Institute A and Institute B Course schema types are independently cloned"
     );
 
     const subjectA = await SubjectA.create({
-      subjectName: "Institute A Mathematics",
-      subjectCode: "PHASE3-SHARED-SUBJECT",
+    subjectName: "Institute A Mathematics",
+    subjectCode: "PHASE3-SHARED-SUBJECT",
     });
 
     const subjectB = await SubjectB.create({
-      subjectName: "Institute B Mathematics",
-      subjectCode: "PHASE3-SHARED-SUBJECT",
+    subjectName: "Institute B Mathematics",
+    subjectCode: "PHASE3-SHARED-SUBJECT",
     });
 
     const courseA = await CourseA.create({
-      courseTitle: "Institute A Test Course",
-      courseType: "Online",
-      mrp: 1000,
-      price: 800,
-      subjects: [subjectA._id],
+    courseTitle: "Institute A Test Course",
+    courseType: "Online",
+    mrp: 1000,
+    price: 800,
+    subjects: [subjectA._id],
     });
 
     const courseB = await CourseB.create({
-      courseTitle: "Institute B Test Course",
-      courseType: "Online",
-      mrp: 1200,
-      price: 900,
-      subjects: [subjectB._id],
+    courseTitle: "Institute B Test Course",
+    courseType: "Online",
+    mrp: 1200,
+    price: 900,
+    subjects: [subjectB._id],
     });
 
     const populatedCourseA = await CourseA.findById(
-      courseA._id
+    courseA._id
     ).populate("subjects");
 
     const populatedCourseB = await CourseB.findById(
-      courseB._id
+    courseB._id
     ).populate("subjects");
 
-
-    console.log("\n========== POPULATE DEBUG ==========");
-
-    console.log(
-    "Course A subjects ref:",
-    CourseA.schema.path("subjects")?.caster?.options?.ref,
-    CourseA.schema.path("subjects")?.$embeddedSchemaType?.options?.ref
-    );
-
-    console.log(
-    "Course B subjects ref:",
-    CourseB.schema.path("subjects")?.caster?.options?.ref,
-    CourseB.schema.path("subjects")?.$embeddedSchemaType?.options?.ref
-    );
-
-    console.log("Subject A model:", SubjectA.modelName);
-    console.log("Subject B model:", SubjectB.modelName);
-
-    console.log(
-    "Course A populated subjects:",
-    populatedCourseA.subjects?.map((subject) => ({
-        id: subject?._id?.toString(),
-        name: subject?.subjectName,
-    }))
-    );
-
-    console.log(
-    "Course B populated subjects:",
-    populatedCourseB.subjects?.map((subject) => ({
-        id: subject?._id?.toString(),
-        name: subject?.subjectName,
-    }))
-    );
-
-    console.log("========== END POPULATE DEBUG ==========\n");
-
-
     assert(
-      populatedCourseA.subjects[0]?.subjectName ===
+    populatedCourseA.subjects[0]?.subjectName ===
         "Institute A Mathematics",
-      "Institute A Course populates Institute A Subject"
+    "Institute A Course populates Institute A Subject"
     );
 
     assert(
-      populatedCourseB.subjects[0]?.subjectName ===
+    populatedCourseB.subjects[0]?.subjectName ===
         "Institute B Mathematics",
-      "Institute B Course populates Institute B Subject"
+    "Institute B Course populates Institute B Subject"
     );
 
     console.log("");

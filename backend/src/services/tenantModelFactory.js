@@ -72,10 +72,27 @@ const assertTenantReference = ({
  * shared between clones. We explicitly clone each path and its caster
  * before rewriting tenant-specific refs.
  */
+
 const detachSchemaTypes = (schema, visitedSchemas = new Set()) => {
   if (!schema || visitedSchemas.has(schema)) return;
 
   visitedSchemas.add(schema);
+
+  const cloneSchemaType = (schemaType, pathName) => {
+    if (!schemaType || typeof schemaType.clone !== "function") {
+      throw new Error(
+        `Cannot safely clone schema type for path "${pathName}".`
+      );
+    }
+
+    const clonedType = schemaType.clone();
+
+    if (clonedType.options) {
+      clonedType.options = { ...clonedType.options };
+    }
+
+    return clonedType;
+  };
 
   for (const [pathName, originalType] of Object.entries(schema.paths)) {
     if (!originalType || typeof originalType.clone !== "function") {
@@ -84,28 +101,59 @@ const detachSchemaTypes = (schema, visitedSchemas = new Set()) => {
       );
     }
 
-    const detachedType = originalType.clone();
+    const detachedType = cloneSchemaType(originalType, pathName);
 
     // Detach root path options.
     if (detachedType.options) {
       detachedType.options = { ...detachedType.options };
     }
 
-    // Explicitly detach array caster metadata.
-    if (
-      originalType.caster &&
-      typeof originalType.caster.clone === "function"
-    ) {
-      detachedType.caster = originalType.caster.clone();
+    // Clone the array caster.
+    let detachedCaster = null;
 
-      if (detachedType.caster.options) {
-        detachedType.caster.options = {
-          ...detachedType.caster.options,
-        };
+    if (originalType.caster) {
+      if (typeof originalType.caster.clone === "function") {
+        detachedCaster = cloneSchemaType(
+          originalType.caster,
+          `${pathName}[]`
+        );
+        detachedType.caster = detachedCaster;
+      } else {
+        detachedCaster = detachedType.caster;
+      }
+
+      if (detachedCaster?.options) {
+        detachedCaster.options = { ...detachedCaster.options };
       }
     }
 
-    // Detach embedded schema paths recursively.
+    // Important:
+    // For ordinary Mongoose arrays, $embeddedSchemaType and caster
+    // can refer to the same original SchemaType. After cloning the
+    // caster, reconnect both properties to the same detached object.
+    if (originalType.$embeddedSchemaType) {
+      if (
+        originalType.$embeddedSchemaType === originalType.caster &&
+        detachedCaster
+      ) {
+        detachedType.$embeddedSchemaType = detachedCaster;
+      } else {
+        const detachedEmbeddedType = cloneSchemaType(
+          originalType.$embeddedSchemaType,
+          `${pathName}.$embedded`
+        );
+
+        if (detachedEmbeddedType.options) {
+          detachedEmbeddedType.options = {
+            ...detachedEmbeddedType.options,
+          };
+        }
+
+        detachedType.$embeddedSchemaType = detachedEmbeddedType;
+      }
+    }
+
+    // Detach nested document schemas recursively.
     if (detachedType.schema) {
       detachSchemaTypes(detachedType.schema, visitedSchemas);
     }
@@ -113,6 +161,13 @@ const detachSchemaTypes = (schema, visitedSchemas = new Set()) => {
     if (detachedType.caster?.schema) {
       detachSchemaTypes(
         detachedType.caster.schema,
+        visitedSchemas
+      );
+    }
+
+    if (detachedType.$embeddedSchemaType?.schema) {
+      detachSchemaTypes(
+        detachedType.$embeddedSchemaType.schema,
         visitedSchemas
       );
     }
@@ -127,6 +182,7 @@ const detachSchemaTypes = (schema, visitedSchemas = new Set()) => {
     }
   }
 };
+
 
 const rewriteSchemaReferences = (
   schema,

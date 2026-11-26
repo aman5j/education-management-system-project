@@ -4,13 +4,80 @@ import {
   isTenantModel,
 } from "../config/tenantCollectionRegistry.js";
 
+// Schema-only modules must export Mongoose Schemas,
+// never globally registered Mongoose Models.
+const SCHEMA_ONLY_LOADERS = Object.freeze({
+  Course: () =>
+    import("../models/schemas/Course.schema.js"),
+
+  Subject: () =>
+    import("../models/schemas/Subject.schema.js"),
+
+  Role: () =>
+    import("../models/schemas/Role.schema.js"),
+});
+
+export const TENANT_SCHEMA_ONLY_MODEL_NAMES =
+  Object.freeze(Object.keys(SCHEMA_ONLY_LOADERS));
+
 let definitionsPromise = null;
 
+const loadSchemaOnlyModule = async (modelName) => {
+  const loader = SCHEMA_ONLY_LOADERS[modelName];
+
+  if (!loader) {
+    return null;
+  }
+
+  const schemaModule = await loader();
+  const schema = schemaModule.default;
+
+  if (
+    !schema ||
+    typeof schema.clone !== "function" ||
+    typeof schema.eachPath !== "function"
+  ) {
+    throw new Error(
+      `${modelName}: schema-only module must export a Mongoose Schema.`
+    );
+  }
+
+  return schema;
+};
+
+const loadLegacyModelSchema = async (modelName) => {
+  const modelModule = await import(
+    `../models/${modelName}.js`
+  );
+
+  const model = modelModule.default;
+
+  if (!model?.schema) {
+    throw new Error(
+      "Default export does not contain a Mongoose schema."
+    );
+  }
+
+  if (model.modelName !== modelName) {
+    throw new Error(
+      `Expected model name "${modelName}", ` +
+      `received "${model.modelName || "unknown"}".`
+    );
+  }
+
+  return model.schema;
+};
+
 /**
- * Loads the existing model files and extracts their Mongoose schemas.
+ * Loads all registered tenant schemas.
  *
- * Central models such as Institute and PlatformUser are excluded
- * because they are not present in TENANT_MODEL_NAMES.
+ * Schema-only modules are preferred and do not register
+ * global Mongoose models.
+ *
+ * Legacy model imports remain temporarily available for
+ * models not yet migrated.
+ *
+ * Central models are excluded by TENANT_MODEL_NAMES.
  */
 export const loadTenantModelDefinitions = async () => {
   if (definitionsPromise) {
@@ -30,28 +97,15 @@ export const loadTenantModelDefinitions = async () => {
       }
 
       try {
-        const modelModule = await import(
-          `../models/${modelName}.js`
-        );
+        let schema = await loadSchemaOnlyModule(modelName);
 
-        const model = modelModule.default;
-
-        if (!model?.schema) {
-          throw new Error(
-            "Default export does not contain a Mongoose schema."
-          );
-        }
-
-        if (model.modelName !== modelName) {
-          throw new Error(
-            `Expected model name "${modelName}", ` +
-            `received "${model.modelName || "unknown"}".`
-          );
+        if (!schema) {
+          schema = await loadLegacyModelSchema(modelName);
         }
 
         definitions.push({
           name: modelName,
-          schema: model.schema,
+          schema,
         });
       } catch (error) {
         failures.push(
@@ -80,7 +134,6 @@ export const loadTenantModelDefinitions = async () => {
   try {
     return await definitionsPromise;
   } catch (error) {
-    // Allow a retry after correcting a missing or invalid model.
     definitionsPromise = null;
     throw error;
   }
@@ -88,5 +141,7 @@ export const loadTenantModelDefinitions = async () => {
 
 export const getTenantSchemaLoaderStatus = () => ({
   expectedModels: TENANT_MODEL_NAMES.length,
+  schemaOnlyModels: TENANT_SCHEMA_ONLY_MODEL_NAMES.length,
+  schemaOnlyModelNames: [...TENANT_SCHEMA_ONLY_MODEL_NAMES],
   loaded: Boolean(definitionsPromise),
 });
