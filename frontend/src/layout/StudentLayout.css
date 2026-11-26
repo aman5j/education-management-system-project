@@ -721,12 +721,12 @@ padding: 8px;
     position: relative;
     z-index: 1;
     justify-content: flex-start;
-    padding: 15px 15px;
+    padding: 10px;
     border-bottom: 1px solid rgba(220, 234, 255, .22);
     background: white;
     max-height: 110px;
-    border-radius:10px;
-
+    border-radius: 5px;
+    margin-bottom: 15px;
 }
 
 .student-layout .student-layout__brand-logo {

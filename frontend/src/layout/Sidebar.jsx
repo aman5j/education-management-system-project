@@ -264,11 +264,11 @@ const menuItems = [
     ],
   },
 
-  {
-    label: "Communication",
-    path: "/admin/communication",
-    icon: FiMessageSquare,
-  },
+  // {
+  //   label: "Communication",
+  //   path: "/admin/communication",
+  //   icon: FiMessageSquare,
+  // },
 
   {
     label: "Website Manager",
@@ -298,29 +298,35 @@ const menuItems = [
     path: "/admin/reports",
     icon: FiBarChart2,
   },
-
   {
-    label: "Settings",
+    label: "Settings/Profile",
+    path: "/admin/profile",
     icon: FiSettings,
-    children: [
-      {
-        label: "Profile",
-        path: "/admin/profile",
-      },
-      {
-        label: "Users",
-        path: "/admin/users",
-      },
-      {
-        label: "Roles",
-        path: "/admin/roles",
-      },
-      {
-        label: "System Settings",
-        path: "/admin/system-settings",
-      },
-    ],
   },
+
+
+  // {
+  //   label: "Settings",
+  //   icon: FiSettings,
+  //   children: [
+  //     {
+  //       label: "Profile",
+  //       path: "/admin/profile",
+  //     },
+  //     {
+  //       label: "Users",
+  //       path: "/admin/users",
+  //     },
+  //     {
+  //       label: "Roles",
+  //       path: "/admin/roles",
+  //     },
+  //     // {
+  //     //   label: "System Settings",
+  //     //   path: "/admin/system-settings",
+  //     // },
+  //   ],
+  // },
 ];
 
 const PATH_PERMISSION_MAP = {

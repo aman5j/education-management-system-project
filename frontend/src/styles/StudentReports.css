@@ -810,7 +810,7 @@
 .student-signature {
   display: block;
   max-width: 100px;
-  max-height: 32px;
+  max-height: 22px;
   object-fit: contain;
   object-position: left center;
 }

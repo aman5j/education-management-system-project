@@ -297,6 +297,7 @@ const Admissions = () => {
               <thead>
                 <tr>
                   <th>Student</th>
+                   <th>Roll No.</th>
                   <th>Course</th>
                   <th>Batch</th>
                   <th>Admission Date</th>
@@ -328,7 +329,7 @@ const Admissions = () => {
                           <div className="admission-student-profile">
                             {student?.profileImage ? (
                               <img
-                                className="admission-student-image"
+                                className="student-avatar"
                                 src={getAssetUrl(student.profileImage)}
                                 alt={[
                                   student?.firstName,
@@ -365,11 +366,15 @@ const Admissions = () => {
                                   student?.surname,
                                 ].filter(Boolean).join(" ") || "—"}
                               </strong>
-                              <small>{student?.rollNo || "—"}</small>
+                             <img className="student-signature" src={getAssetUrl(student.signature)} alt="" />
                             </div>
                           </div>
                         </div>
                       </td>
+                      <td><span className="student-roll">{student?.rollNo || "—"}  
+                        
+                        
+                        </span></td>
 
                       <td>{course?.courseTitle || "—"}</td>
                       <td>{batch?.batch_name || "—"}</td>

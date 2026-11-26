@@ -1,9 +1,5 @@
 
-.leave-admin {
-  width: 100%;
-  padding: 26px;
-  color: #172033;
-}
+
 
 .la-header,
 .la-panel-heading,
@@ -106,54 +102,8 @@
   margin-bottom: 20px;
 }
 
-.la-summary article {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 17px;
-  background: #fff;
-  border: 1px solid #e8edf4;
-  border-radius: 13px;
-}
 
-.la-summary article small,
-.la-summary article strong {
-  display: block;
-}
 
-.la-summary article small {
-  color: #7b8798;
-  font-size: 11px;
-}
-
-.la-summary article strong {
-  margin-top: 4px;
-  font-size: 23px;
-}
-
-.la-summary-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  font-size: 18px;
-}
-
-.la-summary-icon--pending {
-  color: #95630b;
-  background: #fff5d9;
-}
-
-.la-summary-icon--approved {
-  color: #18744a;
-  background: #e6f7ee;
-}
-
-.la-summary-icon--rejected {
-  color: #b43b43;
-  background: #ffeded;
-}
 
 .la-panel {
   padding: 22px;

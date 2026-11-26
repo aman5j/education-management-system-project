@@ -286,67 +286,75 @@ export default function LeaveRequests() {
 
   return (
     <main className="leave-admin">
-      <header className="la-header">
-        <div>
-          <span className="la-eyebrow">STUDENT MANAGEMENT</span>
-          <h1>Leave Requests</h1>
-          <p>
+      <div class="page-header"><div><h1>Leave Requests</h1><p>
             Review student leave applications and update attendance
             through approval.
-          </p>
-        </div>
-
+          </p></div>
         <button
           type="button"
-          className="la-refresh"
+          className="themebtn"
           onClick={() => loadRequests(true)}
           disabled={loading || refreshing}
         >
           <FiRefreshCw className={refreshing ? "la-spin" : ""} />
           {refreshing ? "Refreshing..." : "Refresh"}
         </button>
-      </header>
+      </div>
 
       <section className="la-summary">
-        <article>
-          <span className="la-summary-icon la-summary-icon--pending">
-            <FiClock />
-          </span>
-          <div>
-            <small>Pending on this page</small>
-            <strong>{counts.pending}</strong>
+        <article className="dashboard-stat-card card-warning">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-warning">
+              <FiClock />
+            </div>
+          </div>
+
+          <div className="stat-card-body">
+            <span className="stat-card-title">Pending </span>
+            <strong className="stat-card-value">{counts.pending}</strong>            
+
+          </div>
+        </article>
+         <article className="dashboard-stat-card card-success">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-success">
+              <FiCheckCircle />
+            </div>
+          </div>
+
+          <div className="stat-card-body">
+            <span className="stat-card-title">Approved </span>
+            <strong className="stat-card-value">{counts.approved}</strong>            
+
           </div>
         </article>
 
-        <article>
-          <span className="la-summary-icon la-summary-icon--approved">
-            <FiCheckCircle />
-          </span>
-          <div>
-            <small>Approved on this page</small>
-            <strong>{counts.approved}</strong>
+         <article className="dashboard-stat-card card-danger">
+          <div className="stat-card-top">
+            <div className="stat-icon stat-icon-danger">
+              <FiXCircle />
+            </div>
+          </div>
+
+          <div className="stat-card-body">
+            <span className="stat-card-title">Rejected </span>
+            <strong className="stat-card-value">{counts.rejected}</strong>            
+
           </div>
         </article>
 
-        <article>
-          <span className="la-summary-icon la-summary-icon--rejected">
-            <FiXCircle />
-          </span>
-          <div>
-            <small>Rejected on this page</small>
-            <strong>{counts.rejected}</strong>
-          </div>
-        </article>
       </section>
 
-      <section className="la-panel">
-        <div className="la-panel-heading">
+      <section className="common-card">
+        <div className="panel-header">
           <div>
-            <h2>Student Applications</h2>
+            <h3>Student Applications</h3>
             <p>{pagination.total} total request(s)</p>
           </div>
 
-          <select
+            <div>
+               <div className="input-search">
+              <select
             value={status}
             onChange={(event) =>
               handleStatusChange(event.target.value)
@@ -360,6 +368,8 @@ export default function LeaveRequests() {
             <option value="Cancelled">Cancelled</option>
             <option value="">All Requests</option>
           </select>
+            </div>
+            </div>
         </div>
 
         {loading ? (
@@ -375,8 +385,8 @@ export default function LeaveRequests() {
             </span>
           </div>
         ) : (
-          <div className="la-table-wrap">
-            <table className="la-table">
+          <div className="common-table-wrapper">
+            <table className="common-table">
               <thead>
                 <tr>
                   <th>Student</th>

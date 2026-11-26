@@ -11,7 +11,8 @@ import {
   FiSearch,
   FiDollarSign,
 } from "react-icons/fi";
-
+import { IoWalletSharp } from "react-icons/io5";
+import { MdCurrencyRupee } from "react-icons/md";
 import studentPortalService from "../../services/studentPortalService";
 import "./StudentFees.css";
 
@@ -39,16 +40,24 @@ const statusClass = (status) =>
 
 function SummaryCard({ icon: Icon, title, value, caption, tone }) {
   return (
-    <article className={`sf-summary sf-summary--${tone}`}>
-      <div className="sf-summary__icon">
-        <Icon aria-hidden="true" />
+    <article className={`dashboard-stat-card card-${tone}`}>
+      <div className="stat-card-top">
+        <div className={`stat-icon stat-icon-${tone}`}>
+           <Icon aria-hidden="true" />
       </div>
-      <div className="sf-summary__content">
-        <span>{title}</span>
-        <strong>{value}</strong>
+      {/* <div className={`dashboard-stat-card ${tone}`}></div> */}
+      </div>
+
+      <div className="stat-card-body">
+        <span className="stat-card-title">{title}</span>
+        <strong className="stat-card-value">{value}</strong>
         <small>{caption}</small>
       </div>
     </article>
+
+
+
+
   );
 }
 
@@ -61,7 +70,7 @@ function PaymentStatus({ status }) {
 }
 
 export default function StudentFees() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("balances");
   const [data, setData] = useState({
     summary: {
       totalFees: 0,
@@ -166,7 +175,6 @@ export default function StudentFees() {
     : 0;
 
   const tabs = [
-    { id: "overview", label: "Overview" },
     { id: "balances", label: "Fee Balances" },
     { id: "history", label: "Payment History" },
   ];
@@ -188,44 +196,44 @@ export default function StudentFees() {
 
       <section className="sf-summary-grid">
         <SummaryCard
-          icon={FiDollarSign}
+          icon={MdCurrencyRupee}
           title="Total Fees"
           value={money(summary.totalFees)}
           caption={`${summary.admissionCount} admission(s)`}
-          tone="blue"
+          tone="purple"
         />
+
         <SummaryCard
-          icon={FiCheckCircle}
+          icon={IoWalletSharp}
           title="Total Paid"
           value={money(summary.totalPaid)}
           caption={`${paidPercentage}% of total fees`}
-          tone="green"
+          tone="success"
         />
         <SummaryCard
           icon={FiClock}
           title="Outstanding Balance"
           value={money(summary.outstanding)}
           caption="Remaining admission fees"
-          tone="orange"
+          tone="danger"
         />
-        <SummaryCard
+        {/* <SummaryCard
           icon={FiCreditCard}
           title="Pending Payments"
           value={money(summary.pendingPayments)}
           caption="Awaiting verification"
           tone="purple"
-        />
+        /> */}
       </section>
 
-      <section className="sf-panel sf-main-panel">
-        <div className="sf-tabs" role="tablist" aria-label="Fees sections">
+<div className="student-profile__tabs" role="tablist" aria-label="Fees sections">
           {tabs.map((tab) => (
             <button
               type="button"
               key={tab.id}
               role="tab"
               aria-selected={activeTab === tab.id}
-              className={activeTab === tab.id ? "sf-tab sf-tab--active" : "sf-tab"}
+              className={activeTab === tab.id ? "active" : "sf-tab"}
               onClick={() => {
                 setActiveTab(tab.id);
                 setSearch("");
@@ -237,152 +245,46 @@ export default function StudentFees() {
           ))}
         </div>
 
-        <div className="sf-panel-body">
-          {activeTab === "overview" && (
-            <>
-              <div className="sf-overview-heading">
-                <div>
-                  <h2>Fee Overview</h2>
-                  <p>Summary calculated from your admission records.</p>
-                </div>
-                <span className="sf-overview-percent">{paidPercentage}% paid</span>
-              </div>
+    
+        
+ 
 
-              <div
-                className="sf-progress"
-                role="progressbar"
-                aria-label="Total fees paid"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={paidPercentage}
-              >
-                <span style={{ width: `${paidPercentage}%` }} />
-              </div>
-
-              <div className="sf-progress-labels">
-                <span>Paid: {money(summary.totalPaid)}</span>
-                <span>Remaining: {money(summary.outstanding)}</span>
-              </div>
-
-              <div className="sf-section-heading">
-                <div>
-                  <h2>Admission Fee Balances</h2>
-                  <p>Each row represents one of your admissions.</p>
-                </div>
-                <button type="button" className="sf-text-button" onClick={() => setActiveTab("balances")}>
-                  View all
-                </button>
-              </div>
-
-              {loading ? (
-                <div className="sf-state">Loading your fee details...</div>
-              ) : data.admissions.length === 0 ? (
-                <div className="sf-state">
-                  <FiFileText />
-                  <strong>No admission fee records found</strong>
-                  <span>Your fee details will appear here once an admission is recorded.</span>
-                </div>
-              ) : (
-                <div className="sf-admission-list">
-                  {data.admissions.slice(0, 4).map((item) => (
-                    <article className="sf-admission-card" key={item.admissionId}>
-                      <div className="sf-admission-card__icon"><FiBookOpen /></div>
-                      <div className="sf-admission-card__main">
-                        <div className="sf-admission-card__title">
-                          <strong>{item.course}</strong>
-                          <PaymentStatus status={item.admissionStatus} />
-                        </div>
-                        <span className="sf-muted">
-                          {item.batch} · Admitted {formatDate(item.admissionDate)}
-                        </span>
-                        <div className="sf-progress sf-progress--small">
-                          <span style={{ width: `${item.paymentPercentage}%` }} />
-                        </div>
-                        <div className="sf-progress-labels">
-                          <span>{item.paymentPercentage}% paid</span>
-                          <strong>{money(item.outstanding)} due</strong>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                  {data.admissions.length > 4 && (
-                    <button
-                      type="button"
-                      className="sf-view-more"
-                      onClick={() => setActiveTab("balances")}
-                    >
-                      View all {data.admissions.length} admissions
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div className="sf-section-heading sf-history-heading">
-                <div>
-                  <h2>Recent Payments</h2>
-                  <p>Latest recorded payment activity.</p>
-                </div>
-                <button type="button" className="sf-text-button" onClick={() => setActiveTab("history")}>
-                  Payment history
-                </button>
-              </div>
-
-              {loading ? (
-                <div className="sf-state">Loading payment history...</div>
-              ) : data.payments.length === 0 ? (
-                <div className="sf-empty-inline">No payments have been recorded yet.</div>
-              ) : (
-                <div className="sf-table-wrap">
-                  <table className="sf-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Course</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.payments.slice(0, 5).map((payment) => (
-                        <tr key={payment.id}>
-                          <td>{formatDate(payment.date)}</td>
-                          <td>{payment.course}</td>
-                          <td className="sf-amount">{money(payment.amount)}</td>
-                          <td><PaymentStatus status={payment.status} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
+       
+         
 
           {activeTab === "balances" && (
             <>
-              <div className="sf-section-heading sf-balances-heading">
+              <div className="common-card">
+                 <div className="panel-header">
                 <div>
-                  <h2>Admission Fee Balances</h2>
+                  <h3>Admission Fee Balances</h3>
                   <p>Search your admissions and review remaining balances.</p>
                 </div>
-              </div>
 
-              <div className="sf-filters">
-                <label className="sf-search">
+                <div className="right-filter">
+                    <div className="input-search">
+               
                   <FiSearch />
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search course or batch..."
                   />
-                </label>
+                   </div>
+               <div className="input-search">
                 <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter admission status">
                   <option value="all">All statuses</option>
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
                   <option value="dropped">Dropped</option>
                 </select>
+                </div>
+                </div>
+             
               </div>
+
+               
+                 
 
               {loading ? (
                 <div className="sf-state">Loading fee balances...</div>
@@ -393,11 +295,11 @@ export default function StudentFees() {
                   <span>Try changing your search or status filter.</span>
                 </div>
               ) : (
-                <div className="sf-table-wrap">
-                  <table className="sf-table">
+                <div className="common-table-wrapper">
+                  <table className="common-table">
                     <thead>
                       <tr>
-                        <th>Course / Batch</th>
+                        <th>Course/Batch</th>
                         <th>Admission Date</th>
                         <th>Total Fees</th>
                         <th>Paid</th>
@@ -409,13 +311,17 @@ export default function StudentFees() {
                       {filteredAdmissions.map((item) => (
                         <tr key={item.admissionId}>
                           <td>
-                            <strong className="sf-table-course">{item.course}</strong>
-                            <small>{item.batch}</small>
+                            <div className="student-name-cell">
+                              <div class="student-avatar-wrapper"><img alt="Narendra Lodhi" class="student-avatar" src="https://education-management-backend-79g1.onrender.com/uploads/students/1794900231774-WhatsApp-Image-2026-10-21-at-9-12-30-PM.jpeg" /></div>
+                           <div><strong>{item.course}</strong>{item.batch}</div>
+                            </div>
+
                           </td>
+                         
                           <td>{formatDate(item.admissionDate)}</td>
-                          <td>{money(item.total)}</td>
-                          <td className="sf-paid-amount">{money(item.paid)}</td>
-                          <td className="sf-outstanding-amount">{money(item.outstanding)}</td>
+                          <td><span className="tag-purple">{money(item.total)}</span></td>
+                          <td><span className="tag-success">{money(item.paid)}</span></td>
+                          <td><span className="tag-danger">{money(item.outstanding)}</span></td>
                           <td><PaymentStatus status={item.admissionStatus} /></td>
                         </tr>
                       ))}
@@ -423,27 +329,31 @@ export default function StudentFees() {
                   </table>
                 </div>
               )}
+              
+              </div>
             </>
           )}
 
           {activeTab === "history" && (
             <>
-              <div className="sf-section-heading sf-balances-heading">
+                <div className="common-card">
+                 <div className="panel-header">
                 <div>
-                  <h2>Payment History</h2>
+                  <h3>Payment History</h3>
                   <p>Payments recorded against your student account.</p>
                 </div>
-              </div>
 
-              <div className="sf-filters">
-                <label className="sf-search">
+                <div className="right-filter">
+                    <div className="input-search">
+               
                   <FiSearch />
-                  <input
+                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search receipt, course, or mode..."
                   />
-                </label>
+                   </div>
+               <div className="input-search">
                 <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter payment status">
                   <option value="all">All statuses</option>
                   <option value="verified">Verified</option>
@@ -451,7 +361,11 @@ export default function StudentFees() {
                   <option value="failed">Failed</option>
                   <option value="overdue">Overdue</option>
                 </select>
+                </div>
+                </div>
+             
               </div>
+
 
               {loading ? (
                 <div className="sf-state">Loading payment history...</div>
@@ -462,8 +376,8 @@ export default function StudentFees() {
                   <span>Recorded payments will appear here after they are added by your institute.</span>
                 </div>
               ) : (
-                <div className="sf-table-wrap">
-                  <table className="sf-table">
+                <div className="common-table-wrapper">
+                  <table className="common-table">
                     <thead>
                       <tr>
                         <th>Payment Date</th>
@@ -478,10 +392,10 @@ export default function StudentFees() {
                       {filteredPayments.map((payment) => (
                         <tr key={payment.id}>
                           <td>{formatDate(payment.date)}</td>
+                          <td>  <span className="student-roll">{payment.receiptNo || "—"}</span></td>
                           <td>{payment.course}</td>
-                          <td className="sf-receipt">{payment.receiptNo || "—"}</td>
                           <td>{payment.mode || "—"}</td>
-                          <td className="sf-amount">{money(payment.amount)}</td>
+                          <td><span className="tag-success">{money(payment.amount)}</span></td>
                           <td><PaymentStatus status={payment.status} /></td>
                         </tr>
                       ))}
@@ -489,10 +403,11 @@ export default function StudentFees() {
                   </table>
                 </div>
               )}
+              </div>
             </>
           )}
-        </div>
-      </section>
+       
+      
 
       <p className="sf-privacy-note">
         Fee information is read from your own admission and payment records.
