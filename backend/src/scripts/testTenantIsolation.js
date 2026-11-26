@@ -145,6 +145,11 @@ const run = async () => {
     "AssignmentSubmissionVersion",
     "StudentAdmission",
     "Payment",
+    "Notification",
+    "SupportTicket",
+    "SupportMessage",
+    "SupportCounter",
+
     ];
 
 

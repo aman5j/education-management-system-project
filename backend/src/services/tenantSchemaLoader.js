@@ -64,6 +64,20 @@ const SCHEMA_ONLY_LOADERS = Object.freeze({
     import("../models/schemas/Payment.schema.js"),
 
 
+  Notification: () =>
+    import("../models/schemas/Notification.schema.js"),
+
+  SupportTicket: () =>
+    import("../models/schemas/SupportTicket.schema.js"),
+
+  SupportMessage: () =>
+    import("../models/schemas/SupportMessage.schema.js"),
+
+  SupportCounter: () =>
+    import("../models/schemas/SupportCounter.schema.js"),
+
+
+
 });
 
 export const TENANT_SCHEMA_ONLY_MODEL_NAMES =
