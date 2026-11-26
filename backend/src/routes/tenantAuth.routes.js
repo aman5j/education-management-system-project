@@ -8,8 +8,6 @@ import {
   tenantLogout,
   tenantMe,
   tenantChangePassword,
-  tenantForgotPassword,
-  tenantResetPassword,
 } from "../controllers/tenantAuth.controller.js";
 
 import {
@@ -41,31 +39,9 @@ const refreshLimiter = createAuthLimiter(
   "Too many session refresh requests. Please try again later."
 );
 
-const forgotPasswordLimiter = createAuthLimiter(
-  5,
-  "Too many password reset requests. Please try again later."
-);
-
-const resetPasswordLimiter = createAuthLimiter(
-  10,
-  "Too many password reset attempts. Please try again later."
-);
-
 router.post("/login", loginLimiter, tenantLogin);
 router.post("/refresh", refreshLimiter, tenantRefresh);
 router.post("/logout", tenantLogout);
-
-router.post(
-  "/forgot-password",
-  forgotPasswordLimiter,
-  tenantForgotPassword
-);
-
-router.post(
-  "/reset-password",
-  resetPasswordLimiter,
-  tenantResetPassword
-);
 
 router.get("/me", authenticateTenant, tenantMe);
 

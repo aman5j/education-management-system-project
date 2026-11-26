@@ -1,6 +1,4 @@
 
-import crypto from "node:crypto";
-
 import {
   createTenantAccessToken,
   createTenantRefreshToken,
@@ -9,11 +7,6 @@ import {
   safeTenantHashMatch,
   sanitizeTenantUser,
 } from "../utils/tenantAuth.js";
-
-import {
-  isTenantEmailConfigured,
-  sendTenantPasswordResetEmail,
-} from "../services/tenantEmail.service.js";
 
 const COOKIE_NAME =
   process.env.TENANT_COOKIE_NAME || "ems_tenant_refresh_token";
@@ -84,34 +77,6 @@ const isValidEmail = (email) =>
   email.length <= 254 &&
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const getPasswordResetUrl = (req, token) => {
-  const hostname = req.tenantContext.hostname;
-
-  const configuredTemplate =
-    process.env.TENANT_PASSWORD_RESET_URL?.trim();
-
-  if (configuredTemplate) {
-    return configuredTemplate
-      .replaceAll("{hostname}", hostname)
-      .replaceAll("{token}", encodeURIComponent(token));
-  }
-
-  const isProduction = process.env.NODE_ENV === "production";
-  const protocol = isProduction ? "https" : "http";
-
-  const port =
-    !isProduction && process.env.TENANT_FRONTEND_PORT
-      ? `:${process.env.TENANT_FRONTEND_PORT}`
-      : !isProduction
-        ? ":5173"
-        : "";
-
-  return (
-    `${protocol}://${hostname}${port}` +
-    `/reset-password?token=${encodeURIComponent(token)}`
-  );
-};
-
 const getTenantAccountResponse = (req) => ({
   id: req.tenant.id,
   name: req.tenant.name,
@@ -161,7 +126,6 @@ export const tenantLogin = async (req, res, next) => {
       });
     }
 
-    // Never trust the role selected by the browser.
     if (user.role !== role) {
       return res.status(401).json({
         success: false,
@@ -305,20 +269,17 @@ export const tenantRefresh = async (req, res, next) => {
       });
     }
 
-    // Access token gets its normal short lifetime.
     const newAccessToken = createTenantAccessToken(
       user,
       req.tenantContext
     );
 
-    // Refresh token preserves the original session expiry.
     const newRefreshToken = createTenantRefreshToken(
       user,
       req.tenantContext,
       `${remainingSeconds}s`
     );
 
-    // Atomic compare-and-rotate: only one concurrent refresh can win.
     const rotatedUser = await User.findOneAndUpdate(
       {
         _id: user._id,
@@ -463,178 +424,6 @@ export const tenantChangePassword = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Password changed. Please sign in again.",
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-export const tenantForgotPassword = async (req, res, next) => {
-  try {
-    const email =
-      typeof req.body?.email === "string"
-        ? req.body.email.trim().toLowerCase()
-        : "";
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Enter a valid email address.",
-      });
-    }
-
-    if (
-      process.env.NODE_ENV === "production" &&
-      !isTenantEmailConfigured()
-    ) {
-      return res.status(503).json({
-        success: false,
-        code: "TENANT_EMAIL_NOT_CONFIGURED",
-        message: "Password reset is temporarily unavailable.",
-      });
-    }
-
-    const User = getTenantUserModel(req);
-
-    const user = await User.findOne({ email })
-      .select("+passwordResetTokenHash +passwordResetExpires");
-
-    const genericMessage =
-      "If an active account exists for this email, password reset instructions will be sent.";
-
-    if (!user || user.status !== "active") {
-      return res.status(200).json({
-        success: true,
-        message: genericMessage,
-      });
-    }
-
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const tokenHash = hashTenantToken(resetToken);
-
-    user.passwordResetTokenHash = tokenHash;
-    user.passwordResetExpires = new Date(
-      Date.now() + 15 * 60 * 1000
-    );
-
-    await user.save();
-
-    const resetUrl = getPasswordResetUrl(req, resetToken);
-
-    if (process.env.NODE_ENV !== "production" &&
-        !isTenantEmailConfigured()) {
-      console.log(
-        `\n[TENANT PASSWORD RESET] ${req.tenant.slug} (${email})\n${resetUrl}\n`
-      );
-
-      return res.status(200).json({
-        success: true,
-        message: genericMessage,
-        devResetUrl: resetUrl,
-      });
-    }
-
-    try {
-      await sendTenantPasswordResetEmail({
-        to: email,
-        instituteName: req.tenant.name,
-        resetUrl,
-      });
-    } catch (emailError) {
-      // Revoke the token if delivery fails.
-      await User.updateOne(
-        {
-          _id: user._id,
-          passwordResetTokenHash: tokenHash,
-        },
-        {
-          $set: {
-            passwordResetTokenHash: null,
-            passwordResetExpires: null,
-          },
-        }
-      );
-
-      console.error(
-        "Tenant password reset email delivery failed:",
-        emailError.message
-      );
-
-      return res.status(503).json({
-        success: false,
-        code: "TENANT_RESET_EMAIL_FAILED",
-        message: "Password reset email could not be sent. Please try again later.",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: genericMessage,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-export const tenantResetPassword = async (req, res, next) => {
-  try {
-    const { token, newPassword } = req.body || {};
-
-    if (
-      typeof token !== "string" ||
-      token.length !== 64 ||
-      !/^[a-f0-9]{64}$/i.test(token) ||
-      typeof newPassword !== "string" ||
-      newPassword.length < 8 ||
-      newPassword.length > 128
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "A valid reset token and a password between 8 and 128 characters are required.",
-      });
-    }
-
-    const User = getTenantUserModel(req);
-    const tokenHash = hashTenantToken(token);
-
-    // Atomically consume the token before changing the password.
-    // A concurrent second request cannot consume the same token.
-    const user = await User.findOneAndUpdate(
-      {
-        passwordResetTokenHash: tokenHash,
-        passwordResetExpires: { $gt: new Date() },
-        status: "active",
-      },
-      {
-        $set: {
-          passwordResetTokenHash: null,
-          passwordResetExpires: null,
-        },
-      },
-      {
-        new: true,
-      }
-    ).select("+password +refreshTokenHash");
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        code: "TENANT_RESET_TOKEN_INVALID",
-        message: "Reset token is invalid, expired or already used.",
-      });
-    }
-
-    user.password = newPassword;
-    user.refreshTokenHash = null;
-
-    await user.save();
-
-    clearRefreshCookie(res);
-
-    return res.status(200).json({
-      success: true,
-      message: "Password reset successfully. You can now sign in.",
     });
   } catch (error) {
     return next(error);
