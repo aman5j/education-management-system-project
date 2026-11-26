@@ -1,5 +1,6 @@
 
 import express from "express";
+import rateLimit from "express-rate-limit";
 
 import {
   tenantLogin,
@@ -7,6 +8,8 @@ import {
   tenantLogout,
   tenantMe,
   tenantChangePassword,
+  tenantForgotPassword,
+  tenantResetPassword,
 } from "../controllers/tenantAuth.controller.js";
 
 import {
@@ -15,9 +18,54 @@ import {
 
 const router = express.Router();
 
-router.post("/login", tenantLogin);
-router.post("/refresh", tenantRefresh);
+const createAuthLimiter = (limit, message) =>
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+      success: false,
+      code: "TENANT_AUTH_RATE_LIMITED",
+      message,
+    },
+  });
+
+const loginLimiter = createAuthLimiter(
+  10,
+  "Too many login attempts. Please try again later."
+);
+
+const refreshLimiter = createAuthLimiter(
+  30,
+  "Too many session refresh requests. Please try again later."
+);
+
+const forgotPasswordLimiter = createAuthLimiter(
+  5,
+  "Too many password reset requests. Please try again later."
+);
+
+const resetPasswordLimiter = createAuthLimiter(
+  10,
+  "Too many password reset attempts. Please try again later."
+);
+
+router.post("/login", loginLimiter, tenantLogin);
+router.post("/refresh", refreshLimiter, tenantRefresh);
 router.post("/logout", tenantLogout);
+
+router.post(
+  "/forgot-password",
+  forgotPasswordLimiter,
+  tenantForgotPassword
+);
+
+router.post(
+  "/reset-password",
+  resetPasswordLimiter,
+  tenantResetPassword
+);
 
 router.get("/me", authenticateTenant, tenantMe);
 
