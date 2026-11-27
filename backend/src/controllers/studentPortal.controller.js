@@ -972,6 +972,7 @@ export const getMyAttendance = async (req, res, next) => {
  * Read-only fee overview and payment history for the authenticated
  * student's linked Student record.
  */
+
 export const getMyFees = async (req, res, next) => {
   try {
     if (req.user?.role !== "student") {
@@ -996,7 +997,10 @@ export const getMyFees = async (req, res, next) => {
 
     const [admissions, payments] = await Promise.all([
       StudentAdmission.find({ student_id: studentId })
-        .populate("course_id", "courseTitle courseType")
+        .populate(
+          "course_id",
+          "courseTitle courseType courseImage"
+        )
         .populate("batch_id", "batch_name")
         .sort({ admission_date: -1 })
         .lean(),
@@ -1022,32 +1026,53 @@ export const getMyFees = async (req, res, next) => {
 
       return {
         admissionId: String(admission._id),
+
         course: admission.course_id?.courseTitle || "Course unavailable",
+
+        courseImage: admission.course_id?.courseImage || "",
+
         courseType: admission.course_id?.courseType || "",
+
         batch: admission.batch_id?.batch_name || "Batch unavailable",
+
         admissionDate: admission.admission_date || null,
+
         admissionStatus: admission.status || "",
+
         total: Number(total.toFixed(2)),
+
         paid: Number(paid.toFixed(2)),
+
         outstanding: Number(outstanding.toFixed(2)),
-        paymentPercentage: total > 0
-          ? Math.min(100, Math.round((paid / total) * 100))
-          : 0,
+
+        paymentPercentage:
+          total > 0
+            ? Math.min(100, Math.round((paid / total) * 100))
+            : 0,
       };
     });
 
     const paymentHistory = payments.map((payment) => ({
       id: String(payment._id),
+
       admissionId: payment.admission_id
         ? String(payment.admission_id._id)
         : "",
-      course: payment.admission_id?.course_id?.courseTitle
-        || "Course unavailable",
+
+      course:
+        payment.admission_id?.course_id?.courseTitle ||
+        "Course unavailable",
+
       amount: Number(Number(payment.amount || 0).toFixed(2)),
+
       date: payment.payment_date || null,
+
       mode: payment.payment_mode || "",
+
       receiptNo: payment.receipt_no || "",
+
       status: payment.status || "Pending",
+
       notes: payment.notes || "",
     }));
 
@@ -1056,6 +1081,7 @@ export const getMyFees = async (req, res, next) => {
         totals.totalFees += admission.total;
         totals.totalPaid += admission.paid;
         totals.outstanding += admission.outstanding;
+
         return totals;
       },
       {
@@ -1086,7 +1112,9 @@ export const getMyFees = async (req, res, next) => {
           verifiedPayments: Number(verifiedPayments.toFixed(2)),
           pendingPayments: Number(pendingPayments.toFixed(2)),
         },
+
         admissions: feeAdmissions,
+
         payments: paymentHistory,
       },
     });
@@ -1094,3 +1122,4 @@ export const getMyFees = async (req, res, next) => {
     next(error);
   }
 };
+
