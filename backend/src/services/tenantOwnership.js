@@ -1,4 +1,8 @@
 
+import {
+  isTenantModel,
+} from "../config/tenantCollectionRegistry.js";
+
 const OBJECT_ID_PATTERN = /^[a-f0-9]{24}$/i;
 
 const toObjectIdString = (value) => {
@@ -15,8 +19,6 @@ const toObjectIdString = (value) => {
 /**
  * Returns the linked Student ID belonging to the
  * authenticated tenant student.
- *
- * Never reads student ID from browser-supplied data.
  */
 export const getAuthenticatedTenantStudentId = (req) => {
   if (req?.tenantUser?.role !== "student") {
@@ -35,7 +37,7 @@ export const getAuthenticatedTenantStudentId = (req) => {
 };
 
 /**
- * Builds an ownership filter from the authenticated
+ * Builds an ownership filter using the authenticated
  * student's linked Student record.
  */
 export const buildTenantStudentOwnershipFilter = (
@@ -83,16 +85,8 @@ export const tenantStudentOwnsResource = (
 /**
  * Middleware factory for loading a student-owned resource.
  *
- * The model name, route parameter and ownership field must
- * be configured by the server when defining the route.
- * They are never accepted from request body/query/headers.
- *
- * Example:
- * loadOwnedTenantStudentResource({
- *   modelName: "AssignmentSubmission",
- *   paramName: "id",
- *   ownerField: "student_id",
- * })
+ * Model names must exist in the tenant collection registry.
+ * Central platform models and unknown models are rejected.
  */
 export const loadOwnedTenantStudentResource = ({
   modelName,
@@ -102,7 +96,8 @@ export const loadOwnedTenantStudentResource = ({
 } = {}) => {
   if (
     typeof modelName !== "string" ||
-    !/^[A-Z][A-Za-z0-9]*$/.test(modelName)
+    !/^[A-Z][A-Za-z0-9]*$/.test(modelName) ||
+    !isTenantModel(modelName)
   ) {
     throw new Error("TENANT_OWNERSHIP_MODEL_INVALID");
   }
@@ -180,8 +175,7 @@ export const loadOwnedTenantStudentResource = ({
       // Resolve only through the trusted tenant model accessor.
       const Model = req.getTenantModel(modelName);
 
-      // Resource ID and authenticated owner ID are checked
-      // together in one tenant-scoped database query.
+      // Check resource ID and authenticated owner together.
       const resource = await Model.findOne({
         _id: resourceId,
         [ownerField]: studentId,
