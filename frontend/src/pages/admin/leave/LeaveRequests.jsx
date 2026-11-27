@@ -9,6 +9,11 @@ import {
   FiXCircle,
 } from "react-icons/fi";
 
+import { CgCloseO } from "react-icons/cg";
+import { IoMdCheckmarkCircleOutline } from "react-icons/io";
+import { IoMdInformationCircle } from "react-icons/io";
+import { MdDateRange } from "react-icons/md";
+
 import { useAuth } from "../../../context/AuthContext";
 import leaveRequestService from "../../../services/leaveRequestService";
 import Pagination from "../../../components/common/Pagination";
@@ -345,11 +350,11 @@ export default function LeaveRequests() {
 
       </section>
 
-      <section className="common-card">
+      <section className="common-card student-leave ">
         <div className="panel-header">
           <div>
-            <h3>Student Applications</h3>
-            <p>{pagination.total} total request(s)</p>
+            <h3>Request Applications ({pagination.total}) </h3>
+            
           </div>
 
             <div>
@@ -390,13 +395,13 @@ export default function LeaveRequests() {
               <thead>
                 <tr>
                   <th>Student</th>
-                  <th>Applied On</th>
                   <th>Course / Batch</th>
-                  <th>Leave Dates</th>
+                  <th>Applied On</th>
+                  <th> Leave Date / Range </th>
                   <th>Type</th>
                   <th>Reason</th>
                   <th>Status</th>
-                  <th>Review</th>
+                  <th>Action</th>
                 </tr>
               </thead>
 
@@ -409,34 +414,57 @@ export default function LeaveRequests() {
                   return (
                     <tr key={request._id}>
                       <td>
-                        <strong>{getPersonName(student)}</strong>
-                        <small>
-                          Roll No: {student.rollNo || "—"}
-                        </small>
+<div class="student-name-cell"><div><strong>{getPersonName(student)}</strong> Roll No: {student.rollNo || "—"}</div></div>
+
+                      
                       </td>
 
-                      <td>
-                        <strong>
-                          {formatAppliedDate(request.createdAt)}
-                        </strong>
-                      </td>
-
-                      <td>
-                        <strong>
-                          {course.courseTitle || "—"}
-                        </strong>
-                        <small>
+ <td>
+                       
+                         <div>
+                           {course.courseTitle || "—"} <br></br>
+                       
+                        <span className="batchtag"> 
                           {batch.batch_name || "—"}
-                        </small>
+                        </span>
+                         </div>
+                        
                       </td>
 
                       <td>
-                        <strong>
-                          {formatDate(request.from_date)}
-                        </strong>
-                        <small>
-                          to {formatDate(request.to_date)}
-                        </small>
+                        
+                         <div className="contact-details">
+                                                    <div className="contact-li">
+                                                      <MdDateRange />
+                                                      <span>
+                                                        {formatAppliedDate(
+                                                          request.createdAt
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                      </td>
+
+                     
+
+                      <td>
+                         <div className="contact-details">
+                                                    <div className="contact-li">
+                                                      <MdDateRange />
+                                                      <span>
+                                                        {formatDate(request.from_date)}
+                                                      </span>
+                                                    </div>
+                        
+                                                   <span> To</span>
+                        
+                                                    <div className="contact-li">
+                                                      <MdDateRange />
+                                                      <span>
+                                                        {formatDate(request.to_date)}
+                                                      </span>
+                                                    </div>
+                                                  </div>
                       </td>
 
                       <td>{request.leave_type}</td>
@@ -446,13 +474,13 @@ export default function LeaveRequests() {
                       </td>
 
                       <td>
-                        <span
-                          className={`la-status la-status--${statusClass(
-                            request.status
-                          )}`}
-                        >
-                          {request.status}
-                        </span>
+                       <span
+                            className={`status ${statusClass(
+                              request.status
+                            )}`}
+                          >
+                            {request.status}
+                          </span>
                       </td>
 
                       <td>
@@ -465,6 +493,9 @@ export default function LeaveRequests() {
                                 openReview(request, "Approved")
                               }
                             >
+                              <IoMdCheckmarkCircleOutline />
+
+
                               Approve
                             </button>
 
@@ -475,6 +506,10 @@ export default function LeaveRequests() {
                                 openReview(request, "Rejected")
                               }
                             >
+                              
+
+<CgCloseO />
+
                               Reject
                             </button>
                           </div>
