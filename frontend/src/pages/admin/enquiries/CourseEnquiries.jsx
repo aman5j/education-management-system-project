@@ -1,115 +1,72 @@
-
 import { useCallback, useEffect, useState } from "react";
 import {
-  FiSearch,
-  FiRefreshCw,
-  FiEye,
-  FiTrash2,
-  FiX,
-  FiChevronLeft,
-  FiChevronRight,
-  FiMessageSquare,
-  FiPhone,
-  FiMail,
+  FiSearch, FiRefreshCw, FiEye, FiTrash2, FiX,
+  FiChevronLeft, FiChevronRight, FiMessageSquare,
+  FiPhone, FiMail, FiUsers, FiClock, FiUserCheck,
+  FiCheckCircle, FiCalendar, FiBookOpen, FiExternalLink,
+  FiEdit2
 } from "react-icons/fi";
 
 import contactUsService from "../../../services/contactUsService";
-import notification, {
-  getApiErrorMessage,
-} from "../../../utils/notification";
-
+import notification, { getApiErrorMessage } from "../../../utils/notification";
 import "./CourseEnquiries.css";
+import { IoIosCall } from "react-icons/io";
+import { MdDateRange, MdOutgoingMail } from "react-icons/md";
 
 const STATUS_OPTIONS = ["New", "Contacted", "Closed"];
+const STATUS_META = {
+  New: { icon: FiClock, caption: "Awaiting your response" },
+  Contacted: { icon: FiUserCheck, caption: "Follow-up in progress" },
+  Closed: { icon: FiCheckCircle, caption: "Successfully completed" },
+};
 
 export default function CourseEnquiries() {
   const [enquiries, setEnquiries] = useState([]);
-  const [counts, setCounts] = useState({
-    New: 0,
-    Contacted: 0,
-    Closed: 0,
-  });
-
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
-
+  const [counts, setCounts] = useState({ New: 0, Contacted: 0, Closed: 0 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const loadEnquiries = useCallback(async (page = 1) => {
     setLoading(true);
-
     try {
       const data = await contactUsService.getEnquiries({
-        page,
-        limit: pagination.limit,
-        search,
-        status,
+        page, limit: pagination.limit, search, status,
       });
-
       setEnquiries(data.enquiries || []);
-      setCounts(data.counts || {
-        New: 0,
-        Contacted: 0,
-        Closed: 0,
-      });
-
-      setPagination((current) => ({
-        ...current,
-        ...(data.pagination || {}),
-      }));
+      setCounts(data.counts || { New: 0, Contacted: 0, Closed: 0 });
+      setPagination((current) => ({ ...current, ...(data.pagination || {}) }));
     } catch (error) {
-      notification.error(
-        getApiErrorMessage(error) ||
-          "Unable to load course enquiries."
-      );
+      notification.error(getApiErrorMessage(error) || "Unable to load course enquiries.");
     } finally {
       setLoading(false);
     }
   }, [pagination.limit, search, status]);
 
-  useEffect(() => {
-    loadEnquiries(1);
-  }, [loadEnquiries]);
+  useEffect(() => { loadEnquiries(1); }, [loadEnquiries]);
 
   const openEnquiry = async (id) => {
     try {
-      const enquiry = await contactUsService.getEnquiryById(id);
-      setSelected(enquiry);
+      setSelected(await contactUsService.getEnquiryById(id));
     } catch (error) {
-      notification.error(
-        getApiErrorMessage(error) ||
-          "Unable to open enquiry."
-      );
+      notification.error(getApiErrorMessage(error) || "Unable to open enquiry.");
     }
   };
 
   const updateStatus = async (id, nextStatus) => {
+    setUpdatingStatus(true);
     try {
-      await contactUsService.updateEnquiryStatus(
-        id,
-        nextStatus
-      );
-
+      await contactUsService.updateEnquiryStatus(id, nextStatus);
+      setSelected((current) => current?._id === id ? { ...current, status: nextStatus } : current);
       notification.success("Enquiry status updated.");
-      setSelected((current) =>
-        current?._id === id
-          ? { ...current, status: nextStatus }
-          : current
-      );
-
       await loadEnquiries(pagination.page);
     } catch (error) {
-      notification.error(
-        getApiErrorMessage(error) ||
-          "Unable to update enquiry status."
-      );
+      notification.error(getApiErrorMessage(error) || "Unable to update enquiry status.");
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -122,285 +79,213 @@ export default function CourseEnquiries() {
       cancelText: "Cancel",
       confirmButtonColor: "#dc2626",
     });
-
     if (!confirmed) return;
 
     try {
       await contactUsService.deleteEnquiry(enquiry._id);
-
       notification.success("Enquiry permanently deleted.");
-
-      if (selected?._id === enquiry._id) {
-        setSelected(null);
-      }
-
-      await loadEnquiries(pagination.page);
+      if (selected?._id === enquiry._id) setSelected(null);
+      const nextPage = enquiries.length === 1 && pagination.page > 1
+        ? pagination.page - 1 : pagination.page;
+      await loadEnquiries(nextPage);
     } catch (error) {
-      notification.error(
-        getApiErrorMessage(error) ||
-          "Unable to delete enquiry."
-      );
+      notification.error(getApiErrorMessage(error) || "Unable to delete enquiry.");
     }
   };
 
-  const formatDate = (value) => {
-    if (!value) return "—";
+  const formatDate = (value) => value
+    ? new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+    : "—";
 
-    return new Date(value).toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+  const initials = (name = "") => name.trim().split(/\s+/).slice(0, 2)
+    .map((part) => part[0]?.toUpperCase()).join("") || "NA";
+
+  const page = pagination.page || 1;
+  const totalPages = Math.max(1, pagination.totalPages || 1);
+  const from = pagination.total ? (page - 1) * pagination.limit + 1 : 0;
+  const to = Math.min(page * pagination.limit, pagination.total);
+  const cardClass = {
+    New: "success",
+    Contacted: "purple",
+    Closed: "danger",
   };
-
   return (
     <div className="course-enquiries-page">
-      <div className="course-enquiries-header">
+      <div className="page-header">
         <div>
-          <span className="course-enquiries-eyebrow">
-            WEBSITE MANAGEMENT
-          </span>
-          <h1>Course Enquiries</h1>
-          <p>View and manage enquiries submitted through Contact Us.</p>
-        </div>
 
-        <button
-          type="button"
-          className="enquiries-refresh-button"
-          onClick={() => loadEnquiries(pagination.page)}
-          disabled={loading}
-        >
-          <FiRefreshCw className={loading ? "enquiries-spin" : ""} />
-          Refresh
+          <h1>Course Enquiries</h1>
+          <p>Track, review and manage enquiries submitted through your website.</p>
+        </div>
+        <button type="button" className="themebtn enquiries-refresh-btn"
+          onClick={() => loadEnquiries(page)} disabled={loading}>
+          <FiRefreshCw className={loading ? "enquiries-spin" : ""} /> Refresh
         </button>
       </div>
 
       <div className="enquiries-stat-grid">
-        {STATUS_OPTIONS.map((item) => (
-          <button
-            type="button"
-            key={item}
-            className={`enquiries-stat-card ${
-              status === item ? "selected" : ""
-            }`}
-            onClick={() => setStatus(
-              status === item ? "" : item
-            )}
-          >
-            <span>{item} enquiries</span>
-            <strong>{counts[item] || 0}</strong>
-          </button>
-        ))}
+        {STATUS_OPTIONS.map((item) => {
+          const Icon = STATUS_META[item].icon;
+          return (
+            <button type="button"
+              key={item}
+              className={`dashboard-stat-card card-${cardClass[item]} ${status === item ? "selected" : ""
+                }`}
+              onClick={() => setStatus(status === item ? "" : item)}
+              aria-pressed={status === item}>
+              <div className="stat-card-top">
+                <div className={`stat-icon stat-icon-${cardClass[item]} `}>
+                  <Icon />
+                </div>
+              </div>
+              <div className="stat-card-body">
+                <span className="stat-card-title">{item} enquiries</span>
+                <strong className="stat-card-value">{counts[item] || 0}</strong>
+                {/* <p>{STATUS_META[item].caption}</p> */}
+              </div>
+
+            </button>
+          );
+        })}
       </div>
 
-      <div className="enquiries-toolbar">
-        <div className="enquiries-search">
-          <FiSearch />
-          <input
-            type="search"
-            value={search}
-            placeholder="Search name, email, phone or course..."
-            onChange={(event) => setSearch(event.target.value)}
-          />
+      <section className="common-card">
+        <div className="panel-header">
+          <div>
+            <h3>All enquiries</h3>
+            <p>Review applicant details and take action on each enquiry.</p>
+          </div>
+          <div className="enquiries-toolbar">
+            <div className="input-search">
+              <FiSearch />
+              <input type="search" value={search}
+                placeholder="Search name, email, phone or course..."
+                onChange={(event) => setSearch(event.target.value)}
+                aria-label="Search enquiries" />
+              {search && <button type="button" onClick={() => setSearch("")}
+                aria-label="Clear search"><FiX /></button>}
+            </div>
+            <div className="input-search">
+              <select className="enquiries-status-filter" value={status}
+                onChange={(event) => setStatus(event.target.value)} aria-label="Filter by status">
+                <option value="">All statuses</option>
+                {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </div>
+          </div>
         </div>
 
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {STATUS_OPTIONS.map((item) => (
-            <option key={item} value={item}>{item}</option>
-          ))}
-        </select>
-      </div>
 
-      <div className="enquiries-table-card">
-        <div className="enquiries-table-scroll">
-          <table className="enquiries-table">
-            <thead>
-              <tr>
-                <th>Applicant</th>
-                <th>Preparing For</th>
-                <th>Submitted</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
 
+        <div className="common-table-wrapper">
+          <table className="common-table">
+            <thead><tr>
+              <th>Applicant</th> <th>Contact</th> <th>Enquire Type</th><th> Date</th><th>Status</th> <th>Message</th> <th>Action</th>
+            </tr></thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="enquiries-empty">
-                    Loading enquiries...
-                  </td>
-                </tr>
+                <tr><td colSpan="7" className="enquiries-empty">
+                  <span className="enquiries-loading-spinner" />
+                  <strong>Loading enquiries</strong><small>Please wait while we fetch the latest records.</small>
+                </td></tr>
               ) : enquiries.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="enquiries-empty">
-                    <FiMessageSquare />
-                    <strong>No enquiries found</strong>
-                    <span>New website enquiries will appear here.</span>
+                <tr><td colSpan="5" className="enquiries-empty">
+                  <span className="enquiries-empty-icon"><FiMessageSquare /></span>
+                  <strong>No enquiries found</strong>
+                  <small>{search || status ? "Try changing your search or filter." : "New website enquiries will appear here."}</small>
+                  {(search || status) && <button className="enquiries-reset-filter" type="button"
+                    onClick={() => { setSearch(""); setStatus(""); }}>Clear filters</button>}
+                </td></tr>
+              ) : enquiries.map((item) => (
+                <tr key={item._id}>
+                  <td>
+                    <div className="admission-student-profile">
+                      <div className="admission-student-fallback">{initials(item.fullName)}</div>
+                        <div className="admission-student-info">
+                          <strong>{item.fullName || "Unnamed applicant"}</strong>
+                        </div>
+                     
+                    </div>
+                  </td>
+                  <td>
+                    <div className="contact-details">
+                      <div className="contact-li"> <IoIosCall />  <span>{item.phone}</span></div>
+                      <div className="contact-li"> <MdOutgoingMail /> <span>{item.email || "-"}</span></div>
+                    </div>
+                  </td>
+                  <td> {item.preparingFor || "Not specified"}</td>
+                  <td>
+                    
+                  
+                  
+ <div className="contact-details">
+                      <div className="contact-li"> <MdDateRange />  <span>{formatDate(item.createdAt)}</span></div>
+                    </div>
+ </td>
+                  <td><span className={`enquiry-status enquiry-status-${(item.status || "new").toLowerCase()}`}>
+                    <i /> {item.status || "New"}
+                  </span></td>
+
+                  <td>
+                    <div className="discription">
+                      { item.message}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="student-actions">
+                    <button className="tooltip" data-tooltip="Update Status" type="button" title="View enquiry" aria-label="View enquiry"
+                      onClick={() => openEnquiry(item._id)}><FiEdit2 /></button>
+                    <button className="tooltip"  data-tooltip="Delete Permanently" type="button"  aria-label="Delete enquiry"
+                      onClick={() => deleteEnquiry(item)}><FiTrash2 /></button>
+                  </div>
                   </td>
                 </tr>
-              ) : (
-                enquiries.map((item) => (
-                  <tr key={item._id}>
-                    <td>
-                      <strong>{item.fullName}</strong>
-                      <small>{item.email}</small>
-                      {item.phone && <small>{item.phone}</small>}
-                    </td>
-
-                    <td>
-                      {item.preparingFor || "Not specified"}
-                    </td>
-
-                    <td>{formatDate(item.createdAt)}</td>
-
-                    <td>
-                      <span
-                        className={`enquiry-status enquiry-status-${item.status.toLowerCase()}`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-
-                    <td>
-                      <div className="enquiries-actions">
-                        <button
-                          type="button"
-                          title="View enquiry"
-                          onClick={() => openEnquiry(item._id)}
-                        >
-                          <FiEye />
-                        </button>
-
-                        <button
-                          type="button"
-                          title="Delete permanently"
-                          className="delete"
-                          onClick={() => deleteEnquiry(item)}
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
 
         <div className="enquiries-pagination">
-          <span>
-            {pagination.total} total enquiries
-          </span>
-
-          <div>
-            <button
-              type="button"
-              disabled={pagination.page <= 1 || loading}
-              onClick={() => loadEnquiries(pagination.page - 1)}
-            >
-              <FiChevronLeft />
-            </button>
-
-            <strong>
-              {pagination.page} / {Math.max(1, pagination.totalPages)}
-            </strong>
-
-            <button
-              type="button"
-              disabled={
-                pagination.page >= pagination.totalPages ||
-                loading
-              }
-              onClick={() => loadEnquiries(pagination.page + 1)}
-            >
-              <FiChevronRight />
-            </button>
+          <span>Showing <strong>{from}–{to}</strong> of <strong>{pagination.total}</strong> enquiries</span>
+          <div className="enquiries-pagination-controls">
+            <button type="button" disabled={page <= 1 || loading}
+              onClick={() => loadEnquiries(page - 1)} aria-label="Previous page"><FiChevronLeft /></button>
+            <span>Page <strong>{page}</strong> of {totalPages}</span>
+            <button type="button" disabled={page >= totalPages || loading}
+              onClick={() => loadEnquiries(page + 1)} aria-label="Next page"><FiChevronRight /></button>
           </div>
         </div>
-      </div>
+      </section>
 
       {selected && (
-        <div
-          className="enquiry-modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setSelected(null);
-            }
-          }}
-        >
-          <section className="enquiry-modal">
-            <header>
+        <div className="enquiry-modal-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSelected(null);
+        }}>
+          <section className="enquiry-modal" role="dialog" aria-modal="true" aria-labelledby="enquiry-modal-title">
+            <header className="enquiry-modal-header">
               <div>
-                <span>ENQUIRY DETAILS</span>
-                <h2>{selected.fullName}</h2>
+                <span className="enquiry-modal-eyebrow">ENQUIRY DETAILS</span>
+                <h2 id="enquiry-modal-title">{selected.fullName}</h2>
+                
               </div>
-
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                aria-label="Close"
-              >
-                <FiX />
-              </button>
+              <button type="button" onClick={() => setSelected(null)} aria-label="Close"><FiX /></button>
             </header>
 
             <div className="enquiry-modal-content">
-              <p><FiMail /> {selected.email}</p>
-              {selected.phone && (
-                <p><FiPhone /> {selected.phone}</p>
-              )}
-
-              <div>
-                <small>Preparing for</small>
-                <strong>{selected.preparingFor || "Not specified"}</strong>
-              </div>
-
-              <div>
-                <small>Submitted on</small>
-                <strong>{formatDate(selected.createdAt)}</strong>
-              </div>
-
-              <div className="enquiry-message">
-                <small>Message</small>
-                <p>{selected.message}</p>
-              </div>
-
               <div className="enquiry-status-control">
-                <label htmlFor="enquiry-status">Update status</label>
-                <select
-                  id="enquiry-status"
-                  value={selected.status}
-                  onChange={(event) =>
-                    updateStatus(selected._id, event.target.value)
-                  }
-                >
-                  {STATUS_OPTIONS.map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
+                <div><label htmlFor="enquiry-status">Update Enquiry Status</label>
+                  </div>
+                <select id="enquiry-status" value={selected.status || "New"}
+                  disabled={updatingStatus}
+                  onChange={(event) => updateStatus(selected._id, event.target.value)}>
+                  {STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
               </div>
 
-              {selected.phone && (
-                <a
-                  className="enquiry-contact-action"
-                  href={`tel:${selected.phone}`}
-                >
-                  <FiPhone /> Call applicant
-                </a>
-              )}
-
-              <a
-                className="enquiry-contact-action"
-                href={`mailto:${selected.email}`}
-              >
-                <FiMail /> Reply by email
-              </a>
+              <div className="enquiry-modal-actions">
+                {selected.phone && <a className="enquiry-contact-action" href={`tel:${selected.phone}`}><FiPhone /> Call applicant</a>}
+                <a className="enquiry-contact-action enquiry-email-action" href={`mailto:${selected.email}`}><FiMail /> Reply by email</a>
+              </div>
             </div>
           </section>
         </div>

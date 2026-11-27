@@ -519,6 +519,19 @@ position: relative;
     display: inline-block;
     margin-top: 5px;
 }
+
+ .input-search input[type="text"],  .input-search select[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.input-search input:focus, .input-search select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 .input-search input {
  padding-left: 40px;
 } 
