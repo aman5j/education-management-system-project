@@ -142,28 +142,88 @@ export const createTenantStudentDocumentService = ({
       throw new Error("TENANT_DOCUMENT_PATH_INVALID");
     }
 
-    // Ensure the configured storage root exists.
-    // A configured root that is itself a symlink is treated as the
-    // administrator-selected root; tenant directories must remain inside it.
     await fs.mkdir(configuredRoot, {
       recursive: true,
       mode: 0o700,
     });
 
     const realStorageRoot = await fs.realpath(configuredRoot);
+
     const expectedTenantRoot = path.resolve(
       realStorageRoot,
       path.basename(tenantRoot)
     );
 
-    if (path.resolve(tenantRoot) !== path.resolve(
+    const expectedLexicalTenantRoot = path.resolve(
       configuredRoot,
       path.basename(tenantRoot)
-    )) {
+    );
+
+    if (
+      path.resolve(tenantRoot) !== expectedLexicalTenantRoot
+    ) {
       throw new Error("TENANT_DOCUMENT_PATH_INVALID");
     }
 
-    // Check the tenant directory before creating any child directories.
+    // Concurrent upload requests may attempt to create the same
+    // directory. EEXIST is accepted only after verifying the path.
+    const createDirectoryIfMissing = async (directory) => {
+      try {
+        await fs.mkdir(directory, {
+          recursive: false,
+          mode: 0o700,
+        });
+      } catch (error) {
+        if (error.code !== "EEXIST") {
+          throw error;
+        }
+      }
+
+      const stat = await fs.lstat(directory).catch((error) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      });
+
+      if (
+        !stat ||
+        !stat.isDirectory() ||
+        stat.isSymbolicLink()
+      ) {
+        throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+      }
+    };
+
+    const verifyDirectory = async (
+      directory,
+      expectedPath,
+      expectedParent
+    ) => {
+      const stat = await fs.lstat(directory).catch((error) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      });
+
+      if (
+        !stat ||
+        !stat.isDirectory() ||
+        stat.isSymbolicLink()
+      ) {
+        throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+      }
+
+      const realDirectory = await fs.realpath(directory);
+
+      if (
+        realDirectory !== expectedPath ||
+        path.dirname(realDirectory) !== expectedParent
+      ) {
+        throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+      }
+
+      return realDirectory;
+    };
+
+    // 1. Institute directory
     const tenantStat = await fs.lstat(tenantRoot).catch((error) => {
       if (error.code === "ENOENT") return null;
       throw error;
@@ -174,23 +234,18 @@ export const createTenantStudentDocumentService = ({
     }
 
     if (!tenantStat) {
-      await fs.mkdir(tenantRoot, {
-        recursive: false,
-        mode: 0o700,
-      });
+      await createDirectoryIfMissing(tenantRoot);
     } else if (!tenantStat.isDirectory()) {
       throw new Error("TENANT_DOCUMENT_PATH_INVALID");
     }
 
-    const realTenantRoot = await fs.realpath(tenantRoot);
+    const realTenantRoot = await verifyDirectory(
+      tenantRoot,
+      expectedTenantRoot,
+      realStorageRoot
+    );
 
-    if (
-      realTenantRoot !== expectedTenantRoot ||
-      path.dirname(realTenantRoot) !== realStorageRoot
-    ) {
-      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
-    }
-
+    // 2. students directory
     const studentsDirectory = path.join(
       realTenantRoot,
       "students"
@@ -208,25 +263,18 @@ export const createTenantStudentDocumentService = ({
     }
 
     if (!studentsStat) {
-      await fs.mkdir(studentsDirectory, {
-        recursive: false,
-        mode: 0o700,
-      });
+      await createDirectoryIfMissing(studentsDirectory);
     } else if (!studentsStat.isDirectory()) {
       throw new Error("TENANT_DOCUMENT_PATH_INVALID");
     }
 
-    const realStudentsDirectory = await fs.realpath(
-      studentsDirectory
+    const realStudentsDirectory = await verifyDirectory(
+      studentsDirectory,
+      studentsDirectory,
+      realTenantRoot
     );
 
-    if (
-      realStudentsDirectory !== studentsDirectory ||
-      path.dirname(realStudentsDirectory) !== realTenantRoot
-    ) {
-      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
-    }
-
+    // 3. documents directory
     const documentsDirectory = path.join(
       realStudentsDirectory,
       "documents"
@@ -244,26 +292,16 @@ export const createTenantStudentDocumentService = ({
     }
 
     if (!documentsStat) {
-      await fs.mkdir(documentsDirectory, {
-        recursive: false,
-        mode: 0o700,
-      });
+      await createDirectoryIfMissing(documentsDirectory);
     } else if (!documentsStat.isDirectory()) {
       throw new Error("TENANT_DOCUMENT_PATH_INVALID");
     }
 
-    const realDocumentsDirectory = await fs.realpath(
-      documentsDirectory
+    return verifyDirectory(
+      documentsDirectory,
+      documentsDirectory,
+      realStudentsDirectory
     );
-
-    if (
-      realDocumentsDirectory !== documentsDirectory ||
-      path.dirname(realDocumentsDirectory) !== realStudentsDirectory
-    ) {
-      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
-    }
-
-    return realDocumentsDirectory;
   };
 
 
