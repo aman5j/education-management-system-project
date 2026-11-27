@@ -11,6 +11,7 @@ import platformRoutes from "./routes/platform.routes.js";
 // superadmin part urls 
 import tenantAuthRoutes from "./routes/tenantAuth.routes.js";
 import tenantStudentDocumentRoutes from "./routes/tenantStudentDocument.routes.js";
+import tenantInstituteSettingsRoutes from "./routes/tenantInstituteSettings.routes.js";
 
 
 import { resolveTenant } from "./middleware/tenantResolver.middleware.js";
@@ -310,6 +311,15 @@ app.use(
 app.use(
   "/api/tenant",
   tenantStudentDocumentRoutes
+);
+
+/*
+ * Phase 4E — Batch 1A
+ * Tenant Institute Settings APIs
+ */
+app.use(
+  "/api/tenant/institute-settings",
+  tenantInstituteSettingsRoutes
 );
 
 app.use("/api/auth", authRoutes);
