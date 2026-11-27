@@ -28,6 +28,7 @@ import notification, {
 } from "../../../utils/notification";
 
 import "./AlertNoticeManagement.css";
+import { IoMdInformationCircle } from "react-icons/io";
 
 const localDateTime = (date = new Date()) => {
   const offset = date.getTimezoneOffset() * 60000;
@@ -93,22 +94,21 @@ export default function AlertNoticeManagement() {
     loadNotices();
   }, []);
 
+  // Release the previous temporary preview URL when the preview changes
+  // or the component unmounts.
   useEffect(() => {
-    if (!imageFile) {
-      setPreview("");
-      return undefined;
-    }
-
-    const url = URL.createObjectURL(imageFile);
-    setPreview(url);
-
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   const resetForm = () => {
     setEditingId(null);
     setForm(initialForm());
     setImageFile(null);
+    setPreview("");
     setExistingImage("");
     setHasUnsavedChanges(false);
     setShowForm(false);
@@ -170,7 +170,11 @@ export default function AlertNoticeManagement() {
       return;
     }
 
+    // Create the preview immediately after the user selects an image.
+    const previewUrl = URL.createObjectURL(file);
+
     setImageFile(file);
+    setPreview(previewUrl);
     setHasUnsavedChanges(true);
   };
 
@@ -188,6 +192,7 @@ export default function AlertNoticeManagement() {
 
     setExistingImage(notice.image || "");
     setImageFile(null);
+    setPreview("");
 
     if (fileRef.current) {
       fileRef.current.value = "";
@@ -299,40 +304,17 @@ export default function AlertNoticeManagement() {
 
 return (
   <div className="alert-notice-page">
-
-    {/* PAGE HEADER */}
-    <div className="alert-notice-header">
-      <div>
-        <span className="alert-notice-eyebrow">
-          COMMUNICATION
-        </span>
-
-        <h1>
-          <FiBell /> Alert Notice
-        </h1>
-
-        <p>
+    <div className="page-header"><div><h1> Alert Notice</h1>
+    <p>
           Upload and manage image-based announcements for students.
         </p>
-      </div>
-
-      <div className="an-header-actions">
-
-        {!showForm ? (
+    </div>
+      {!showForm ? (
           <>
+           
             <button
               type="button"
-              className="an-refresh-btn"
-              onClick={loadNotices}
-              disabled={loading}
-            >
-              <FiRefreshCw />
-              Refresh
-            </button>
-
-            <button
-              type="button"
-              className="an-add-btn"
+              className="themebtn"
               onClick={handleAddNotice}
             >
               <FiPlus />
@@ -342,7 +324,7 @@ return (
         ) : (
           <button
             type="button"
-            className="an-back-btn"
+            className="themebtn"
             onClick={handleBackToList}
             disabled={saving}
           >
@@ -350,21 +332,20 @@ return (
             Back to Alert Notices
           </button>
         )}
-
-      </div>
     </div>
+
 
     {/* ADD / EDIT FORM */}
     {showForm && (
-      <section className="an-form-card">
+      <section className="common-card">
 
-        <div className="an-section-heading">
+        <div className="panel-header">
           <div>
-            <h2>
+            <h3>
               {editingId
                 ? "Edit Alert Notice"
                 : "Add Alert Notice"}
-            </h2>
+            </h3>
 
             <p>
               Upload an image to display as a student popup.
@@ -372,52 +353,55 @@ return (
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="an-form-grid">
+                
+                   <form onSubmit={handleSubmit}>
+                    <div className="cardbody">
+                      <div className="an-form-grid">
 
-            <label className="an-field an-field-full">
-              <span>
-                Notice Title <b>*</b>
-              </span>
+                        
+            <div className="an-field  input-felid an-image-field">
 
-              <input
-                type="text"
-                value={form.title}
-                maxLength={150}
-                onChange={(event) =>
-                  updateFormField("title", event.target.value)
-                }
-                placeholder="Example: Diwali Holiday Notice"
-                required
-              />
-            </label>
+              <label>
+                Notice Alert Image <span className="required">*</span>
+              </label>
 
-            <div className="an-field an-field-full">
-              <span>
-                Notice Image {!editingId && <b>*</b>}
-              </span>
+              <div className="an-image-upload-container">
 
-              <div className="an-upload-area">
+                {/* LEFT: IMAGE PREVIEW */}
+                <div className="an-image-preview-panel">
 
-                <div className="an-image-preview">
-                  {preview || existingImage ? (
-                    <img
-                      src={
-                        preview ||
-                        getAssetUrl(existingImage)
-                      }
-                      alt="Notice preview"
-                    />
-                  ) : (
-                    <div className="an-image-placeholder">
-                      <FiImage />
-                      <span>No image selected</span>
-                    </div>
-                  )}
+                  <div className="an-image-panel-header">
+                    <span>Image Preview</span>
+                    {(preview || existingImage) && (
+                      <span className="an-image-live-status">
+                        <i /> Ready
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="an-image-preview">
+                    {preview || existingImage ? (
+                      <img
+                        src={preview || getAssetUrl(existingImage)}
+                        alt="Notice preview"
+                      />
+                    ) : (
+                      <div className="an-image-placeholder">
+                        <div className="an-placeholder-icon">
+                          <FiImage />
+                        </div>
+                        <strong>Preview will appear here</strong>
+                        <span>Upload an image to see how it looks</span>
+                      </div>
+                    )}
+                  </div>
+
+                
+
                 </div>
 
-                <div className="an-upload-info">
-
+                {/* RIGHT: UPLOAD SECTION */}
+                <div className="an-image-upload-panel">
                   <input
                     ref={fileRef}
                     type="file"
@@ -428,122 +412,148 @@ return (
 
                   <button
                     type="button"
-                    className="an-upload-btn"
+                    className="themebtn themebtnline"
                     onClick={() => fileRef.current?.click()}
                   >
                     <FiUpload />
-                    Upload Image
+                    {imageFile ? "Replace Image" : "Browse Images"}
                   </button>
 
-                  <p>
-                    JPG, PNG or WEBP. Maximum 8 MB.
-                  </p>
 
-                  <p>
-                    Recommended: square or portrait promotional artwork.
-                  </p>
-
-                  {imageFile && (
-                    <span className="an-selected-file">
-                      {imageFile.name}
-                    </span>
-                  )}
+                
 
                 </div>
               </div>
             </div>
+            <div className="rightform">
+                              <div className="input-felid admission-form-full">
 
-            <label className="an-field">
-              <span>
-                Show From <b>*</b>
-              </span>
-
-              <input
-                type="datetime-local"
-                value={form.startAt}
-                onChange={(event) =>
-                  updateFormField("startAt", event.target.value)
-                }
-                required
-              />
+                        <label >
+                          Notice Title
+                          <span className="required">* </span>
             </label>
+                          <input
+                            type="text"
+                            value={form.title}
+                            maxLength={150}
+                            onChange={(event) =>
+                              updateFormField("title", event.target.value)
+                            }
+                            placeholder="Example: Diwali Holiday Notice"
+                            required
+                          />
+                      
+                            </div>
 
-            <label className="an-field">
-              <span>Expiry Date</span>
+                        <div className="input-felid ">
+                        <label className="an-field">
+                          <span>
+                            Show From <b>*</b>
+                          </span>
 
-              <input
-                type="datetime-local"
-                value={form.endAt}
-                min={form.startAt}
-                onChange={(event) =>
-                  updateFormField("endAt", event.target.value)
-                }
-              />
+                          <input
+                            type="datetime-local"
+                            value={form.startAt}
+                            onChange={(event) =>
+                              updateFormField("startAt", event.target.value)
+                            }
+                            required
+                          />
+                        </label>
+                        </div>
 
-              <small>
-                Leave empty for no expiry date.
-              </small>
-            </label>
+                        <div className="input-felid ">
 
-            <label className="an-field">
-              <span>Show To</span>
-              <input value="All Students" disabled />
-            </label>
+                        <label>
+                          Expiry Date   <span
+                                  className="infoicon tooltip"
+                                  data-tooltip="Leave empty for no expiry date."
+                                >
+                                  <IoMdInformationCircle />
+                                </span>
+                                
+                          
+                        
+                        </label>
 
-            <label className="an-field">
-              <span>Status</span>
+                          <input
+                            type="datetime-local"
+                            value={form.endAt}
+                            min={form.startAt}
+                            onChange={(event) =>
+                              updateFormField("endAt", event.target.value)
+                            }
+                          />
 
-              <select
-                value={form.status}
-                onChange={(event) =>
-                  updateFormField("status", event.target.value)
-                }
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </label>
+                        
+                        </div>
 
-          </div>
+           
 
-          <div className="an-form-actions">
+            <div className="input-felid ">
+                        <label>Status </label>
 
-            <button
-              type="button"
-              className="an-cancel-btn"
-              onClick={handleBackToList}
-              disabled={saving}
-            >
-              <FiX />
-              Cancel
-            </button>
+                          <select
+                            value={form.status}
+                            onChange={(event) =>
+                              updateFormField("status", event.target.value)
+                            }
+                          >
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                          </select>
+                        
+                        </div>
 
-            <button
-              type="submit"
-              className="an-save-btn"
-              disabled={saving}
-            >
-              <FiSave />
+                          </div>
 
-              {saving
-                ? "Saving..."
-                : editingId
-                  ? "Update Notice"
-                  : "Save Notice"}
-            </button>
 
-          </div>
+
+
+
+
+                      </div>
+                  </div>
+
+                  <div className="an-form-actions">
+
+                    <button
+                      type="button"
+                      className="themebtn themebtnline"
+                      onClick={handleBackToList}
+                      disabled={saving}
+                    >
+                      <FiX />
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="themebtn"
+                      disabled={saving}
+                    >
+                      <FiSave />
+
+                      {saving
+                        ? "Saving..."
+                        : editingId
+                          ? "Update Notice"
+                          : "Save Notice"}
+                    </button>
+
+                  </div>
         </form>
+                
       </section>
     )}
 
     {/* NOTICE TABLE */}
     {!showForm && (
-      <section className="an-list-card">
+      <section className="common-card">
 
-        <div className="an-section-heading">
+        <div className="panel-header">
           <div>
-            <h2>All Alert Notices</h2>
+            <h3>All Alert Notices</h3>
             <p>
               View and manage uploaded student announcements.
             </p>
@@ -567,16 +577,14 @@ return (
             </span>
           </div>
         ) : (
-          <div className="an-table-wrapper">
+          <div className="common-table-wrapper">
 
-            <table className="an-table">
-
+            <table className="common-table">
               <thead>
                 <tr>
                   <th>Notice</th>
                   <th>Show From</th>
                   <th>Expiry Date</th>
-                  <th>Show To</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -587,19 +595,17 @@ return (
                   <tr key={notice._id}>
 
                     <td>
-                      <div className="an-table-notice">
-
-                        <img
+                     
+                      <div class="student-name-cell">
+                        <div class="sf-course-thumbnail">
+                           <img
                           src={getAssetUrl(notice.image)}
                           alt={notice.title}
-                          className="an-table-thumb"
                         />
+                          </div>
+                          <div>
+                            <strong>{notice.title}</strong></div></div>
 
-                        <strong>
-                          {notice.title}
-                        </strong>
-
-                      </div>
                     </td>
 
                     <td>
@@ -610,9 +616,7 @@ return (
                       {formatDate(notice.endAt)}
                     </td>
 
-                    <td>
-                      All Students
-                    </td>
+                    
 
                     <td>
                       <span
@@ -627,11 +631,12 @@ return (
                     </td>
 
                     <td>
-                      <div className="an-row-actions">
+                      <div className="admission-actions">
 
                         <button
                           type="button"
-                          title="Edit notice"
+                          className="tooltip"
+                          data-tooltip="Edit Notice"
                           onClick={() => handleEdit(notice)}
                         >
                           <FiEdit2 />
@@ -644,6 +649,13 @@ return (
                               ? "Deactivate notice"
                               : "Activate notice"
                           }
+                           className="tooltip"
+                          data-tooltip={
+                            notice.status === "Active"
+                              ? "Deactivate notice"
+                              : "Activate notice"
+                          }
+
                           onClick={() => handleStatus(notice)}
                         >
                           <FiPower />
@@ -651,8 +663,8 @@ return (
 
                         <button
                           type="button"
-                          title="Delete notice"
-                          className="an-delete-action"
+                          className="tooltip"
+                          data-tooltip="Delete Notice"
                           onClick={() => handleDelete(notice)}
                         >
                           <FiTrash2 />
