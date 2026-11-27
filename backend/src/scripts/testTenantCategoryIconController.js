@@ -15,9 +15,12 @@ import {
 
 const CATEGORY_ID = "6b098f3ecfef527d1a4a93b4";
 
+// A fresh institute ID prevents tests from touching a real tenant directory.
+const TEST_INSTITUTE_ID = randomBytes(12).toString("hex");
+
 const tenantContext = {
-  instituteId: "6b098f3ecfef527d1a4a93b2",
-  collectionPrefix: "inst_6b098f3ecfef527d1a4a93b2",
+  instituteId: TEST_INSTITUTE_ID,
+  collectionPrefix: `inst_${TEST_INSTITUTE_ID}`,
 };
 
 const createResponse = () => ({
@@ -100,6 +103,11 @@ const createRequest = (
 
 const createdFiles = new Set();
 
+const getIconsDirectory = () =>
+  tenantCategoryIconService.getIconsDirectory(
+    tenantContext
+  );
+
 const saveTestIcon = async () => {
   const result = await tenantCategoryIconService.saveIcon(
     tenantContext,
@@ -122,18 +130,16 @@ const cleanupCreatedFiles = async () => {
 
   createdFiles.clear();
 
-  const directory =
-    await tenantCategoryIconService.getIconsDirectory(
-      tenantContext
-    );
+  // Remove only this test's unique institute directory.
+  const directory = await getIconsDirectory();
 
-  const tenantRoot = path.resolve(
+  const testTenantRoot = path.resolve(
     directory,
     "..",
     ".."
   );
 
-  await fs.rm(tenantRoot, {
+  await fs.rm(testTenantRoot, {
     recursive: true,
     force: true,
   });
@@ -177,6 +183,13 @@ test("uploads an icon and saves its generated filename to the tenant category", 
 });
 
 test("removes a newly saved icon if the category database save fails", async () => {
+  const directory = await getIconsDirectory();
+
+  // Record existing files before this test starts.
+  const filesBefore = new Set(
+    await fs.readdir(directory)
+  );
+
   const category = createCategory({
     saveError: new Error("DATABASE_SAVE_FAILED"),
   });
@@ -199,17 +212,17 @@ test("removes a newly saved icon if the category database save fails", async () 
     "DATABASE_SAVE_FAILED"
   );
 
-  // The controller should have deleted the newly saved file.
+  // The original category value must be restored.
   assert.equal(category.categoryIcon, "");
 
-  const directory =
-    await tenantCategoryIconService.getIconsDirectory(
-      tenantContext
-    );
+  const filesAfter = await fs.readdir(directory);
 
-  const remainingFiles = await fs.readdir(directory);
+  const newlyCreatedFiles = filesAfter.filter(
+    (fileName) => !filesBefore.has(fileName)
+  );
 
-  assert.equal(remainingFiles.length, 0);
+  // No file from the failed upload should remain.
+  assert.equal(newlyCreatedFiles.length, 0);
 });
 
 test("retrieves an icon with private response headers", async () => {
