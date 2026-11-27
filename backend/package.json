@@ -28,6 +28,9 @@
     "test:tenant-institute-settings-routes": "node --test src/scripts/testTenantInstituteSettingsRoutes.js",
     "test:tenant-institute-settings-controller": "node --test src/scripts/testTenantInstituteSettingsController.js",
     "test:tenant-institute-settings-isolation": "node src/scripts/testTenantInstituteSettingsIsolation.js",
+    "test:tenant-category-icon-service": "node --test src/scripts/testTenantCategoryIconService.js",
+    "test:tenant-category-icon-upload": "node --test src/scripts/testTenantCategoryIconUpload.js",
+    "test:tenant-category-routes": "node --test src/scripts/testTenantCategoryRoutes.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."
