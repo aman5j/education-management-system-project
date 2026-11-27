@@ -96,6 +96,10 @@ const createLogoModel = (overrides = {}) => ({
     };
   },
 
+  async deleteOne() {
+    return { deletedCount: 1 };
+   },
+
   async deleteMany() {
     return { deletedCount: 0 };
   },
@@ -142,17 +146,23 @@ test("settings controller requires tenant model accessor", async () => {
   );
 });
 
-test("returns default institute settings when no record exists", async () => {
-  let createdData;
+
+test("returns default institute settings using atomic upsert", async () => {
+  let receivedFilter;
+  let receivedUpdate;
+  let receivedOptions;
 
   const settingsModel = createSettingsModel({
-    async findOne() {
-      return null;
-    },
+    async findOneAndUpdate(filter, update, options) {
+      receivedFilter = filter;
+      receivedUpdate = update;
+      receivedOptions = options;
 
-    async create(data) {
-      createdData = data;
-      return { ...data, _id: "settings-a" };
+      return {
+        key: "default",
+        country: "India",
+        controllerDesignation: "Examination Controller",
+      };
     },
   });
 
@@ -165,40 +175,53 @@ test("returns default institute settings when no record exists", async () => {
   assert.equal(res.body.success, true);
   assert.equal(res.body.data.settings.key, "default");
   assert.equal(res.body.data.settings.country, "India");
-  assert.equal(
-    res.body.data.settings.controllerDesignation,
-    "Examination Controller"
-  );
-  assert.equal(createdData.key, "default");
+
+  assert.deepEqual(receivedFilter, { key: "default" });
+  assert.equal(receivedUpdate.$setOnInsert.key, "default");
+  assert.equal(receivedUpdate.$setOnInsert.country, "India");
+  assert.equal(receivedOptions.upsert, true);
+  assert.equal(receivedOptions.new, true);
 });
 
-test("returns existing settings without creating another record", async () => {
-  let createCalled = false;
 
+
+test("recovers from concurrent default settings initialization", async () => {
   const existing = {
     key: "default",
     instituteName: "Institute A",
   };
 
+  const duplicateKeyError = Object.assign(
+    new Error("Duplicate key"),
+    { code: 11000 }
+  );
+
+  let findOneCalled = false;
+
   const settingsModel = createSettingsModel({
-    async findOne() {
-      return existing;
+    async findOneAndUpdate() {
+      throw duplicateKeyError;
     },
 
-    async create() {
-      createCalled = true;
+    async findOne(filter) {
+      findOneCalled = true;
+      assert.deepEqual(filter, { key: "default" });
+      return existing;
     },
   });
 
   const req = createTenantRequest(settingsModel);
   const res = createResponse();
+  const next = createNext();
 
-  await getTenantInstituteSettings(req, res, createNext());
+  await getTenantInstituteSettings(req, res, next);
 
+  assert.equal(findOneCalled, true);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.data.settings, existing);
-  assert.equal(createCalled, false);
+  assert.equal(next.calls.length, 0);
 });
+
 
 test("public branding returns only the logo URL", async () => {
   let selectedFields;
@@ -619,4 +642,112 @@ test("returns 304 when logo ETag matches request", async () => {
   await getTenantInstituteLogo(req, res, createNext());
 
   assert.equal(res.statusCode, 304);
+});
+
+
+
+
+test("public branding only requests InstituteSettings tenant model", async () => {
+  const requestedModels = [];
+
+  const settingsModel = createSettingsModel({
+    findOne() {
+      return {
+        select() {
+          return {
+            async lean() {
+              return { logoUrl: "/tenant/logo.png" };
+            },
+          };
+        },
+      };
+    },
+  });
+
+  const req = createRequest({
+    getTenantModel(modelName) {
+      requestedModels.push(modelName);
+
+      if (modelName === "InstituteSettings") {
+        return settingsModel;
+      }
+
+      throw new Error("Unexpected model access: " + modelName);
+    },
+  });
+
+  const res = createResponse();
+
+  await getTenantPublicInstituteBranding(req, res, createNext());
+
+  assert.deepEqual(requestedModels, ["InstituteSettings"]);
+  assert.equal(res.statusCode, 200);
+});
+
+test("settings update does not request InstituteLogo model", async () => {
+  const requestedModels = [];
+
+  const settingsModel = createSettingsModel();
+
+  const req = createRequest({
+    body: { instituteName: "Institute A" },
+
+    getTenantModel(modelName) {
+      requestedModels.push(modelName);
+
+      if (modelName === "InstituteSettings") {
+        return settingsModel;
+      }
+
+      throw new Error("Unexpected model access: " + modelName);
+    },
+  });
+
+  const res = createResponse();
+
+  await updateTenantInstituteSettings(req, res, createNext());
+
+  assert.deepEqual(requestedModels, ["InstituteSettings"]);
+  assert.equal(res.statusCode, 200);
+});
+
+test("cleans newly created logo when settings update fails", async () => {
+  let createdVersion;
+  let deletedVersion;
+
+  const settingsModel = createSettingsModel({
+    async findOneAndUpdate() {
+      throw new Error("SETTINGS_DATABASE_FAILURE");
+    },
+  });
+
+  const logoModel = createLogoModel({
+    async create(data) {
+      createdVersion = data.version;
+      return data;
+    },
+
+    async deleteOne(filter) {
+      deletedVersion = filter.version;
+      return { deletedCount: 1 };
+    },
+  });
+
+  const req = createTenantRequest(settingsModel, logoModel, {
+    file: {
+      buffer: validPng,
+      mimetype: "image/png",
+      size: validPng.length,
+    },
+  });
+
+  const res = createResponse();
+  const next = createNext();
+
+  await uploadTenantInstituteLogo(req, res, next);
+
+  assert.ok(createdVersion);
+  assert.equal(deletedVersion, createdVersion);
+  assert.equal(next.calls.length, 1);
+  assert.match(next.calls[0].message, /SETTINGS_DATABASE_FAILURE/);
 });

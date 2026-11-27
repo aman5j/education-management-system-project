@@ -66,27 +66,61 @@ const sendError = (res, status, message) =>
     message,
   });
 
-const getModels = (req) => {
+/**
+ * Access only the tenant model required by the current operation.
+ * The model accessor derives tenant identity from trusted middleware.
+ */
+const getTenantModel = (req, modelName) => {
   if (typeof req.getTenantModel !== "function") {
     throw new Error("TENANT_MODEL_ACCESSOR_UNAVAILABLE");
   }
 
-  return {
-    InstituteSettings: req.getTenantModel("InstituteSettings"),
-    InstituteLogo: req.getTenantModel("InstituteLogo"),
-  };
+  return req.getTenantModel(modelName);
 };
 
+/**
+ * Atomically initialize default settings.
+ *
+ * The unique key index protects the single default settings record.
+ * If concurrent upserts produce a duplicate-key race, read the
+ * record that the competing request successfully created.
+ */
 const getOrCreateSettings = async (InstituteSettings) => {
-  let settings = await InstituteSettings.findOne({
-    key: "default",
-  });
+  try {
+    const settings =
+      await InstituteSettings.findOneAndUpdate(
+        { key: "default" },
+        {
+          $setOnInsert: DEFAULT_SETTINGS,
+        },
+        {
+          new: true,
+          upsert: true,
+          runValidators: true,
+          setDefaultsOnInsert: true,
+        }
+      );
 
-  if (!settings) {
-    settings = await InstituteSettings.create(DEFAULT_SETTINGS);
+    if (!settings) {
+      throw new Error("TENANT_SETTINGS_INITIALIZATION_FAILED");
+    }
+
+    return settings;
+  } catch (error) {
+    if (error?.code !== 11000) {
+      throw error;
+    }
+
+    const existing = await InstituteSettings.findOne({
+      key: "default",
+    });
+
+    if (!existing) {
+      throw error;
+    }
+
+    return existing;
   }
-
-  return settings;
 };
 
 const detectLogoMimeType = (buffer) => {
@@ -127,7 +161,10 @@ export const getTenantInstituteSettings = async (
   next
 ) => {
   try {
-    const { InstituteSettings } = getModels(req);
+    const InstituteSettings = getTenantModel(
+      req,
+      "InstituteSettings"
+    );
 
     const settings = await getOrCreateSettings(
       InstituteSettings
@@ -138,7 +175,7 @@ export const getTenantInstituteSettings = async (
       data: { settings },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -148,7 +185,10 @@ export const getTenantPublicInstituteBranding = async (
   next
 ) => {
   try {
-    const { InstituteSettings } = getModels(req);
+    const InstituteSettings = getTenantModel(
+      req,
+      "InstituteSettings"
+    );
 
     const settings = await InstituteSettings.findOne({
       key: "default",
@@ -165,7 +205,7 @@ export const getTenantPublicInstituteBranding = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -175,7 +215,10 @@ export const updateTenantInstituteSettings = async (
   next
 ) => {
   try {
-    const { InstituteSettings } = getModels(req);
+    const InstituteSettings = getTenantModel(
+      req,
+      "InstituteSettings"
+    );
 
     const updates = {};
 
@@ -269,7 +312,7 @@ export const updateTenantInstituteSettings = async (
       data: { settings },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -278,6 +321,8 @@ export const uploadTenantInstituteLogo = async (
   res,
   next
 ) => {
+  let createdLogoVersion = null;
+
   try {
     if (!req.file?.buffer) {
       return sendError(
@@ -302,10 +347,18 @@ export const uploadTenantInstituteLogo = async (
       );
     }
 
-    const { InstituteSettings, InstituteLogo } =
-      getModels(req);
+    const InstituteSettings = getTenantModel(
+      req,
+      "InstituteSettings"
+    );
+
+    const InstituteLogo = getTenantModel(
+      req,
+      "InstituteLogo"
+    );
 
     const version = crypto.randomUUID();
+    createdLogoVersion = version;
 
     await InstituteLogo.create({
       version,
@@ -318,24 +371,45 @@ export const uploadTenantInstituteLogo = async (
     const logoUrl =
       `/api/tenant/institute-settings/logo/${version}`;
 
-    const settings =
-      await InstituteSettings.findOneAndUpdate(
-        { key: "default" },
-        {
-          $set: {
-            logoUrl,
-            updatedBy: req.tenantUser._id,
-          },
-          $setOnInsert: { key: "default" },
-        },
-        {
-          new: true,
-          upsert: true,
-          runValidators: true,
-          setDefaultsOnInsert: true,
-        }
-      );
+    let settings;
 
+    try {
+      settings =
+        await InstituteSettings.findOneAndUpdate(
+          { key: "default" },
+          {
+            $set: {
+              logoUrl,
+              updatedBy: req.tenantUser._id,
+            },
+            $setOnInsert: { key: "default" },
+          },
+          {
+            new: true,
+            upsert: true,
+            runValidators: true,
+            setDefaultsOnInsert: true,
+          }
+        );
+
+      if (!settings) {
+        throw new Error("TENANT_LOGO_SETTINGS_UPDATE_FAILED");
+      }
+    } catch (settingsError) {
+      // Do not leave a newly uploaded logo orphaned when its
+      // settings update fails.
+      try {
+        await InstituteLogo.deleteOne({ version });
+        createdLogoVersion = null;
+      } catch (cleanupError) {
+        settingsError.logoCleanupError = cleanupError;
+      }
+
+      throw settingsError;
+    }
+
+    // Keep the latest five logo versions for cache transitions.
+    // Pruning happens only after the new logo URL is saved.
     const olderLogos = await InstituteLogo.find({
       version: { $ne: version },
     })
@@ -352,13 +426,33 @@ export const uploadTenantInstituteLogo = async (
       });
     }
 
+    createdLogoVersion = null;
+
     return res.status(200).json({
       success: true,
       message: "Institute logo uploaded successfully.",
       data: { settings },
     });
   } catch (error) {
-    next(error);
+    // If an error occurs after creation but before settings are
+    // saved, attempt cleanup. Never delete a logo after a
+    // successful settings update.
+    if (createdLogoVersion) {
+      try {
+        const InstituteLogo = getTenantModel(
+          req,
+          "InstituteLogo"
+        );
+
+        await InstituteLogo.deleteOne({
+          version: createdLogoVersion,
+        });
+      } catch (cleanupError) {
+        error.logoCleanupError = cleanupError;
+      }
+    }
+
+    return next(error);
   }
 };
 
@@ -368,7 +462,10 @@ export const getTenantInstituteLogo = async (
   next
 ) => {
   try {
-    const { InstituteLogo } = getModels(req);
+    const InstituteLogo = getTenantModel(
+      req,
+      "InstituteLogo"
+    );
 
     const logo = await InstituteLogo.findOne({
       version: req.params.version,
@@ -427,6 +524,6 @@ export const getTenantInstituteLogo = async (
 
     return res.status(200).end(imageBuffer);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
