@@ -21,6 +21,13 @@
     "test:tenant-file-storage": "node --test src/scripts/testTenantFileStorage.js",
     "test:tenant-student-document": "node --test src/scripts/testTenantStudentDocument.js",
     "test:tenant-student-document-upload": "node --test src/scripts/testTenantStudentDocumentUpload.js",
+    "test:tenant-student-document-controller": "node --test src/scripts/testTenantStudentDocumentController.js",
+    "test:tenant-student-document-routes": "node --test src/scripts/testTenantStudentDocumentRoutes.js",
+    "test:tenant-student-document-security": "node --test src/scripts/testTenantStudentDocumentSecurity.js",
+    "test:tenant-student-document-storage-hardening": "node --test src/scripts/testTenantStudentDocumentStorageHardening.js",
+    "test:tenant-institute-settings-routes": "node --test src/scripts/testTenantInstituteSettingsRoutes.js",
+    "test:tenant-institute-settings-controller": "node --test src/scripts/testTenantInstituteSettingsController.js",
+    "test:tenant-institute-settings-isolation": "node src/scripts/testTenantInstituteSettingsIsolation.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."

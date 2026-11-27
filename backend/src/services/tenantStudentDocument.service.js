@@ -22,6 +22,13 @@ const MIME_EXTENSIONS = Object.freeze({
     ".xlsx",
 });
 
+const DOCUMENT_FILE_NAME_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.[a-z0-9]{1,10}$/i;
+
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set(
+  Object.values(MIME_EXTENSIONS)
+);
+
 const DOCUMENT_DIRECTORY_PARTS = Object.freeze([
   "students",
   "documents",
@@ -126,60 +133,212 @@ export const createTenantStudentDocumentService = ({
 
   const getDocumentsDirectory = async (tenantContext) => {
     const tenantRoot = storage.getTenantDirectory(tenantContext);
-
-    const directory = path.resolve(
-      tenantRoot,
-      ...DOCUMENT_DIRECTORY_PARTS
-    );
-
-    const expectedDirectory = path.resolve(
-      tenantRoot,
-      "students",
-      "documents"
-    );
-
-    if (directory !== expectedDirectory) {
-      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
-    }
-
-    await fs.mkdir(directory, {
-      recursive: true,
-      mode: 0o700,
-    });
-
-    const [realTenantRoot, realDirectory] = await Promise.all([
-      fs.realpath(tenantRoot),
-      fs.realpath(directory),
-    ]);
-
-    const relative = path.relative(realTenantRoot, realDirectory);
+    const configuredRoot = storage.rootDir;
 
     if (
-      relative !== path.join("students", "documents") ||
-      path.isAbsolute(relative) ||
-      relative.startsWith(`..${path.sep}`)
+      typeof configuredRoot !== "string" ||
+      !path.isAbsolute(configuredRoot)
     ) {
       throw new Error("TENANT_DOCUMENT_PATH_INVALID");
     }
 
-    return realDirectory;
+    await fs.mkdir(configuredRoot, {
+      recursive: true,
+      mode: 0o700,
+    });
+
+    const realStorageRoot = await fs.realpath(configuredRoot);
+
+    const expectedTenantRoot = path.resolve(
+      realStorageRoot,
+      path.basename(tenantRoot)
+    );
+
+    const expectedLexicalTenantRoot = path.resolve(
+      configuredRoot,
+      path.basename(tenantRoot)
+    );
+
+    if (
+      path.resolve(tenantRoot) !== expectedLexicalTenantRoot
+    ) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    // Concurrent upload requests may attempt to create the same
+    // directory. EEXIST is accepted only after verifying the path.
+    const createDirectoryIfMissing = async (directory) => {
+      try {
+        await fs.mkdir(directory, {
+          recursive: false,
+          mode: 0o700,
+        });
+      } catch (error) {
+        if (error.code !== "EEXIST") {
+          throw error;
+        }
+      }
+
+      const stat = await fs.lstat(directory).catch((error) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      });
+
+      if (
+        !stat ||
+        !stat.isDirectory() ||
+        stat.isSymbolicLink()
+      ) {
+        throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+      }
+    };
+
+    const verifyDirectory = async (
+      directory,
+      expectedPath,
+      expectedParent
+    ) => {
+      const stat = await fs.lstat(directory).catch((error) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      });
+
+      if (
+        !stat ||
+        !stat.isDirectory() ||
+        stat.isSymbolicLink()
+      ) {
+        throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+      }
+
+      const realDirectory = await fs.realpath(directory);
+
+      if (
+        realDirectory !== expectedPath ||
+        path.dirname(realDirectory) !== expectedParent
+      ) {
+        throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+      }
+
+      return realDirectory;
+    };
+
+    // 1. Institute directory
+    const tenantStat = await fs.lstat(tenantRoot).catch((error) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+
+    if (tenantStat?.isSymbolicLink()) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    if (!tenantStat) {
+      await createDirectoryIfMissing(tenantRoot);
+    } else if (!tenantStat.isDirectory()) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    const realTenantRoot = await verifyDirectory(
+      tenantRoot,
+      expectedTenantRoot,
+      realStorageRoot
+    );
+
+    // 2. students directory
+    const studentsDirectory = path.join(
+      realTenantRoot,
+      "students"
+    );
+
+    const studentsStat = await fs.lstat(studentsDirectory).catch(
+      (error) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      }
+    );
+
+    if (studentsStat?.isSymbolicLink()) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    if (!studentsStat) {
+      await createDirectoryIfMissing(studentsDirectory);
+    } else if (!studentsStat.isDirectory()) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    const realStudentsDirectory = await verifyDirectory(
+      studentsDirectory,
+      studentsDirectory,
+      realTenantRoot
+    );
+
+    // 3. documents directory
+    const documentsDirectory = path.join(
+      realStudentsDirectory,
+      "documents"
+    );
+
+    const documentsStat = await fs.lstat(documentsDirectory).catch(
+      (error) => {
+        if (error.code === "ENOENT") return null;
+        throw error;
+      }
+    );
+
+    if (documentsStat?.isSymbolicLink()) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    if (!documentsStat) {
+      await createDirectoryIfMissing(documentsDirectory);
+    } else if (!documentsStat.isDirectory()) {
+      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+    }
+
+    return verifyDirectory(
+      documentsDirectory,
+      documentsDirectory,
+      realStudentsDirectory
+    );
   };
+
 
   const getSafeDocumentPath = async (
     tenantContext,
     fileName
   ) => {
+    // Reject missing, empty, non-string and unsafe path values.
     if (
       typeof fileName !== "string" ||
+      !fileName.trim() ||
       path.basename(fileName) !== fileName
     ) {
       throw new Error("TENANT_DOCUMENT_FILE_NAME_INVALID");
     }
 
-    // Reuse the storage service's strict server-generated UUID filename check.
+    // Only server-generated UUID filenames are accepted.
+    if (!DOCUMENT_FILE_NAME_PATTERN.test(fileName)) {
+      throw new Error("TENANT_FILE_NAME_INVALID");
+    }
+
+    // Only supported student document extensions are allowed.
+    if (
+      !ALLOWED_DOCUMENT_EXTENSIONS.has(
+        getExtension(fileName)
+      )
+    ) {
+      throw new Error("TENANT_FILE_NAME_INVALID");
+    }
+
+    // Validate tenant ownership and generic storage path.
     storage.getSafeFilePath(tenantContext, fileName);
 
-    const directory = await getDocumentsDirectory(tenantContext);
+    const directory = await getDocumentsDirectory(
+      tenantContext
+    );
+
     const filePath = path.resolve(directory, fileName);
 
     if (path.dirname(filePath) !== directory) {
@@ -188,6 +347,7 @@ export const createTenantStudentDocumentService = ({
 
     return filePath;
   };
+
 
   const getExistingDocumentFile = async (
     tenantContext,
