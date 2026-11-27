@@ -11,7 +11,7 @@ import {
   FiTrash2,
   FiFileText,
 } from "react-icons/fi";
-
+import { GiExpense } from "react-icons/gi";
 import {
   getExpenses,
   getExpenseSummary,
@@ -218,67 +218,71 @@ const Expenses = () => {
 
   return (
     <div className="expense-page">
-      <div className="expense-page-header">
-        <div>
-          <h1>Expenses Management</h1>
-          <p>Track institute spending and manage expense records.</p>
-        </div>
+      <div class="page-header"><div>
+        <h1>Expenses Management</h1>
+                  <p>Track institute spending and manage expense records.</p>
 
-        {canManageExpenses && (
+        </div>
+          {canManageExpenses && (
           <Link
             to={`${basePath}/expenses/add`}
-            className="expense-primary-button"
+            className="themebtn"
           >
             <FiPlus /> Add Expense
           </Link>
         )}
-      </div>
-
-      <div className="expense-summary-grid">
-        <article className="expense-summary-card">
-          <span className="expense-summary-icon">
-            <FiDollarSign />
-          </span>
-          <div>
-            <p>Total Recorded Expenses</p>
-            <h2>{money(summary?.overall?.totalAmount)}</h2>
-            <small>{summary?.overall?.count || 0} records</small>
-          </div>
-        </article>
-
-        <article className="expense-summary-card">
-          <span className="expense-summary-icon">
-            <FiCalendar />
-          </span>
-          <div>
-            <p>This Month</p>
-            <h2>{money(summary?.monthly?.totalAmount)}</h2>
-            <small>{summary?.monthly?.count || 0} records</small>
-          </div>
-        </article>
-
-        <article className="expense-summary-card">
-          <span className="expense-summary-icon">
-            <FiTrendingUp />
-          </span>
-          <div>
-            <p>This Year</p>
-            <h2>{money(summary?.yearly?.totalAmount)}</h2>
-            <small>{summary?.yearly?.count || 0} records</small>
-          </div>
-        </article>
-      </div>
-
-      <section className="expense-card">
-        <div className="expense-section-heading">
-          <div>
-            <h2>Expense Records</h2>
-            <p>Search, filter and manage recorded expenses.</p>
-          </div>
         </div>
 
-        <div className="expense-filters">
-          <div className="expense-search">
+
+      <div className="expense-summary-grid">
+        
+        <article class="dashboard-stat-card card-danger">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-danger">
+             <GiExpense />
+            </div>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-card-title">Total Expenses</span>
+              <strong class="stat-card-value">{money(summary?.overall?.totalAmount)}</strong>
+              <small>{summary?.overall?.count || 0} records</small>
+              </div>
+              </article>
+
+               <article class="dashboard-stat-card card-purple">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-purple">
+               <FiCalendar />
+            </div>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-card-title">This Month</span>
+              <strong class="stat-card-value">{money(summary?.monthly?.totalAmount)}</strong>
+              <small>{summary?.monthly?.count || 0} records</small>
+              </div>
+              </article>
+
+                <article class="dashboard-stat-card card-warning">
+          <div class="stat-card-top">
+            <div class="stat-icon stat-icon-warning">
+              <FiTrendingUp />
+            </div>
+            </div>
+            <div class="stat-card-body">
+              <span class="stat-card-title">This Year</span>
+              <strong class="stat-card-value">{money(summary?.yearly?.totalAmount)}</strong>
+              <small>{summary?.yearly?.count || 0} records</small>
+              </div>
+              </article>
+
+      </div>
+
+      <section className="">
+
+ <div className="common-card-filters">
+ 
+          <div className="input-search">
+             <label>Search</label>
             <FiSearch />
             <input
               value={search}
@@ -289,7 +293,8 @@ const Expenses = () => {
               placeholder="Search title, vendor or notes..."
             />
           </div>
-
+ <div className="input-search">
+  <label>Category</label>
           <select
             value={category}
             onChange={(event) => {
@@ -304,7 +309,11 @@ const Expenses = () => {
               </option>
             ))}
           </select>
+          </div>
 
+
+ <div className="input-search">
+  <label>status</label>
           <select
             value={status}
             onChange={(event) => {
@@ -316,7 +325,10 @@ const Expenses = () => {
             <option value="Paid">Paid</option>
             <option value="Pending">Pending</option>
           </select>
+          </div>
 
+ <div className="input-search">
+  <label>Payment Method</label>
           <select
             value={paymentMethod}
             onChange={(event) => {
@@ -331,9 +343,10 @@ const Expenses = () => {
               </option>
             ))}
           </select>
+</div>
 
-          <label className="expense-date-filter">
-            From
+           <div className="input-search noicon">
+           <label> From</label>
             <input
               type="date"
               value={from}
@@ -342,10 +355,10 @@ const Expenses = () => {
                 setPage(1);
               }}
             />
-          </label>
+          </div>
 
-          <label className="expense-date-filter">
-            To
+          <div className="input-search noicon">
+           <label> To</label>
             <input
               type="date"
               value={to}
@@ -354,16 +367,26 @@ const Expenses = () => {
                 setPage(1);
               }}
             />
-          </label>
+          </div>
 
           <button
             type="button"
-            className="expense-secondary-button"
+            className="themebtn themebtnline"
             onClick={resetFilters}
           >
             <FiRefreshCw /> Reset
           </button>
+        
         </div>
+
+              <div className="common-card">
+                <div className="panel-header">
+          <div>
+            <h3>Expense Records</h3>
+          </div>
+        </div>
+
+       
 
         {loading ? (
           <div className="expense-state">Loading expenses...</div>
@@ -374,8 +397,8 @@ const Expenses = () => {
             <p>Add an expense or adjust your filters.</p>
           </div>
         ) : (
-          <div className="expense-table-wrapper">
-            <table className="expense-table">
+          <div className="common-table-wrapper">
+            <table className="common-table">
               <thead>
                 <tr>
                   <th>Expense</th>
@@ -393,11 +416,11 @@ const Expenses = () => {
                 {expenses.map((expense) => (
                   <tr key={expense._id}>
                     <td>
-                      <strong>{expense.title}</strong>
+                      <strong className="tabletitle">{expense.title}</strong>
                       {expense.description && (
-                        <small className="expense-description">
+                        <p className="expense-description">
                           {expense.description}
-                        </small>
+                        </p>
                       )}
                     </td>
 
@@ -413,10 +436,10 @@ const Expenses = () => {
                         : "—"}
                     </td>
 
-                    <td>{expense.paymentMethod}</td>
-                    <td>{expense.vendor || "—"}</td>
+                    <td> <span className="">{expense.paymentMethod}</span> </td>
+                    <td><span className="">{expense.vendor || "—"}</span></td>
                     <td>
-                      <strong>{money(expense.amount)}</strong>
+                      <span className="tag-danger">{money(expense.amount)}</span>
                     </td>
 
                     <td>
@@ -430,32 +453,36 @@ const Expenses = () => {
                     </td>
 
                     <td>
-                      <div className="expense-actions">
+                      <div className="admission-actions">
                         {expense.receiptUrl ? (
                           <a
                             href={getReceiptUrl(expense.receiptUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            title="View uploaded receipt"
+                            data-tooltip="View Receipt"
                             aria-label={`View receipt for ${expense.title}`}
-                            className="expense-receipt-action"
+                            className="tooltip"
                           >
                             <FiFileText />
                           </a>
                         ) : (
-                          <span
-                            className="expense-no-receipt"
-                            title="No receipt uploaded"
+                          <a
+                           
+                            style={{ cursor: 'not-allowed' }}
+                           
+                            data-tooltip="Receipt Not Available"
+                            aria-label={`View receipt for ${expense.title}`}
+                            className="tooltip"
                           >
-                            No receipt
-                          </span>
+                            -
+                          </a>
                         )}
 
                         {canManageExpenses && (
                           <>
-                            <Link
+                            <Link className="tooltip"
                               to={`${basePath}/expenses/${expense._id}/edit`}
-                              title="Edit expense"
+                               data-tooltip="Edit"
                               aria-label={`Edit expense ${expense.title}`}
                             >
                               <FiEdit2 />
@@ -463,7 +490,8 @@ const Expenses = () => {
 
                             <button
                               type="button"
-                              title="Delete expense"
+                               data-tooltip="Delete"
+                               className="tooltip"
                               aria-label={`Delete expense ${expense.title}`}
                               onClick={() => handleDelete(expense)}
                             >
@@ -496,6 +524,7 @@ const Expenses = () => {
             }}
           />
         )}
+              </div>
       </section>
     </div>
   );

@@ -261,11 +261,13 @@
 }
 
 .expense-description {
-  display: block;
-  max-width: 220px;
-  margin-top: 5px;
-  color: #829ab1;
-  overflow-wrap: anywhere;
+    display: block;
+    max-width: 220px;
+    margin-top: 5px;
+    color: #829ab1;
+    overflow-wrap: anywhere;
+    max-height: 70px;
+    overflow-y: auto;
 }
 
 .expense-status {
@@ -512,4 +514,8 @@
   color: #829ab1;
   font-size: 11px;
   white-space: nowrap;
+}
+
+.expense-page table td{
+  white-space: wrap;
 }

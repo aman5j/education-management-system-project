@@ -11,7 +11,11 @@ import {
   FiSend,
   FiShield,
   FiTag,
+    FiCalendar,
+     FiAlertCircle,
 } from "react-icons/fi";
+import { HiStatusOnline } from "react-icons/hi";
+import { IoIosCall } from "react-icons/io";
 
 import supportService from "../../../services/supportService";
 import Pagination from "../../../components/common/Pagination";
@@ -394,144 +398,104 @@ export default function AdminSupport() {
 
   return (
     <div className="admin-support">
-      <div className="admin-support__heading">
-        <div>
-          <span className="admin-support__eyebrow">
-            STUDENT SERVICES
-          </span>
-          <h1>HelpDesk & Support</h1>
-          <p>
-            Review student issues and manage support conversations.
-          </p>
-        </div>
 
-        <button
-          type="button"
-          className="as-refresh"
-          onClick={handleRefresh}
-          disabled={loading || statsLoading || submitting}
-        >
-          <FiRefreshCw /> Refresh
-        </button>
-      </div>
-
-      <section className="as-stats">
-        <div className="as-stat as-stat--total">
-          <span><FiTag /></span>
-          <strong>{statsLoading ? "—" : stats.total || 0}</strong>
-          <small>Total Tickets</small>
-        </div>
-
-        <div className="as-stat as-stat--open">
-          <span><FiClock /></span>
-          <strong>{statsLoading ? "—" : stats.Open || 0}</strong>
-          <small>Open</small>
-        </div>
-
-        <div className="as-stat as-stat--progress">
-          <span><FiRefreshCw /></span>
-          <strong>
-            {statsLoading ? "—" : stats["In Progress"] || 0}
-          </strong>
-          <small>In Progress</small>
-        </div>
-
-        <div className="as-stat as-stat--resolved">
-          <span><FiCheckCircle /></span>
-          <strong>{statsLoading ? "—" : stats.Resolved || 0}</strong>
-          <small>Resolved</small>
-        </div>
-
-        <div className="as-stat as-stat--closed">
-          <span><FiShield /></span>
-          <strong>{statsLoading ? "—" : stats.Closed || 0}</strong>
-          <small>Closed</small>
-        </div>
-      </section>
 
       {selectedTicket ? (
-        <section className="as-detail">
-          <div className="as-detail__header">
-            <div>
-              <button
-                type="button"
-                className="as-back"
-                onClick={closeTicket}
-              >
-                ← Back to all tickets
-              </button>
 
-              <div className="as-detail__ticket-id">
-                {selectedTicket.ticketNumber}
-              </div>
-
-              <h2>{selectedTicket.title}</h2>
-            </div>
-
-            <span
-              className={`as-status as-status--${statusClass(
-                selectedTicket.status
-              )}`}
+        <section className="">
+          <div class="page-header"><div><h1>Ticket Details</h1><p>View ticket information and conversation with the support team.</p></div>
+            <button
+              type="button"
+              className="themebtn"
+              onClick={closeTicket}
             >
-              {selectedTicket.status}
-            </span>
-          </div>
+              Back to tickets
+            </button>
 
-          <div className="as-detail__layout">
-            <aside className="as-info">
-              <h3>Ticket Information</h3>
+          </div> 
+          <div className="sh-detail-layout">
+            <aside className="sh-ticket-info common-card">
+              <div className="cardbody">
+                <div class="sh-ticket-info__banner"><span class="sh-ticket-number"> {selectedTicket.ticketNumber}</span><h2>{selectedTicket.title}</h2><p>{selectedTicket.description}</p></div>
 
-              <div className="as-info__student">
-                <div className="as-avatar">
-                  {getStudentName(student).charAt(0).toUpperCase()}
-                </div>
+              <div className="sh-ticket-info__details">
+                 <div className="sh-info-item">
+                    <span className="sh-info-icon sh-info-icon--purple">
+                      <FiTag />
+                    </span>
+                    <div>
+                      <small>Category</small>
+                      <strong>{selectedTicket.category || "—"}</strong>
+                    </div>
+                  </div>
+                 <div className="sh-info-item">
+                                    <span className="sh-info-icon sh-info-icon--blue">
+                                      <HiStatusOnline />
+                                    </span>
+                                    <div>
+                                      <small>Status</small>
+                                      <span
+                                        className={`sh-status sh-status--${statusClass(
+                                          selectedTicket.status
+                                        )}`}
+                                      >
+                                        {selectedTicket.status}
+                                      </span>
+                                    </div>
+                                  </div>
 
-                <div>
-                  <strong>{getStudentName(student)}</strong>
-                  <small>Roll No: {student?.rollNo || "—"}</small>
-                </div>
+                
+
+                   <div className="sh-info-item">
+                                      <span className="sh-info-icon sh-info-icon--red">
+                                        <FiAlertCircle />
+                                      </span>
+                                      <div>
+                                        <small>Priority</small>
+                                        <strong
+                                          className={`sh-priority sh-priority--${selectedTicket.priority?.toLowerCase()}`}
+                                        >
+                                          {selectedTicket.priority}
+                                        </strong>
+                                      </div>
+                                    </div>
+
+
               </div>
+             
+             <div className="sh-info-item">
+                                 <span className="sh-info-icon sh-info-icon--blue">
+                                   <FiCalendar />
+                                 </span>
+                                 <div>
+                                   <small>Created On</small>
+                                   <strong>
+                                     {formatDate(selectedTicket.createdAt)}
+                                   </strong>
+                                 </div>
+                               </div>
 
-              <div className="as-info__row">
-                <span>Mobile</span>
-                <strong>
-                  {selectedTicket.mobile || student?.mobile || "—"}
-                </strong>
-              </div>
 
-              <div className="as-info__row">
-                <span>Category</span>
-                <strong>{selectedTicket.category || "—"}</strong>
-              </div>
+ <div className="sh-info-item">
+                    <span className="sh-info-icon sh-info-icon--green">
+                      <FiClock />
+                    </span>
+                    <div>
+                      <small>Last Updated</small>
+                      <strong>
+                        {formatDate(selectedTicket.lastMessageAt)}
+                      </strong>
+                    </div>
+                  </div>
 
-              <div className="as-info__row">
-                <span>Created</span>
-                <strong>{formatDate(selectedTicket.createdAt)}</strong>
-              </div>
+              
 
-              <div className="as-info__row">
-                <span>Last Activity</span>
-                <strong>{formatDate(selectedTicket.lastMessageAt)}</strong>
-              </div>
+              
 
-              <div className="as-control">
-                <label htmlFor="as-priority">Priority</label>
-                <select
-                  id="as-priority"
-                  value={selectedTicket.priority || "Medium"}
-                  onChange={(event) => handlePriority(event.target.value)}
-                  disabled={submitting}
-                >
-                  {PRIORITIES.map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              
 
-              <div className="as-control">
-                <label htmlFor="as-status">Ticket Status</label>
+              <div className="input-search">
+                <label>Ticket Status</label>
                 <select
                   id="as-status"
                   value={selectedTicket.status}
@@ -548,30 +512,53 @@ export default function AdminSupport() {
                 </select>
               </div>
 
-              <div className="as-description">
-                <h4>Issue Description</h4>
-                <p>{selectedTicket.description}</p>
+             
               </div>
             </aside>
 
-            <div className="as-chat-panel">
-              <div className="as-chat-panel__heading">
-                <div>
-                  <h3><FiMessageCircle /> Conversation</h3>
-                  <p>Reply directly to the student.</p>
+            <div className="sh-chat-panel common-card">
+              <div className="sh-chat-panel__header">
+                
+                 <div className="as-info__student">
+                <div className="as-avatar">
+                  {getStudentName(student).charAt(0).toUpperCase()}
                 </div>
+
+                <div>
+                  <strong>{getStudentName(student)}</strong>
+                  <small>Roll No: {student?.rollNo || "—"}</small>
+                 
+                </div>
+              </div>
+
+                 <div style={{display:'flex'}} >
+                  {student?.mobile ? (
+  <a
+    className="calltostudent"
+    href={`tel:${student.mobile.replace(/[^\d+]/g, "")}`}
+    aria-label={`Call ${student?.name || student.mobile}`}
+    title={`Call ${student.mobile}`}
+  >
+    <IoIosCall aria-hidden="true" />
+  </a>
+) : (
+  <span aria-label="No mobile number available">—</span>
+)}
 
                 <button
                   type="button"
-                  className="as-refresh as-refresh--small"
+                  className="sh-chat-refresh"
                   onClick={refreshSelected}
                   disabled={detailLoading}
                   aria-label="Refresh conversation"
                 >
                   <FiRefreshCw />
                 </button>
+                 </div>
               </div>
-
+              <div className="sh-chat">
+                
+                  
               {detailLoading ? (
                 <div className="as-empty">
                   Loading conversation…
@@ -588,7 +575,12 @@ export default function AdminSupport() {
                   </button>
                 </div>
               ) : (
-                <div className="as-messages">
+                <div className="sh-chat__messages">
+                  {messages?.[0]?.createdAt && (
+  <div className="sh-chat-date">
+    <span>{formatDate(messages[0].createdAt)}</span>
+  </div>
+)}
                   {messages.length === 0 ? (
                     <div className="as-empty">
                       No messages in this conversation yet.
@@ -600,20 +592,28 @@ export default function AdminSupport() {
                       return (
                         <div
                           key={message._id}
-                          className={`as-message ${
-                            isAdmin
-                              ? "as-message--admin"
-                              : "as-message--student"
-                          }`}
+                          className={`sh-message  ${isAdmin
+                              ? "sh-message--mine"
+                              : "sh-message--support"
+                            }`}
                         >
-                          <div className="as-message__meta">
-                            {isAdmin
-                              ? "Support Team"
-                              : getStudentName(student)}
-                            <time>{formatDate(message.createdAt)}</time>
+                          <div className="sh-message__body">
+                            
+                              <div className="sh-message__author">
+                                <strong>{isAdmin
+                              ? "You"
+                              : getStudentName(student)}</strong>
+                                   <time>{formatDate(message.createdAt)}</time>
+                              </div>
+                           
+                            <div className="sh-message__bubble">{message.message}</div>
                           </div>
 
-                          <p>{message.message}</p>
+                          <div className="sh-message__avatar sh-message__avatar--student">
+                            <img src="https://education-management-backend-79g1.onrender.com/uploads/students/1793941567490-portrait-business-woman-with-enthusiastic-face-expression-smiling-looking-confident-standing-s_1258-88087.png" />
+                          </div>
+
+                          
                         </div>
                       );
                     })
@@ -621,13 +621,16 @@ export default function AdminSupport() {
                 </div>
               )}
 
+
+
               {["Resolved", "Closed"].includes(selectedTicket.status) ? (
                 <div className="as-closed-note">
                   This ticket is {selectedTicket.status.toLowerCase()}.
                   Change the status to Open to continue the conversation.
                 </div>
               ) : (
-                <form className="as-reply" onSubmit={handleReply}>
+                <form className="sh-reply" onSubmit={handleReply}>
+                  <div className="sh-reply__input-wrap">
                   <input
                     value={reply}
                     onChange={(event) => setReply(event.target.value)}
@@ -636,7 +639,9 @@ export default function AdminSupport() {
                     required
                     disabled={submitting}
                   />
-
+ <span className="sh-reply__counter">
+                        {reply.length}/3000
+                      </span>
                   <button
                     type="submit"
                     disabled={submitting || !reply.trim()}
@@ -644,26 +649,105 @@ export default function AdminSupport() {
                   >
                     <FiSend />
                   </button>
+                  </div>
                 </form>
               )}
+              </div>
             </div>
           </div>
         </section>
       ) : (
-        <section className="as-list-panel">
-          <div className="as-list-panel__heading">
-            <div>
-              <h2><FiTag /> All Support Tickets</h2>
-              <p>Search, filter and open a ticket to manage it.</p>
-            </div>
 
-            <span className="as-total-label">
-              {pagination.total || 0} tickets
-            </span>
+        <section className="">
+          <div class="page-header"><div>
+            <h1>HelpDesk & Support</h1>
+            <p>Review student issues and manage support conversations.</p>
+
+          </div>
+            <button
+              type="button"
+              className="themebtn"
+              onClick={handleRefresh}
+              disabled={loading || statsLoading || submitting}
+            >
+              <FiRefreshCw /> Refresh
+            </button>
           </div>
 
-          <div className="as-filters">
-            <label className="as-search">
+          <section className="as-stats">
+
+            <article class="dashboard-stat-card card-success">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-success">
+                  <FiTag />
+                </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Total Tickets</span>
+                <strong class="stat-card-value">{statsLoading ? "—" : stats.total || 0}</strong>
+
+              </div>
+            </article>
+
+            <article class="dashboard-stat-card card-warning">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-warning">
+                  <FiClock />
+                </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Open</span>
+                <strong class="stat-card-value">{statsLoading ? "—" : stats.Open || 0}</strong>
+
+              </div>
+            </article>
+
+
+
+
+            <article class="dashboard-stat-card card-purple">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-purple">
+                  <FiRefreshCw />
+                </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">In Progress</span>
+                <strong class="stat-card-value"> {statsLoading ? "—" : stats["In Progress"] || 0}</strong>
+
+              </div>
+            </article>
+
+            <article class="dashboard-stat-card card-bluewarning">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-bluewarning">
+                  <FiCheckCircle />
+                </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Resolved</span>
+                <strong class="stat-card-value"> {statsLoading ? "—" : stats.Resolved || 0}</strong>
+
+              </div>
+            </article>
+
+            <article class="dashboard-stat-card card-danger">
+              <div class="stat-card-top">
+                <div class="stat-icon stat-icon-danger">
+                  <FiShield />
+                </div>
+              </div>
+              <div class="stat-card-body">
+                <span class="stat-card-title">Closed</span>
+                <strong class="stat-card-value">{statsLoading ? "—" : stats.Closed || 0}</strong>
+
+              </div>
+            </article>
+
+          </section>
+
+          <div className="common-card-filters">
+            <div className="input-search">
               <FiSearch />
               <input
                 value={search}
@@ -673,10 +757,9 @@ export default function AdminSupport() {
                 }}
                 placeholder="Search ticket, title or student…"
               />
-            </label>
+            </div>
 
-            <label>
-              <FiFilter />
+            <div className="input-search">
               <select
                 value={statusFilter}
                 onChange={(event) => {
@@ -690,9 +773,9 @@ export default function AdminSupport() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            <label>
+            <div className="input-search">
               <select
                 value={priorityFilter}
                 onChange={(event) => {
@@ -707,9 +790,9 @@ export default function AdminSupport() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            <label>
+            <div className="input-search">
               <select
                 value={categoryFilter}
                 onChange={(event) => {
@@ -724,94 +807,159 @@ export default function AdminSupport() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
+          <div className="common-card">
+            <div className="panel-header">
+              <div>
+                <h3><FiTag /> All Support Tickets</h3>
+                <p>Search, filter and open a ticket to manage it.</p>
+              </div>
 
-          {loading ? (
-            <div className="as-empty">
-              Loading support tickets…
+              <span className="as-total-label">
+                {pagination.total || 0} tickets
+              </span>
             </div>
-          ) : tickets.length === 0 ? (
-            <div className="as-empty">
-              No support tickets found.
-              {(search || statusFilter !== "All" || priorityFilter || categoryFilter) && (
-                <div>
-                  <button
-                    type="button"
-                    className="as-refresh"
-                    onClick={resetFilters}
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="as-ticket-list">
-              {tickets.map((ticket) => (
-                <button
-                  type="button"
-                  key={ticket._id}
-                  className="as-ticket-row"
-                  onClick={() => openTicket(ticket)}
-                  disabled={loading}
-                >
-                  <div className="as-ticket-row__main">
-                    <span className="as-ticket-number">
-                      {ticket.ticketNumber}
-                    </span>
 
-                    <strong>{ticket.title}</strong>
 
-                    <small>
-                      {getStudentName(ticket.student_id)}
-                      {ticket.student_id?.rollNo
-                        ? ` · ${ticket.student_id.rollNo}`
-                        : ""}
-                    </small>
+
+            {loading ? (
+              <div className="as-empty">
+                Loading support tickets…
+              </div>
+            ) : tickets.length === 0 ? (
+              <div className="as-empty">
+                No support tickets found.
+                {(search || statusFilter !== "All" || priorityFilter || categoryFilter) && (
+                  <div>
+                    <button
+                      type="button"
+                      className="as-refresh"
+                      onClick={resetFilters}
+                    >
+                      Clear filters
+                    </button>
                   </div>
+                )}
+              </div>
+            ) : (
 
-                  <div className="as-ticket-row__category">
-                    {ticket.category}
+              <div className="common-table-wrapper">
+                <table className="common-table">
+                  <thead>
+                    <tr>
+                      <th>Ticket Details</th>
+                      <th>Student</th>
+                      <th>Category</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Created Date</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {tickets.map((ticket) => (
+                      <tr
+                        key={ticket._id}
+                        onClick={() => openTicket(ticket)}
+                        className="as-ticket-table-row"
+                      >
+                        <td>
+                          <div className="as-ticket-info">
+                            <span className="as-ticket-number">
+                              {ticket.ticketNumber}
+                            </span>
+                            <strong style={{ whiteSpace: 'wrap' }}>{ticket.title}</strong>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="as-ticket-student">
+                            <strong>{getStudentName(ticket.student_id)}</strong>
+                            <small>
+                              {ticket.student_id?.rollNo || "—"}
+                            </small>
+                          </div>
+                        </td>
+
+                        <td>
+                          <span className="as-category-badge">
+                            {ticket.category}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span
+                            className={`as-priority as-priority--${ticket.priority?.toLowerCase()}`}
+                          >
+                            <span className="as-priority-dot" />
+                            {ticket.priority}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span
+                            className={`as-status as-status--${statusClass(ticket.status)}`}
+                          >
+                            {ticket.status}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className="as-ticket-date">
+                            {formatDate(ticket.createdAt)}
+                          </span>
+                        </td>
+
+                        <td className="la-actions">
+                          <button
+                            type="button"
+                            className="la-approve"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openTicket(ticket);
+                            }}
+                            disabled={loading}
+                            aria-label="View ticket"
+                          >
+                            View Details
+
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {tickets.length === 0 && (
+                  <div className="as-ticket-empty">
+                    <strong>No support tickets found</strong>
+                    <p>New student support requests will appear here.</p>
                   </div>
+                )}
+              </div>
 
-                  <span
-                    className={`as-priority as-priority--${ticket.priority?.toLowerCase()}`}
-                  >
-                    {ticket.priority}
-                  </span>
+            )}
 
-                  <span
-                    className={`as-status as-status--${statusClass(
-                      ticket.status
-                    )}`}
-                  >
-                    {ticket.status}
-                  </span>
-
-                  <time>{formatDate(ticket.createdAt)}</time>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!loading && pagination.total > 0 && (
-            <Pagination
-              page={page}
-              totalPages={pagination.totalPages || 1}
-              total={pagination.total || 0}
-              itemCount={tickets.length}
-              itemLabel="tickets"
-              limit={pageSize}
-              loading={loading}
-              onPageChange={setPage}
-              onLimitChange={(limit) => {
-                if (!PAGE_SIZE_OPTIONS.includes(limit)) return;
-                setPageSize(limit);
-                setPage(1);
-              }}
-            />
-          )}
+            {!loading && pagination.total > 0 && (
+              <Pagination
+                page={page}
+                totalPages={pagination.totalPages || 1}
+                total={pagination.total || 0}
+                itemCount={tickets.length}
+                itemLabel="tickets"
+                limit={pageSize}
+                loading={loading}
+                onPageChange={setPage}
+                onLimitChange={(limit) => {
+                  if (!PAGE_SIZE_OPTIONS.includes(limit)) return;
+                  setPageSize(limit);
+                  setPage(1);
+                }}
+              />
+            )}
+          </div>
         </section>
       )}
     </div>

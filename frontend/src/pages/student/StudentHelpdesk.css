@@ -916,17 +916,16 @@
 }
 
 .sh-chat-refresh {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin-left: 8px;
-  border: 1px solid #e5eafa;
-  border-radius: 9px;
-  background: #fff;
-  color: #4e60a0;
-  cursor: pointer;
+ display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    margin-left: 8px;
+    border: 1px solid #e5eafa;
+    border-radius: 19px;
+    color: #4e60a0;
+    cursor: pointer;
 }
 
 .sh-chat-refresh:hover {
