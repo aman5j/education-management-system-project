@@ -357,25 +357,44 @@ const run = async () => {
     assert.equal(logoA.statusCode, 200);
     assert.equal(logoB.statusCode, 200);
 
-    assert.deepEqual(logoA.binary, validPngA);
-    assert.deepEqual(logoB.binary, validPngB);
+    // Mongoose returns MongooseBuffer instances.
+    // Normalize them into ordinary Node.js Buffers before comparison.
+    const actualLogoA = Buffer.from(logoA.binary);
+    const actualLogoB = Buffer.from(logoB.binary);
+
+    assert.deepEqual(actualLogoA, validPngA);
+    assert.deepEqual(actualLogoB, validPngB);
 
     assertPass(
-      "Logo retrieval returns Institute A's own image"
-    );
-
-    assertPass(
-      "Logo retrieval returns Institute B's own image"
-    );
-
-    assert.notDeepEqual(
-      logoA.binary,
-      logoB.binary
+    "Logo retrieval returns Institute A's own image"
     );
 
     assertPass(
-      "Identical logo version identifiers cannot expose another institute's image"
+    "Logo retrieval returns Institute B's own image"
     );
+
+    assert.notDeepEqual(actualLogoA, actualLogoB);
+
+    assertPass(
+    "Identical logo version identifiers cannot expose another institute's image"
+    );
+
+    // assertPass(
+    //   "Logo retrieval returns Institute A's own image"
+    // );
+
+    // assertPass(
+    //   "Logo retrieval returns Institute B's own image"
+    // );
+
+    // assert.notDeepEqual(
+    //   logoA.binary,
+    //   logoB.binary
+    // );
+
+    // assertPass(
+    //   "Identical logo version identifiers cannot expose another institute's image"
+    // );
 
     console.log("");
     console.log("Verifying physical collection names...");
