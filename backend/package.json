@@ -26,6 +26,7 @@
     "test:tenant-student-document-security": "node --test src/scripts/testTenantStudentDocumentSecurity.js",
     "test:tenant-student-document-storage-hardening": "node --test src/scripts/testTenantStudentDocumentStorageHardening.js",
     "test:tenant-institute-settings-routes": "node --test src/scripts/testTenantInstituteSettingsRoutes.js",
+    "test:tenant-institute-settings-controller": "node --test src/scripts/testTenantInstituteSettingsController.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."
