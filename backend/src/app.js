@@ -12,6 +12,7 @@ import platformRoutes from "./routes/platform.routes.js";
 import tenantAuthRoutes from "./routes/tenantAuth.routes.js";
 import tenantStudentDocumentRoutes from "./routes/tenantStudentDocument.routes.js";
 import tenantInstituteSettingsRoutes from "./routes/tenantInstituteSettings.routes.js";
+import tenantCategoryRoutes from "./routes/tenantCategory.routes.js";
 
 
 import { resolveTenant } from "./middleware/tenantResolver.middleware.js";
@@ -320,6 +321,15 @@ app.use(
 app.use(
   "/api/tenant/institute-settings",
   tenantInstituteSettingsRoutes
+);
+
+/*
+ * Phase 4E — Batch 1B
+ * Tenant Category Management APIs
+ */
+app.use(
+  "/api/tenant/categories",
+  tenantCategoryRoutes
 );
 
 app.use("/api/auth", authRoutes);
