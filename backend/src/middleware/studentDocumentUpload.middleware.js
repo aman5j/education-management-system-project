@@ -9,6 +9,7 @@ const uploadDirectory = path.resolve(
   "documents"
 );
 
+
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory, {
     recursive: true,
