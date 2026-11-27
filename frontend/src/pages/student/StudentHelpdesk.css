@@ -987,7 +987,7 @@
 
 .sh-message {
   display: flex;
-  align-items: flex-end;
+  align-items: start;
   gap: 12px;
   max-width: 90%;
 }
