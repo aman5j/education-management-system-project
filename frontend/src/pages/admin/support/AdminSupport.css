@@ -366,9 +366,10 @@
     color: white;
 }
 .as-avatar {
-  flex: 0 0 38px;
-  width: 38px;
-  height: 38px;
+  flex: 0 0 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -982,6 +983,7 @@
   color: #5436e6;
   font-size: 15px;
   font-weight: 700;
+  margin-top: 25px;
 }
 
 /* Student image covers initials */
@@ -1007,4 +1009,8 @@
 /* Prevent avatar shrinking in responsive layouts */
 .sh-message__avatar img {
   flex-shrink: 0;
+}
+
+.sh-detail-layout .sh-message--support{
+  flex-direction: row-reverse;
 }
