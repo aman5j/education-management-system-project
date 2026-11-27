@@ -22,6 +22,7 @@
     "test:tenant-student-document": "node --test src/scripts/testTenantStudentDocument.js",
     "test:tenant-student-document-upload": "node --test src/scripts/testTenantStudentDocumentUpload.js",
     "test:tenant-student-document-controller": "node --test src/scripts/testTenantStudentDocumentController.js",
+    "test:tenant-student-document-routes": "node --test src/scripts/testTenantStudentDocumentRoutes.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."
