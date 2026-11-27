@@ -85,7 +85,7 @@
 
 .as-stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   gap: 13px;
   margin-bottom: 22px;
 }
@@ -354,10 +354,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e5eaf1;
 }
-
+.calltostudent {
+    width: 35px;
+    height: 35px;
+    background: #2563eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
 .as-avatar {
   flex: 0 0 38px;
   width: 38px;
@@ -683,4 +690,240 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+
+
+/* Ticket Table Wrapper */
+.as-ticket-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+}
+
+/* Main Table */
+.as-ticket-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+/* Table Header */
+.as-ticket-table thead {
+  background: #f8fafc;
+}
+
+.as-ticket-table th {
+  padding: 15px 18px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid #e8edf2;
+}
+
+/* Table Body */
+.as-ticket-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f2f5;
+  vertical-align: middle;
+  font-size: 13px;
+  color: #475569;
+}
+
+.as-ticket-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.as-ticket-table-row {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.as-ticket-table-row:hover {
+  background: #f8fbfd;
+}
+
+/* Ticket Information */
+.as-ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 170px;
+}
+
+.as-ticket-info strong {
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.as-ticket-number {
+  color: #159b9b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Student */
+.as-ticket-student {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 130px;
+}
+
+.as-ticket-student strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.as-ticket-student small {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+/* Category */
+.as-category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Priority */
+.as-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.as-priority-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.as-priority--low {
+  color: #0d9488;
+}
+
+.as-priority--medium {
+  color: #d97706;
+}
+
+.as-priority--high {
+  color: #ea580c;
+}
+
+.as-priority--urgent {
+  color: #dc2626;
+}
+
+/* Status */
+.as-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.as-status--open {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.as-status--in-progress {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.as-status--resolved {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.as-status--closed {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Date */
+.as-ticket-date {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* View Button */
+.as-ticket-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.as-ticket-view-btn:hover {
+  background: #f0fdfa;
+  border-color: #99d9d5;
+  color: #0d9488;
+}
+
+.as-ticket-view-btn span {
+  font-size: 15px;
+  line-height: 12px;
+}
+
+.as-ticket-view-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.as-ticket-empty {
+  padding: 45px 20px;
+  text-align: center;
+}
+
+.as-ticket-empty strong {
+  display: block;
+  color: #334155;
+  font-size: 14px;
+}
+
+.as-ticket-empty p {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+#as-status{
+  cursor: pointer;
 }
