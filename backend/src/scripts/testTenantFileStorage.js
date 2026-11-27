@@ -323,9 +323,15 @@ test("retrieves and deletes a file only within its institute directory", async (
 
     assert.equal(afterDelete, null);
 
+    // The file should be deleted, but the institute directory
+    // should remain available for future uploads.
     await assert.rejects(
-      fs.access(directory),
-      { code: "ENOENT" }
+    fs.access(filePath),
+    { code: "ENOENT" }
+    );
+
+    await assert.doesNotReject(
+    fs.access(directory)
     );
   } finally {
     await context.cleanup();
