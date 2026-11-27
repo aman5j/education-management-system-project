@@ -8,8 +8,11 @@ import path from "path";
 import { fileURLToPath } from "url"; // Needed for ES modules path resolution
 import platformRoutes from "./routes/platform.routes.js";
 
-
+// superadmin part urls 
 import tenantAuthRoutes from "./routes/tenantAuth.routes.js";
+import tenantStudentDocumentRoutes from "./routes/tenantStudentDocument.routes.js";
+
+
 import { resolveTenant } from "./middleware/tenantResolver.middleware.js";
 import { attachTenantModels } from "./middleware/tenantModelContext.middleware.js";
 
@@ -93,6 +96,8 @@ import websiteTestimonialRoutes from "./routes/websiteTestimonial.routes.js";
 import websiteContactRoutes from "./routes/websiteContact.routes.js";
 import courseEnquiryRoutes from "./routes/courseEnquiry.routes.js";
 import websiteFooterRoutes from "./routes/websiteFooter.routes.js";
+
+
 
 
 // import receiptUploadRoutes from
@@ -293,6 +298,18 @@ app.use(
   resolveTenant,
   attachTenantModels,
   tenantAuthRoutes
+);
+
+/*
+ * Phase 4D — Batch 3B-3C
+ * Tenant Student Document APIs
+ *
+ * Tenant resolver, model accessor and authentication
+ * are applied inside tenantStudentDocument.routes.js.
+ */
+app.use(
+  "/api/tenant",
+  tenantStudentDocumentRoutes
 );
 
 app.use("/api/auth", authRoutes);
