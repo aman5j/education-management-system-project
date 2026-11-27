@@ -374,3 +374,157 @@
     margin-left: auto;
   }
 }
+
+
+
+
+
+
+
+
+/* ==========================================
+   ALERT NOTICE - LIST / FORM PAGE STRUCTURE
+========================================== */
+
+.an-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.an-add-btn,
+.an-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.an-add-btn {
+  background: #1557d5;
+  color: #fff;
+}
+
+.an-add-btn:hover {
+  background: #1048b5;
+}
+
+.an-back-btn {
+  border-color: #d7e2f0;
+  background: #fff;
+  color: #24476e;
+}
+
+.an-back-btn:hover {
+  background: #f1f6ff;
+}
+
+.an-add-btn:disabled,
+.an-back-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   ALERT NOTICE TABLE
+========================================== */
+
+.an-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e5ebf3;
+  border-radius: 9px;
+}
+
+.an-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.an-table th {
+  padding: 14px 13px;
+  background: #edf3ff;
+  color: #19395f;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  border-bottom: 1px solid #e0e8f5;
+}
+
+.an-table td {
+  padding: 12px 13px;
+  color: #536783;
+  font-size: 11px;
+  border-bottom: 1px solid #edf1f6;
+  white-space: nowrap;
+}
+
+.an-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.an-table tbody tr:hover {
+  background: #f8faff;
+}
+
+.an-table-notice {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 220px;
+}
+
+.an-table-notice strong {
+  color: #19395f;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.an-table-thumb {
+  width: 55px;
+  height: 55px;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f1f5f9;
+  object-fit: contain;
+}
+
+/* ==========================================
+   RESPONSIVE LAYOUT
+========================================== */
+
+@media (max-width: 700px) {
+  .alert-notice-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .an-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .an-add-btn,
+  .an-back-btn {
+    min-height: 42px;
+  }
+
+  .an-table-wrapper {
+    border-radius: 7px;
+  }
+}

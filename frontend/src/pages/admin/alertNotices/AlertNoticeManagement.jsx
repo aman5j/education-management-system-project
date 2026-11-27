@@ -10,6 +10,8 @@ import {
   FiX,
   FiSave,
   FiRefreshCw,
+  FiPlus,
+  FiArrowLeft,
 } from "react-icons/fi";
 
 import {
@@ -66,6 +68,9 @@ export default function AlertNoticeManagement() {
   const [preview, setPreview] = useState("");
   const [existingImage, setExistingImage] = useState("");
 
+  const [showForm, setShowForm] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const loadNotices = async () => {
     try {
       setLoading(true);
@@ -105,10 +110,41 @@ export default function AlertNoticeManagement() {
     setForm(initialForm());
     setImageFile(null);
     setExistingImage("");
+    setHasUnsavedChanges(false);
+    setShowForm(false);
 
     if (fileRef.current) {
       fileRef.current.value = "";
     }
+  };
+
+  const handleAddNotice = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const handleBackToList = async () => {
+    if (hasUnsavedChanges) {
+      const confirmed = await notification.confirm({
+        title: "Discard changes?",
+        text: "Your unsaved alert notice changes will be lost.",
+        confirmText: "Yes, discard",
+        icon: "warning",
+      });
+
+      if (!confirmed) return;
+    }
+
+    resetForm();
+  };
+
+  const updateFormField = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+
+    setHasUnsavedChanges(true);
   };
 
   const handleImageChange = (event) => {
@@ -135,6 +171,7 @@ export default function AlertNoticeManagement() {
     }
 
     setImageFile(file);
+    setHasUnsavedChanges(true);
   };
 
   const handleEdit = (notice) => {
@@ -160,6 +197,9 @@ export default function AlertNoticeManagement() {
       top: 0,
       behavior: "smooth",
     });
+
+    setHasUnsavedChanges(false);
+    setShowForm(true);
   };
 
   const handleSubmit = async (event) => {
@@ -256,54 +296,96 @@ export default function AlertNoticeManagement() {
     }
   };
 
-  return (
-    <div className="alert-notice-page">
-      <div className="alert-notice-header">
-        <div>
-          <span className="alert-notice-eyebrow">
-            COMMUNICATION
-          </span>
 
-          <h1>
-            <FiBell /> Alert Notice
-          </h1>
+return (
+  <div className="alert-notice-page">
 
-          <p>
-            Upload and manage image-based announcements for students.
-          </p>
-        </div>
+    {/* PAGE HEADER */}
+    <div className="alert-notice-header">
+      <div>
+        <span className="alert-notice-eyebrow">
+          COMMUNICATION
+        </span>
 
-        <button
-          type="button"
-          className="an-refresh-btn"
-          onClick={loadNotices}
-          disabled={loading}
-        >
-          <FiRefreshCw /> Refresh
-        </button>
+        <h1>
+          <FiBell /> Alert Notice
+        </h1>
+
+        <p>
+          Upload and manage image-based announcements for students.
+        </p>
       </div>
 
+      <div className="an-header-actions">
+
+        {!showForm ? (
+          <>
+            <button
+              type="button"
+              className="an-refresh-btn"
+              onClick={loadNotices}
+              disabled={loading}
+            >
+              <FiRefreshCw />
+              Refresh
+            </button>
+
+            <button
+              type="button"
+              className="an-add-btn"
+              onClick={handleAddNotice}
+            >
+              <FiPlus />
+              Add Alert Notice
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="an-back-btn"
+            onClick={handleBackToList}
+            disabled={saving}
+          >
+            <FiArrowLeft />
+            Back to Alert Notices
+          </button>
+        )}
+
+      </div>
+    </div>
+
+    {/* ADD / EDIT FORM */}
+    {showForm && (
       <section className="an-form-card">
+
         <div className="an-section-heading">
           <div>
-            <h2>{editingId ? "Edit Alert Notice" : "Add Alert Notice"}</h2>
-            <p>Upload an image to display as a student popup.</p>
+            <h2>
+              {editingId
+                ? "Edit Alert Notice"
+                : "Add Alert Notice"}
+            </h2>
+
+            <p>
+              Upload an image to display as a student popup.
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="an-form-grid">
+
             <label className="an-field an-field-full">
-              <span>Notice Title <b>*</b></span>
+              <span>
+                Notice Title <b>*</b>
+              </span>
+
               <input
                 type="text"
                 value={form.title}
                 maxLength={150}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    title: event.target.value,
-                  }))
+                  updateFormField("title", event.target.value)
                 }
                 placeholder="Example: Diwali Holiday Notice"
                 required
@@ -316,6 +398,7 @@ export default function AlertNoticeManagement() {
               </span>
 
               <div className="an-upload-area">
+
                 <div className="an-image-preview">
                   {preview || existingImage ? (
                     <img
@@ -334,6 +417,7 @@ export default function AlertNoticeManagement() {
                 </div>
 
                 <div className="an-upload-info">
+
                   <input
                     ref={fileRef}
                     type="file"
@@ -351,28 +435,34 @@ export default function AlertNoticeManagement() {
                     Upload Image
                   </button>
 
-                  <p>JPG, PNG or WEBP. Maximum 8 MB.</p>
-                  <p>Recommended: square or portrait promotional artwork.</p>
+                  <p>
+                    JPG, PNG or WEBP. Maximum 8 MB.
+                  </p>
+
+                  <p>
+                    Recommended: square or portrait promotional artwork.
+                  </p>
 
                   {imageFile && (
                     <span className="an-selected-file">
                       {imageFile.name}
                     </span>
                   )}
+
                 </div>
               </div>
             </div>
 
             <label className="an-field">
-              <span>Show From <b>*</b></span>
+              <span>
+                Show From <b>*</b>
+              </span>
+
               <input
                 type="datetime-local"
                 value={form.startAt}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    startAt: event.target.value,
-                  }))
+                  updateFormField("startAt", event.target.value)
                 }
                 required
               />
@@ -380,18 +470,19 @@ export default function AlertNoticeManagement() {
 
             <label className="an-field">
               <span>Expiry Date</span>
+
               <input
                 type="datetime-local"
                 value={form.endAt}
                 min={form.startAt}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    endAt: event.target.value,
-                  }))
+                  updateFormField("endAt", event.target.value)
                 }
               />
-              <small>Leave empty for no expiry date.</small>
+
+              <small>
+                Leave empty for no expiry date.
+              </small>
             </label>
 
             <label className="an-field">
@@ -401,32 +492,31 @@ export default function AlertNoticeManagement() {
 
             <label className="an-field">
               <span>Status</span>
+
               <select
                 value={form.status}
                 onChange={(event) =>
-                  setForm((previous) => ({
-                    ...previous,
-                    status: event.target.value,
-                  }))
+                  updateFormField("status", event.target.value)
                 }
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
             </label>
+
           </div>
 
           <div className="an-form-actions">
-            {editingId && (
-              <button
-                type="button"
-                className="an-cancel-btn"
-                onClick={resetForm}
-                disabled={saving}
-              >
-                <FiX /> Cancel Edit
-              </button>
-            )}
+
+            <button
+              type="button"
+              className="an-cancel-btn"
+              onClick={handleBackToList}
+              disabled={saving}
+            >
+              <FiX />
+              Cancel
+            </button>
 
             <button
               type="submit"
@@ -434,21 +524,29 @@ export default function AlertNoticeManagement() {
               disabled={saving}
             >
               <FiSave />
+
               {saving
                 ? "Saving..."
                 : editingId
                   ? "Update Notice"
                   : "Save Notice"}
             </button>
+
           </div>
         </form>
       </section>
+    )}
 
+    {/* NOTICE TABLE */}
+    {!showForm && (
       <section className="an-list-card">
+
         <div className="an-section-heading">
           <div>
             <h2>All Alert Notices</h2>
-            <p>Manage uploaded student announcements.</p>
+            <p>
+              View and manage uploaded student announcements.
+            </p>
           </div>
 
           <span className="an-count">
@@ -457,70 +555,123 @@ export default function AlertNoticeManagement() {
         </div>
 
         {loading ? (
-          <div className="an-empty">Loading notices...</div>
+          <div className="an-empty">
+            Loading notices...
+          </div>
         ) : notices.length === 0 ? (
           <div className="an-empty">
             <FiBell />
             <strong>No notices created yet</strong>
-            <span>Upload your first alert notice above.</span>
+            <span>
+              Click Add Alert Notice to create your first notice.
+            </span>
           </div>
         ) : (
-          <div className="an-notice-list">
-            {notices.map((notice) => (
-              <article className="an-notice-row" key={notice._id}>
-                <img
-                  src={getAssetUrl(notice.image)}
-                  alt={notice.title}
-                  className="an-notice-thumb"
-                />
+          <div className="an-table-wrapper">
 
-                <div className="an-notice-info">
-                  <strong>{notice.title}</strong>
-                  <span>Starts: {formatDate(notice.startAt)}</span>
-                  <span>Expires: {formatDate(notice.endAt)}</span>
-                </div>
+            <table className="an-table">
 
-                <span
-                  className={`an-status ${
-                    notice.status === "Active"
-                      ? "is-active"
-                      : "is-inactive"
-                  }`}
-                >
-                  {notice.status}
-                </span>
+              <thead>
+                <tr>
+                  <th>Notice</th>
+                  <th>Show From</th>
+                  <th>Expiry Date</th>
+                  <th>Show To</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
 
-                <div className="an-row-actions">
-                  <button
-                    type="button"
-                    title="Edit notice"
-                    onClick={() => handleEdit(notice)}
-                  >
-                    <FiEdit2 />
-                  </button>
+              <tbody>
+                {notices.map((notice) => (
+                  <tr key={notice._id}>
 
-                  <button
-                    type="button"
-                    title="Activate / Deactivate"
-                    onClick={() => handleStatus(notice)}
-                  >
-                    <FiPower />
-                  </button>
+                    <td>
+                      <div className="an-table-notice">
 
-                  <button
-                    type="button"
-                    title="Delete notice"
-                    className="an-delete-action"
-                    onClick={() => handleDelete(notice)}
-                  >
-                    <FiTrash2 />
-                  </button>
-                </div>
-              </article>
-            ))}
+                        <img
+                          src={getAssetUrl(notice.image)}
+                          alt={notice.title}
+                          className="an-table-thumb"
+                        />
+
+                        <strong>
+                          {notice.title}
+                        </strong>
+
+                      </div>
+                    </td>
+
+                    <td>
+                      {formatDate(notice.startAt)}
+                    </td>
+
+                    <td>
+                      {formatDate(notice.endAt)}
+                    </td>
+
+                    <td>
+                      All Students
+                    </td>
+
+                    <td>
+                      <span
+                        className={`an-status ${
+                          notice.status === "Active"
+                            ? "is-active"
+                            : "is-inactive"
+                        }`}
+                      >
+                        {notice.status}
+                      </span>
+                    </td>
+
+                    <td>
+                      <div className="an-row-actions">
+
+                        <button
+                          type="button"
+                          title="Edit notice"
+                          onClick={() => handleEdit(notice)}
+                        >
+                          <FiEdit2 />
+                        </button>
+
+                        <button
+                          type="button"
+                          title={
+                            notice.status === "Active"
+                              ? "Deactivate notice"
+                              : "Activate notice"
+                          }
+                          onClick={() => handleStatus(notice)}
+                        >
+                          <FiPower />
+                        </button>
+
+                        <button
+                          type="button"
+                          title="Delete notice"
+                          className="an-delete-action"
+                          onClick={() => handleDelete(notice)}
+                        >
+                          <FiTrash2 />
+                        </button>
+
+                      </div>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+
+            </table>
           </div>
         )}
       </section>
-    </div>
-  );
+    )}
+
+  </div>
+);
+
 }
