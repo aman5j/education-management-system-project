@@ -22,6 +22,13 @@ const MIME_EXTENSIONS = Object.freeze({
     ".xlsx",
 });
 
+const DOCUMENT_FILE_NAME_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.[a-z0-9]{1,10}$/i;
+
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set(
+  Object.values(MIME_EXTENSIONS)
+);
+
 const DOCUMENT_DIRECTORY_PARTS = Object.freeze([
   "students",
   "documents",
@@ -165,29 +172,48 @@ export const createTenantStudentDocumentService = ({
     return realDirectory;
   };
 
-  const getSafeDocumentPath = async (
-    tenantContext,
-    fileName
-  ) => {
-    if (
-      typeof fileName !== "string" ||
-      path.basename(fileName) !== fileName
-    ) {
-      throw new Error("TENANT_DOCUMENT_FILE_NAME_INVALID");
-    }
+const getSafeDocumentPath = async (
+  tenantContext,
+  fileName
+) => {
+  // Reject traversal, absolute paths and non-string values.
+  if (
+    typeof fileName !== "string" ||
+    path.basename(fileName) !== fileName
+  ) {
+    throw new Error("TENANT_DOCUMENT_FILE_NAME_INVALID");
+  }
 
-    // Reuse the storage service's strict server-generated UUID filename check.
-    storage.getSafeFilePath(tenantContext, fileName);
+  // Only server-generated UUID filenames are accepted.
+  if (!DOCUMENT_FILE_NAME_PATTERN.test(fileName)) {
+    throw new Error("TENANT_FILE_NAME_INVALID");
+  }
 
-    const directory = await getDocumentsDirectory(tenantContext);
-    const filePath = path.resolve(directory, fileName);
+  // A valid UUID must also have an extension supported by
+  // the student document upload system.
+  if (
+    !ALLOWED_DOCUMENT_EXTENSIONS.has(
+      getExtension(fileName)
+    )
+  ) {
+    throw new Error("TENANT_FILE_NAME_INVALID");
+  }
 
-    if (path.dirname(filePath) !== directory) {
-      throw new Error("TENANT_DOCUMENT_PATH_INVALID");
-    }
+  // Keep the generic storage service's tenant/path validation.
+  storage.getSafeFilePath(tenantContext, fileName);
 
-    return filePath;
-  };
+  const directory = await getDocumentsDirectory(
+    tenantContext
+  );
+
+  const filePath = path.resolve(directory, fileName);
+
+  if (path.dirname(filePath) !== directory) {
+    throw new Error("TENANT_DOCUMENT_PATH_INVALID");
+  }
+
+  return filePath;
+};
 
   const getExistingDocumentFile = async (
     tenantContext,
