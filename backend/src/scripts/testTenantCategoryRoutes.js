@@ -28,6 +28,12 @@ const findRoute = (method, routePath) =>
       layer.route.methods[method]
   );
 
+// Express 5 stores route handlers in layer.route.stack.
+const getHandlers = (routeLayer) =>
+  routeLayer?.route?.stack?.map(
+    (handlerLayer) => handlerLayer.handle
+  ) || [];
+
 test("tenant category router has trusted tenant resolution middleware", () => {
   const middlewareLayers = stack.filter(
     (layer) => !layer.route
@@ -52,8 +58,11 @@ test("registers icon retrieval route", () => {
 
   assert.ok(route);
 
+  const handlers = getHandlers(route);
+
+  assert.equal(handlers.length, 2);
   assert.equal(
-    route.stack.at(-1).handle,
+    handlers.at(-1),
     getTenantCategoryIcon
   );
 });
@@ -62,15 +71,18 @@ test("registers icon upload middleware before its controller", () => {
   const route = findRoute("post", "/:id/icon");
 
   assert.ok(route);
-  assert.equal(route.stack.length, 3);
+
+  const handlers = getHandlers(route);
+
+  assert.equal(handlers.length, 3);
 
   assert.equal(
-    route.stack.at(-1).handle,
+    handlers.at(-1),
     uploadTenantCategoryIcon
   );
 
   assert.equal(
-    route.stack.at(-2).handle.name,
+    handlers.at(-2).name,
     "tenantCategoryIconUpload"
   );
 });
@@ -80,35 +92,38 @@ test("registers icon deletion route", () => {
 
   assert.ok(route);
 
+  const handlers = getHandlers(route);
+
+  assert.equal(handlers.length, 2);
   assert.equal(
-    route.stack.at(-1).handle,
+    handlers.at(-1),
     deleteTenantCategoryIcon
   );
 });
 
 test("category CRUD routes use the correct controllers", () => {
   assert.equal(
-    findRoute("get", "/").stack.at(-1).handle,
+    getHandlers(findRoute("get", "/")).at(-1),
     getTenantCategories
   );
 
   assert.equal(
-    findRoute("get", "/:id").stack.at(-1).handle,
+    getHandlers(findRoute("get", "/:id")).at(-1),
     getTenantCategory
   );
 
   assert.equal(
-    findRoute("post", "/").stack.at(-1).handle,
+    getHandlers(findRoute("post", "/")).at(-1),
     createTenantCategory
   );
 
   assert.equal(
-    findRoute("put", "/:id").stack.at(-1).handle,
+    getHandlers(findRoute("put", "/:id")).at(-1),
     updateTenantCategory
   );
 
   assert.equal(
-    findRoute("delete", "/:id").stack.at(-1).handle,
+    getHandlers(findRoute("delete", "/:id")).at(-1),
     deleteTenantCategory
   );
 });
