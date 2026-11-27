@@ -545,29 +545,24 @@ export default function StudentHelpdesk() {
                             </div>
 
                             {isStudent && (
-                              <div className="sh-message__avatar sh-message__avatar--student">
-                                {getStudentInitials(
-                                  selectedTicket.student_id
-                                )}
+                            <div className="sh-message__avatar sh-message__avatar--student">
+                              {getStudentInitials(selectedTicket.student_id)}
 
-                                {getStudentImageUrl(
-                                  selectedTicket.student_id?.profileImage
-                                ) && (
-                                  <img
-                                    src={getStudentImageUrl(
-                                      selectedTicket.student_id?.profileImage
-                                    )}
-                                    alt={getStudentName(
-                                      selectedTicket.student_id
-                                    )}
-                                    onError={(event) => {
-                                      event.currentTarget.style.display =
-                                        "none";
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            )}
+                              {getStudentImageUrl(
+                                selectedTicket.student_id?.profileImage
+                              ) && (
+                                <img
+                                  src={getStudentImageUrl(
+                                    selectedTicket.student_id?.profileImage
+                                  )}
+                                  alt={getStudentName(selectedTicket.student_id)}
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              )}
+                            </div>
+                          )}
                           </div>
                         );
                       })}

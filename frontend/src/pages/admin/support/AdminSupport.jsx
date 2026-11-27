@@ -1,5 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
+import supportIcon from "../../../assets/aaa.png";
 
 import {
   FiCheckCircle,
@@ -84,6 +85,37 @@ const getStudentName = (student) => {
     student.name ||
     "Student"
   );
+};
+
+
+const getStudentInitials = (student) => {
+  const name = getStudentName(student);
+
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+};
+
+const getStudentImageUrl = (imagePath) => {
+  if (!imagePath || typeof imagePath !== "string") return "";
+
+  const image = imagePath.trim();
+
+  if (/^(https?:|data:|blob:)/i.test(image)) {
+    return image;
+  }
+
+  const apiUrl =
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+  const serverOrigin = apiUrl
+    .replace(/\/api\/?$/i, "")
+    .replace(/\/+$/, "");
+
+  return `${serverOrigin}/${image.replace(/^\/+/, "")}`;
 };
 
 const getMessage = (response, fallback) =>
@@ -521,8 +553,18 @@ export default function AdminSupport() {
                 
                  <div className="as-info__student">
                 <div className="as-avatar">
-                  {getStudentName(student).charAt(0).toUpperCase()}
-                </div>
+                {getStudentInitials(student)}
+
+                {getStudentImageUrl(student?.profileImage) && (
+                  <img
+                    src={getStudentImageUrl(student?.profileImage)}
+                    alt={getStudentName(student)}
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+              </div>
 
                 <div>
                   <strong>{getStudentName(student)}</strong>
@@ -609,8 +651,33 @@ export default function AdminSupport() {
                             <div className="sh-message__bubble">{message.message}</div>
                           </div>
 
-                          <div className="sh-message__avatar sh-message__avatar--student">
-                            <img src="https://education-management-backend-79g1.onrender.com/uploads/students/1793941567490-portrait-business-woman-with-enthusiastic-face-expression-smiling-looking-confident-standing-s_1258-88087.png" />
+                          <div
+                            className={`sh-message__avatar ${
+                              isAdmin
+                                ? "sh-message__avatar--support"
+                                : "sh-message__avatar--student"
+                            }`}
+                          >
+                            {isAdmin ? (
+                              <img
+                                src={supportIcon}
+                                alt="Support Team"
+                              />
+                            ) : (
+                              <>
+                                {getStudentInitials(student)}
+
+                                {getStudentImageUrl(student?.profileImage) && (
+                                  <img
+                                    src={getStudentImageUrl(student?.profileImage)}
+                                    alt={getStudentName(student)}
+                                    onError={(event) => {
+                                      event.currentTarget.style.display = "none";
+                                    }}
+                                  />
+                                )}
+                              </>
+                            )}
                           </div>
 
                           

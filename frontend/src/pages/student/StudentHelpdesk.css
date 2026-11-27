@@ -1345,3 +1345,50 @@
     justify-content: center;
   }
 }
+
+
+
+
+
+
+
+/* ==========================================
+   STUDENT SUPPORT CHAT - AVATAR FIX
+========================================== */
+
+/* Student avatar */
+.sh-message__avatar--student {
+  position: relative;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e4efff, #f0eaff);
+  color: #5436e6;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Actual student photo covers initials */
+.sh-message__avatar--student img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Support Team icon */
+.sh-message__avatar .suport-profile {
+  display: block;
+  width: 25px;
+  height: 25px;
+  max-width: 25px;
+  object-fit: contain;
+}

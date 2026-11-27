@@ -927,3 +927,84 @@
 #as-status{
   cursor: pointer;
 }
+
+
+
+
+
+
+
+
+
+/* ==========================================
+   SUPPORT CHAT - STUDENT & TEAM AVATARS
+========================================== */
+
+/* Admin conversation header student avatar */
+.as-avatar {
+  position: relative;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Actual student profile image */
+.as-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Conversation message avatars */
+.sh-message__avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e4efff, #f0eaff);
+  color: #5436e6;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Student image covers initials */
+.sh-message__avatar--student img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Support Team icon */
+.sh-message__avatar--support img {
+  display: block;
+  width: 25px;
+  height: 25px;
+  max-width: 25px;
+  object-fit: contain;
+}
+
+/* Prevent avatar shrinking in responsive layouts */
+.sh-message__avatar img {
+  flex-shrink: 0;
+}
