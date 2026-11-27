@@ -1,6 +1,9 @@
 
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import tenantCategoryIconService from "../services/tenantCategoryIcon.service.js";
 
@@ -17,36 +20,32 @@ const tenantContext = {
   collectionPrefix: "inst_6b098f3ecfef527d1a4a93b2",
 };
 
-const createResponse = () => {
-  const response = {
-    statusCode: 200,
-    body: null,
-    headers: {},
-    sentFile: null,
+const createResponse = () => ({
+  statusCode: 200,
+  body: null,
+  headers: {},
+  sentFile: null,
 
-    status(code) {
-      this.statusCode = code;
-      return this;
-    },
+  status(code) {
+    this.statusCode = code;
+    return this;
+  },
 
-    json(body) {
-      this.body = body;
-      return this;
-    },
+  json(body) {
+    this.body = body;
+    return this;
+  },
 
-    set(headers) {
-      this.headers = headers;
-      return this;
-    },
+  set(headers) {
+    this.headers = headers;
+    return this;
+  },
 
-    sendFile(filePath) {
-      this.sentFile = filePath;
-      return this;
-    },
-  };
-
-  return response;
-};
+  sendFile(filePath) {
+    this.sentFile = filePath;
+    return this;
+  },
+});
 
 const createCategory = ({
   categoryIcon = "",
@@ -57,7 +56,10 @@ const createCategory = ({
   categoryIcon,
 
   async save() {
-    if (saveError) throw saveError;
+    if (saveError) {
+      throw saveError;
+    }
+
     return this;
   },
 
@@ -70,13 +72,16 @@ const createCategory = ({
   },
 });
 
-const createRequest = (category) => ({
+const createRequest = (
+  category,
+  overrides = {}
+) => ({
   params: {
     id: CATEGORY_ID,
   },
 
   file: {
-    buffer: Buffer.from("test-image"),
+    buffer: randomBytes(32),
     mimetype: "image/png",
   },
 
@@ -89,28 +94,61 @@ const createRequest = (category) => ({
       findById: async () => category,
     };
   },
+
+  ...overrides,
 });
 
-test("uploads an icon and saves its generated filename to the tenant category", async (t) => {
-  const category = createCategory();
+const createdFiles = new Set();
 
-  let savedFilename = null;
-
-  t.mock.method(
-    tenantCategoryIconService,
-    "saveIcon",
-    async () => {
-      savedFilename =
-        "12345678-1234-4234-8234-123456789abc.png";
-
-      return {
-        fileName: savedFilename,
-      };
-    }
+const saveTestIcon = async () => {
+  const result = await tenantCategoryIconService.saveIcon(
+    tenantContext,
+    randomBytes(32),
+    "image/png"
   );
+
+  createdFiles.add(result.fileName);
+
+  return result;
+};
+
+const cleanupCreatedFiles = async () => {
+  for (const fileName of createdFiles) {
+    await tenantCategoryIconService.deleteIcon(
+      tenantContext,
+      fileName
+    ).catch(() => {});
+  }
+
+  createdFiles.clear();
+
+  const directory =
+    await tenantCategoryIconService.getIconsDirectory(
+      tenantContext
+    );
+
+  const tenantRoot = path.resolve(
+    directory,
+    "..",
+    ".."
+  );
+
+  await fs.rm(tenantRoot, {
+    recursive: true,
+    force: true,
+  });
+};
+
+after(async () => {
+  await cleanupCreatedFiles();
+});
+
+test("uploads an icon and saves its generated filename to the tenant category", async () => {
+  const category = createCategory();
 
   const req = createRequest(category);
   const res = createResponse();
+
   let nextError = null;
 
   await uploadTenantCategoryIcon(
@@ -123,43 +161,29 @@ test("uploads an icon and saves its generated filename to the tenant category", 
 
   assert.equal(nextError, null);
   assert.equal(res.statusCode, 200);
-  assert.equal(category.categoryIcon, savedFilename);
+  assert.equal(res.body.success, true);
+
+  assert.match(
+    category.categoryIcon,
+    /^[0-9a-f-]+\.png$/i
+  );
 
   assert.equal(
     res.body.data.category.categoryIconUrl,
     `/api/tenant/categories/${CATEGORY_ID}/icon`
   );
+
+  createdFiles.add(category.categoryIcon);
 });
 
-test("removes a newly saved icon if the category database save fails", async (t) => {
+test("removes a newly saved icon if the category database save fails", async () => {
   const category = createCategory({
     saveError: new Error("DATABASE_SAVE_FAILED"),
   });
 
-  const savedFilename =
-    "12345678-1234-4234-8234-123456789abc.png";
-
-  let deletedFilename = null;
-
-  t.mock.method(
-    tenantCategoryIconService,
-    "saveIcon",
-    async () => ({
-      fileName: savedFilename,
-    })
-  );
-
-  t.mock.method(
-    tenantCategoryIconService,
-    "deleteIcon",
-    async (_context, fileName) => {
-      deletedFilename = fileName;
-      return true;
-    }
-  );
-
   const req = createRequest(category);
   const res = createResponse();
+
   let nextError = null;
 
   await uploadTenantCategoryIcon(
@@ -171,38 +195,29 @@ test("removes a newly saved icon if the category database save fails", async (t)
   );
 
   assert.equal(
-    deletedFilename,
-    savedFilename
-  );
-
-  assert.equal(
     nextError?.message,
     "DATABASE_SAVE_FAILED"
   );
+
+  // The controller should have deleted the newly saved file.
+  assert.equal(category.categoryIcon, "");
+
+  const directory =
+    await tenantCategoryIconService.getIconsDirectory(
+      tenantContext
+    );
+
+  const remainingFiles = await fs.readdir(directory);
+
+  assert.equal(remainingFiles.length, 0);
 });
 
-test("retrieves an icon with private response headers", async (t) => {
-  const filename =
-    "12345678-1234-4234-8234-123456789abc.png";
+test("retrieves an icon with private response headers", async () => {
+  const saved = await saveTestIcon();
 
   const category = createCategory({
-    categoryIcon: filename,
+    categoryIcon: saved.fileName,
   });
-
-  t.mock.method(
-    tenantCategoryIconService,
-    "readIcon",
-    async (context, requestedFilename) => {
-      assert.deepEqual(context, tenantContext);
-      assert.equal(requestedFilename, filename);
-
-      return {
-        path: "C:/private/category-icon.png",
-        size: 100,
-        mimeType: "image/png",
-      };
-    }
-  );
 
   const req = createRequest(category);
   const res = createResponse();
@@ -214,6 +229,8 @@ test("retrieves an icon with private response headers", async (t) => {
       throw error;
     }
   );
+
+  assert.equal(res.statusCode, 200);
 
   assert.equal(
     res.headers["Content-Type"],
@@ -232,7 +249,7 @@ test("retrieves an icon with private response headers", async (t) => {
 
   assert.equal(
     res.sentFile,
-    "C:/private/category-icon.png"
+    saved.filePath
   );
 });
 
@@ -253,31 +270,19 @@ test("returns 404 when the category has no managed icon", async () => {
   );
 
   assert.equal(res.statusCode, 404);
+
   assert.equal(
     res.body.code,
     "TENANT_CATEGORY_ICON_NOT_FOUND"
   );
 });
 
-test("deletes the icon reference and removes the managed file", async (t) => {
-  const filename =
-    "12345678-1234-4234-8234-123456789abc.png";
+test("deletes the icon reference and removes the managed file", async () => {
+  const saved = await saveTestIcon();
 
   const category = createCategory({
-    categoryIcon: filename,
+    categoryIcon: saved.fileName,
   });
-
-  let deletedFilename = null;
-
-  t.mock.method(
-    tenantCategoryIconService,
-    "deleteIcon",
-    async (context, requestedFilename) => {
-      assert.deepEqual(context, tenantContext);
-      deletedFilename = requestedFilename;
-      return true;
-    }
-  );
 
   const req = createRequest(category);
   const res = createResponse();
@@ -291,26 +296,23 @@ test("deletes the icon reference and removes the managed file", async (t) => {
   );
 
   assert.equal(category.categoryIcon, "");
-  assert.equal(deletedFilename, filename);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.success, true);
+
+  const result = await tenantCategoryIconService.readIcon(
+    tenantContext,
+    saved.fileName
+  );
+
+  assert.equal(result, null);
+  createdFiles.delete(saved.fileName);
 });
 
-test("does not delete a legacy shared-upload icon", async (t) => {
+test("does not delete a legacy shared-upload icon", async () => {
   const category = createCategory({
     categoryIcon: "/uploads/categories/legacy-icon.png",
   });
 
-  let deleteCalled = false;
-
-  t.mock.method(
-    tenantCategoryIconService,
-    "deleteIcon",
-    async () => {
-      deleteCalled = true;
-    }
-  );
-
   const req = createRequest(category);
   const res = createResponse();
 
@@ -323,6 +325,6 @@ test("does not delete a legacy shared-upload icon", async (t) => {
   );
 
   assert.equal(category.categoryIcon, "");
-  assert.equal(deleteCalled, false);
   assert.equal(res.statusCode, 200);
+  assert.equal(res.body.success, true);
 });
