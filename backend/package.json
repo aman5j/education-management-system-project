@@ -20,6 +20,7 @@
     "test:tenant-model-accessor": "node --test src/scripts/testTenantModelAccessor.js",
     "test:tenant-file-storage": "node --test src/scripts/testTenantFileStorage.js",
     "test:tenant-student-document": "node --test src/scripts/testTenantStudentDocument.js",
+    "test:tenant-student-document-upload": "node --test src/scripts/testTenantStudentDocumentUpload.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."

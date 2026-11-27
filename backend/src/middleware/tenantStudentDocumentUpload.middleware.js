@@ -228,7 +228,8 @@ export const createTenantStudentDocumentUpload = ({
             error.code === "LIMIT_FILE_SIZE";
 
           const isCountError =
-            error.code === "LIMIT_FILE_COUNT";
+            error.code === "LIMIT_FILE_COUNT" ||
+            error.code === "LIMIT_UNEXPECTED_FILE";
 
           return res.status(400).json({
             success: false,
