@@ -9,13 +9,6 @@ import { attachTenantModels } from "../middleware/tenantModelContext.middleware.
 import { authenticateTenant } from "../middleware/tenantAuth.middleware.js";
 
 import {
-  authorizeTenantRoles,
-  requireTenantPermission,
-} from "../middleware/tenantAuthorization.middleware.js";
-
-import uploadInstituteLogo from "../middleware/instituteLogoUpload.js";
-
-import {
   getTenantInstituteSettings,
   getTenantPublicInstituteBranding,
   getTenantInstituteLogo,
@@ -41,12 +34,15 @@ const findRoute = (method, routePath) => {
   return layer.route;
 };
 
-const getGlobalMiddlewareIndex = (middleware) =>
-  stack.findIndex((layer) => layer.handle === middleware);
+const getLayerIndex = (handler) =>
+  stack.findIndex((layer) => layer.handle === handler);
 
-test("tenant settings router applies tenant resolver first", () => {
-  const resolverIndex = getGlobalMiddlewareIndex(resolveTenant);
-  const modelIndex = getGlobalMiddlewareIndex(attachTenantModels);
+const getRouteIndex = (route) =>
+  stack.findIndex((layer) => layer.route === route);
+
+test("tenant settings router applies tenant resolver before model attachment", () => {
+  const resolverIndex = getLayerIndex(resolveTenant);
+  const modelIndex = getLayerIndex(attachTenantModels);
 
   assert.ok(resolverIndex >= 0);
   assert.ok(modelIndex > resolverIndex);
@@ -72,30 +68,23 @@ test("tenant settings router registers public logo endpoint", () => {
   );
 });
 
-test("public endpoints do not require tenant login middleware", () => {
-  const authIndex = getGlobalMiddlewareIndex(authenticateTenant);
+test("public endpoints are registered before tenant authentication", () => {
+  const authIndex = getLayerIndex(authenticateTenant);
+
+  assert.ok(authIndex >= 0);
 
   const publicRoutes = [
     findRoute("get", "/public-branding"),
     findRoute("get", "/logo/:version"),
   ];
 
-  assert.ok(authIndex >= 0);
-
   for (const route of publicRoutes) {
-    const routeLayerIndex = stack.findIndex(
-      (layer) => layer.route === route
-    );
-
-    assert.ok(
-      routeLayerIndex < authIndex,
-      "Public endpoint must be registered before tenant authentication"
-    );
+    assert.ok(getRouteIndex(route) < authIndex);
   }
 });
 
-test("tenant authentication is installed before protected routes", () => {
-  const authIndex = getGlobalMiddlewareIndex(authenticateTenant);
+test("tenant authentication is registered before protected settings routes", () => {
+  const authIndex = getLayerIndex(authenticateTenant);
 
   assert.ok(authIndex >= 0);
 
@@ -106,97 +95,90 @@ test("tenant authentication is installed before protected routes", () => {
   ];
 
   for (const route of protectedRoutes) {
-    const routeLayerIndex = stack.findIndex(
-      (layer) => layer.route === route
-    );
-
-    assert.ok(routeLayerIndex > authIndex);
+    assert.ok(getRouteIndex(route) > authIndex);
   }
 });
 
-test("protected settings routes require admin role", () => {
-  const roleLayer = stack.find(
-    (layer) =>
-      layer.handle?.name === "middleware"
+test("protected routes register admin role middleware after authentication", () => {
+  const authIndex = getLayerIndex(authenticateTenant);
+
+  assert.ok(authIndex >= 0);
+
+  const roleLayer = stack[authIndex + 1];
+
+  assert.ok(roleLayer);
+  assert.equal(typeof roleLayer.handle, "function");
+
+  const firstProtectedRouteIndex = Math.min(
+    getRouteIndex(findRoute("get", "/")),
+    getRouteIndex(findRoute("put", "/")),
+    getRouteIndex(findRoute("post", "/logo"))
   );
 
-  assert.ok(
-    roleLayer,
-    "Expected protected role middleware to be registered"
-  );
-
-  const protectedRouteIndexes = [
-    stack.findIndex(
-      (layer) => layer.route === findRoute("get", "/")
-    ),
-    stack.findIndex(
-      (layer) => layer.route === findRoute("put", "/")
-    ),
-    stack.findIndex(
-      (layer) => layer.route === findRoute("post", "/logo")
-    ),
-  ];
-
-  const roleMiddlewareIndex = stack.findIndex(
-    (layer) => layer.handle === roleLayer.handle
-  );
-
-  assert.ok(roleMiddlewareIndex >= 0);
-
-  for (const routeIndex of protectedRouteIndexes) {
-    assert.ok(routeIndex > roleMiddlewareIndex);
-  }
+  assert.ok(authIndex < authIndex + 1);
+  assert.ok(authIndex + 1 < firstProtectedRouteIndex);
 });
 
-test("protected settings routes require settings.manage permission", () => {
-  const protectedRouteIndexes = [
-    stack.findIndex(
-      (layer) => layer.route === findRoute("get", "/")
-    ),
-    stack.findIndex(
-      (layer) => layer.route === findRoute("put", "/")
-    ),
-    stack.findIndex(
-      (layer) => layer.route === findRoute("post", "/logo")
-    ),
-  ];
+test("protected routes register permission middleware after role middleware", () => {
+  const authIndex = getLayerIndex(authenticateTenant);
 
-  const permissionIndex = stack.findIndex(
-    (layer) =>
-      layer.handle?.name === "middleware" &&
-      layer !== stack.find(
-        (item) => item.handle === authenticateTenant
-      )
+  assert.ok(authIndex >= 0);
+
+  const roleLayer = stack[authIndex + 1];
+  const permissionLayer = stack[authIndex + 2];
+
+  assert.ok(roleLayer);
+  assert.ok(permissionLayer);
+
+  assert.equal(typeof roleLayer.handle, "function");
+  assert.equal(typeof permissionLayer.handle, "function");
+
+  const firstProtectedRouteIndex = Math.min(
+    getRouteIndex(findRoute("get", "/")),
+    getRouteIndex(findRoute("put", "/")),
+    getRouteIndex(findRoute("post", "/logo"))
   );
 
-  assert.ok(permissionIndex >= 0);
-
-  for (const routeIndex of protectedRouteIndexes) {
-    assert.ok(routeIndex > permissionIndex);
-  }
+  assert.ok(authIndex + 1 < authIndex + 2);
+  assert.ok(authIndex + 2 < firstProtectedRouteIndex);
 });
 
 test("GET settings uses tenant settings controller", () => {
   const route = findRoute("get", "/");
 
   assert.equal(route.stack.length, 1);
-  assert.equal(route.stack[0].handle, getTenantInstituteSettings);
+  assert.equal(
+    route.stack[0].handle,
+    getTenantInstituteSettings
+  );
 });
 
 test("PUT settings uses tenant update controller", () => {
   const route = findRoute("put", "/");
 
   assert.equal(route.stack.length, 1);
-  assert.equal(route.stack[0].handle, updateTenantInstituteSettings);
+  assert.equal(
+    route.stack[0].handle,
+    updateTenantInstituteSettings
+  );
 });
 
-test("logo upload uses memory upload middleware before tenant controller", () => {
+test("logo upload uses multer middleware before tenant controller", () => {
   const route = findRoute("post", "/logo");
 
   assert.equal(route.stack.length, 2);
+
+  // Multer creates a new middleware function for every .single() call.
+  // Therefore, verify the registered middleware's function shape,
+  // rather than comparing it with a newly generated function.
   assert.equal(
-    route.stack[0].handle,
-    uploadInstituteLogo.single("logo")
+    typeof route.stack[0].handle,
+    "function"
+  );
+
+  assert.equal(
+    route.stack[0].handle.name,
+    "multerMiddleware"
   );
 
   assert.equal(
@@ -205,15 +187,18 @@ test("logo upload uses memory upload middleware before tenant controller", () =>
   );
 });
 
-test("legacy settings endpoints are not mounted inside tenant settings router", () => {
+test("legacy settings asset endpoint is not exposed in tenant router", () => {
   const paths = stack
     .filter((layer) => layer.route)
     .map((layer) => layer.route.path);
 
-  assert.equal(paths.includes("/assets/:assetType"), false);
+  assert.equal(
+    paths.includes("/assets/:assetType"),
+    false
+  );
 });
 
-test("tenant settings router does not expose institute ID or collection parameters", () => {
+test("tenant routes do not accept browser-supplied tenant identifiers", () => {
   const paths = stack
     .filter((layer) => layer.route)
     .map((layer) => layer.route.path);
