@@ -138,17 +138,27 @@ export const uploadTenantCategoryIcon = async (
     // Never store a browser-supplied path or URL.
     result.category.categoryIcon = savedIcon.fileName;
 
+    
     try {
-      await result.category.save();
+    await result.category.save();
     } catch (databaseError) {
-      await cleanupNewIcon(
+    // Restore the original in-memory category value.
+    // A failed save must not leave the document object
+    // pointing to an icon that has already been deleted.
+    result.category.categoryIcon = previousIcon;
+
+    // Delete the newly uploaded file because the database
+    // did not successfully save its filename.
+    await cleanupNewIcon(
         tenantContext,
         savedIcon.fileName
-      );
+    );
 
-      savedIcon = null;
-      throw databaseError;
+    savedIcon = null;
+
+    throw databaseError;
     }
+
 
     // The new icon is now referenced by the category.
     // Remove the previous managed icon only after save succeeds.
