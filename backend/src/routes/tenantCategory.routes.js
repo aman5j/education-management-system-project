@@ -17,6 +17,8 @@ import {
   requireTenantPermission,
 } from "../middleware/tenantAuthorization.middleware.js";
 
+import tenantCategoryIconUpload from "../middleware/tenantCategoryIconUpload.middleware.js";
+
 import {
   getTenantCategories,
   getTenantCategory,
@@ -25,10 +27,16 @@ import {
   deleteTenantCategory,
 } from "../controllers/tenantCategory.controller.js";
 
+import {
+  uploadTenantCategoryIcon,
+  getTenantCategoryIcon,
+  deleteTenantCategoryIcon,
+} from "../controllers/tenantCategoryIcon.controller.js";
+
 const router = express.Router();
 
-// Resolve the institute exclusively from the trusted hostname.
-// Never accept an institute ID or collection prefix from the browser.
+// Resolve trusted institute context.
+// Never accept browser-supplied institute IDs or collection prefixes.
 router.use(
   resolveTenant,
   attachTenantModels
@@ -37,7 +45,36 @@ router.use(
 // All category management endpoints require tenant login.
 router.use(authenticateTenant);
 
-// GET: courses.view
+// ------------------------------
+// Category icon endpoints
+// ------------------------------
+
+// Retrieve an icon from the current tenant's private storage.
+router.get(
+  "/:id/icon",
+  requireTenantPermission("courses.view"),
+  getTenantCategoryIcon
+);
+
+// Upload or replace an icon.
+router.post(
+  "/:id/icon",
+  requireTenantPermission("courses.update"),
+  tenantCategoryIconUpload,
+  uploadTenantCategoryIcon
+);
+
+// Remove an icon without deleting the category.
+router.delete(
+  "/:id/icon",
+  requireTenantPermission("courses.update"),
+  deleteTenantCategoryIcon
+);
+
+// ------------------------------
+// Category CRUD endpoints
+// ------------------------------
+
 router.get(
   "/",
   requireTenantPermission("courses.view"),
@@ -50,21 +87,18 @@ router.get(
   getTenantCategory
 );
 
-// POST: courses.create
 router.post(
   "/",
   requireTenantPermission("courses.create"),
   createTenantCategory
 );
 
-// PUT: courses.update
 router.put(
   "/:id",
   requireTenantPermission("courses.update"),
   updateTenantCategory
 );
 
-// DELETE: courses.delete
 router.delete(
   "/:id",
   requireTenantPermission("courses.delete"),
