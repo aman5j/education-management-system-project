@@ -47,10 +47,25 @@ const createHarness = async () => {
 
   const storage = createTenantFileStorage({ rootDir });
 
-  const students = new Map([
-    [studentAId, createStudent(studentAId)],
-    [studentBId, createStudent(studentBId)],
+  // Each institute has its own independent Student collection.
+  const studentsByInstitute = new Map([
+    [
+      instituteA.collectionPrefix,
+      new Map([
+        [studentAId, createStudent(studentAId)],
+        [studentBId, createStudent(studentBId)],
+      ]),
+    ],
+    [
+      instituteB.collectionPrefix,
+      new Map(),
+    ],
   ]);
+
+  // Keep this alias so the existing Institute A tests need no changes.
+  const students = studentsByInstitute.get(
+    instituteA.collectionPrefix
+  );
 
   const service = createTenantStudentDocumentService({
     storage,
@@ -69,9 +84,17 @@ const createHarness = async () => {
     getTenantModel(modelName) {
       assert.equal(modelName, "Student");
 
+      const tenantStudents = studentsByInstitute.get(
+        institute.collectionPrefix
+      );
+
+      if (!tenantStudents) {
+        throw new Error("TENANT_STUDENT_COLLECTION_NOT_FOUND");
+      }
+
       return {
         findById(id) {
-          return students.get(String(id)) || null;
+          return tenantStudents.get(String(id)) || null;
         },
       };
     },
@@ -82,6 +105,7 @@ const createHarness = async () => {
     storage,
     service,
     students,
+    studentsByInstitute,
     createRequest,
     cleanup: () =>
       fs.rm(rootDir, {
@@ -482,9 +506,9 @@ test("does not delete another institute's file", async () => {
 
     await fs.writeFile(filePath, "institute A file");
 
-    const student = context.students.get(studentAId);
+    const studentA = context.students.get(studentAId);
 
-    student.uploadDocument = [
+    studentA.uploadDocument = [
       {
         _id: documentId,
         originalName: "Identity.pdf",
@@ -495,21 +519,30 @@ test("does not delete another institute's file", async () => {
       },
     ];
 
+    // Institute B has its own Student collection and cannot find
+    // Institute A's Student record.
     const reqB = context.createRequest({
       institute: instituteB,
     });
 
-    await assert.rejects(
-      context.service.deleteStudentDocument(
+    const result =
+      await context.service.deleteStudentDocument(
         reqB,
         studentAId,
         documentId
-      ),
-      /ENOENT/
+      );
+
+    // No matching Student in Institute B.
+    assert.equal(result, null);
+
+    // Institute A's metadata must remain unchanged.
+    assert.equal(studentA.uploadDocument.length, 1);
+    assert.equal(
+      studentA.uploadDocument[0].fileName,
+      fileName
     );
 
-    assert.equal(student.uploadDocument.length, 1);
-
+    // Institute A's physical file must remain untouched.
     await fs.access(filePath);
   } finally {
     await context.cleanup();
