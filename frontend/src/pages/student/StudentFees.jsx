@@ -14,6 +14,7 @@ import {
 import { IoWalletSharp } from "react-icons/io5";
 import { MdCurrencyRupee } from "react-icons/md";
 import studentPortalService from "../../services/studentPortalService";
+import { getAssetUrl } from "../../utils/assetUrl";
 import "./StudentFees.css";
 
 const money = (value) =>
@@ -68,6 +69,38 @@ function PaymentStatus({ status }) {
     </span>
   );
 }
+
+
+function CourseThumbnail({ image, courseName }) {
+  const [imageError, setImageError] = useState(!image);
+
+  useEffect(() => {
+    setImageError(!image);
+  }, [image]);
+
+  const imageUrl = image ? getAssetUrl(image) : "";
+
+  return (
+    <div className="sf-course-thumbnail">
+      {!imageError && imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={`${courseName || "Course"} thumbnail`}
+          className="sf-course-thumbnail__image"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div
+          className="sf-course-thumbnail__fallback"
+          aria-label="Course image unavailable"
+        >
+          <FiBookOpen />
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export default function StudentFees() {
   const [activeTab, setActiveTab] = useState("balances");
@@ -310,13 +343,29 @@ export default function StudentFees() {
                     <tbody>
                       {filteredAdmissions.map((item) => (
                         <tr key={item.admissionId}>
-                          <td>
+                          {/* <td>
                             <div className="student-name-cell">
                               <div class="student-avatar-wrapper"><img alt="Narendra Lodhi" class="student-avatar" src="https://education-management-backend-79g1.onrender.com/uploads/students/1794900231774-WhatsApp-Image-2026-10-21-at-9-12-30-PM.jpeg" /></div>
                            <div><strong>{item.course}</strong>{item.batch}</div>
                             </div>
 
+                          </td> */}
+
+
+                          <td>
+                            <div className="student-name-cell">
+                              <CourseThumbnail
+                                image={item.courseImage}
+                                courseName={item.course}
+                              />
+
+                              <div>
+                                <strong>{item.course}</strong>
+                                {item.batch}
+                              </div>
+                            </div>
                           </td>
+
                          
                           <td>{formatDate(item.admissionDate)}</td>
                           <td><span className="tag-purple">{money(item.total)}</span></td>
