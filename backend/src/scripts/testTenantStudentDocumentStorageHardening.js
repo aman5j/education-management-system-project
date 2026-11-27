@@ -101,9 +101,9 @@ test(
         t
       );
 
-      if (t.todo) {
-        // No special handling required.
-      }
+    //   if (t.todo) {
+    //     // No special handling required.
+    //   }
 
       // If symlink creation was skipped, do not continue.
       const stat = await fs.lstat(tenantRoot).catch(() => null);
@@ -207,7 +207,22 @@ test(
         "private outside document"
       );
 
-      await fs.symlink(outsideFile, linkedFile);
+      try {
+        await fs.symlink(outsideFile, linkedFile);
+      } catch (error) {
+        if (
+          ["EPERM", "EACCES", "ENOTSUP", "EINVAL"].includes(
+            error.code
+          )
+        ) {
+          t.skip(
+            `File symlink creation is unavailable on this system: ${error.code}`
+          );
+          return;
+        }
+
+        throw error;
+      }
 
       const result =
         await context.service.getExistingDocumentFile(
