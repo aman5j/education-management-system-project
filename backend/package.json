@@ -31,6 +31,8 @@
     "test:tenant-category-icon-service": "node --test src/scripts/testTenantCategoryIconService.js",
     "test:tenant-category-icon-upload": "node --test src/scripts/testTenantCategoryIconUpload.js",
     "test:tenant-category-routes": "node --test src/scripts/testTenantCategoryRoutes.js",
+    "test:tenant-category-controller": "node --test src/scripts/testTenantCategoryController.js",
+    "test:tenant-category-icon-controller": "node --test src/scripts/testTenantCategoryIconController.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."
