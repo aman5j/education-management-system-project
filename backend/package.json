@@ -44,6 +44,7 @@
     "test:tenant-course-image-controller": "node --test src/scripts/testTenantCourseImageController.js",
     "test:tenant-course-image-routes": "node --test src/scripts/testTenantCourseImageRoutes.js",
     "test:tenant-course-subject-isolation": "node src/scripts/testTenantCourseSubjectIsolation.js",
+    "test:tenant-course-subject-mount": "node --test src/scripts/testTenantCourseSubjectMount.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

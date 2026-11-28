@@ -13,6 +13,8 @@ import tenantAuthRoutes from "./routes/tenantAuth.routes.js";
 import tenantStudentDocumentRoutes from "./routes/tenantStudentDocument.routes.js";
 import tenantInstituteSettingsRoutes from "./routes/tenantInstituteSettings.routes.js";
 import tenantCategoryRoutes from "./routes/tenantCategory.routes.js";
+import tenantCourseRoutes from "./routes/tenantCourse.routes.js";
+import tenantSubjectRoutes from "./routes/tenantSubject.routes.js";
 
 
 import { resolveTenant } from "./middleware/tenantResolver.middleware.js";
@@ -301,6 +303,30 @@ app.use(
   attachTenantModels,
   tenantAuthRoutes
 );
+
+
+/*
+ * Phase 4E — Batch 2F-1
+ * Tenant Course Management APIs
+ *
+ * Must be mounted before the generic /api/tenant
+ * Student Document router to avoid duplicate
+ * tenant resolution and authentication.
+ */
+app.use(
+  "/api/tenant/courses",
+  tenantCourseRoutes
+);
+
+/*
+ * Phase 4E — Batch 2F-1
+ * Tenant Subject Management APIs
+ */
+app.use(
+  "/api/tenant/subjects",
+  tenantSubjectRoutes
+);
+
 
 /*
  * Phase 4D — Batch 3B-3C
