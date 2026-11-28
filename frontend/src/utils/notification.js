@@ -250,6 +250,7 @@ const notification = {
     });
   },
 
+
   async confirmStatusChange({
     itemName = "this account",
     action = "suspend",
@@ -266,7 +267,8 @@ const notification = {
         ? `${itemName} will lose access to the system.`
         : `${itemName} will regain access to the system.`,
 
-      icon: "warning",
+      // Orange warning for suspend, green success for reactivate
+      icon: isSuspend ? "warning" : "success",
 
       confirmText: isSuspend
         ? "Yes, suspend"
@@ -277,6 +279,7 @@ const notification = {
         : "#16a34a",
     });
   },
+
 
   /* =========================================
      PASSWORD PROMPT
