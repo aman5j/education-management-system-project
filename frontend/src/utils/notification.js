@@ -158,7 +158,7 @@ const toastConfig = {
     color: "#16a34a",
     background: "#f0fdf4",
     border: "#16a34a",
-    duration: 3500,
+    duration: 3800,
   },
 
   warning: {
