@@ -261,7 +261,7 @@ const Admissions = () => {
             placeholder="Search student, roll no, course, batch..."
           />
         </div>
-
+<div className="input-search">
         <select
           value={status}
           onChange={(event) => {
@@ -275,7 +275,7 @@ const Admissions = () => {
           <option value="Completed">Completed</option>
           <option value="Dropped">Dropped</option>
         </select>
-
+</div>
         <button
           type="button"
           className="admission-reset-button"
