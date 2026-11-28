@@ -220,36 +220,68 @@ const notification = {
     return result.isConfirmed;
   },
 
+
+  /* =========================================
+     DELETE CONFIRMATION
+  ========================================= */
+
   async confirmDelete(itemName = "this record") {
     return this.confirm({
       title: "Delete permanently?",
       text: `Are you sure you want to delete ${itemName}? This action cannot be undone.`,
+
+      // Orange warning icon
       icon: "warning",
+
       confirmText: "Yes",
+      cancelText: "Cancel",
+
+      // Red destructive action button
       confirmButtonColor: "#dc2626",
     });
   },
+
+  /* =========================================
+     PUBLISH CONFIRMATION
+  ========================================= */
 
   async confirmPublish(itemName = "this item") {
     return this.confirm({
       title: "Publish now?",
       text: `${itemName} will become available to its intended users.`,
+
+      // Blue question icon
       icon: "question",
+
       confirmText: "Yes",
+      cancelText: "Cancel",
+
       confirmButtonColor: "#2563eb",
     });
   },
+
+  /* =========================================
+     ARCHIVE CONFIRMATION
+  ========================================= */
 
   async confirmArchive(itemName = "this item") {
     return this.confirm({
       title: "Archive this item?",
       text: `${itemName} will be archived and will no longer be active.`,
+
+      // Orange warning icon
       icon: "warning",
+
       confirmText: "Yes",
+      cancelText: "Cancel",
+
       confirmButtonColor: "#d97706",
     });
   },
 
+  /* =========================================
+     STATUS CHANGE CONFIRMATION
+  ========================================= */
 
   async confirmStatusChange({
     itemName = "this account",
@@ -267,13 +299,16 @@ const notification = {
         ? `${itemName} will lose access to the system.`
         : `${itemName} will regain access to the system.`,
 
-      // Orange warning for suspend, green success for reactivate
+      // Different center icons
       icon: isSuspend ? "warning" : "success",
 
       confirmText: isSuspend
         ? "Yes"
         : "Yes",
 
+      cancelText: "Cancel",
+
+      // Different confirmation button colors
       confirmButtonColor: isSuspend
         ? "#dc2626"
         : "#16a34a",
