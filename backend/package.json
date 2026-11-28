@@ -39,6 +39,10 @@
     "test:tenant-subject-routes": "node --test src/scripts/testTenantSubjectRoutes.js",
     "test:tenant-course-controller": "node --test src/scripts/testTenantCourseController.js",
     "test:tenant-subject-controller": "node --test src/scripts/testTenantSubjectController.js",
+    "test:tenant-course-image-service": "node --test src/scripts/testTenantCourseImageService.js",
+    "test:tenant-course-image-upload": "node --test src/scripts/testTenantCourseImageUpload.js",
+    "test:tenant-course-image-controller": "node --test src/scripts/testTenantCourseImageController.js",
+    "test:tenant-course-image-routes": "node --test src/scripts/testTenantCourseImageRoutes.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
