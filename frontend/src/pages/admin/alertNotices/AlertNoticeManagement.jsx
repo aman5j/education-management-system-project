@@ -128,7 +128,7 @@ export default function AlertNoticeManagement() {
       const confirmed = await notification.confirm({
         title: "Discard changes?",
         text: "Your unsaved alert notice changes will be lost.",
-        confirmText: "Yes, discard",
+        confirmText: "Yes",
         icon: "warning",
       });
 
@@ -264,7 +264,7 @@ export default function AlertNoticeManagement() {
     const confirmed = await notification.confirm({
       title: `${nextStatus} notice?`,
       text: `This notice will be ${nextStatus.toLowerCase()}.`,
-      confirmText: `Yes, ${nextStatus.toLowerCase()}`,
+      confirmText: `Yes`,
       icon: "question",
     });
 

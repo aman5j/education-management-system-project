@@ -542,7 +542,7 @@ export default function PracticeZone() {
         title: "Move test back to Draft?",
         text: `"${test.title}" will no longer be available to students.`,
         icon: "question",
-        confirmText: "Yes, move to Draft",
+        confirmText: "Yes",
         confirmButtonColor: "#d97706",
       });
       actionLabel = "moved to Draft";

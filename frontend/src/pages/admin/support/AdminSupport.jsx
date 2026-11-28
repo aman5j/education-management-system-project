@@ -342,8 +342,8 @@ export default function AdminSupport() {
               : "Close this support ticket?",
         confirmText:
           nextStatus === "Open"
-            ? "Yes, reopen"
-            : `Yes, ${nextStatus.toLowerCase()}`,
+            ? "Yes"
+            : `Yes`,
         cancelText: "Cancel",
         icon: "question",
         confirmButtonColor:

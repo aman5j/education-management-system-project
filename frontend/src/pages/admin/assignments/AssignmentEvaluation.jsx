@@ -318,7 +318,7 @@ export default function AssignmentEvaluation() {
         text:
           "Saving changes will move this result back to Draft. " +
           "The student will temporarily lose access to the published result until you publish it again.",
-        confirmText: "Yes, save as Draft",
+        confirmText: "Yes",
         cancelText: "Cancel",
         icon: "warning",
         confirmButtonColor: "#d97706",
@@ -393,7 +393,7 @@ export default function AssignmentEvaluation() {
       text:
         `Publish ${marks} out of ${totalMarks} marks for ${studentName}? ` +
         "The student will be able to view the marks and feedback.",
-      confirmText: "Yes, publish result",
+      confirmText: "Yes",
       cancelText: "Review again",
       icon: "question",
       confirmButtonColor: "#2563eb",

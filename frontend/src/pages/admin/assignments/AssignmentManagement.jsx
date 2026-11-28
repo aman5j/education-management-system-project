@@ -789,7 +789,7 @@ export default function AssignmentManagement() {
       title: "Remove attachment?",
       text: `Remove "${file.originalName}" from this assignment?`,
       icon: "warning",
-      confirmText: "Yes, remove",
+      confirmText: "Yes",
       confirmButtonColor: "#dc2626",
     });
 

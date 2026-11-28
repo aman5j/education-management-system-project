@@ -582,7 +582,7 @@ export default function StudentPracticeZone() {
           ? `You have ${unanswered} unanswered question(s). Are you sure you want to submit this test?`
           : "Are you sure you want to submit your practice test? You cannot change your answers after submission.",
         icon: "warning",
-        confirmText: "Yes, Submit Test",
+        confirmText: "Yes",
         cancelText: "Continue Test",
         confirmButtonColor: "#2563eb",
       });

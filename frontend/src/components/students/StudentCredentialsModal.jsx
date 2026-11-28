@@ -112,7 +112,7 @@ const StudentCredentialsModal = ({ student, onClose }) => {
     const confirmed = await notification.confirm({
       title: "Reset student password?",
       text: "The student's existing password will stop working.",
-      confirmText: "Yes, reset password",
+      confirmText: "Yes",
       icon: "warning",
     });
 

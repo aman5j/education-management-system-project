@@ -282,7 +282,7 @@ const Certificates = () => {
         `Certificate type: ${getCertificateTypeLabel(
           result.certificateType
         )}.`,
-      confirmText: "Yes, generate",
+      confirmText: "Yes",
       cancelText: "Cancel",
       icon: "question",
       confirmButtonColor: "#2563eb",

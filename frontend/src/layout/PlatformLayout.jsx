@@ -84,7 +84,7 @@ const PlatformLayout = () => {
     const confirmed = await notification.confirm({
       title: "Logout from EMS Platform?",
       text: "Your Platform Super Admin session will be ended.",
-      confirmText: "Yes, logout",
+      confirmText: "Yes",
       icon: "warning",
     });
 

@@ -185,7 +185,7 @@ export default function ExamAccessRequests() {
       title: "Approve exam access?",
       text: `Are you sure you want to approve exam access for ${studentName}?`,
       icon: "question",
-      confirmText: "Yes, approve",
+      confirmText: "Yes",
       cancelText: "Cancel",
       confirmButtonColor: "#059669",
     });
@@ -247,7 +247,7 @@ export default function ExamAccessRequests() {
         rejectingRequest.student_id
       )}. The rejection reason will be visible to the student.`,
       icon: "warning",
-      confirmText: "Yes, reject request",
+      confirmText: "Yes",
       cancelText: "Go back",
       confirmButtonColor: "#dc2626",
     });

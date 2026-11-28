@@ -387,8 +387,8 @@ export default function AssignmentSubmissions() {
         ? `Allow ${studentName} to submit another version of this assignment?`
         : `Prevent ${studentName} from submitting another version?`,
       confirmText: enabled
-        ? "Yes, enable"
-        : "Yes, disable",
+        ? "Yes"
+        : "Yes",
       cancelText: "Cancel",
       icon: "question",
       confirmButtonColor: enabled ? "#2563eb" : "#d97706",

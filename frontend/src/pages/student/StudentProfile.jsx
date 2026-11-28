@@ -256,7 +256,7 @@ export default function StudentProfile() {
       text:
         "Your current session will end after the password is changed. You will need to sign in again using your new password.",
       icon: "warning",
-      confirmText: "Yes, Change Password",
+      confirmText: "Yes",
       cancelText: "Go Back",
       confirmButtonColor: "#2563eb",
     });
