@@ -9,7 +9,7 @@ dotenv.config();
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
-// Isolated test configuration. Never use these secrets in production.
+// Test-only configuration. Never use these secrets in production.
 process.env.NODE_ENV = "test";
 process.env.PLATFORM_BASE_DOMAIN = "localhost";
 process.env.PLATFORM_RESERVED_HOSTS = "";
@@ -22,74 +22,24 @@ process.env.TENANT_JWT_REFRESH_SECRET =
 
 const EXPECTED_DATABASE = "education_management_system";
 const TEST_PASSWORD = "HttpTest!Pass123";
-
-const TENANT_COLLECTIONS_TO_CLEAN = [
-  "users",
-  "roles",
-  "courses",
-  "subjects",
-];
-
-const tag = crypto.randomBytes(5).toString("hex");
+const tag = crypto.randomBytes(6).toString("hex");
 
 let mongoose;
 let app;
-let getInstituteModel;
-let loadTenantModelDefinitions;
-let registerTenantModelSet;
-let createTenantAccessToken;
-
 let server;
 let serverPort;
 
-const institutes = [];
-const tenantModelSets = [];
+let getInstituteModel;
+let loadTenantModelDefinitions;
+let registerTenantModelSet;
+let getTenantCollectionName;
+let createTenantAccessToken;
+
+const temporaryRecords = [];
+let cleanupFailed = false;
 
 const pass = (message) => {
   console.log(`PASS: ${message}`);
-};
-
-const createInstitute = async (Institute, label) => {
-  const slug = `ems-http-${label}-${tag}`;
-
-  const institute = await Institute.create({
-    name: `EMS HTTP Test ${label} ${tag}`,
-    slug,
-    contactEmail: `${slug}@example.test`,
-    databaseName: `ems_http_test_${label}_${tag}`,
-    status: "active",
-    provisioningStatus: "ready",
-    domain: "",
-    domainVerified: false,
-  });
-
-  institutes.push(institute);
-
-  return institute;
-};
-
-const getTenantContext = (institute) => ({
-  instituteId: String(institute._id),
-  collectionPrefix: institute.collectionPrefix,
-});
-
-const createAccount = async (
-  models,
-  {
-    name,
-    email,
-    role,
-    assignedRole = null,
-  }
-) => {
-  return models.User.create({
-    name,
-    email,
-    password: TEST_PASSWORD,
-    role,
-    status: "active",
-    assignedRole,
-  });
 };
 
 const requestHttp = ({
@@ -98,19 +48,16 @@ const requestHttp = ({
   method = "GET",
   body,
   token,
-}) => {
-  return new Promise((resolve, reject) => {
+}) =>
+  new Promise((resolve, reject) => {
     const payload =
       body === undefined ? null : JSON.stringify(body);
 
-    const headers = {
-      host: hostname,
-    };
+    const headers = { host: hostname };
 
     if (payload !== null) {
       headers["content-type"] = "application/json";
-      headers["content-length"] =
-        Buffer.byteLength(payload);
+      headers["content-length"] = Buffer.byteLength(payload);
     }
 
     if (token) {
@@ -129,7 +76,6 @@ const requestHttp = ({
         let responseBody = "";
 
         response.setEncoding("utf8");
-
         response.on("data", (chunk) => {
           responseBody += chunk;
         });
@@ -165,6 +111,129 @@ const requestHttp = ({
 
     request.end();
   });
+
+const assertStatus = (
+  response,
+  expectedStatus,
+  description
+) => {
+  assert.equal(
+    response.status,
+    expectedStatus,
+    `${description}: expected ${expectedStatus}, received ${response.status}. Body: ${JSON.stringify(response.body)}`
+  );
+};
+
+const getTenantContext = (institute) => ({
+  instituteId: String(institute._id),
+  collectionPrefix: institute.collectionPrefix,
+});
+
+const createTrackedRecord = async (Model, data) => {
+  const record = await Model.create(data);
+
+  temporaryRecords.push({
+    Model,
+    id: record._id,
+  });
+
+  return record;
+};
+
+const createAccount = async (
+  User,
+  { name, email, role, assignedRole = null }
+) =>
+  createTrackedRecord(User, {
+    name,
+    email,
+    password: TEST_PASSWORD,
+    role,
+    status: "active",
+    assignedRole,
+  });
+
+const findExistingInstitutes = async ({
+  connection,
+  Institute,
+}) => {
+  console.log("\nFinding existing active institutes...");
+
+  const institutes = await Institute.find({
+    status: "active",
+    provisioningStatus: "ready",
+  })
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const collectionRows = await connection.db
+    .listCollections({}, { nameOnly: true })
+    .toArray();
+
+  const existingCollections = new Set(
+    collectionRows.map((item) => item.name)
+  );
+
+  const validSlug = (slug) =>
+    typeof slug === "string" &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
+
+  const instituteA = institutes.find((institute) => {
+    if (!validSlug(institute.slug)) return false;
+
+    const userCollection = getTenantCollectionName(
+      institute,
+      "User"
+    );
+
+    const roleCollection = getTenantCollectionName(
+      institute,
+      "Role"
+    );
+
+    return (
+      existingCollections.has(userCollection) &&
+      existingCollections.has(roleCollection)
+    );
+  });
+
+  if (!instituteA) {
+    throw new Error(
+      "SAFE STOP: No active, ready institute has both existing tenant users and roles collections. No institute or collection was created."
+    );
+  }
+
+  const instituteB = institutes.find(
+    (institute) =>
+      String(institute._id) !== String(instituteA._id) &&
+      validSlug(institute.slug)
+  );
+
+  if (!instituteB) {
+    throw new Error(
+      "SAFE STOP: A second active, ready institute is required to test cross-host token rejection. No institute or collection was created."
+    );
+  }
+
+  assert.equal(
+    instituteA.collectionPrefix,
+    `inst_${String(instituteA._id).toLowerCase()}`,
+    "Institute A collection prefix is missing or invalid."
+  );
+
+  assert.equal(
+    instituteB.collectionPrefix,
+    `inst_${String(instituteB._id).toLowerCase()}`,
+    "Institute B collection prefix is missing or invalid."
+  );
+
+  console.log("Selected existing Institute A:", instituteA.slug);
+  console.log("Selected existing Institute B:", instituteB.slug);
+
+  pass("Two existing active and ready institutes selected");
+  pass("Institute A users and roles collections already exist");
+
+  return { instituteA, instituteB };
 };
 
 const login = async (institute, role, email) => {
@@ -179,96 +248,74 @@ const login = async (institute, role, email) => {
     },
   });
 
-  assert.equal(
-    response.status,
+  assertStatus(
+    response,
     200,
-    `Login failed for ${role}: ${JSON.stringify(response.body)}`
+    `${role} login`
   );
 
-  assert.equal(response.body.success, true);
+  assert.equal(
+    response.body?.success,
+    true,
+    `${role} login did not return success`
+  );
 
   const token = response.body?.data?.accessToken;
 
-  assert.ok(token, `${role} login did not return an access token`);
+  assert.ok(
+    token,
+    `${role} login did not return an access token`
+  );
 
   return token;
 };
 
-const assertStatus = (
-  response,
-  expectedStatus,
-  description
-) => {
-  assert.equal(
-    response.status,
-    expectedStatus,
-    `${description}: expected ${expectedStatus}, received ${response.status}. Body: ${JSON.stringify(response.body)}`
-  );
-};
-
-const dropTemporaryCollections = async (connection) => {
-  for (const institute of institutes) {
-    const prefix = institute.collectionPrefix;
-
-    for (const collectionSuffix of TENANT_COLLECTIONS_TO_CLEAN) {
-      const collectionName =
-        `${prefix}_${collectionSuffix}`;
-
-      try {
-        await connection.db.dropCollection(collectionName);
-
-        console.log(
-          `CLEANUP: Dropped ${collectionName}`
-        );
-      } catch (error) {
-        if (
-          error.code !== 26 &&
-          error.codeName !== "NamespaceNotFound"
-        ) {
-          console.error(
-            `CLEANUP WARNING: ${collectionName}: ${error.message}`
-          );
-        }
-      }
-    }
-  }
-};
-
 const cleanup = async () => {
+  console.log("\nStarting safe test cleanup...");
+
   if (server) {
     await new Promise((resolve) => {
       server.close(resolve);
     });
 
     server = null;
+    console.log("CLEANUP: HTTP server closed");
   }
 
   if (mongoose?.connection?.readyState === 1) {
-    const Institute = getInstituteModel(
-      mongoose.connection
-    );
+    // Delete only records created by this test run.
+    for (const item of [...temporaryRecords].reverse()) {
+      try {
+        await item.Model.deleteOne({
+          _id: item.id,
+        });
 
-    if (institutes.length) {
-      await Institute.deleteMany({
-        _id: {
-          $in: institutes.map((item) => item._id),
-        },
-      });
+        console.log(
+          `CLEANUP: Removed temporary ${item.Model.modelName} record ${item.id}`
+        );
+      } catch (error) {
+        cleanupFailed = true;
+
+        console.error(
+          `CLEANUP FAILED for ${item.Model.modelName} ${item.id}:`,
+          error.message
+        );
+      }
     }
 
-    await dropTemporaryCollections(
-      mongoose.connection
-    );
-
     await mongoose.disconnect();
+    console.log("CLEANUP: MongoDB disconnected");
   }
+
+  console.log("CLEANUP: No institutes were created or deleted.");
+  console.log("CLEANUP: No collections were created or dropped.");
 };
 
 const run = async () => {
   console.log("");
-  console.log("==============================================");
-  console.log("BATCH 2F-2 — REAL HTTP AUTHORIZATION TEST");
-  console.log("==============================================");
+  console.log("================================================");
+  console.log("BATCH 2F-2 — SAFE REAL HTTP AUTHORIZATION TEST");
+  console.log("================================================");
 
   if (!process.env.MONGO_URI) {
     throw new Error(
@@ -276,30 +323,30 @@ const run = async () => {
     );
   }
 
-  // Import after test environment variables are configured.
   const mongooseModule = await import("mongoose");
   mongoose = mongooseModule.default;
 
   const [
-    appModule,
     instituteModule,
     loaderModule,
     factoryModule,
+    registryModule,
     tenantAuthModule,
   ] = await Promise.all([
-    import("../app.js"),
     import("../models/Institute.js"),
     import("../services/tenantSchemaLoader.js"),
     import("../services/tenantModelFactory.js"),
+    import("../config/tenantCollectionRegistry.js"),
     import("../utils/tenantAuth.js"),
   ]);
 
-  app = appModule.default;
   getInstituteModel = instituteModule.default;
   loadTenantModelDefinitions =
     loaderModule.loadTenantModelDefinitions;
   registerTenantModelSet =
     factoryModule.registerTenantModelSet;
+  getTenantCollectionName =
+    registryModule.getTenantCollectionName;
   createTenantAccessToken =
     tenantAuthModule.createTenantAccessToken;
 
@@ -320,92 +367,107 @@ const run = async () => {
 
   pass(`Connected to ${EXPECTED_DATABASE}`);
 
+  const Institute = getInstituteModel(connection);
+
+  const { instituteA, instituteB } =
+    await findExistingInstitutes({
+      connection,
+      Institute,
+    });
+
   console.log("\nLoading tenant model definitions...");
 
   const definitions = await loadTenantModelDefinitions();
 
-  assert.equal(definitions.length, 50);
+  assert.equal(
+    definitions.length,
+    50,
+    `Expected 50 tenant model definitions, received ${definitions.length}`
+  );
 
   pass(`Loaded ${definitions.length} tenant model definitions`);
 
-  const Institute = getInstituteModel(connection);
-
-  console.log("\nCreating temporary institutes...");
-
-  const instituteA = await createInstitute(
-    Institute,
-    "a"
-  );
-
-  const instituteB = await createInstitute(
-    Institute,
-    "b"
-  );
-
+  // Register only the existing Institute A collections.
+  // Registration itself does not create MongoDB collections.
   const modelsA = registerTenantModelSet(
     connection,
     instituteA,
     definitions
   );
 
-  const modelsB = registerTenantModelSet(
-    connection,
-    instituteB,
-    definitions
-  );
-
-  tenantModelSets.push(modelsA, modelsB);
-
-  assert.notEqual(
+  assert.equal(
     modelsA.User.collection.name,
-    modelsB.User.collection.name
+    getTenantCollectionName(instituteA, "User")
   );
 
-  assert.notEqual(
-    modelsA.Course.collection.name,
-    modelsB.Course.collection.name
+  assert.equal(
+    modelsA.Role.collection.name,
+    getTenantCollectionName(instituteA, "Role")
   );
 
-  pass("Both institutes have separate tenant collections");
+  pass("Institute A tenant User and Role models registered");
 
-  console.log("\nCreating temporary accounts...");
+  // Confirm required collections still exist immediately before writes.
+  const existingCollections = new Set(
+    (
+      await connection.db
+        .listCollections({}, { nameOnly: true })
+        .toArray()
+    ).map((item) => item.name)
+  );
 
-  const staffRole = await modelsA.Role.create({
+  for (const modelName of ["User", "Role"]) {
+    const collectionName = getTenantCollectionName(
+      instituteA,
+      modelName
+    );
+
+    assert.ok(
+      existingCollections.has(collectionName),
+      `Refusing to write: ${collectionName} does not exist`
+    );
+  }
+
+  const User = modelsA.User;
+  const Role = modelsA.Role;
+
+  console.log("\nCreating temporary records in existing collections...");
+
+  const staffRole = await createTrackedRecord(Role, {
     name: `http-test-staff-${tag}`,
     label: "HTTP Test Staff",
-    description: "Temporary HTTP integration test role",
+    description: "Temporary Batch 2F-2 integration test role",
     roleType: "staff",
     permissions: ["courses.view"],
     isSystem: false,
     isActive: true,
   });
 
-  const adminA = await createAccount(modelsA, {
+  const adminA = await createAccount(User, {
     name: "HTTP Test Admin A",
-    email: `admin-a-${tag}@example.test`,
+    email: `http-admin-a-${tag}@example.test`,
     role: "admin",
   });
 
-  const staffA = await createAccount(modelsA, {
+  const staffA = await createAccount(User, {
     name: "HTTP Test Staff A",
-    email: `staff-a-${tag}@example.test`,
+    email: `http-staff-a-${tag}@example.test`,
     role: "staff",
     assignedRole: staffRole._id,
   });
 
-  const studentA = await createAccount(modelsA, {
+  const studentA = await createAccount(User, {
     name: "HTTP Test Student A",
-    email: `student-a-${tag}@example.test`,
+    email: `http-student-a-${tag}@example.test`,
     role: "student",
   });
 
-  await createAccount(modelsB, {
-    name: "HTTP Test Admin B",
-    email: `admin-b-${tag}@example.test`,
-    role: "admin",
-  });
+  pass("Temporary Role, Admin, Staff and Student records created");
+  pass("All temporary records are tracked for exact-record cleanup");
 
-  pass("Temporary Admin, Staff and Student accounts created");
+  // Import the Express app after test configuration and DB connection.
+  const appModule = await import("../app.js");
+  app = appModule.default;
 
   console.log("\nStarting actual Express HTTP server...");
 
@@ -423,10 +485,7 @@ const run = async () => {
   const hostA = `${instituteA.slug}.localhost`;
   const hostB = `${instituteB.slug}.localhost`;
 
-  // ---------------------------------------------
-  // 1. Real tenant Admin login
-  // ---------------------------------------------
-
+  // 1. Admin login
   const adminTokenA = await login(
     instituteA,
     "admin",
@@ -435,46 +494,31 @@ const run = async () => {
 
   pass("Institute A Admin login works through HTTP");
 
-  // ---------------------------------------------
-  // 2. Admin Course and Subject API access
-  // ---------------------------------------------
-
+  // 2. Admin Course API
   const adminCourses = await requestHttp({
     hostname: hostA,
     path: "/api/tenant/courses",
     token: adminTokenA,
   });
 
-  assertStatus(
-    adminCourses,
-    200,
-    "Admin Course API access"
-  );
-
+  assertStatus(adminCourses, 200, "Admin Course API");
   assert.equal(adminCourses.body.success, true);
 
   pass("Admin can access tenant Course API");
 
+  // 3. Admin Subject API
   const adminSubjects = await requestHttp({
     hostname: hostA,
     path: "/api/tenant/subjects",
     token: adminTokenA,
   });
 
-  assertStatus(
-    adminSubjects,
-    200,
-    "Admin Subject API access"
-  );
-
+  assertStatus(adminSubjects, 200, "Admin Subject API");
   assert.equal(adminSubjects.body.success, true);
 
   pass("Admin can access tenant Subject API");
 
-  // ---------------------------------------------
-  // 3. Unauthenticated request rejection
-  // ---------------------------------------------
-
+  // 4. Missing token
   const unauthenticated = await requestHttp({
     hostname: hostA,
     path: "/api/tenant/courses",
@@ -491,23 +535,16 @@ const run = async () => {
     "TENANT_AUTH_REQUIRED"
   );
 
-  pass("Unauthenticated Course request is rejected");
+  pass("Unauthenticated request is rejected");
 
-  // ---------------------------------------------
-  // 4. Invalid token rejection
-  // ---------------------------------------------
-
+  // 5. Invalid token
   const invalidToken = await requestHttp({
     hostname: hostA,
     path: "/api/tenant/courses",
     token: "invalid.tenant.access.token",
   });
 
-  assertStatus(
-    invalidToken,
-    401,
-    "Invalid access token"
-  );
+  assertStatus(invalidToken, 401, "Invalid access token");
 
   assert.equal(
     invalidToken.body.code,
@@ -516,10 +553,7 @@ const run = async () => {
 
   pass("Invalid tenant access token is rejected");
 
-  // ---------------------------------------------
-  // 5. Expired token rejection
-  // ---------------------------------------------
-
+  // 6. Expired token
   const expiredToken = createTenantAccessToken(
     adminA,
     getTenantContext(instituteA),
@@ -532,11 +566,7 @@ const run = async () => {
     token: expiredToken,
   });
 
-  assertStatus(
-    expiredResponse,
-    401,
-    "Expired access token"
-  );
+  assertStatus(expiredResponse, 401, "Expired access token");
 
   assert.equal(
     expiredResponse.body.code,
@@ -545,10 +575,7 @@ const run = async () => {
 
   pass("Expired tenant access token is rejected");
 
-  // ---------------------------------------------
-  // 6. Staff permission-based authorization
-  // ---------------------------------------------
-
+  // 7. Staff permission checks
   const staffToken = await login(
     instituteA,
     "staff",
@@ -561,11 +588,7 @@ const run = async () => {
     token: staffToken,
   });
 
-  assertStatus(
-    staffCourses,
-    200,
-    "Staff Course access"
-  );
+  assertStatus(staffCourses, 200, "Staff Course access");
 
   pass("Staff with courses.view can access Course API");
 
@@ -588,10 +611,7 @@ const run = async () => {
 
   pass("Staff without subjects.view is denied Subject API");
 
-  // ---------------------------------------------
-  // 7. Student cannot access management APIs
-  // ---------------------------------------------
-
+  // 8. Student management API rejection
   const studentToken = await login(
     instituteA,
     "student",
@@ -631,10 +651,7 @@ const run = async () => {
 
   pass("Student is denied Subject management API");
 
-  // ---------------------------------------------
-  // 8. Institute A token on Institute B hostname
-  // ---------------------------------------------
-
+  // 9. Institute A token on Institute B hostname
   const crossTenantResponse = await requestHttp({
     hostname: hostB,
     path: "/api/tenant/courses",
@@ -652,12 +669,9 @@ const run = async () => {
     "TENANT_TOKEN_MISMATCH"
   );
 
-  pass("Institute A access token is rejected on Institute B");
+  pass("Institute A token is rejected on Institute B hostname");
 
-  // ---------------------------------------------
-  // 9. Browser-supplied tenant identity is ignored
-  // ---------------------------------------------
-
+  // 10. Browser-supplied tenant identifiers cannot switch tenant
   const spoofedTenantResponse = await requestHttp({
     hostname: hostA,
     path:
@@ -669,20 +683,23 @@ const run = async () => {
   assertStatus(
     spoofedTenantResponse,
     200,
-    "Request containing spoofed tenant query values"
+    "Spoofed tenant query parameters"
   );
 
-  pass("Browser-supplied tenant identifiers do not change resolved tenant");
+  pass("Browser-supplied tenant identifiers do not switch tenant");
 
   console.log("");
-  console.log("==============================================");
+  console.log("================================================");
   console.log("BATCH 2F-2 — HTTP TEST SUMMARY");
-  console.log("==============================================");
+  console.log("================================================");
   console.log("Result: ALL HTTP CHECKS PASSED");
   console.log("Institute A:", String(instituteA._id));
   console.log("Institute B:", String(instituteB._id));
   console.log("Database:", connection.name);
-  console.log("==============================================");
+  console.log("New collections created: 0");
+  console.log("Collections dropped: 0");
+  console.log("Institutes created/deleted: 0");
+  console.log("================================================");
 };
 
 run()
@@ -696,7 +713,15 @@ run()
     try {
       await cleanup();
     } catch (error) {
+      cleanupFailed = true;
       console.error("TEST CLEANUP FAILED:", error);
+      process.exitCode = 1;
+    }
+
+    if (cleanupFailed) {
+      console.error(
+        "WARNING: One or more temporary records may require cleanup review."
+      );
       process.exitCode = 1;
     }
   });
