@@ -14,6 +14,140 @@ import {
 const DEFAULT_ERROR =
   "Something went wrong. Please try again.";
 
+
+/* =========================================
+   EMS GLOBAL SWEETALERT ICON SYSTEM
+========================================= */
+
+const sweetAlertIconMarkup = {
+  warning: `
+    <svg viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Warning">
+      <path
+        d="M50 9 L94 87 H6 Z"
+        fill="none"
+        stroke="#EA8A20"
+        stroke-width="7"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M50 34 V59 M50 72 V74"
+        fill="none"
+        stroke="#EA8A20"
+        stroke-width="8"
+        stroke-linecap="round"
+      />
+    </svg>
+  `,
+
+  // success: `
+  //   <svg viewBox="0 0 100 100"
+  //     xmlns="http://www.w3.org/2000/svg"
+  //     role="img"
+  //     aria-label="Success">
+  //     <circle
+  //       cx="50" cy="50" r="41"
+  //       fill="none"
+  //       stroke="#16A34A"
+  //       stroke-width="7"
+  //     />
+  //     <path
+  //       d="M29 51 L44 66 L72 36"
+  //       fill="none"
+  //       stroke="#16A34A"
+  //       stroke-width="8"
+  //       stroke-linecap="round"
+  //       stroke-linejoin="round"
+  //     />
+  //   </svg>
+  // `,
+
+  info: `
+    <svg viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Information">
+      <circle
+        cx="50" cy="50" r="41"
+        fill="none"
+        stroke="#2563EB"
+        stroke-width="7"
+      />
+      <path
+        d="M50 44 V69"
+        stroke="#2563EB"
+        stroke-width="8"
+        stroke-linecap="round"
+      />
+      <circle cx="50" cy="30" r="4" fill="#2563EB"/>
+    </svg>
+  `,
+
+  error: `
+    <svg viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Error">
+      <circle
+        cx="50" cy="50" r="41"
+        fill="none"
+        stroke="#DC2626"
+        stroke-width="7"
+      />
+      <path
+        d="M34 34 L66 66 M66 34 L34 66"
+        stroke="#DC2626"
+        stroke-width="8"
+        stroke-linecap="round"
+      />
+    </svg>
+  `,
+
+  question: `
+    <svg viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Question">
+      <circle
+        cx="50" cy="50" r="41"
+        fill="none"
+        stroke="#2563EB"
+        stroke-width="7"
+      />
+      <path
+        d="M36 37 C37 20 65 19 68 36 C70 48 51 50 50 64"
+        fill="none"
+        stroke="#2563EB"
+        stroke-width="8"
+        stroke-linecap="round"
+      />
+      <circle cx="50" cy="78" r="4" fill="#2563EB"/>
+    </svg>
+  `,
+};
+
+const getSweetAlertIconOptions = (icon) => {
+  const normalizedIcon = String(icon || "question").toLowerCase();
+
+  const iconHtml = sweetAlertIconMarkup[normalizedIcon];
+
+  // Preserve SweetAlert2's default icon for unsupported types.
+  if (!iconHtml) {
+    return { icon: normalizedIcon };
+  }
+
+  return {
+    icon: normalizedIcon,
+    iconHtml,
+    customClass: {
+      icon: "ems-swal-custom-icon",
+    },
+  };
+};
+
+
 /* =========================================
    TOAST CONFIGURATION
 ========================================= */
@@ -194,6 +328,7 @@ const notification = {
      SWEETALERT CONFIRMATION
   ========================================= */
 
+
   async confirm({
     title = "Are you sure?",
     text = "Please confirm this action.",
@@ -206,7 +341,10 @@ const notification = {
     const result = await Swal.fire({
       title,
       text,
-      icon,
+
+      // Centralized custom SweetAlert icon
+      ...getSweetAlertIconOptions(icon),
+
       showCancelButton: true,
       confirmButtonText: confirmText,
       cancelButtonText: cancelText,
@@ -219,6 +357,7 @@ const notification = {
 
     return result.isConfirmed;
   },
+
 
 
   /* =========================================
@@ -330,6 +469,9 @@ const notification = {
     const result = await Swal.fire({
       title,
       text,
+
+      ...getSweetAlertIconOptions("info"),
+
       input: "password",
       inputPlaceholder: "Enter new password",
 
@@ -378,6 +520,7 @@ const notification = {
      INFORMATION ALERT
   ========================================= */
 
+
   async alert({
     title = "Information",
     text = "",
@@ -387,11 +530,15 @@ const notification = {
     return Swal.fire({
       title,
       text,
-      icon,
+
+      // Centralized custom SweetAlert icon
+      ...getSweetAlertIconOptions(icon),
+
       confirmButtonText: confirmText,
       confirmButtonColor: "#2563eb",
     });
   },
+
 };
 
 /* =========================================

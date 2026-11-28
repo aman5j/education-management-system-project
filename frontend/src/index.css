@@ -245,3 +245,49 @@ img {
     font-size: 13px;
   }
 }
+
+
+
+
+
+
+/* =========================================
+   EMS CUSTOM SWEETALERT ICONS
+========================================= */
+
+.swal2-icon.ems-swal-custom-icon {
+  width: 5em !important;
+  height: 5em !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin: 2.5em auto 0.6em !important;
+
+  padding: 0 !important;
+
+  border: none !important;
+  background: transparent !important;
+
+  box-shadow: none !important;
+}
+
+/* Custom SVG sizing */
+
+.swal2-icon.ems-swal-custom-icon svg {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: visible;
+}
+
+/* Prevent default SweetAlert pseudo-elements */
+
+.swal2-icon.ems-swal-custom-icon::before,
+.swal2-icon.ems-swal-custom-icon::after {
+  display: none !important;
+  content: none !important;
+}
