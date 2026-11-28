@@ -1111,20 +1111,15 @@ color: #16834A;
     background: #ecebeb;
     color: #333;
 }
+.swal2-cancel:hover {
+    background: #dcdada;
+}
+
 
 .swal2-popup{
-    display: none;
     position: relative;
     box-sizing: border-box;
     grid-template-columns: minmax(0, 100%);
     width: 450px;
-    max-width: 100%;
-    padding: 20px;
-    border: none;
     border-radius: 15px;
-    background: #ffffff99;
-    color: var(--swal2-color);
-    font-family: inherit;
-    font-size: 1rem;
-    backdrop-filter: blur(10px);
 }
