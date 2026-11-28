@@ -129,7 +129,7 @@ const notification = {
       options
     );
   },
-  
+
 
   loading(message = "Please wait...") {
     return toast.loading(message);
