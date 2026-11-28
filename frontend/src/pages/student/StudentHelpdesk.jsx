@@ -300,7 +300,7 @@ export default function StudentHelpdesk() {
       title: "Reopen Support Ticket?",
       text: "Do you want to reopen this ticket and continue the conversation with the support team?",
       icon: "question",
-      confirmText: "Yes, Reopen Ticket",
+      confirmText: "Yes",
       cancelText: "Cancel",
       confirmButtonColor: "#2563eb",
     });

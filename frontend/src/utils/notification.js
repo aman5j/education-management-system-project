@@ -197,7 +197,7 @@ const notification = {
   async confirm({
     title = "Are you sure?",
     text = "Please confirm this action.",
-    confirmText = "Yes, continue",
+    confirmText = "Yes",
     cancelText = "Cancel",
     icon = "question",
     confirmButtonColor = "#2563eb",
@@ -225,7 +225,7 @@ const notification = {
       title: "Delete permanently?",
       text: `Are you sure you want to delete ${itemName}? This action cannot be undone.`,
       icon: "warning",
-      confirmText: "Yes, delete",
+      confirmText: "Yes",
       confirmButtonColor: "#dc2626",
     });
   },
@@ -235,7 +235,7 @@ const notification = {
       title: "Publish now?",
       text: `${itemName} will become available to its intended users.`,
       icon: "question",
-      confirmText: "Yes, publish",
+      confirmText: "Yes",
       confirmButtonColor: "#2563eb",
     });
   },
@@ -245,7 +245,7 @@ const notification = {
       title: "Archive this item?",
       text: `${itemName} will be archived and will no longer be active.`,
       icon: "warning",
-      confirmText: "Yes, archive",
+      confirmText: "Yes",
       confirmButtonColor: "#d97706",
     });
   },
@@ -269,8 +269,8 @@ const notification = {
       icon: "warning",
 
       confirmText: isSuspend
-        ? "Yes, suspend"
-        : "Yes, reactivate",
+        ? "Yes"
+        : "Yes",
 
       confirmButtonColor: isSuspend
         ? "#dc2626"

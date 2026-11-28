@@ -211,10 +211,10 @@ const PlatformInstitutes = () => {
           : `${name} will no longer be allowed to access its institute services.`,
       confirmText:
         nextStatus === "active"
-          ? "Yes, activate"
+          ? "Yes"
           : nextStatus === "suspended"
-            ? "Yes, suspend"
-            : "Yes, deactivate",
+            ? "Yes"
+            : "Yes",
       icon: "warning",
       confirmButtonColor:
         nextStatus === "active" ? "#16a34a" : "#dc2626",

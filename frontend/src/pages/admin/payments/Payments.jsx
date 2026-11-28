@@ -134,7 +134,7 @@ const Payments = () => {
       text:
         `Are you sure you want to delete ${receiptNumber}? ` +
         "The admission's paid amount will be recalculated using the remaining verified payments.",
-      confirmText: "Yes, delete",
+      confirmText: "Yes",
       cancelText: "Cancel",
       icon: "warning",
       confirmButtonColor: "#dc2626",

@@ -597,7 +597,7 @@ export default function StudentExams() {
           title: "Submit Exam?",
           text: "Are you sure you want to submit your exam? You cannot restart this attempt after submission.",
           icon: "warning",
-          confirmText: "Yes, Submit Exam",
+          confirmText: "Yes",
           cancelText: "Continue Exam",
           confirmButtonColor: "#2563eb",
         });

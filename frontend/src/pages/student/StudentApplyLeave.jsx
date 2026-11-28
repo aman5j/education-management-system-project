@@ -245,7 +245,7 @@ export default function StudentApplyLeave() {
       text:
         "Are you sure you want to cancel this leave request? This action cannot be undone.",
       icon: "warning",
-      confirmText: "Yes, Cancel Request",
+      confirmText: "Yes",
       cancelText: "Keep Request",
       confirmButtonColor: "#dc2626",
     });

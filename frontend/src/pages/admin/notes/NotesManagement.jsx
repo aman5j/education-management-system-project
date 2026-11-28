@@ -532,7 +532,7 @@ export default function NotesManagement() {
       title: "Remove attachment?",
       text: `Remove "${file.originalName}" from this note?`,
       icon: "warning",
-      confirmText: "Yes, remove",
+      confirmText: "Yes",
       confirmButtonColor: "#dc2626",
     });
 
@@ -589,7 +589,7 @@ export default function NotesManagement() {
         title: "Move note to Draft?",
         text: `"${note.title}" will no longer be available as a published note.`,
         icon: "warning",
-        confirmText: "Yes, move to Draft",
+        confirmText: "Yes",
         confirmButtonColor: "#d97706",
       });
     }

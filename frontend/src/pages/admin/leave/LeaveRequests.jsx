@@ -226,8 +226,8 @@ export default function LeaveRequests() {
         : "Are you sure you want to reject this leave request?",
       icon: "question",
       confirmText: isApproval
-        ? "Yes, approve"
-        : "Yes, reject",
+        ? "Yes"
+        : "Yes",
       confirmButtonColor: isApproval ? "#16a34a" : "#dc2626",
     });
 

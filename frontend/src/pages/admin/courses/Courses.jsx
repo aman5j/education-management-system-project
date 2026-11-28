@@ -261,7 +261,7 @@ const Courses = () => {
       confirmed = await notification.confirm({
         title: "Move course to Draft?",
         text: "This course will no longer be published.",
-        confirmText: "Yes, move to Draft",
+        confirmText: "Yes",
         icon: "question",
       });
     }

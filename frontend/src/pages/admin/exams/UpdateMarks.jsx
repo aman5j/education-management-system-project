@@ -262,7 +262,7 @@ export default function UpdateMarks() {
         item.student_id
       )}? Once published, obtained marks cannot be changed.`,
       icon: "warning",
-      confirmText: "Yes, publish result",
+      confirmText: "Yes",
       cancelText: "Cancel",
       confirmButtonColor: "#087b52",
     });

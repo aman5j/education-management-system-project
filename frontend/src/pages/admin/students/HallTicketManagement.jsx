@@ -357,7 +357,7 @@ export default function HallTicketManagement() {
       title: "Cancel hall ticket?",
       text: `Cancel hall ticket ${ticket.hallTicketNo} for ${name}?`,
       icon: "warning",
-      confirmText: "Yes, cancel ticket",
+      confirmText: "Yes",
       confirmButtonColor: "#dc2626",
     });
 

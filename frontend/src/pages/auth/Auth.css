@@ -1088,3 +1088,43 @@ color: #16834A;
 .tablebtn.accept:hover {
     background: #daf5e5;
 }
+
+.swal2-title {
+    font-size: 20px;
+    text-transform: capitalize;
+    color: #000;
+    font-weight: 500;
+}
+.swal2-html-container {
+    font-size: 15px;
+    padding-top: 8px;
+}
+.swal2-actions button {
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    width: 130px;
+    padding: 9px;
+    border-radius: 6px;
+}
+.swal2-cancel {
+    background: #ecebeb;
+    color: #333;
+}
+
+.swal2-popup{
+    display: none;
+    position: relative;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 100%);
+    width: 450px;
+    max-width: 100%;
+    padding: 20px;
+    border: none;
+    border-radius: 15px;
+    background: #ffffff99;
+    color: var(--swal2-color);
+    font-family: inherit;
+    font-size: 1rem;
+    backdrop-filter: blur(10px);
+}

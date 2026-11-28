@@ -37,7 +37,7 @@ export default function CertificateShareAction({
     const confirmed = await notification.confirm({
       title: "Share certificate?",
       text: `Certificate ${certificate.certificateNo || ""} will be shared with ${studentName}. The student will be able to view it in Student Portal → My Certificates.`,
-      confirmText: "Yes, share",
+      confirmText: "Yes",
       cancelText: "Cancel",
       icon: "question",
       confirmButtonColor: "#2563eb",
