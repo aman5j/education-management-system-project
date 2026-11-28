@@ -33,6 +33,7 @@
     "test:tenant-category-routes": "node --test src/scripts/testTenantCategoryRoutes.js",
     "test:tenant-category-controller": "node --test src/scripts/testTenantCategoryController.js",
     "test:tenant-category-icon-controller": "node --test src/scripts/testTenantCategoryIconController.js",
+    "test:tenant-category-isolation": "node src/scripts/testTenantCategoryIsolation.js",
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "lint": "eslint .",
     "format": "prettier --write ."
