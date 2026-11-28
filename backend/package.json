@@ -38,6 +38,7 @@
     "test:tenant-course-routes": "node --test src/scripts/testTenantCourseRoutes.js",
     "test:tenant-subject-routes": "node --test src/scripts/testTenantSubjectRoutes.js",
     "test:tenant-course-controller": "node --test src/scripts/testTenantCourseController.js",
+    "test:tenant-subject-controller": "node --test src/scripts/testTenantSubjectController.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
