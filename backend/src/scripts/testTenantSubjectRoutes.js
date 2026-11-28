@@ -1,3 +1,4 @@
+
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -26,8 +27,12 @@ const findRoute = (method, routePath) =>
       layer.route.methods[method]
   );
 
-const handlers = (routeLayer) =>
-  routeLayer?.route?.stack?.map((layer) => layer.handle) || [];
+// Express 5 can store multiple HTTP methods
+// in the same route layer. Filter by method.
+const handlers = (routeLayer, method) =>
+  routeLayer?.route?.stack
+    ?.filter((layer) => layer.method === method)
+    .map((layer) => layer.handle) || [];
 
 const middlewareIndex = (handler) =>
   stack.findIndex((layer) => layer.handle === handler);
@@ -38,8 +43,16 @@ test("tenant subject router registers trusted tenant middleware in order", () =>
   const authIndex = middlewareIndex(authenticateTenant);
 
   assert.ok(resolverIndex >= 0, "resolveTenant is missing");
-  assert.ok(modelIndex > resolverIndex, "attachTenantModels must follow resolver");
-  assert.ok(authIndex > modelIndex, "authenticateTenant must follow model attachment");
+
+  assert.ok(
+    modelIndex > resolverIndex,
+    "attachTenantModels must follow resolver"
+  );
+
+  assert.ok(
+    authIndex > modelIndex,
+    "authenticateTenant must follow model attachment"
+  );
 });
 
 test("registers subject list and create routes", () => {
@@ -58,13 +71,33 @@ test("registers subject status update route", () => {
 });
 
 test("subject routes use their intended controllers", () => {
-  assert.equal(handlers(findRoute("get", "/")).at(-1), getTenantSubjects);
-  assert.equal(handlers(findRoute("post", "/")).at(-1), createTenantSubject);
-  assert.equal(handlers(findRoute("get", "/:id")).at(-1), getTenantSubject);
-  assert.equal(handlers(findRoute("patch", "/:id")).at(-1), updateTenantSubject);
-  assert.equal(handlers(findRoute("delete", "/:id")).at(-1), deleteTenantSubject);
   assert.equal(
-    handlers(findRoute("patch", "/:id/status")).at(-1),
+    handlers(findRoute("get", "/"), "get").at(-1),
+    getTenantSubjects
+  );
+
+  assert.equal(
+    handlers(findRoute("post", "/"), "post").at(-1),
+    createTenantSubject
+  );
+
+  assert.equal(
+    handlers(findRoute("get", "/:id"), "get").at(-1),
+    getTenantSubject
+  );
+
+  assert.equal(
+    handlers(findRoute("patch", "/:id"), "patch").at(-1),
+    updateTenantSubject
+  );
+
+  assert.equal(
+    handlers(findRoute("delete", "/:id"), "delete").at(-1),
+    deleteTenantSubject
+  );
+
+  assert.equal(
+    handlers(findRoute("patch", "/:id/status"), "patch").at(-1),
     updateTenantSubjectStatus
   );
 });
@@ -80,7 +113,7 @@ test("every subject route places permission middleware before its controller", (
   ];
 
   for (const [method, path] of routes) {
-    const routeHandlers = handlers(findRoute(method, path));
+    const routeHandlers = handlers(findRoute(method, path), method);
 
     assert.equal(
       routeHandlers.length,
@@ -98,8 +131,15 @@ test("tenant subject router does not expose Question Bank endpoints", () => {
     .filter((layer) => layer.route)
     .map((layer) => layer.route.path);
 
-  assert.equal(paths.some((path) => path.includes("question-bank")), false);
-  assert.equal(paths.some((path) => path.includes("import")), false);
+  assert.equal(
+    paths.some((path) => path.includes("question-bank")),
+    false
+  );
+
+  assert.equal(
+    paths.some((path) => path.includes("import")),
+    false
+  );
 });
 
 test("subject routes do not accept browser-supplied tenant identifiers", () => {
