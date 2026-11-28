@@ -37,6 +37,7 @@
     "audit:tenant-model-side-effects": "node src/scripts/auditTenantModelSideEffects.js",
     "test:tenant-course-routes": "node --test src/scripts/testTenantCourseRoutes.js",
     "test:tenant-subject-routes": "node --test src/scripts/testTenantSubjectRoutes.js",
+    "test:tenant-course-controller": "node --test src/scripts/testTenantCourseController.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
