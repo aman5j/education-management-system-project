@@ -1,50 +1,180 @@
 
+import { createElement as h } from "react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
+
+import {
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiInfo,
+  FiXCircle,
+  FiX,
+} from "react-icons/fi";
 
 const DEFAULT_ERROR =
   "Something went wrong. Please try again.";
 
+/* =========================================
+   TOAST CONFIGURATION
+========================================= */
+
+const toastConfig = {
+  success: {
+    icon: FiCheckCircle,
+    color: "#16a34a",
+    background: "#f0fdf4",
+    border: "#16a34a",
+    duration: 3500,
+  },
+
+  warning: {
+    icon: FiAlertTriangle,
+    color: "#d97706",
+    background: "#fffbeb",
+    border: "#f59e0b",
+    duration: 4500,
+  },
+
+  info: {
+    icon: FiInfo,
+    color: "#2563eb",
+    background: "#eff6ff",
+    border: "#2563eb",
+    duration: 3500,
+  },
+
+  error: {
+    icon: FiXCircle,
+    color: "#dc2626",
+    background: "#fef2f2",
+    border: "#dc2626",
+    duration: 5000,
+  },
+};
+
+/* =========================================
+   GLOBAL CUSTOM TOAST
+========================================= */
+
+const showToast = (
+  type,
+  title,
+  message,
+  options = {}
+) => {
+  const config = toastConfig[type];
+
+  const Icon = config.icon;
+
+  return toast.custom(
+    (t) =>
+      h(
+        "div",
+        {
+          className: `ems-toast ems-toast-${type} ${
+            t.visible
+              ? "ems-toast-visible"
+              : "ems-toast-hidden"
+          }`,
+
+          role: type === "error" ? "alert" : "status",
+
+          "aria-live":
+            type === "error" ? "assertive" : "polite",
+
+          style: {
+            "--toast-color": config.color,
+            "--toast-bg": config.background,
+            "--toast-border": config.border,
+          },
+        },
+
+        /* ICON */
+        h(
+          "div",
+          { className: "ems-toast-icon" },
+          h(Icon, { size: 20 })
+        ),
+
+        /* CONTENT */
+        h(
+          "div",
+          { className: "ems-toast-content" },
+
+          h(
+            "div",
+            { className: "ems-toast-title" },
+            title
+          ),
+
+          h(
+            "div",
+            { className: "ems-toast-message" },
+            message
+          )
+        ),
+
+        /* CLOSE BUTTON */
+        h(
+          "button",
+          {
+            type: "button",
+            className: "ems-toast-close",
+            onClick: () => toast.dismiss(t.id),
+            "aria-label": "Close notification",
+            title: "Close",
+          },
+          h(FiX, { size: 17 })
+        )
+      ),
+
+    {
+      duration: config.duration,
+      position: "top-right",
+      ...options,
+    }
+  );
+};
+
+/* =========================================
+   NOTIFICATION METHODS
+========================================= */
+
 const notification = {
   success(message, options = {}) {
-    return toast.success(
+    return showToast(
+      "success",
+      "Success",
       message || "Operation completed successfully.",
-      {
-        duration: 3500,
-        ...options,
-      }
+      options
     );
   },
 
   error(message, options = {}) {
-    return toast.error(
+    return showToast(
+      "error",
+      "Error",
       message || DEFAULT_ERROR,
-      {
-        duration: 5000,
-        ...options,
-      }
+      options
     );
   },
 
   warning(message, options = {}) {
-    return toast(
-      message || "Please check the information and try again.",
-      {
-        icon: "⚠️",
-        duration: 4500,
-        ...options,
-      }
+    return showToast(
+      "warning",
+      "Warning",
+      message ||
+        "Please check the information and try again.",
+      options
     );
   },
 
   info(message, options = {}) {
-    return toast(
-      message || "Information",
-      {
-        icon: "ℹ️",
-        duration: 3500,
-        ...options,
-      }
+    return showToast(
+      "info",
+      "Information",
+      message || "Here is some information.",
+      options
     );
   },
 
@@ -59,6 +189,10 @@ const notification = {
       toast.dismiss();
     }
   },
+
+  /* =========================================
+     SWEETALERT CONFIRMATION
+  ========================================= */
 
   async confirm({
     title = "Are you sure?",
@@ -127,18 +261,26 @@ const notification = {
       title: isSuspend
         ? "Suspend account?"
         : "Reactivate account?",
+
       text: isSuspend
         ? `${itemName} will lose access to the system.`
         : `${itemName} will regain access to the system.`,
+
       icon: "warning",
+
       confirmText: isSuspend
         ? "Yes, suspend"
         : "Yes, reactivate",
+
       confirmButtonColor: isSuspend
         ? "#dc2626"
         : "#16a34a",
     });
   },
+
+  /* =========================================
+     PASSWORD PROMPT
+  ========================================= */
 
   async promptPassword({
     title = "Reset password",
@@ -152,6 +294,7 @@ const notification = {
       text,
       input: "password",
       inputPlaceholder: "Enter new password",
+
       inputAttributes: {
         autocapitalize: "off",
         autocomplete: "new-password",
@@ -159,6 +302,7 @@ const notification = {
         maxlength: String(maxLength),
         autocorrect: "off",
       },
+
       showCancelButton: true,
       confirmButtonText: confirmText,
       cancelButtonText: "Cancel",
@@ -192,6 +336,10 @@ const notification = {
     return result.value;
   },
 
+  /* =========================================
+     INFORMATION ALERT
+  ========================================= */
+
   async alert({
     title = "Information",
     text = "",
@@ -207,6 +355,10 @@ const notification = {
     });
   },
 };
+
+/* =========================================
+   API ERROR MESSAGE HANDLER
+========================================= */
 
 export const getApiErrorMessage = (error) => {
   if (!error) {
@@ -256,6 +408,10 @@ export const getApiErrorMessage = (error) => {
 
   return error.message || DEFAULT_ERROR;
 };
+
+/* =========================================
+   GLOBAL API ERROR
+========================================= */
 
 export const showApiError = (error) => {
   return notification.error(

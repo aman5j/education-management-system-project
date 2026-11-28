@@ -163,20 +163,40 @@ test("deletes only the requested institute's managed image", async () => {
   }
 });
 
-test("rejects symbolic-link image files", async () => {
+test("rejects symbolic-link image files", async (t) => {
   const fixture = await createFixture();
 
   try {
     const directory =
       await fixture.service.getCourseImageDirectory(A);
 
-    const externalFile = path.join(fixture.root, "outside.png");
+    const externalFile = path.join(
+      fixture.root,
+      "outside.png"
+    );
+
     await fs.writeFile(externalFile, png);
 
-    const fileName = "123e4567-e89b-42d3-a456-426614174000.png";
+    const fileName =
+      "123e4567-e89b-42d3-a456-426614174000.png";
+
     const linkPath = path.join(directory, fileName);
 
-    await fs.symlink(externalFile, linkPath);
+    try {
+      await fs.symlink(externalFile, linkPath);
+    } catch (error) {
+      if (
+        process.platform === "win32" &&
+        ["EPERM", "EACCES", "ENOSYS"].includes(error.code)
+      ) {
+        t.skip(
+          "Windows does not permit symbolic-link creation in this environment."
+        );
+        return;
+      }
+
+      throw error;
+    }
 
     await assert.rejects(
       fixture.service.readImage(A, fileName),

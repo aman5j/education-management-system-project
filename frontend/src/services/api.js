@@ -1,6 +1,9 @@
 
 import axios from "axios";
-import { getApiErrorMessage } from "../utils/notification";
+
+import notification, {
+  getApiErrorMessage,
+} from "../utils/notification";
 
 // const API_URL =
 //   import.meta.env.VITE_API_URL ||
@@ -81,13 +84,23 @@ api.interceptors.response.use(
       error.code !== "ERR_CANCELED" &&
       !axios.isCancel(error);
 
+    // if (shouldShowGlobalError) {
+    //   import("react-hot-toast").then(({ default: toast }) => {
+    //     toast.error(getApiErrorMessage(error), {
+    //       duration: 5000,
+    //       id: `api-error-${config.url || "request"}-${error.response?.status || error.code || "network"}`,
+    //     });
+    //   });
+    // }
+
     if (shouldShowGlobalError) {
-      import("react-hot-toast").then(({ default: toast }) => {
-        toast.error(getApiErrorMessage(error), {
+      notification.error(
+        getApiErrorMessage(error),
+        {
           duration: 5000,
           id: `api-error-${config.url || "request"}-${error.response?.status || error.code || "network"}`,
-        });
-      });
+        }
+      );
     }
 
     return Promise.reject(error);
